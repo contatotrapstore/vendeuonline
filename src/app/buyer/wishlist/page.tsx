@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Heart, Trash2, ShoppingCart, Eye, Share2, Filter, Grid, List, Star } from 'lucide-react';
 import { toast } from 'sonner';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 interface WishlistItem {
   id: string;
@@ -250,7 +250,7 @@ export default function BuyerWishlistPage() {
               }
             </p>
             <Link 
-              href="/products"
+              to="/products"
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
             >
               <Eye className="h-4 w-4" />

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Edit, Trash2, Eye, Package, AlertCircle } from 'lucide-react';
 import { useProductStore, Product } from '@/store/productStore';
 import { useAuthStore } from '@/store/authStore';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 const statusOptions = [
   { value: 'all', label: 'Todos os Status' },
@@ -111,7 +111,7 @@ export default function SellerProductsPage() {
             </p>
           </div>
           
-          <Link href="/seller/products/new">
+          <Link to="/seller/products/new">
             <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium">
               <Plus className="h-5 w-5" />
               Adicionar Produto
@@ -305,12 +305,12 @@ export default function SellerProductsPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                             <div className="flex items-center gap-2">
-                              <Link href={`/produto/${product.id}`}>
+                              <Link to={`/produto/${product.id}`}>
                                 <button className="text-blue-600 hover:text-blue-900 p-1 rounded">
                                   <Eye className="h-4 w-4" />
                                 </button>
                               </Link>
-                              <Link href={`/seller/products/${product.id}/edit`}>
+                              <Link to={`/seller/products/${product.id}/edit`}>
                                 <button className="text-gray-600 hover:text-gray-900 p-1 rounded">
                                   <Edit className="h-4 w-4" />
                                 </button>
@@ -409,7 +409,7 @@ export default function SellerProductsPage() {
                   : 'Comece adicionando seu primeiro produto.'}
               </p>
               <div className="mt-6">
-                <Link href="/seller/products/new">
+                <Link to="/seller/products/new">
                   <button className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                     <Plus className="-ml-1 mr-2 h-5 w-5" />
                     Adicionar Produto

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Star, MapPin, Phone, Mail, MessageCircle, Package, Users, Calendar, Shield, Filter, Grid, List, Heart } from 'lucide-react';
 import { APP_CONFIG } from '@/config/app';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 interface Product {
   id: string;
@@ -372,7 +372,7 @@ export default function StorePage({ params }: { params: { id: string } }) {
                         : 'space-y-4'
                       }>
                         {filteredProducts.map(product => (
-                          <Link key={product.id} href={`/products/${product.id}`}>
+                          <Link key={product.id} to={`/products/${product.id}`}>
                             <div className={`bg-gray-50 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer ${
                               viewMode === 'list' ? 'flex' : ''
                             }`}>

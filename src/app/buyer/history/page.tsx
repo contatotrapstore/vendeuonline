@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Clock, Eye, ShoppingCart, Heart, Trash2, Filter, Calendar, Star } from 'lucide-react';
 import { toast } from 'sonner';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 interface ViewHistoryItem {
   id: string;
@@ -335,7 +335,7 @@ export default function BuyerHistoryPage() {
               }
             </p>
             <Link 
-              href="/products"
+              to="/products"
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
             >
               <Eye className="h-4 w-4" />
@@ -371,7 +371,7 @@ export default function BuyerHistoryPage() {
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <Link 
-                          href={`/products/${item.productId}`}
+                          to={`/products/${item.productId}`}
                           className="font-medium text-gray-900 hover:text-blue-600 transition-colors"
                         >
                           {item.name}
