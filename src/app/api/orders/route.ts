@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from '@/types/api'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { requireAuth, AuthenticatedRequest } from '@/lib/middleware'
+import { requireAuth, AuthenticatedRequest, authMiddleware } from '@/lib/middleware'
 import { withApiSecurity } from '@/lib/security-middleware'
 
 const createOrderSchema = z.object({
@@ -17,8 +17,8 @@ const createOrderSchema = z.object({
 })
 
 const querySchema = z.object({
-  page: z.string().transform(Number).default('1'),
-  limit: z.string().transform(Number).default('10'),
+  page: z.string().transform(Number).default(1),
+  limit: z.string().transform(Number).default(10),
   status: z.enum(['PENDING', 'CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']).optional(),
   paymentStatus: z.enum(['PENDING', 'PROCESSING', 'PAID', 'FAILED', 'REFUNDED']).optional(),
   storeId: z.string().optional(),
@@ -27,12 +27,28 @@ const querySchema = z.object({
   endDate: z.string().optional()
 })
 
-// GET - Listar pedidos do usuário
-const getOrdersHandler = requireAuth()(async (request: AuthenticatedRequest) => {
+// GET - Listar pedidos (compradores e vendedores)
+const getOrdersHandler = async (request: Request) => {
+  // Verificar autenticação
+  const authResult = await authMiddleware(request);
+  if (!authResult.success) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: 401 }
+    );
+  }
+
+  const user = authResult.user;
+  if (!['BUYER', 'SELLER'].includes(user.type)) {
+    return NextResponse.json(
+      { error: 'Acesso negado' },
+      { status: 403 }
+    );
+  }
   try {
     const { searchParams } = new URL(request.url)
     const query = querySchema.parse(Object.fromEntries(searchParams))
-    const user = request.user
+    // user já foi definido acima como authResult.user
 
     const where: any = {}
 
@@ -141,7 +157,7 @@ const getOrdersHandler = requireAuth()(async (request: AuthenticatedRequest) => 
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Parâmetros inválidos', details: error.errors },
+        { error: 'Parâmetros inválidos', details: error.issues },
         { status: 400 }
       )
     }
@@ -152,24 +168,35 @@ const getOrdersHandler = requireAuth()(async (request: AuthenticatedRequest) => 
       { status: 500 }
     )
   }
-})
-
-// Aplicar middleware de segurança
-export const GET = withApiSecurity(getOrdersHandler)
-export const POST = withApiSecurity(createOrderHandler)
+}
 
 // POST - Criar pedido (apenas compradores)
-const createOrderHandler = requireAuth(['BUYER'])(async (request: AuthenticatedRequest) => {
+const createOrderHandler = async (request: Request) => {
+  // Verificar autenticação
+  const authResult = await authMiddleware(request);
+  if (!authResult.success) {
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: 401 }
+    );
+  }
+
+  const user = authResult.user;
+  if (user.type !== 'BUYER') {
+    return NextResponse.json(
+      { error: 'Acesso negado' },
+      { status: 403 }
+    );
+  }
   try {
     const body = await request.json()
     const validatedData = createOrderSchema.parse(body)
-    const user = request.user
 
     // Verificar se o endereço de entrega pertence ao usuário
     const shippingAddress = await prisma.address.findFirst({
       where: {
         id: validatedData.shippingAddressId,
-        buyerId: user.buyer.id
+        buyerId: authResult.user.buyer.id
       }
     })
 
@@ -186,7 +213,7 @@ const createOrderHandler = requireAuth(['BUYER'])(async (request: AuthenticatedR
       billingAddress = await prisma.address.findFirst({
         where: {
           id: validatedData.billingAddressId,
-          buyerId: user.buyer.id
+          buyerId: authResult.user.buyer.id
         }
       })
 
@@ -267,7 +294,7 @@ const createOrderHandler = requireAuth(['BUYER'])(async (request: AuthenticatedR
 
       const order = await prisma.order.create({
         data: {
-          buyerId: user.id,
+          buyerId: authResult.user.id,
           sellerId: storeData.store.sellerId,
           storeId: storeId,
           subtotal,
@@ -355,7 +382,7 @@ const createOrderHandler = requireAuth(['BUYER'])(async (request: AuthenticatedR
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Dados inválidos', details: error.errors },
+        { error: 'Dados inválidos', details: error.issues },
         { status: 400 }
       )
     }
@@ -366,4 +393,8 @@ const createOrderHandler = requireAuth(['BUYER'])(async (request: AuthenticatedR
       { status: 500 }
     )
   }
-})
+}
+
+// Aplicar middleware de segurança
+export const GET = withApiSecurity(getOrdersHandler)
+export const POST = withApiSecurity(createOrderHandler)

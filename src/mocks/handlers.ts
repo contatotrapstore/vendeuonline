@@ -97,7 +97,7 @@ export const handlers = [
     } catch (error) {
       if (error instanceof z.ZodError) {
         return HttpResponse.json(
-          { error: 'Dados inválidos', details: error.errors },
+          { error: 'Dados inválidos', details: error.issues },
           { status: 400 }
         )
       }
@@ -149,7 +149,7 @@ export const handlers = [
     } catch (error) {
       if (error instanceof z.ZodError) {
         return HttpResponse.json(
-          { error: 'Dados inválidos', details: error.errors },
+          { error: 'Dados inválidos', details: error.issues },
           { status: 400 }
         )
       }

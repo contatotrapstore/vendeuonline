@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { ApiRequest as NextRequest, ApiResponse as NextResponse } from '@/types/api'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { requireSeller, AuthenticatedRequest } from '@/lib/middleware'
+import { requireSeller, AuthenticatedRequest, authMiddleware } from '@/lib/middleware'
 
 const updateProductSchema = z.object({
   name: z.string().min(1).optional(),
@@ -110,10 +110,10 @@ export async function GET(
 }
 
 // PUT - Atualizar produto (apenas o vendedor proprietário)
-export const PUT = requireSeller(async (
+async function updateProductHandler(
   request: AuthenticatedRequest,
   { params }: RouteParams
-) => {
+) {
   try {
     const body = await request.json()
     const validatedData = updateProductSchema.parse(body)
@@ -244,7 +244,7 @@ export const PUT = requireSeller(async (
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Dados inválidos', details: error.errors },
+        { error: 'Dados inválidos', details: error.issues },
         { status: 400 }
       )
     }
@@ -255,13 +255,38 @@ export const PUT = requireSeller(async (
       { status: 500 }
     )
   }
-})
+}
+
+export async function PUT(request: Request, context: any) {
+  // Verificar autenticação
+  const authResult = await authMiddleware(request);
+  if (!authResult.success) {
+    return new Response(
+      JSON.stringify({ error: authResult.error }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Verificar se é vendedor
+  if (authResult.user.type !== 'SELLER') {
+    return new Response(
+      JSON.stringify({ error: 'Acesso negado' }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Adicionar usuário ao request
+  const authenticatedRequest = request as AuthenticatedRequest;
+  authenticatedRequest.user = authResult.user;
+
+  return updateProductHandler(authenticatedRequest, context);
+}
 
 // DELETE - Deletar produto (apenas o vendedor proprietário)
-export const DELETE = requireSeller(async (
+async function deleteProductHandler(
   request: AuthenticatedRequest,
   { params }: RouteParams
-) => {
+) {
   try {
     const user = request.user
 
@@ -311,4 +336,29 @@ export const DELETE = requireSeller(async (
       { status: 500 }
     )
   }
-})
+}
+
+export async function DELETE(request: Request, context: any) {
+  // Verificar autenticação
+  const authResult = await authMiddleware(request);
+  if (!authResult.success) {
+    return new Response(
+      JSON.stringify({ error: authResult.error }),
+      { status: 401, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Verificar se é vendedor
+  if (authResult.user.type !== 'SELLER') {
+    return new Response(
+      JSON.stringify({ error: 'Acesso negado' }),
+      { status: 403, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+
+  // Adicionar usuário ao request
+  const authenticatedRequest = request as AuthenticatedRequest;
+  authenticatedRequest.user = authResult.user;
+
+  return deleteProductHandler(authenticatedRequest, context);
+}

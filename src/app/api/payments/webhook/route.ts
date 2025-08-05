@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@/types/api';
 import { getPayment } from '@/lib/mercadopago';
-import { supabase } from '@/lib/supabase';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,16 +32,16 @@ export async function POST(request: NextRequest) {
     const [, userId, planId] = externalReference.split('_');
     
     // Buscar a assinatura correspondente
-    const { data: subscription, error: subscriptionError } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('plan_id', planId)
-      .eq('status', 'pending')
-      .single();
+    const subscription = await prisma.subscription.findFirst({
+      where: {
+        userId: userId,
+        planId: planId,
+        status: 'PENDING'
+      }
+    });
 
-    if (subscriptionError || !subscription) {
-      console.error('Assinatura não encontrada:', subscriptionError);
+    if (!subscription) {
+      console.error('Assinatura não encontrada');
       return NextResponse.json({ error: 'Subscription not found' }, { status: 404 });
     }
 
@@ -67,16 +67,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Atualizar assinatura
-    const { error: updateError } = await supabase
-      .from('subscriptions')
-      .update({
-        status: newStatus,
-        payment_id: paymentId.toString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', subscription.id);
-
-    if (updateError) {
+    try {
+      await prisma.subscription.update({
+        where: { id: subscription.id },
+        data: {
+          status: newStatus.toUpperCase() as any,
+          updatedAt: new Date()
+        }
+      });
+    } catch (updateError) {
       console.error('Erro ao atualizar assinatura:', updateError);
       return NextResponse.json({ error: 'Failed to update subscription' }, { status: 500 });
     }
@@ -84,38 +83,38 @@ export async function POST(request: NextRequest) {
     // Se o pagamento foi aprovado, atualizar o plano do usuário
     if (shouldUpdateUserPlan) {
       // Buscar informações do plano
-      const { data: plan } = await supabase
-        .from('plans')
-        .select('slug')
-        .eq('id', planId)
-        .single();
+      const plan = await prisma.plan.findUnique({
+        where: { id: planId },
+        select: { slug: true }
+      });
 
       if (plan) {
-        // Atualizar plano do usuário
-        const { error: userUpdateError } = await supabase
-          .from('users')
-          .update({
-            plan: plan.slug,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', userId);
-
-        if (userUpdateError) {
-          console.error('Erro ao atualizar plano do usuário:', userUpdateError);
+        // Atualizar plano do vendedor
+        try {
+          await prisma.seller.update({
+            where: { userId: userId },
+            data: {
+              plan: plan.slug as any
+            }
+          });
+        } catch (userUpdateError) {
+          console.error('Erro ao atualizar plano do vendedor:', userUpdateError);
         }
 
         // Cancelar outras assinaturas ativas do usuário
-        const { error: cancelError } = await supabase
-          .from('subscriptions')
-          .update({
-            status: 'cancelled',
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', userId)
-          .eq('status', 'active')
-          .neq('id', subscription.id);
-
-        if (cancelError) {
+        try {
+          await prisma.subscription.updateMany({
+            where: {
+              userId: userId,
+              status: 'ACTIVE',
+              id: { not: subscription.id }
+            },
+            data: {
+              status: 'CANCELLED',
+              updatedAt: new Date()
+            }
+          });
+        } catch (cancelError) {
           console.error('Erro ao cancelar outras assinaturas:', cancelError);
         }
       }

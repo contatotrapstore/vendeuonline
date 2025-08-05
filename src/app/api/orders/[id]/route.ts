@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from '@/types/api'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireAuth, AuthenticatedRequest } from '@/lib/middleware'
@@ -17,14 +17,14 @@ interface RouteParams {
 }
 
 // GET - Buscar pedido por ID
-export const GET = requireAuth()(async (
-  request: AuthenticatedRequest,
-  { params }: RouteParams
-) => {
+const getOrderHandler = async (request: AuthenticatedRequest) => {
+  const url = new URL(request.url)
+  const pathParts = url.pathname.split('/')
+  const id = pathParts[pathParts.length - 1]
   try {
     const user = request.user
 
-    const where: any = { id: params.id }
+    const where: any = { id }
 
     // Filtrar por tipo de usuário
     if (user.type === 'BUYER') {
@@ -102,13 +102,13 @@ export const GET = requireAuth()(async (
       { status: 500 }
     )
   }
-})
+}
 
 // PUT - Atualizar status do pedido
-export const PUT = requireAuth()(async (
-  request: AuthenticatedRequest,
-  { params }: RouteParams
-) => {
+const updateOrderHandler = async (request: AuthenticatedRequest) => {
+  const url = new URL(request.url)
+  const pathParts = url.pathname.split('/')
+  const id = pathParts[pathParts.length - 1]
   try {
     const body = await request.json()
     const validatedData = updateOrderSchema.parse(body)
@@ -116,9 +116,10 @@ export const PUT = requireAuth()(async (
 
     // Verificar se o pedido existe
     const existingOrder = await prisma.order.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
-        store: true
+        store: true,
+        items: true
       }
     })
 
@@ -174,7 +175,7 @@ export const PUT = requireAuth()(async (
 
     // Atualizar pedido
     const updatedOrder = await prisma.order.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         ...validatedData,
         updatedAt: new Date()
@@ -216,7 +217,7 @@ export const PUT = requireAuth()(async (
 
     // Se o pedido foi cancelado, devolver estoque
     if (validatedData.status === 'CANCELLED' && existingOrder.status !== 'CANCELLED') {
-      for (const item of existingOrder.items || []) {
+      for (const item of (existingOrder as any).items || []) {
         await prisma.product.update({
           where: { id: item.productId },
           data: {
@@ -245,9 +246,9 @@ export const PUT = requireAuth()(async (
     const notificationData: any = {
       type: 'ORDER_UPDATED',
       title: 'Status do pedido atualizado',
-      message: `Seu pedido #${params.id.slice(-8)} foi atualizado para ${validatedData.status || existingOrder.status}`,
+      message: `Seu pedido #${id.slice(-8)} foi atualizado para ${validatedData.status || existingOrder.status}`,
       data: {
-        orderId: params.id,
+        orderId: id,
         newStatus: validatedData.status || existingOrder.status
       }
     }
@@ -274,7 +275,7 @@ export const PUT = requireAuth()(async (
             ...notificationData,
             userId: seller.userId,
             title: 'Pedido atualizado',
-            message: `O pedido #${params.id.slice(-8)} foi atualizado para ${validatedData.status || existingOrder.status}`
+            message: `O pedido #${id.slice(-8)} foi atualizado para ${validatedData.status || existingOrder.status}`
           }
         })
       }
@@ -284,7 +285,7 @@ export const PUT = requireAuth()(async (
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Dados inválidos', details: error.errors },
+        { error: 'Dados inválidos', details: error.issues },
         { status: 400 }
       )
     }
@@ -295,4 +296,8 @@ export const PUT = requireAuth()(async (
       { status: 500 }
     )
   }
-})
+}
+
+// Exports com middleware de autenticação
+export const GET = requireAuth()(getOrderHandler)
+export const PUT = requireAuth()(updateOrderHandler)

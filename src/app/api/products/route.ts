@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { ApiRequest as NextRequest, ApiResponse as NextResponse } from '@/types/api'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireSeller, AuthenticatedRequest } from '@/lib/middleware'
@@ -35,8 +35,8 @@ const createProductSchema = z.object({
 })
 
 const querySchema = z.object({
-  page: z.string().transform(Number).default('1'),
-  limit: z.string().transform(Number).default('12'),
+  page: z.string().transform(Number).default(1),
+  limit: z.string().transform(Number).default(12),
   search: z.string().optional(),
   category: z.string().optional(),
   minPrice: z.string().transform(Number).optional(),
@@ -143,7 +143,7 @@ async function getProductsHandler(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Parâmetros inválidos', details: error.errors },
+        { error: 'Parâmetros inválidos', details: error.issues },
         { status: 400 }
       )
     }
@@ -157,7 +157,7 @@ async function getProductsHandler(request: NextRequest) {
 }
 
 // POST - Criar produto (apenas vendedores)
-const createProductHandler = requireSeller(async (request: AuthenticatedRequest) => {
+const createProductHandler = async (request: AuthenticatedRequest) => {
   try {
     const body = await request.json()
     const validatedData = createProductSchema.parse(body)
@@ -244,7 +244,7 @@ const createProductHandler = requireSeller(async (request: AuthenticatedRequest)
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Dados inválidos', details: error.errors },
+        { error: 'Dados inválidos', details: error.issues },
         { status: 400 }
       )
     }
@@ -255,8 +255,8 @@ const createProductHandler = requireSeller(async (request: AuthenticatedRequest)
       { status: 500 }
     )
   }
-})
+}
 
 // Aplicar middleware de segurança
 export const GET = withApiSecurity(getProductsHandler)
-export const POST = withApiSecurity(createProductHandler)
+export const POST = requireSeller(withApiSecurity(createProductHandler))

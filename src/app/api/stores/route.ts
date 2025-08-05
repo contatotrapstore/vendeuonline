@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { ApiRequest as NextRequest, ApiResponse as NextResponse } from '@/types/api'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireSeller, AuthenticatedRequest } from '@/lib/middleware'
@@ -238,4 +238,4 @@ async function createStoreHandlerBase(request: AuthenticatedRequest) {
 
 // Aplicar middleware de segurança
 export const GET = withApiSecurity(getStoresHandler)
-export const POST = withApiSecurity(requireSeller(createStoreHandlerBase))
+export const POST = requireSeller(withApiSecurity(createStoreHandlerBase))

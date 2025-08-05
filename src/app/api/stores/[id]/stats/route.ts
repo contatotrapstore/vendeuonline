@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { ApiRequest as NextRequest, ApiResponse as NextResponse } from '@/types/api'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireSellerOrAdmin, AuthenticatedRequest } from '@/lib/middleware'
@@ -14,7 +14,7 @@ interface RouteParams {
 }
 
 // GET - Estatísticas da loja (apenas proprietário ou admin)
-export const GET = requireSellerOrAdmin(async (
+const getStatsHandler = async (
   request: AuthenticatedRequest,
   { params }: RouteParams
 ) => {
@@ -218,4 +218,12 @@ export const GET = requireSellerOrAdmin(async (
       { status: 500 }
     )
   }
+}
+
+// Export com middleware de autenticação
+export const GET = requireSellerOrAdmin((request: AuthenticatedRequest) => {
+  const url = new URL(request.url)
+  const pathParts = url.pathname.split('/')
+  const id = pathParts[pathParts.length - 2] // stats é o último, id é o penúltimo
+  return getStatsHandler(request, { params: { id } })
 })

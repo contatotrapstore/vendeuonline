@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from '@/types/api'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, generateToken, createAuthResponse } from '@/lib/auth'
@@ -10,7 +10,7 @@ const registerSchema = z.object({
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   phone: z.string().min(10, 'Telefone inválido'),
   type: z.enum(['BUYER', 'SELLER'], {
-    errorMap: () => ({ message: 'Tipo deve ser BUYER ou SELLER' })
+    message: 'Tipo deve ser BUYER ou SELLER'
   }),
   city: z.string().min(2, 'Cidade é obrigatória'),
   state: z.string().min(2, 'Estado é obrigatório'),
@@ -146,7 +146,7 @@ async function registerHandler(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Dados inválidos', details: error.errors },
+        { error: 'Dados inválidos', details: error.issues },
         { status: 400 }
       )
     }

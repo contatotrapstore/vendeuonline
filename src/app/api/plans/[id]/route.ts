@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@/types/api';
 import { prisma } from '@/lib/prisma';
 import { authMiddleware } from '@/lib/middleware';
 

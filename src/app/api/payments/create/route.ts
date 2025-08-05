@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@/types/api';
 import { authMiddleware } from '@/lib/middleware';
 import { createPaymentSchema } from '@/lib/validation';
 import { createPreference } from '@/lib/mercadopago';
-import { supabase } from '@/lib/supabase';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,13 +21,11 @@ export async function POST(request: NextRequest) {
     const userId = authResult.user.id;
 
     // Buscar informações do plano
-    const { data: plan, error: planError } = await supabase
-      .from('plans')
-      .select('*')
-      .eq('id', planId)
-      .single();
+    const plan = await prisma.plan.findUnique({
+      where: { id: planId }
+    });
 
-    if (planError || !plan) {
+    if (!plan) {
       return NextResponse.json(
         { error: 'Plano não encontrado' },
         { status: 404 }
@@ -35,12 +33,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se o usuário já tem uma assinatura ativa
-    const { data: existingSubscription } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'active')
-      .single();
+    const existingSubscription = await prisma.subscription.findFirst({
+      where: {
+        userId: userId,
+        status: 'ACTIVE'
+      }
+    });
 
     if (existingSubscription) {
       return NextResponse.json(
@@ -74,7 +72,7 @@ export async function POST(request: NextRequest) {
         failure: `${process.env.NEXT_PUBLIC_APP_URL}/payment/failure`,
         pending: `${process.env.NEXT_PUBLIC_APP_URL}/payment/pending`
       },
-      auto_return: 'approved',
+      auto_return: 'approved' as 'approved',
       external_reference: `subscription_${userId}_${planId}_${Date.now()}`,
       notification_url: `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/webhook`,
       metadata: {
@@ -94,38 +92,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Criar registro de assinatura pendente
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30); // 30 dias
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + 30); // 30 dias
 
-    const { data: subscription, error: subscriptionError } = await supabase
-      .from('subscriptions')
-      .insert({
-        user_id: userId,
-        plan_id: planId,
-        status: 'pending',
-        expires_at: expiresAt.toISOString(),
-        payment_reference: preference.id,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .select()
-      .single();
+    try {
+      const subscription = await prisma.subscription.create({
+        data: {
+          userId: userId,
+          planId: planId,
+          status: 'PENDING',
+          endDate: endDate
+        }
+      });
 
-    if (subscriptionError) {
+      return NextResponse.json({
+        success: true,
+        preference_id: preference.id,
+        init_point: preference.init_point,
+        sandbox_init_point: preference.sandbox_init_point,
+        subscription_id: subscription.id
+      });
+    } catch (subscriptionError) {
       console.error('Erro ao criar assinatura:', subscriptionError);
       return NextResponse.json(
         { error: 'Erro ao criar assinatura' },
         { status: 500 }
       );
     }
-
-    return NextResponse.json({
-      success: true,
-      preference_id: preference.id,
-      init_point: preference.init_point,
-      sandbox_init_point: preference.sandbox_init_point,
-      subscription_id: subscription.id
-    });
 
   } catch (error) {
     console.error('Erro na API de pagamentos:', error);

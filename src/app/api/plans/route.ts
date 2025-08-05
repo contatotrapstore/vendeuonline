@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@/types/api';
 import { prisma } from '@/lib/prisma';
 import { authMiddleware } from '@/lib/middleware';
 import { planSchema } from '@/lib/validation';
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: 'Dados inválidos',
-          details: error.errors
+          details: error.issues
         },
         { status: 400 }
       );
@@ -170,7 +170,7 @@ export async function PUT(request: NextRequest) {
         {
           success: false,
           error: 'Dados inválidos',
-          details: error.errors
+          details: error.issues
         },
         { status: 400 }
       );

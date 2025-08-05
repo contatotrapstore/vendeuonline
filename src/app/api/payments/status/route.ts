@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from '@/types/api';
 import { authMiddleware } from '@/lib/middleware';
-import { supabase } from '@/lib/supabase';
+import { prisma } from '@/lib/prisma';
 import { getPayment } from '@/lib/mercadopago';
 
 export async function GET(request: NextRequest) {
@@ -30,56 +30,59 @@ export async function GET(request: NextRequest) {
 
     if (subscriptionId) {
       // Buscar assinatura por ID
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select(`
-          *,
-          plans (
-            id,
-            name,
-            slug,
-            price,
-            features
-          )
-        `)
-        .eq('id', subscriptionId)
-        .eq('user_id', userId)
-        .single();
+      subscription = await prisma.subscription.findFirst({
+        where: {
+          id: subscriptionId,
+          userId: userId
+        },
+        include: {
+          plan: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              price: true,
+              features: true
+            }
+          }
+        }
+      });
 
-      if (error || !data) {
+      if (!subscription) {
         return NextResponse.json(
           { error: 'Assinatura não encontrada' },
           { status: 404 }
         );
       }
-
-      subscription = data;
     } else if (paymentId) {
-      // Buscar assinatura por payment_id
-      const { data, error } = await supabase
-        .from('subscriptions')
-        .select(`
-          *,
-          plans (
-            id,
-            name,
-            slug,
-            price,
-            features
-          )
-        `)
-        .eq('payment_id', paymentId)
-        .eq('user_id', userId)
-        .single();
+      // Buscar assinatura por payment_id (não disponível no modelo atual)
+      // Como o modelo Subscription não tem campo paymentId, vamos buscar por userId
+      subscription = await prisma.subscription.findFirst({
+        where: {
+          userId: userId
+        },
+        include: {
+          plan: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              price: true,
+              features: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
 
-      if (error || !data) {
+      if (!subscription) {
         return NextResponse.json(
           { error: 'Assinatura não encontrada' },
           { status: 404 }
         );
       }
-
-      subscription = data;
     }
 
     // Se há payment_id, buscar informações atualizadas do Mercado Pago
@@ -112,16 +115,17 @@ export async function GET(request: NextRequest) {
 
       // Atualizar status se necessário
       if (newStatus !== subscription.status) {
-        const { error: updateError } = await supabase
-          .from('subscriptions')
-          .update({
-            status: newStatus,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', subscription.id);
-
-        if (!updateError) {
-          subscription.status = newStatus;
+        try {
+          await prisma.subscription.update({
+            where: { id: subscription.id },
+            data: {
+              status: newStatus.toUpperCase() as any,
+              updatedAt: new Date()
+            }
+          });
+          subscription.status = newStatus.toUpperCase() as any;
+        } catch (updateError) {
+          console.error('Erro ao atualizar assinatura:', updateError);
         }
       }
     }

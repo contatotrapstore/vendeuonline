@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { ApiRequest as NextRequest, ApiResponse as NextResponse } from '@/types/api'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireSeller, requireSellerOrAdmin, AuthenticatedRequest } from '@/lib/middleware'
@@ -61,13 +61,11 @@ export async function GET(
             storeName: true,
             rating: true,
             totalSales: true,
-            plan: true,
-            isVerified: true,
             user: {
               select: {
                 name: true,
                 email: true,
-                createdAt: true
+                phone: true
               }
             }
           }
@@ -98,13 +96,9 @@ export async function GET(
         },
         reviews: {
           include: {
-            buyer: {
+            user: {
               select: {
-                user: {
-                  select: {
-                    name: true
-                  }
-                }
+                name: true
               }
             }
           },
@@ -143,9 +137,9 @@ export async function GET(
     const storeWithStats = {
       ...store,
       avgRating: avgRating._avg.rating || 0,
-      totalProducts: store._count.products,
-      totalOrders: store._count.orders,
-      totalReviews: store._count.reviews
+      totalProducts: (store as any)._count.products,
+      totalOrders: (store as any)._count.orders,
+      totalReviews: (store as any)._count.reviews
     }
 
     return NextResponse.json(storeWithStats)
@@ -159,7 +153,7 @@ export async function GET(
 }
 
 // PUT - Atualizar loja (apenas proprietário ou admin)
-export const PUT = requireSellerOrAdmin(async (
+const updateStoreHandler = async (
   request: AuthenticatedRequest,
   { params }: RouteParams
 ) => {
@@ -254,7 +248,7 @@ export const PUT = requireSellerOrAdmin(async (
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Dados inválidos', details: error.errors },
+        { error: 'Dados inválidos', details: error.issues },
         { status: 400 }
       )
     }
@@ -265,10 +259,10 @@ export const PUT = requireSellerOrAdmin(async (
       { status: 500 }
     )
   }
-})
+}
 
 // DELETE - Desativar loja (soft delete - apenas proprietário ou admin)
-export const DELETE = requireSellerOrAdmin(async (
+const deleteStoreHandler = async (
   request: AuthenticatedRequest,
   { params }: RouteParams
 ) => {
@@ -331,4 +325,19 @@ export const DELETE = requireSellerOrAdmin(async (
       { status: 500 }
     )
   }
+}
+
+// Exports com middleware de autenticação
+export const PUT = requireSellerOrAdmin((request: AuthenticatedRequest) => {
+  const url = new URL(request.url)
+  const pathParts = url.pathname.split('/')
+  const id = pathParts[pathParts.length - 1]
+  return updateStoreHandler(request, { params: { id } })
+})
+
+export const DELETE = requireSellerOrAdmin((request: AuthenticatedRequest) => {
+  const url = new URL(request.url)
+  const pathParts = url.pathname.split('/')
+  const id = pathParts[pathParts.length - 1]
+  return deleteStoreHandler(request, { params: { id } })
 })
