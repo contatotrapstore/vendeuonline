@@ -1,126 +1,49 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Edit, Trash2, Users, DollarSign, Calendar, Crown, Star, Zap, Building } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2, Users, DollarSign, Calendar, Crown, Star, Zap, Building, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface PricingPlan {
-  id: string;
-  name: string;
-  description: string;
-  price: number;
-  billingPeriod: 'monthly' | 'yearly';
-  maxListings: number;
-  listingDuration: number; // em dias
-  featured: boolean;
-  priority: boolean;
-  support: 'basic' | 'priority' | 'dedicated';
-  analytics: boolean;
-  customBranding: boolean;
-  apiAccess: boolean;
-  status: 'active' | 'inactive';
-  subscribers: number;
-  revenue: number;
-  createdAt: string;
-}
-
-const mockPlans: PricingPlan[] = [
-  {
-    id: '1',
-    name: 'Básico',
-    description: 'Ideal para vendedores iniciantes',
-    price: 0,
-    billingPeriod: 'monthly',
-    maxListings: 5,
-    listingDuration: 30,
-    featured: false,
-    priority: false,
-    support: 'basic',
-    analytics: false,
-    customBranding: false,
-    apiAccess: false,
-    status: 'active',
-    subscribers: 245,
-    revenue: 0,
-    createdAt: '2024-01-01'
-  },
-  {
-    id: '2',
-    name: 'Profissional',
-    description: 'Para vendedores em crescimento',
-    price: 29.90,
-    billingPeriod: 'monthly',
-    maxListings: 25,
-    listingDuration: 60,
-    featured: true,
-    priority: false,
-    support: 'priority',
-    analytics: true,
-    customBranding: false,
-    apiAccess: false,
-    status: 'active',
-    subscribers: 89,
-    revenue: 2661.10,
-    createdAt: '2024-01-01'
-  },
-  {
-    id: '3',
-    name: 'Premium',
-    description: 'Para vendedores estabelecidos',
-    price: 59.90,
-    billingPeriod: 'monthly',
-    maxListings: 100,
-    listingDuration: 90,
-    featured: true,
-    priority: true,
-    support: 'priority',
-    analytics: true,
-    customBranding: true,
-    apiAccess: true,
-    status: 'active',
-    subscribers: 34,
-    revenue: 2036.60,
-    createdAt: '2024-01-01'
-  },
-  {
-    id: '4',
-    name: 'Empresarial',
-    description: 'Para grandes empresas',
-    price: 149.90,
-    billingPeriod: 'monthly',
-    maxListings: -1, // ilimitado
-    listingDuration: 365,
-    featured: true,
-    priority: true,
-    support: 'dedicated',
-    analytics: true,
-    customBranding: true,
-    apiAccess: true,
-    status: 'active',
-    subscribers: 12,
-    revenue: 1798.80,
-    createdAt: '2024-01-01'
-  }
-];
+import { usePlanStore, Plan } from '@/store/planStore';
 
 export default function AdminPricingPage() {
-  const [plans, setPlans] = useState<PricingPlan[]>(mockPlans);
+  const { 
+    plans, 
+    loading, 
+    error, 
+    fetchPlans, 
+    updatePlan, 
+    deletePlan, 
+    clearError 
+  } = usePlanStore();
+  
   const [showForm, setShowForm] = useState(false);
-  const [editingPlan, setEditingPlan] = useState<PricingPlan | null>(null);
+  const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
 
-  const handleStatusToggle = (planId: string) => {
-    setPlans(prev => prev.map(plan => 
-      plan.id === planId 
-        ? { ...plan, status: plan.status === 'active' ? 'inactive' : 'active' }
-        : plan
-    ));
-    toast.success('Status do plano atualizado');
+  // Carregar planos ao montar o componente
+  useEffect(() => {
+    fetchPlans();
+  }, [fetchPlans]);
+
+  const handleStatusToggle = async (planId: string) => {
+    const plan = plans.find(p => p.id === planId);
+    if (!plan) return;
+    
+    try {
+      await updatePlan(planId, { isActive: !plan.isActive });
+      toast.success('Status do plano atualizado');
+    } catch (error) {
+      toast.error('Erro ao atualizar status do plano');
+    }
   };
 
-  const handleDelete = (planId: string) => {
+  const handleDelete = async (planId: string) => {
     if (confirm('Tem certeza que deseja excluir este plano?')) {
-      setPlans(prev => prev.filter(plan => plan.id !== planId));
-      toast.success('Plano excluído com sucesso');
+      try {
+        await deletePlan(planId);
+        toast.success('Plano excluído com sucesso');
+      } catch (error) {
+        toast.error('Erro ao excluir plano');
+      }
     }
   };
 
@@ -146,15 +69,16 @@ export default function AdminPricingPage() {
 
   const getSupportLabel = (support: string) => {
     const labels = {
-      basic: 'Básico',
-      priority: 'Prioritário',
-      dedicated: 'Dedicado'
+      BASIC: 'Básico',
+      PRIORITY: 'Prioritário',
+      DEDICATED: 'Dedicado'
     };
     return labels[support as keyof typeof labels] || support;
   };
 
-  const totalRevenue = plans.reduce((sum, plan) => sum + plan.revenue, 0);
-  const totalSubscribers = plans.reduce((sum, plan) => sum + plan.subscribers, 0);
+  // Calcular estatísticas dos planos
+  const totalSubscribers = plans.reduce((sum, plan) => sum + (plan._count?.subscriptions || 0), 0);
+  const totalRevenue = plans.reduce((sum, plan) => sum + (plan.price * (plan._count?.subscriptions || 0)), 0);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -174,8 +98,39 @@ export default function AdminPricingPage() {
           </button>
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center space-x-3">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <div>
+                <h3 className="text-red-800 font-medium">Erro ao carregar planos</h3>
+                <p className="text-red-600 text-sm mt-1">{error}</p>
+              </div>
+              <button
+                onClick={() => {
+                  clearError();
+                  fetchPlans();
+                }}
+                className="ml-auto bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 transition-colors"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="ml-3 text-gray-600">Carregando planos...</span>
+          </div>
+        )}
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        {!loading && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
               <div className="p-2 bg-blue-100 rounded-lg">
@@ -210,7 +165,7 @@ export default function AdminPricingPage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Planos Ativos</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {plans.filter(p => p.status === 'active').length}
+                  {plans.filter(p => p.isActive).length}
                 </p>
               </div>
             </div>
@@ -230,9 +185,11 @@ export default function AdminPricingPage() {
             </div>
           </div>
         </div>
+        )}
 
         {/* Plans Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+        {!loading && !error && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
           {plans.map((plan) => (
             <div key={plan.id} className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow">
               {/* Plan Header */}
@@ -243,9 +200,9 @@ export default function AdminPricingPage() {
                     <h3 className="font-bold text-lg">{plan.name}</h3>
                   </div>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    plan.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    plan.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
-                    {plan.status === 'active' ? 'Ativo' : 'Inativo'}
+                    {plan.isActive ? 'Ativo' : 'Inativo'}
                   </span>
                 </div>
               </div>
@@ -293,12 +250,12 @@ export default function AdminPricingPage() {
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
                       <span className="text-gray-500">Assinantes:</span>
-                      <div className="font-bold text-lg">{plan.subscribers}</div>
+                      <div className="font-bold text-lg">{plan._count?.subscriptions || 0}</div>
                     </div>
                     <div>
                       <span className="text-gray-500">Receita:</span>
                       <div className="font-bold text-lg text-green-600">
-                        R$ {plan.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        R$ {(plan.price * (plan._count?.subscriptions || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                       </div>
                     </div>
                   </div>
@@ -325,19 +282,21 @@ export default function AdminPricingPage() {
                   
                   <button
                     onClick={() => handleStatusToggle(plan.id)}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors ${
-                      plan.status === 'active' 
+                    disabled={loading}
+                    className={`px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-50 ${
+                      plan.isActive 
                         ? 'bg-red-100 text-red-700 hover:bg-red-200' 
                         : 'bg-green-100 text-green-700 hover:bg-green-200'
                     }`}
                   >
-                    {plan.status === 'active' ? 'Desativar' : 'Ativar'}
+                    {plan.isActive ? 'Desativar' : 'Ativar'}
                   </button>
                 </div>
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Empty State */}
         {plans.length === 0 && (

@@ -66,7 +66,7 @@ export default function SellerOrdersPage() {
     updateOrderStatus,
     addTrackingCode,
     cancelOrder,
-    loadOrders,
+    fetchOrders,
     clearError
   } = useOrderStore();
 
@@ -81,8 +81,8 @@ export default function SellerOrdersPage() {
   const storeOrders = orders;
 
   useEffect(() => {
-    loadOrders();
-  }, [loadOrders]);
+    fetchOrders();
+  }, [fetchOrders]);
 
   useEffect(() => {
     if (error) {
@@ -95,7 +95,7 @@ export default function SellerOrdersPage() {
     const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
     const matchesSearch = searchTerm === '' || 
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.items.some(item => item.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      order.items.some(item => item.product.name.toLowerCase().includes(searchTerm.toLowerCase()));
     
     return matchesStatus && matchesSearch;
   });
@@ -250,7 +250,7 @@ export default function SellerOrdersPage() {
                       <div>
                         <h3 className="font-semibold text-gray-900">Pedido #{order.id}</h3>
                         <p className="text-sm text-gray-600">
-                          {order.createdAt.toLocaleDateString('pt-BR')} • {order.paymentMethod}
+                          {new Date(order.createdAt).toLocaleDateString('pt-BR')} • {order.paymentMethod}
                         </p>
                       </div>
                       <div className={`flex items-center gap-2 px-3 py-1 rounded-full border text-sm font-medium ${statusInfo.color}`}>
@@ -280,13 +280,13 @@ export default function SellerOrdersPage() {
                         <div key={item.id} className="flex items-center gap-4">
                           <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                             <img
-                              src={item.image}
-                              alt={item.name}
+                              src={item.product.images[0]?.url || '/placeholder.jpg'}
+                              alt={item.product.name}
                               className="w-full h-full object-cover"
                             />
                           </div>
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{item.name}</h4>
+                            <h4 className="font-medium text-gray-900">{item.product.name}</h4>
                             <p className="text-sm text-gray-600">
                               Qtd: {item.quantity} • R$ {item.price.toFixed(2).replace('.', ',')}
                             </p>
@@ -321,7 +321,7 @@ export default function SellerOrdersPage() {
                     <div className="flex items-center gap-4">
                       {order.estimatedDelivery && (
                         <p className="text-sm text-gray-600">
-                          Entrega prevista: {order.estimatedDelivery.toLocaleDateString('pt-BR')}
+                          Entrega prevista: {new Date(order.estimatedDelivery).toLocaleDateString('pt-BR')}
                         </p>
                       )}
                     </div>
@@ -491,13 +491,13 @@ export default function SellerOrdersPage() {
                     <div>
                       <h3 className="font-medium text-gray-900 mb-2">Informações do Pedido</h3>
                       <div className="text-sm text-gray-600 space-y-1">
-                        <p>Data: {selectedOrder.createdAt.toLocaleDateString('pt-BR')}</p>
-                        <p>Última atualização: {selectedOrder.updatedAt.toLocaleDateString('pt-BR')}</p>
+                        <p>Data: {new Date(selectedOrder.createdAt).toLocaleDateString('pt-BR')}</p>
+                        <p>Última atualização: {new Date(selectedOrder.updatedAt).toLocaleDateString('pt-BR')}</p>
                         {selectedOrder.estimatedDelivery && (
-                          <p>Entrega prevista: {selectedOrder.estimatedDelivery.toLocaleDateString('pt-BR')}</p>
+                          <p>Entrega prevista: {new Date(selectedOrder.estimatedDelivery).toLocaleDateString('pt-BR')}</p>
                         )}
                         {selectedOrder.deliveredAt && (
-                          <p>Entregue em: {selectedOrder.deliveredAt.toLocaleDateString('pt-BR')}</p>
+                          <p>Entregue em: {new Date(selectedOrder.deliveredAt).toLocaleDateString('pt-BR')}</p>
                         )}
                       </div>
                     </div>
@@ -523,13 +523,13 @@ export default function SellerOrdersPage() {
                         <div key={item.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                           <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
                             <img
-                              src={item.image}
-                              alt={item.name}
+                              src={item.product.images[0]?.url || '/placeholder.jpg'}
+                              alt={item.product.name}
                               className="w-full h-full object-cover"
                             />
                           </div>
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{item.name}</h4>
+                            <h4 className="font-medium text-gray-900">{item.product.name}</h4>
                             <p className="text-sm text-gray-600">
                               Quantidade: {item.quantity}
                             </p>
@@ -556,14 +556,9 @@ export default function SellerOrdersPage() {
                       </div>
                       <div className="flex justify-between text-sm">
                         <span>Frete:</span>
-                        <span>R$ {selectedOrder.shipping.toFixed(2).replace('.', ',')}</span>
+                        <span>R$ {selectedOrder.shippingCost.toFixed(2).replace('.', ',')}</span>
                       </div>
-                      {selectedOrder.tax > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span>Taxas:</span>
-                          <span>R$ {selectedOrder.tax.toFixed(2).replace('.', ',')}</span>
-                        </div>
-                      )}
+
                       <div className="flex justify-between text-lg font-semibold border-t pt-2">
                         <span>Total:</span>
                         <span>R$ {selectedOrder.total.toFixed(2).replace('.', ',')}</span>

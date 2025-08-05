@@ -1,11 +1,14 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from "react";
-import Home from "@/pages/Home";
-import Products from "@/pages/Products";
-import Stores from "@/pages/Stores";
-import About from "@/pages/About";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { usePageTracking } from "@/hooks/useAnalytics";
+
+// Lazy loading das páginas principais
+const HomePage = lazy(() => import("@/app/page"));
+const ProductsPage = lazy(() => import("@/app/products/page"));
+const StoresPage = lazy(() => import("@/app/stores/page"));
+const AboutPage = lazy(() => import("@/app/about/page"));
 
 // Lazy loading das páginas
 const PricingPage = lazy(() => import("@/app/pricing/page"));
@@ -44,20 +47,23 @@ const LoadingSpinner = () => (
   </div>
 );
 
-export default function App() {
+// Componente interno para usar hooks do Router
+function AppContent() {
+  // Inicializar tracking de páginas
+  usePageTracking();
+
   return (
-    <Router>
-      <div className="min-h-screen flex flex-col">
-        <Navbar />
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
         <main className="flex-1">
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
               {/* Public Routes */}
-              <Route path="/" element={<Home />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/stores" element={<Stores />} />
+              <Route path="/" element={<HomePage />} />
+              <Route path="/products" element={<ProductsPage />} />
+              <Route path="/stores" element={<StoresPage />} />
               <Route path="/pricing" element={<PricingPage />} />
-              <Route path="/about" element={<About />} />
+              <Route path="/about" element={<AboutPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/faq" element={<FAQPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
@@ -110,8 +116,15 @@ export default function App() {
             </Routes>
           </Suspense>
         </main>
-        <Footer />
-      </div>
+      <Footer />
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Router>
+      <AppContent />
     </Router>
   );
 }

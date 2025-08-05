@@ -2,26 +2,25 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Store, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/store/authStore';
+import Logo from '@/components/ui/Logo';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
-  userType: z.enum(['buyer', 'seller', 'admin'], {
-    message: 'Selecione o tipo de usuário'
-  })
+  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres')
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login, isLoading, error, clearError } = useAuthStore();
 
   const {
     register,
@@ -32,46 +31,17 @@ export default function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsLoading(true);
+    clearError();
     
     try {
-      // Simulação de login - substituir pela API real
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock de resposta baseado no tipo de usuário
-      const mockResponse = {
-        token: 'mock-jwt-token',
-        user: {
-          id: '1',
-          email: data.email,
-          type: data.userType,
-          name: 'Usuário Teste'
-        }
-      };
-      
-      // Salvar token no localStorage (em produção, usar httpOnly cookies)
-      localStorage.setItem('auth-token', mockResponse.token);
-      localStorage.setItem('user-data', JSON.stringify(mockResponse.user));
+      await login(data.email, data.password);
       
       toast.success('Login realizado com sucesso!');
       
-      // Redirecionar baseado no tipo de usuário
-      switch (data.userType) {
-        case 'admin':
-          navigate('/admin/dashboard');
-          break;
-        case 'seller':
-          navigate('/seller/dashboard');
-          break;
-        case 'buyer':
-        default:
-          navigate('/buyer/dashboard');
-          break;
-      }
+      // Redirecionar para a página inicial ou dashboard
+      navigate('/');
     } catch (error) {
-      toast.error('Erro ao fazer login. Tente novamente.');
-    } finally {
-      setIsLoading(false);
+      toast.error(error instanceof Error ? error.message : 'Erro ao fazer login. Tente novamente.');
     }
   };
 
@@ -79,7 +49,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <Store className="h-12 w-12 text-primary" />
+          <Logo size="lg" showText={false} />
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
           Entrar na sua conta
@@ -88,7 +58,7 @@ export default function LoginPage() {
           Ou{' '}
           <Link
             to="/register"
-            className="font-medium text-primary hover:text-primary/80 transition-colors"
+            className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
           >
             criar uma nova conta
           </Link>
@@ -98,50 +68,12 @@ export default function LoginPage() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-            {/* Tipo de Usuário */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo de Usuário
-              </label>
-              <div className="grid grid-cols-3 gap-3">
-                <label className="relative">
-                  <input
-                    type="radio"
-                    value="buyer"
-                    {...register('userType')}
-                    className="sr-only peer"
-                  />
-                  <div className="p-3 text-center border rounded-lg cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:text-primary transition-all">
-                    <div className="text-xs font-medium">Comprador</div>
-                  </div>
-                </label>
-                <label className="relative">
-                  <input
-                    type="radio"
-                    value="seller"
-                    {...register('userType')}
-                    className="sr-only peer"
-                  />
-                  <div className="p-3 text-center border rounded-lg cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:text-primary transition-all">
-                    <div className="text-xs font-medium">Vendedor</div>
-                  </div>
-                </label>
-                <label className="relative">
-                  <input
-                    type="radio"
-                    value="admin"
-                    {...register('userType')}
-                    className="sr-only peer"
-                  />
-                  <div className="p-3 text-center border rounded-lg cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 peer-checked:text-primary transition-all">
-                    <div className="text-xs font-medium">Admin</div>
-                  </div>
-                </label>
+            {/* Mensagem de erro global */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <p className="text-sm text-red-600">{error}</p>
               </div>
-              {errors.userType && (
-                <p className="mt-1 text-sm text-red-600">{errors.userType.message}</p>
-              )}
-            </div>
+            )}
 
             {/* Email */}
             <div>
@@ -157,7 +89,7 @@ export default function LoginPage() {
                   type="email"
                   autoComplete="email"
                   {...register('email')}
-                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="seu@email.com"
                 />
               </div>
@@ -180,7 +112,7 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   {...register('password')}
-                  className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                  className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Sua senha"
                 />
                 <button
@@ -207,7 +139,7 @@ export default function LoginPage() {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
                   Lembrar de mim
@@ -217,7 +149,7 @@ export default function LoginPage() {
               <div className="text-sm">
                 <Link
                   to="/forgot-password"
-                  className="font-medium text-primary hover:text-primary/80 transition-colors"
+                  className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
                 >
                   Esqueceu a senha?
                 </Link>
@@ -229,7 +161,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isLoading ? 'Entrando...' : 'Entrar'}
               </button>

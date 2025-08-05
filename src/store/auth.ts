@@ -85,7 +85,8 @@ export const useAuthStore = create<AuthStore>()(
           });
 
           if (!response.ok) {
-            throw new Error('Credenciais inválidas');
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Credenciais inválidas');
           }
 
           const data = await response.json();
@@ -121,7 +122,7 @@ export const useAuthStore = create<AuthStore>()(
 
           if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.message || 'Erro ao criar conta');
+            throw new Error(errorData.error || 'Erro ao criar conta');
           }
 
           const data = await response.json();

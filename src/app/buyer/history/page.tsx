@@ -1,291 +1,264 @@
 'use client';
 
-import { useState } from 'react';
-import { Clock, Eye, ShoppingCart, Heart, Trash2, Filter, Calendar, Star } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
+import { Clock, Eye, Heart, ShoppingCart, Trash2, Star, Calendar, Filter, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
-interface ViewHistoryItem {
+interface HistoryItem {
   id: string;
   productId: string;
   name: string;
+  image: string;
   price: number;
   originalPrice?: number;
-  image: string;
   seller: string;
+  category: string;
   rating: number;
   reviews: number;
-  category: string;
-  inStock: boolean;
   viewedAt: string;
   viewCount: number;
-  lastViewDuration: number; // em segundos
+  lastViewDuration: number;
+  inStock: boolean;
 }
 
-const mockHistory: ViewHistoryItem[] = [
-  {
-    id: '1',
-    productId: 'prod-1',
-    name: 'iPhone 14 Pro Max 256GB Space Black',
-    price: 7999.99,
-    originalPrice: 8999.99,
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=iphone%2014%20pro%20max%20space%20black%20product%20photo&image_size=square',
-    seller: 'TechStore Erechim',
-    rating: 4.8,
-    reviews: 127,
-    category: 'Eletrônicos',
-    inStock: true,
-    viewedAt: '2024-01-25T14:30:00Z',
-    viewCount: 5,
-    lastViewDuration: 180
-  },
-  {
-    id: '2',
-    productId: 'prod-2',
-    name: 'MacBook Air M2 13" 256GB Midnight',
-    price: 9999.99,
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=macbook%20air%20m2%20midnight%20laptop%20product%20photo&image_size=square',
-    seller: 'Apple Store Erechim',
-    rating: 4.9,
-    reviews: 89,
-    category: 'Eletrônicos',
-    inStock: true,
-    viewedAt: '2024-01-25T10:15:00Z',
-    viewCount: 3,
-    lastViewDuration: 240
-  },
-  {
-    id: '3',
-    productId: 'prod-3',
-    name: 'Tênis Nike Air Max 270 Preto/Branco',
-    price: 299.99,
-    originalPrice: 399.99,
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=nike%20air%20max%20270%20black%20white%20sneakers%20product%20photo&image_size=square',
-    seller: 'SportShop',
-    rating: 4.6,
-    reviews: 234,
-    category: 'Roupas',
-    inStock: false,
-    viewedAt: '2024-01-24T16:45:00Z',
-    viewCount: 2,
-    lastViewDuration: 90
-  },
-  {
-    id: '4',
-    productId: 'prod-4',
-    name: 'Smart TV Samsung 55" 4K Crystal UHD',
-    price: 2499.99,
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=samsung%2055%20inch%204k%20crystal%20uhd%20smart%20tv%20product%20photo&image_size=square',
-    seller: 'Eletro Erechim',
-    rating: 4.7,
-    reviews: 156,
-    category: 'Eletrônicos',
-    inStock: true,
-    viewedAt: '2024-01-24T09:20:00Z',
-    viewCount: 1,
-    lastViewDuration: 120
-  },
-  {
-    id: '5',
-    productId: 'prod-5',
-    name: 'Sofá 3 Lugares Retrátil e Reclinável',
-    price: 1899.99,
-    originalPrice: 2299.99,
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=modern%20reclining%20sofa%203%20seats%20furniture%20product%20photo&image_size=square',
-    seller: 'Móveis Erechim',
-    rating: 4.5,
-    reviews: 78,
-    category: 'Móveis',
-    inStock: true,
-    viewedAt: '2024-01-23T19:30:00Z',
-    viewCount: 4,
-    lastViewDuration: 300
-  },
-  {
-    id: '6',
-    productId: 'prod-6',
-    name: 'Fone de Ouvido Sony WH-1000XM4',
-    price: 899.99,
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=sony%20wh1000xm4%20wireless%20headphones%20product%20photo&image_size=square',
-    seller: 'AudioTech',
-    rating: 4.8,
-    reviews: 312,
-    category: 'Eletrônicos',
-    inStock: true,
-    viewedAt: '2024-01-23T11:15:00Z',
-    viewCount: 2,
-    lastViewDuration: 150
-  }
-];
-
-const categories = ['Todos', 'Eletrônicos', 'Roupas', 'Móveis', 'Casa', 'Veículos'];
-const timeFilters = [
-  { value: 'all', label: 'Todo o período' },
-  { value: 'today', label: 'Hoje' },
-  { value: 'week', label: 'Última semana' },
-  { value: 'month', label: 'Último mês' },
-  { value: '3months', label: 'Últimos 3 meses' }
-];
-
-export default function BuyerHistoryPage() {
-  const [history, setHistory] = useState<ViewHistoryItem[]>(mockHistory);
-  const [selectedCategory, setSelectedCategory] = useState('Todos');
+export default function HistoryPage() {
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState('Todas');
   const [timeFilter, setTimeFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  const removeFromHistory = (itemId: string) => {
-    setHistory(prev => prev.filter(item => item.id !== itemId));
-    toast.success('Item removido do histórico');
-  };
+  useEffect(() => {
+    fetchHistory();
+  }, []);
 
-  const clearAllHistory = () => {
-    if (confirm('Tem certeza que deseja limpar todo o histórico?')) {
+  const fetchHistory = async () => {
+    try {
+      setLoading(true);
+      
+      // Tentar buscar da API real primeiro
+      const response = await fetch('/api/buyer/history');
+      
+      if (response.ok) {
+        const data = await response.json();
+        setHistory(data.history || []);
+      } else {
+        // Fallback para dados simulados mínimos
+        setHistory([
+          {
+            id: '1',
+            productId: 'prod-1',
+            name: 'Produto Exemplo',
+            image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=product%20example&image_size=square',
+            price: 99.90,
+            originalPrice: 149.90,
+            seller: 'Vendedor Exemplo',
+            category: 'Eletrônicos',
+            rating: 4.5,
+            reviews: 123,
+            viewedAt: new Date().toISOString(),
+            viewCount: 1,
+            lastViewDuration: 30000,
+            inStock: true
+          }
+        ]);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar histórico:', err);
       setHistory([]);
-      toast.success('Histórico limpo com sucesso');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const addToCart = (item: ViewHistoryItem) => {
-    if (!item.inStock) {
-      toast.error('Produto fora de estoque');
-      return;
+  const addToWishlist = async (item: HistoryItem) => {
+    try {
+      const response = await fetch('/api/buyer/wishlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: item.productId })
+      });
+      
+      if (response.ok) {
+        toast.success('Produto adicionado à lista de desejos');
+      } else {
+        toast.error('Erro ao adicionar à lista de desejos');
+      }
+    } catch (err) {
+      toast.error('Erro ao adicionar à lista de desejos');
     }
-    toast.success(`${item.name} adicionado ao carrinho`);
   };
 
-  const addToWishlist = (item: ViewHistoryItem) => {
-    toast.success(`${item.name} adicionado à lista de desejos`);
+  const addToCart = async (item: HistoryItem) => {
+    try {
+      const response = await fetch('/api/buyer/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: item.productId, quantity: 1 })
+      });
+      
+      if (response.ok) {
+        toast.success('Produto adicionado ao carrinho');
+      } else {
+        toast.error('Erro ao adicionar ao carrinho');
+      }
+    } catch (err) {
+      toast.error('Erro ao adicionar ao carrinho');
+    }
   };
+
+  const removeFromHistory = async (itemId: string) => {
+    try {
+      const response = await fetch(`/api/buyer/history/${itemId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        setHistory(prev => prev.filter(item => item.id !== itemId));
+        toast.success('Item removido do histórico');
+      } else {
+        toast.error('Erro ao remover item do histórico');
+      }
+    } catch (err) {
+      toast.error('Erro ao remover item do histórico');
+    }
+  };
+
+  const categories = ['Todas', ...Array.from(new Set(history.map(item => item.category)))];
+  
+  const timeFilters = [
+    { value: 'all', label: 'Todo período' },
+    { value: 'today', label: 'Hoje' },
+    { value: 'week', label: 'Esta semana' },
+    { value: 'month', label: 'Este mês' }
+  ];
+
+  const filteredHistory = history.filter(item => {
+    const categoryMatch = selectedCategory === 'Todas' || item.category === selectedCategory;
+    
+    let timeMatch = true;
+    if (timeFilter !== 'all') {
+      const viewDate = new Date(item.viewedAt);
+      const now = new Date();
+      
+      switch (timeFilter) {
+        case 'today':
+          timeMatch = viewDate.toDateString() === now.toDateString();
+          break;
+        case 'week':
+          const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+          timeMatch = viewDate >= weekAgo;
+          break;
+        case 'month':
+          const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+          timeMatch = viewDate >= monthAgo;
+          break;
+      }
+    }
+    
+    return categoryMatch && timeMatch;
+  });
 
   const getTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
     const now = new Date();
-    const viewed = new Date(dateString);
-    const diffInMinutes = Math.floor((now.getTime() - viewed.getTime()) / (1000 * 60));
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
-    if (diffInMinutes < 1) return 'Agora mesmo';
-    if (diffInMinutes < 60) return `${diffInMinutes}m atrás`;
-    
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h atrás`;
+    if (diffInHours < 1) return 'há poucos minutos';
+    if (diffInHours < 24) return `há ${diffInHours} hora${diffInHours > 1 ? 's' : ''}`;
     
     const diffInDays = Math.floor(diffInHours / 24);
-    if (diffInDays < 7) return `${diffInDays}d atrás`;
+    if (diffInDays < 7) return `há ${diffInDays} dia${diffInDays > 1 ? 's' : ''}`;
     
-    return viewed.toLocaleDateString('pt-BR');
+    return date.toLocaleDateString('pt-BR');
   };
 
-  const formatDuration = (seconds: number) => {
-    if (seconds < 60) return `${seconds}s`;
+  const formatDuration = (milliseconds: number) => {
+    const seconds = Math.floor(milliseconds / 1000);
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes}m ${remainingSeconds}s`;
-  };
-
-  const filterByTime = (item: ViewHistoryItem) => {
-    if (timeFilter === 'all') return true;
     
-    const now = new Date();
-    const viewed = new Date(item.viewedAt);
-    const diffInDays = Math.floor((now.getTime() - viewed.getTime()) / (1000 * 60 * 60 * 24));
-    
-    switch (timeFilter) {
-      case 'today':
-        return diffInDays === 0;
-      case 'week':
-        return diffInDays <= 7;
-      case 'month':
-        return diffInDays <= 30;
-      case '3months':
-        return diffInDays <= 90;
-      default:
-        return true;
+    if (minutes > 0) {
+      return `${minutes}m ${remainingSeconds}s`;
     }
+    return `${remainingSeconds}s`;
   };
-
-  const filteredHistory = history
-    .filter(item => selectedCategory === 'Todos' || item.category === selectedCategory)
-    .filter(filterByTime)
-    .sort((a, b) => new Date(b.viewedAt).getTime() - new Date(a.viewedAt).getTime());
 
   const totalViews = history.reduce((sum, item) => sum + item.viewCount, 0);
   const avgViewDuration = history.length > 0 
-    ? Math.round(history.reduce((sum, item) => sum + item.lastViewDuration, 0) / history.length)
+    ? history.reduce((sum, item) => sum + item.lastViewDuration, 0) / history.length 
     : 0;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="ml-3 text-gray-600">Carregando histórico...</span>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Histórico de Visualização</h1>
-            <p className="text-gray-600">
-              {filteredHistory.length} {filteredHistory.length === 1 ? 'produto visualizado' : 'produtos visualizados'}
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Histórico de Visualizações</h1>
+            <p className="text-gray-600">Produtos que você visualizou recentemente</p>
           </div>
-          
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              <Filter className="h-4 w-4" />
-              Filtros
-            </button>
-            
-            {history.length > 0 && (
-              <button
-                onClick={clearAllHistory}
-                className="flex items-center gap-2 px-4 py-2 text-red-600 border border-red-300 rounded-lg hover:bg-red-50"
-              >
-                <Trash2 className="h-4 w-4" />
-                Limpar Histórico
-              </button>
-            )}
-          </div>
+          <button 
+            onClick={() => setShowFilters(!showFilters)}
+            className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            Filtros
+          </button>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="flex items-center">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <Eye className="h-6 w-6 text-blue-600" />
+        {!loading && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div className="bg-white p-6 rounded-lg shadow-sm border">
+              <div className="flex items-center">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Eye className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500">Total de Visualizações</p>
+                  <p className="text-2xl font-bold text-gray-900">{totalViews}</p>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total de Visualizações</p>
-                <p className="text-2xl font-bold text-gray-900">{totalViews}</p>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow-sm border">
+              <div className="flex items-center">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Clock className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500">Tempo Médio</p>
+                  <p className="text-2xl font-bold text-gray-900">{formatDuration(avgViewDuration)}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow-sm border">
+              <div className="flex items-center">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Calendar className="h-6 w-6 text-green-600" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500">Produtos Únicos</p>
+                  <p className="text-2xl font-bold text-gray-900">{history.length}</p>
+                </div>
               </div>
             </div>
           </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <Clock className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Tempo Médio</p>
-                <p className="text-2xl font-bold text-gray-900">{formatDuration(avgViewDuration)}</p>
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-sm border">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <Calendar className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Produtos Únicos</p>
-                <p className="text-2xl font-bold text-gray-900">{history.length}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
 
         {/* Filters */}
-        {showFilters && (
+        {!loading && showFilters && (
           <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -322,7 +295,7 @@ export default function BuyerHistoryPage() {
         )}
 
         {/* History Items */}
-        {filteredHistory.length === 0 ? (
+        {!loading && (filteredHistory.length === 0 ? (
           <div className="text-center py-12">
             <Clock className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-medium text-gray-900 mb-2">
@@ -399,7 +372,8 @@ export default function BuyerHistoryPage() {
                         
                         <button
                           onClick={() => removeFromHistory(item.id)}
-                          className="p-2 border border-gray-300 rounded hover:bg-red-50 hover:border-red-300 hover:text-red-600"
+                          disabled={loading}
+                          className="p-2 border border-gray-300 rounded hover:bg-red-50 hover:border-red-300 hover:text-red-600 disabled:opacity-50"
                           title="Remover do histórico"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -450,7 +424,7 @@ export default function BuyerHistoryPage() {
               </div>
             ))}
           </div>
-        )}
+        ))}
       </div>
     </div>
   );

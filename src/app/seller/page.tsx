@@ -121,7 +121,7 @@ const quickActions = [
 
 export default function SellerDashboard() {
   const { user } = useAuthStore();
-  const { storeName, storeSlug } = useStoreData();
+  const { storeName } = useStoreData();
 
   useEffect(() => {
     // Verificar autenticação e tipo de usuário
@@ -170,7 +170,7 @@ export default function SellerDashboard() {
             </div>
             <div className="flex items-center space-x-4">
               <button 
-                onClick={() => window.location.href = `/loja/${storeSlug}`}
+                onClick={() => window.location.href = `/loja/${storeName?.toLowerCase().replace(/\s+/g, '-') || 'minha-loja'}`}
                 className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-700"
               >
                 <Eye className="h-4 w-4" />

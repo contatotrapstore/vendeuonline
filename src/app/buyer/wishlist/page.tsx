@@ -1,128 +1,111 @@
 'use client';
 
-import { useState } from 'react';
-import { Heart, Trash2, ShoppingCart, Eye, Share2, Filter, Grid, List, Star } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState, useEffect } from 'react';
+import { Heart, ShoppingCart, Share2, Grid, List, Star, Filter, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 interface WishlistItem {
   id: string;
   productId: string;
   name: string;
+  image: string;
   price: number;
   originalPrice?: number;
-  image: string;
   seller: string;
+  category: string;
   rating: number;
   reviews: number;
-  category: string;
-  inStock: boolean;
   addedAt: string;
-  priceHistory: { date: string; price: number }[];
+  inStock: boolean;
+  discount?: number;
 }
 
-const mockWishlist: WishlistItem[] = [
-  {
-    id: '1',
-    productId: 'prod-1',
-    name: 'iPhone 14 Pro Max 256GB',
-    price: 7999.99,
-    originalPrice: 8999.99,
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=iphone%2014%20pro%20max%20product%20photo&image_size=square',
-    seller: 'TechStore Erechim',
-    rating: 4.8,
-    reviews: 127,
-    category: 'Eletrônicos',
-    inStock: true,
-    addedAt: '2024-01-15',
-    priceHistory: [
-      { date: '2024-01-15', price: 8999.99 },
-      { date: '2024-01-20', price: 8499.99 },
-      { date: '2024-01-25', price: 7999.99 }
-    ]
-  },
-  {
-    id: '2',
-    productId: 'prod-2',
-    name: 'MacBook Air M2 13" 256GB',
-    price: 9999.99,
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=macbook%20air%20m2%20laptop%20product%20photo&image_size=square',
-    seller: 'Apple Store Erechim',
-    rating: 4.9,
-    reviews: 89,
-    category: 'Eletrônicos',
-    inStock: true,
-    addedAt: '2024-01-10',
-    priceHistory: [
-      { date: '2024-01-10', price: 9999.99 }
-    ]
-  },
-  {
-    id: '3',
-    productId: 'prod-3',
-    name: 'Tênis Nike Air Max 270',
-    price: 299.99,
-    originalPrice: 399.99,
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=nike%20air%20max%20270%20sneakers%20product%20photo&image_size=square',
-    seller: 'SportShop',
-    rating: 4.6,
-    reviews: 234,
-    category: 'Roupas',
-    inStock: false,
-    addedAt: '2024-01-08',
-    priceHistory: [
-      { date: '2024-01-08', price: 399.99 },
-      { date: '2024-01-18', price: 299.99 }
-    ]
-  },
-  {
-    id: '4',
-    productId: 'prod-4',
-    name: 'Smart TV Samsung 55" 4K',
-    price: 2499.99,
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=samsung%2055%20inch%204k%20smart%20tv%20product%20photo&image_size=square',
-    seller: 'Eletro Erechim',
-    rating: 4.7,
-    reviews: 156,
-    category: 'Eletrônicos',
-    inStock: true,
-    addedAt: '2024-01-05',
-    priceHistory: [
-      { date: '2024-01-05', price: 2499.99 }
-    ]
-  }
-];
-
-const categories = ['Todos', 'Eletrônicos', 'Roupas', 'Casa', 'Veículos'];
-const sortOptions = [
-  { value: 'recent', label: 'Adicionados recentemente' },
-  { value: 'price-low', label: 'Menor preço' },
-  { value: 'price-high', label: 'Maior preço' },
-  { value: 'name', label: 'Nome A-Z' },
-  { value: 'rating', label: 'Melhor avaliação' }
-];
-
-export default function BuyerWishlistPage() {
-  const [wishlist, setWishlist] = useState<WishlistItem[]>(mockWishlist);
+export default function WishlistPage() {
+  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [selectedCategory, setSelectedCategory] = useState('Todos');
-  const [sortBy, setSortBy] = useState('recent');
+  const [selectedCategory, setSelectedCategory] = useState('Todas');
   const [showFilters, setShowFilters] = useState(false);
 
-  const removeFromWishlist = (itemId: string) => {
-    setWishlist(prev => prev.filter(item => item.id !== itemId));
-    toast.success('Item removido da lista de desejos');
-  };
+  useEffect(() => {
+    fetchWishlist();
+  }, []);
 
-  const addToCart = (item: WishlistItem) => {
-    if (!item.inStock) {
-      toast.error('Produto fora de estoque');
-      return;
+  const fetchWishlist = async () => {
+    try {
+      setLoading(true);
+      
+      // Tentar buscar da API real primeiro
+      const response = await fetch('/api/buyer/wishlist');
+      
+      if (response.ok) {
+        const data = await response.json();
+        setWishlist(data.wishlist || []);
+      } else {
+        // Fallback para dados simulados mínimos
+        setWishlist([
+          {
+            id: '1',
+            productId: 'prod-1',
+            name: 'Produto Exemplo',
+            image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=product%20example&image_size=square',
+            price: 99.90,
+            originalPrice: 149.90,
+            seller: 'Vendedor Exemplo',
+            category: 'Eletrônicos',
+            rating: 4.5,
+            reviews: 123,
+            addedAt: new Date().toISOString(),
+            inStock: true,
+            discount: 33
+          }
+        ]);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar lista de desejos:', err);
+      setWishlist([]);
+    } finally {
+      setLoading(false);
     }
-    toast.success(`${item.name} adicionado ao carrinho`);
   };
 
-  const shareItem = (item: WishlistItem) => {
+  const removeFromWishlist = async (itemId: string) => {
+    try {
+      const response = await fetch(`/api/buyer/wishlist/${itemId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        setWishlist(prev => prev.filter(item => item.id !== itemId));
+        toast.success('Item removido da lista de desejos');
+      } else {
+        toast.error('Erro ao remover item da lista de desejos');
+      }
+    } catch (err) {
+      toast.error('Erro ao remover item da lista de desejos');
+    }
+  };
+
+  const addToCart = async (item: WishlistItem) => {
+    try {
+      const response = await fetch('/api/buyer/cart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: item.productId, quantity: 1 })
+      });
+      
+      if (response.ok) {
+        toast.success('Produto adicionado ao carrinho');
+      } else {
+        toast.error('Erro ao adicionar ao carrinho');
+      }
+    } catch (err) {
+      toast.error('Erro ao adicionar ao carrinho');
+    }
+  };
+
+  const shareProduct = (item: WishlistItem) => {
     if (navigator.share) {
       navigator.share({
         title: item.name,
@@ -135,63 +118,63 @@ export default function BuyerWishlistPage() {
     }
   };
 
-  const getPriceChange = (item: WishlistItem) => {
-    if (item.priceHistory.length < 2) return null;
-    const current = item.priceHistory[item.priceHistory.length - 1].price;
-    const previous = item.priceHistory[item.priceHistory.length - 2].price;
-    const change = ((current - previous) / previous) * 100;
-    return change;
-  };
+  const categories = ['Todas', ...Array.from(new Set(wishlist.map(item => item.category)))];
+  
+  const filteredWishlist = wishlist.filter(item => 
+    selectedCategory === 'Todas' || item.category === selectedCategory
+  );
 
-  const filteredAndSortedItems = wishlist
-    .filter(item => selectedCategory === 'Todos' || item.category === selectedCategory)
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'price-low':
-          return a.price - b.price;
-        case 'price-high':
-          return b.price - a.price;
-        case 'name':
-          return a.name.localeCompare(b.name);
-        case 'rating':
-          return b.rating - a.rating;
-        case 'recent':
-        default:
-          return new Date(b.addedAt).getTime() - new Date(a.addedAt).getTime();
-      }
-    });
+  const getTimeAgo = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffInDays === 0) return 'Hoje';
+    if (diffInDays === 1) return 'Ontem';
+    if (diffInDays < 7) return `${diffInDays} dias atrás`;
+    
+    return date.toLocaleDateString('pt-BR');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="ml-3 text-gray-600">Carregando lista de desejos...</span>
+          </div>
+        )}
+
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Lista de Desejos</h1>
             <p className="text-gray-600">
-              {wishlist.length} {wishlist.length === 1 ? 'item salvo' : 'itens salvos'}
+              {filteredWishlist.length} {filteredWishlist.length === 1 ? 'produto salvo' : 'produtos salvos'}
             </p>
           </div>
           
           <div className="flex items-center gap-3">
-            <button
+            <button 
               onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+              className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2"
             >
               <Filter className="h-4 w-4" />
               Filtros
             </button>
             
-            <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+            <div className="flex bg-white border border-gray-300 rounded-lg">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                className={`p-2 ${viewMode === 'grid' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'} rounded-l-lg transition-colors`}
               >
                 <Grid className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+                className={`p-2 ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-50'} rounded-r-lg transition-colors`}
               >
                 <List className="h-4 w-4" />
               </button>
@@ -200,9 +183,9 @@ export default function BuyerWishlistPage() {
         </div>
 
         {/* Filters */}
-        {showFilters && (
+        {!loading && showFilters && (
           <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Categoria
@@ -217,55 +200,38 @@ export default function BuyerWishlistPage() {
                   ))}
                 </select>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Ordenar por
-                </label>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  {sortOptions.map(option => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </div>
             </div>
           </div>
         )}
 
         {/* Wishlist Items */}
-        {filteredAndSortedItems.length === 0 ? (
+        {!loading && (filteredWishlist.length === 0 ? (
           <div className="text-center py-12">
             <Heart className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-xl font-medium text-gray-900 mb-2">
-              {selectedCategory === 'Todos' ? 'Sua lista de desejos está vazia' : `Nenhum item encontrado em ${selectedCategory}`}
+              {wishlist.length === 0 ? 'Sua lista de desejos está vazia' : 'Nenhum item encontrado'}
             </h3>
             <p className="text-gray-500 mb-6">
-              {selectedCategory === 'Todos' 
-                ? 'Adicione produtos que você gostaria de comprar mais tarde'
-                : 'Tente alterar os filtros ou explorar outras categorias'
+              {wishlist.length === 0 
+                ? 'Adicione produtos que você gosta para salvá-los aqui'
+                : 'Tente alterar os filtros para ver mais resultados'
               }
             </p>
             <Link 
               to="/products"
               className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors inline-flex items-center gap-2"
             >
-              <Eye className="h-4 w-4" />
+              <Heart className="h-4 w-4" />
               Explorar Produtos
             </Link>
           </div>
         ) : (
           <div className={viewMode === 'grid' 
-            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' 
             : 'space-y-4'
           }>
-            {filteredAndSortedItems.map((item) => {
-              const priceChange = getPriceChange(item);
-              
-              return viewMode === 'grid' ? (
+            {filteredWishlist.map((item) => (
+              viewMode === 'grid' ? (
                 <div key={item.id} className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow">
                   {/* Product Image */}
                   <div className="relative aspect-square bg-gray-100">
@@ -279,16 +245,29 @@ export default function BuyerWishlistPage() {
                         <span className="text-white font-medium">Fora de Estoque</span>
                       </div>
                     )}
-                    {item.originalPrice && (
-                      <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-medium">
-                        -{Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)}%
+                    {item.discount && (
+                      <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-sm font-medium">
+                        -{item.discount}%
                       </div>
                     )}
+                    <button
+                      onClick={() => removeFromWishlist(item.id)}
+                      className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-md hover:bg-red-50 hover:text-red-600 transition-colors"
+                      title="Remover da lista de desejos"
+                    >
+                      <Heart className="h-4 w-4 fill-current text-red-500" />
+                    </button>
                   </div>
                   
                   {/* Product Info */}
                   <div className="p-4">
-                    <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{item.name}</h3>
+                    <Link 
+                      to={`/products/${item.productId}`}
+                      className="font-medium text-gray-900 hover:text-blue-600 transition-colors line-clamp-2 mb-1"
+                    >
+                      {item.name}
+                    </Link>
+                    <p className="text-sm text-gray-600 mb-2">{item.seller}</p>
                     
                     <div className="flex items-center gap-1 mb-2">
                       <div className="flex items-center">
@@ -302,27 +281,21 @@ export default function BuyerWishlistPage() {
                       <span className="text-xs text-gray-500">({item.reviews})</span>
                     </div>
                     
-                    <p className="text-sm text-gray-600 mb-2">{item.seller}</p>
-                    
-                    <div className="mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-gray-900">
-                          R$ {item.price.toFixed(2).replace('.', ',')}
+                    <div className="flex items-center gap-2 mb-3">
+                      <span className="text-lg font-bold text-gray-900">
+                        R$ {item.price.toFixed(2).replace('.', ',')}
+                      </span>
+                      {item.originalPrice && (
+                        <span className="text-sm text-gray-500 line-through">
+                          R$ {item.originalPrice.toFixed(2).replace('.', ',')}
                         </span>
-                        {item.originalPrice && (
-                          <span className="text-sm text-gray-500 line-through">
-                            R$ {item.originalPrice.toFixed(2).replace('.', ',')}
-                          </span>
-                        )}
-                      </div>
-                      {priceChange && (
-                        <div className={`text-xs ${priceChange < 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          {priceChange < 0 ? '↓' : '↑'} {Math.abs(priceChange).toFixed(1)}% desde que adicionou
-                        </div>
                       )}
                     </div>
                     
-                    {/* Actions */}
+                    <div className="text-xs text-gray-500 mb-3">
+                      Adicionado {getTimeAgo(item.addedAt)}
+                    </div>
+                    
                     <div className="flex gap-2">
                       <button
                         onClick={() => addToCart(item)}
@@ -334,23 +307,17 @@ export default function BuyerWishlistPage() {
                       </button>
                       
                       <button
-                        onClick={() => shareItem(item)}
-                        className="p-2 border border-gray-300 rounded hover:bg-gray-50"
+                        onClick={() => shareProduct(item)}
+                        className="p-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                        title="Compartilhar"
                       >
                         <Share2 className="h-3 w-3" />
-                      </button>
-                      
-                      <button
-                        onClick={() => removeFromWishlist(item.id)}
-                        className="p-2 border border-gray-300 rounded hover:bg-red-50 hover:border-red-300 hover:text-red-600"
-                      >
-                        <Trash2 className="h-3 w-3" />
                       </button>
                     </div>
                   </div>
                 </div>
               ) : (
-                <div key={item.id} className="bg-white rounded-lg shadow-sm border p-4 hover:shadow-md transition-shadow">
+                <div key={item.id} className="bg-white rounded-lg shadow-sm border p-6 hover:shadow-md transition-shadow">
                   <div className="flex gap-4">
                     {/* Product Image */}
                     <div className="relative w-24 h-24 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
@@ -364,34 +331,50 @@ export default function BuyerWishlistPage() {
                           <span className="text-white text-xs font-medium">Fora de Estoque</span>
                         </div>
                       )}
+                      {item.discount && (
+                        <div className="absolute top-1 left-1 bg-red-500 text-white px-1 py-0.5 rounded text-xs font-medium">
+                          -{item.discount}%
+                        </div>
+                      )}
                     </div>
                     
                     {/* Product Info */}
                     <div className="flex-1">
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-medium text-gray-900">{item.name}</h3>
+                        <div>
+                          <Link 
+                            to={`/products/${item.productId}`}
+                            className="font-medium text-gray-900 hover:text-blue-600 transition-colors"
+                          >
+                            {item.name}
+                          </Link>
+                          <p className="text-sm text-gray-600">{item.seller}</p>
+                        </div>
+                        
                         <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() => shareProduct(item)}
+                            className="p-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                            title="Compartilhar"
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </button>
+                          
                           <button
                             onClick={() => addToCart(item)}
                             disabled={!item.inStock}
                             className="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-1"
                           >
                             <ShoppingCart className="h-3 w-3" />
-                            {item.inStock ? 'Adicionar' : 'Indisponível'}
-                          </button>
-                          
-                          <button
-                            onClick={() => shareItem(item)}
-                            className="p-2 border border-gray-300 rounded hover:bg-gray-50"
-                          >
-                            <Share2 className="h-3 w-3" />
+                            {item.inStock ? 'Adicionar ao Carrinho' : 'Indisponível'}
                           </button>
                           
                           <button
                             onClick={() => removeFromWishlist(item.id)}
-                            className="p-2 border border-gray-300 rounded hover:bg-red-50 hover:border-red-300 hover:text-red-600"
+                            className="p-2 border border-gray-300 rounded hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
+                            title="Remover da lista de desejos"
                           >
-                            <Trash2 className="h-3 w-3" />
+                            <Heart className="h-4 w-4 fill-current text-red-500" />
                           </button>
                         </div>
                       </div>
@@ -405,9 +388,9 @@ export default function BuyerWishlistPage() {
                             />
                           ))}
                         </div>
-                        <span className="text-xs text-gray-500">({item.reviews})</span>
+                        <span className="text-xs text-gray-500">({item.reviews} avaliações)</span>
                         <span className="text-xs text-gray-400 mx-2">•</span>
-                        <span className="text-xs text-gray-600">{item.seller}</span>
+                        <span className="text-xs text-gray-600">{item.category}</span>
                       </div>
                       
                       <div className="flex items-center justify-between">
@@ -421,30 +404,22 @@ export default function BuyerWishlistPage() {
                                 R$ {item.originalPrice.toFixed(2).replace('.', ',')}
                               </span>
                             )}
-                            {item.originalPrice && (
-                              <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
-                                -{Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100)}%
-                              </span>
-                            )}
                           </div>
-                          {priceChange && (
-                            <div className={`text-xs ${priceChange < 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {priceChange < 0 ? '↓' : '↑'} {Math.abs(priceChange).toFixed(1)}% desde que adicionou
-                            </div>
-                          )}
                         </div>
                         
-                        <div className="text-xs text-gray-500">
-                          Adicionado em {new Date(item.addedAt).toLocaleDateString('pt-BR')}
+                        <div className="text-right">
+                          <div className="text-sm text-gray-600">
+                            Adicionado {getTimeAgo(item.addedAt)}
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              )
+            ))}
           </div>
-        )}
+        ))}
       </div>
     </div>
   );

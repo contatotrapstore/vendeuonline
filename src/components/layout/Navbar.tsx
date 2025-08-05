@@ -19,6 +19,7 @@ import {
   Shield
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import Logo from '@/components/ui/Logo';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -111,11 +112,7 @@ const Navbar = () => {
           {/* Logo */}
           <div className="flex items-center flex-shrink-0">
             <Link to="/" className="flex items-center space-x-2 group">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
-                <Store className="h-4 w-4 text-white" />
-              </div>
-              <span className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 hidden sm:block">Vendeu Online</span>
-              <span className="text-lg font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 sm:hidden">VO</span>
+              <Logo size="sm" showText={true} className="group-hover:scale-105 transition-transform duration-200" />
             </Link>
           </div>
 

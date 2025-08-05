@@ -1,82 +1,67 @@
 'use client';
 
-import { useState } from 'react';
-import { Search, Filter, UserPlus, Edit, Trash2, CheckCircle, XCircle, Shield, Store, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Filter, UserPlus, Edit, Trash2, CheckCircle, XCircle, Shield, Store, User, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  userType: 'buyer' | 'seller' | 'admin';
-  status: 'active' | 'inactive' | 'pending';
-  createdAt: string;
-  lastLogin?: string;
-  storeCount?: number;
-  orderCount?: number;
-}
-
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'João Silva',
-    email: 'joao@email.com',
-    userType: 'seller',
-    status: 'active',
-    createdAt: '2024-01-15',
-    lastLogin: '2024-01-20',
-    storeCount: 1,
-    orderCount: 25
-  },
-  {
-    id: '2',
-    name: 'Maria Santos',
-    email: 'maria@email.com',
-    userType: 'buyer',
-    status: 'active',
-    createdAt: '2024-01-10',
-    lastLogin: '2024-01-19',
-    orderCount: 8
-  },
-  {
-    id: '3',
-    name: 'Pedro Costa',
-    email: 'pedro@email.com',
-    userType: 'seller',
-    status: 'pending',
-    createdAt: '2024-01-18',
-    storeCount: 0,
-    orderCount: 0
-  }
-];
+import { useUserStore } from '@/store/userStore';
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const {
+    users,
+    loading,
+    error,
+    filters,
+    fetchUsers,
+    updateUserStatus,
+    deleteUser,
+    setFilters,
+    clearError
+  } = useUserStore();
+
+  // Carregar usuários ao montar o componente
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-    const matchesType = typeFilter === 'all' || user.userType === typeFilter;
+    const matchesSearch = user.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+                         user.email.toLowerCase().includes(filters.search.toLowerCase());
+    const matchesStatus = filters.status === 'all' || user.status === filters.status;
+    const matchesType = filters.userType === 'all' || user.userType === filters.userType;
     
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const handleStatusChange = (userId: string, newStatus: 'active' | 'inactive') => {
-    setUsers(prev => prev.map(user => 
-      user.id === userId ? { ...user, status: newStatus } : user
-    ));
-    toast.success(`Status do usuário atualizado para ${newStatus === 'active' ? 'ativo' : 'inativo'}`);
+  const handleStatusChange = async (userId: string, newStatus: 'active' | 'inactive') => {
+    try {
+      await updateUserStatus(userId, newStatus);
+      toast.success(`Status do usuário atualizado para ${newStatus === 'active' ? 'ativo' : 'inativo'}`);
+    } catch (error) {
+      toast.error('Erro ao atualizar status do usuário');
+    }
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const handleDeleteUser = async (userId: string) => {
     if (confirm('Tem certeza que deseja excluir este usuário?')) {
-      setUsers(prev => prev.filter(user => user.id !== userId));
-      toast.success('Usuário excluído com sucesso');
+      try {
+        await deleteUser(userId);
+        toast.success('Usuário excluído com sucesso');
+      } catch (error) {
+        toast.error('Erro ao excluir usuário');
+      }
     }
+  };
+
+  const handleSearchChange = (value: string) => {
+    setFilters({ search: value });
+  };
+
+  const handleStatusFilterChange = (value: string) => {
+    setFilters({ status: value });
+  };
+
+  const handleTypeFilterChange = (value: string) => {
+    setFilters({ userType: value });
   };
 
   const getUserTypeIcon = (type: string) => {
@@ -111,6 +96,28 @@ export default function AdminUsersPage() {
           <p className="text-gray-600">Gerencie todos os usuários da plataforma Vendeu Online</p>
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+            <div className="flex items-center space-x-3">
+              <AlertCircle className="h-6 w-6 text-red-600" />
+              <div>
+                <h3 className="text-red-800 font-medium">Erro ao carregar usuários</h3>
+                <p className="text-red-600 text-sm mt-1">{error}</p>
+              </div>
+              <button
+                onClick={() => {
+                  clearError();
+                  fetchUsers();
+                }}
+                className="ml-auto bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
           <div className="flex flex-col lg:flex-row gap-4">
@@ -121,18 +128,20 @@ export default function AdminUsersPage() {
                 <input
                   type="text"
                   placeholder="Buscar por nome ou email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={filters.search}
+                  onChange={(e) => handleSearchChange(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={loading}
                 />
               </div>
             </div>
 
             {/* Status Filter */}
             <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              value={filters.status}
+              onChange={(e) => handleStatusFilterChange(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={loading}
             >
               <option value="all">Todos os Status</option>
               <option value="active">Ativo</option>
@@ -142,9 +151,10 @@ export default function AdminUsersPage() {
 
             {/* Type Filter */}
             <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
+              value={filters.userType}
+              onChange={(e) => handleTypeFilterChange(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={loading}
             >
               <option value="all">Todos os Tipos</option>
               <option value="buyer">Comprador</option>
@@ -152,7 +162,10 @@ export default function AdminUsersPage() {
               <option value="admin">Administrador</option>
             </select>
 
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+            <button 
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading}
+            >
               <UserPlus className="h-4 w-4" />
               Novo Usuário
             </button>
@@ -186,7 +199,28 @@ export default function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredUsers.map((user) => (
+                {loading && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <div className="flex justify-center items-center space-x-3">
+                        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                        <span className="text-gray-600">Carregando usuários...</span>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {!loading && filteredUsers.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <div className="text-gray-500">
+                        <User className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                        <p className="text-lg font-medium mb-2">Nenhum usuário encontrado</p>
+                        <p className="text-sm">Tente ajustar os filtros de busca</p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {!loading && filteredUsers.map((user) => (
                   <tr key={user.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
@@ -219,27 +253,33 @@ export default function AdminUsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex items-center gap-2">
-                        <button className="text-blue-600 hover:text-blue-900">
+                        <button 
+                          className="text-blue-600 hover:text-blue-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={loading}
+                        >
                           <Edit className="h-4 w-4" />
                         </button>
                         {user.status === 'active' ? (
                           <button 
                             onClick={() => handleStatusChange(user.id, 'inactive')}
-                            className="text-red-600 hover:text-red-900"
+                            className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={loading}
                           >
                             <XCircle className="h-4 w-4" />
                           </button>
                         ) : (
                           <button 
                             onClick={() => handleStatusChange(user.id, 'active')}
-                            className="text-green-600 hover:text-green-900"
+                            className="text-green-600 hover:text-green-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={loading}
                           >
                             <CheckCircle className="h-4 w-4" />
                           </button>
                         )}
                         <button 
                           onClick={() => handleDeleteUser(user.id)}
-                          className="text-red-600 hover:text-red-900"
+                          className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={loading}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>

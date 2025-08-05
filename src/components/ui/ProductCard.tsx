@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Heart, Star, MapPin, Truck, ShoppingCart, Eye } from 'lucide-react';
-import { Product } from '@/store/productStore';
+import { Product } from '@/types';
 import { Link } from 'react-router-dom';
 
 interface ProductCardProps {
@@ -80,7 +80,7 @@ export function ProductCard({
                 </div>
               ) : (
                 <img
-                  src={product.image}
+                  src={product.images[0]?.url || '/placeholder-image.jpg'}
                   alt={product.name}
                   className={`w-full h-full object-cover rounded-lg transition-opacity duration-200 ${
                     imageLoaded ? 'opacity-100' : 'opacity-0'
@@ -91,9 +91,9 @@ export function ProductCard({
               )}
               
               {/* Discount Badge */}
-              {product.discount && (
+              {product.comparePrice && (
                 <div className="absolute top-2 left-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                  -{product.discount}%
+                  -{Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)}%
                 </div>
               )}
               
@@ -129,13 +129,9 @@ export function ProductCard({
                 {product.description}
               </p>
 
-              {/* Store and Location */}
+              {/* Store Info */}
               <div className="flex items-center gap-4 mb-3 text-sm text-gray-500">
-                <span className="font-medium">{product.store}</span>
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  <span>{product.location}</span>
-                </div>
+                <span className="font-medium">Loja Online</span>
               </div>
 
               {/* Rating and Reviews */}
@@ -144,7 +140,7 @@ export function ProductCard({
                   {renderStars(product.rating)}
                 </div>
                 <span className="text-sm text-gray-600">
-                  {product.rating} ({product.reviews} avaliações)
+                  {product.rating} ({product.reviewCount} avaliações)
                 </span>
               </div>
 
@@ -155,9 +151,9 @@ export function ProductCard({
                     <span className="text-2xl font-bold text-gray-900">
                       {formatPrice(product.price)}
                     </span>
-                    {product.originalPrice && (
+                    {product.comparePrice && (
                       <span className="text-lg text-gray-500 line-through">
-                        {formatPrice(product.originalPrice)}
+                        {formatPrice(product.comparePrice)}
                       </span>
                     )}
                   </div>
@@ -165,10 +161,9 @@ export function ProductCard({
                   {/* Shipping */}
                   <div className="flex items-center gap-1 text-sm">
                     <Truck className="h-4 w-4 text-green-600" />
-                    <span className={product.shipping.free ? 'text-green-600 font-medium' : 'text-gray-600'}>
-                      {product.shipping.free ? 'Frete grátis' : `Frete: ${formatPrice(product.shipping.price || 0)}`}
+                    <span className="text-green-600 font-medium">
+                      Frete calculado no checkout
                     </span>
-                    <span className="text-gray-500">• {product.shipping.estimatedDays} dias úteis</span>
                   </div>
                 </div>
 
@@ -208,7 +203,7 @@ export function ProductCard({
             </div>
           ) : (
             <img
-              src={product.image}
+              src={product.images[0]?.url || '/placeholder-image.jpg'}
               alt={product.name}
               className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-200 ${
                 imageLoaded ? 'opacity-100' : 'opacity-0'
@@ -220,9 +215,9 @@ export function ProductCard({
           
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">
-            {product.discount && (
+            {product.comparePrice && (
               <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                -{product.discount}%
+                -{Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)}%
               </div>
             )}
             {product.isFeatured && (
@@ -248,7 +243,7 @@ export function ProductCard({
         {/* Content */}
         <div className="p-5">
           {/* Store */}
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{product.store}</div>
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Loja Online</div>
           
           {/* Title */}
           <h3 className="font-semibold text-gray-900 line-clamp-2 mb-3 group-hover:text-blue-600 transition-colors leading-tight">
@@ -260,7 +255,7 @@ export function ProductCard({
             <div className="flex items-center gap-0.5">
               {renderStars(product.rating)}
             </div>
-            <span className="text-xs text-gray-500 font-medium">({product.reviews})</span>
+            <span className="text-xs text-gray-500 font-medium">({product.reviewCount})</span>
           </div>
           
           {/* Price */}
@@ -268,25 +263,19 @@ export function ProductCard({
             <span className="text-2xl font-bold text-gray-900">
               {formatPrice(product.price)}
             </span>
-            {product.originalPrice && (
+            {product.comparePrice && (
               <span className="text-sm text-gray-400 line-through">
-                {formatPrice(product.originalPrice)}
+                {formatPrice(product.comparePrice)}
               </span>
             )}
           </div>
           
           {/* Shipping */}
-          <div className="flex items-center gap-1.5 text-sm mb-3">
+          <div className="flex items-center gap-1.5 text-sm mb-4">
             <Truck className="h-4 w-4 text-green-600" />
-            <span className={product.shipping.free ? 'text-green-600 font-semibold' : 'text-gray-600'}>
-              {product.shipping.free ? 'Frete grátis' : 'Frete pago'}
+            <span className="text-green-600 font-semibold">
+              Frete calculado no checkout
             </span>
-          </div>
-          
-          {/* Location */}
-          <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-4">
-            <MapPin className="h-3.5 w-3.5" />
-            <span>{product.location}</span>
           </div>
           
           {/* Add to Cart Button */}

@@ -1,3 +1,4 @@
+import React from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
@@ -13,11 +14,25 @@ export interface User {
   isVerified: boolean;
   createdAt: string;
   // Campos específicos para vendedores
-  storeId?: string;
-  storeName?: string;
-  storeSlug?: string;
+  seller?: {
+    id: string;
+    storeName: string;
+    rating: number;
+    totalSales: number;
+    plan: string;
+    isVerified: boolean;
+  };
+  // Campos específicos para compradores
+  buyer?: {
+    id: string;
+    wishlistCount: number;
+    orderCount: number;
+  };
   // Campos específicos para admin
-  permissions?: string[];
+  admin?: {
+    id: string;
+    permissions: string[];
+  };
 }
 
 interface AuthState {
@@ -25,6 +40,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   token: string | null;
+  error: string | null;
 }
 
 interface AuthActions {
@@ -34,6 +50,7 @@ interface AuthActions {
   updateUser: (userData: Partial<User>) => void;
   setLoading: (loading: boolean) => void;
   checkAuth: () => Promise<void>;
+  clearError: () => void;
 }
 
 export interface RegisterData {
@@ -48,46 +65,51 @@ export interface RegisterData {
 
 type AuthStore = AuthState & AuthActions;
 
-// Simulação de dados de usuários para desenvolvimento
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Admin Sistema',
-    email: 'admin@marketplace.com',
-    phone: '(11) 99999-0001',
-    city: 'São Paulo',
-    state: 'SP',
-    userType: 'admin',
-    isVerified: true,
-    createdAt: '2024-01-01T00:00:00Z',
-    permissions: ['users', 'stores', 'products', 'orders', 'analytics']
-  },
-  {
-    id: '2',
-    name: 'João Silva',
-    email: 'joao@loja.com',
-    phone: '(11) 99999-0002',
-    city: 'São Paulo',
-    state: 'SP',
-    userType: 'seller',
-    isVerified: true,
-    createdAt: '2024-01-15T00:00:00Z',
-    storeId: 'store-1',
-    storeName: 'Loja do João',
-    storeSlug: 'loja-do-joao'
-  },
-  {
-    id: '3',
-    name: 'Maria Santos',
-    email: 'maria@email.com',
-    phone: '(11) 99999-0003',
-    city: 'Rio de Janeiro',
-    state: 'RJ',
-    userType: 'buyer',
-    isVerified: true,
-    createdAt: '2024-02-01T00:00:00Z'
+// Utilitário para gerenciar token no localStorage
+const getStoredToken = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('auth-token');
   }
-];
+  return null;
+};
+
+const setStoredToken = (token: string) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('auth-token', token);
+  }
+};
+
+const removeStoredToken = () => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem('auth-token');
+  }
+};
+
+// Utilitário para fazer requisições autenticadas
+const apiRequest = async (url: string, options: RequestInit = {}) => {
+  const token = getStoredToken();
+  
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...Object.fromEntries(new Headers(options.headers || {}).entries())
+  };
+  
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+  
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+  
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
+    throw new Error(errorData.error || `Erro ${response.status}`);
+  }
+  
+  return response.json();
+};
 
 export const useAuthStore = create<AuthStore>()(persist(
   (set, get) => ({
@@ -95,102 +117,90 @@ export const useAuthStore = create<AuthStore>()(persist(
     user: null,
     isAuthenticated: false,
     isLoading: false,
-    token: null,
+    token: getStoredToken(),
+    error: null,
 
     // Ações
     login: async (email: string, password: string) => {
-      set({ isLoading: true });
+      set({ isLoading: true, error: null });
       
       try {
-        // Simular chamada de API
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        const response = await apiRequest('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({ email, password }),
+        });
         
-        // Buscar usuário mock
-        const user = mockUsers.find(u => u.email === email);
+        const { user, token } = response;
         
-        if (!user) {
-          throw new Error('Usuário não encontrado');
-        }
-        
-        // Simular validação de senha (em produção seria validada no backend)
-        if (password.length < 6) {
-          throw new Error('Senha inválida');
-        }
-        
-        // Gerar token mock
-        const token = `mock-token-${user.id}-${Date.now()}`;
+        // Armazenar token
+        setStoredToken(token);
         
         set({
           user,
           isAuthenticated: true,
           token,
-          isLoading: false
+          isLoading: false,
+          error: null
         });
         
       } catch (error) {
-        set({ isLoading: false });
+        const errorMessage = error instanceof Error ? error.message : 'Erro ao fazer login';
+        set({ 
+          isLoading: false, 
+          error: errorMessage,
+          user: null,
+          isAuthenticated: false,
+          token: null
+        });
+        removeStoredToken();
         throw error;
       }
     },
 
     register: async (userData: RegisterData) => {
-      set({ isLoading: true });
+      set({ isLoading: true, error: null });
       
       try {
-        // Simular chamada de API
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        const response = await apiRequest('/api/auth/register', {
+          method: 'POST',
+          body: JSON.stringify(userData),
+        });
         
-        // Verificar se email já existe
-        const existingUser = mockUsers.find(u => u.email === userData.email);
-        if (existingUser) {
-          throw new Error('E-mail já cadastrado');
-        }
+        const { user, token } = response;
         
-        // Criar novo usuário
-        const newUser: User = {
-          id: `user-${Date.now()}`,
-          name: userData.name,
-          email: userData.email,
-          phone: userData.phone,
-          city: userData.city,
-          state: userData.state,
-          userType: userData.userType,
-          isVerified: false,
-          createdAt: new Date().toISOString()
-        };
-        
-        // Se for vendedor, criar dados da loja
-        if (userData.userType === 'seller') {
-          newUser.storeId = `store-${Date.now()}`;
-          newUser.storeName = `Loja de ${userData.name.split(' ')[0]}`;
-          newUser.storeSlug = `loja-${userData.name.toLowerCase().replace(/\s+/g, '-')}`;
-        }
-        
-        // Adicionar à lista mock (em produção seria salvo no backend)
-        mockUsers.push(newUser);
-        
-        // Gerar token
-        const token = `mock-token-${newUser.id}-${Date.now()}`;
+        // Armazenar token
+        setStoredToken(token);
         
         set({
-          user: newUser,
+          user,
           isAuthenticated: true,
           token,
-          isLoading: false
+          isLoading: false,
+          error: null
         });
         
       } catch (error) {
-        set({ isLoading: false });
+        const errorMessage = error instanceof Error ? error.message : 'Erro ao criar conta';
+        set({ 
+          isLoading: false, 
+          error: errorMessage,
+          user: null,
+          isAuthenticated: false,
+          token: null
+        });
+        removeStoredToken();
         throw error;
       }
     },
 
     logout: () => {
+      removeStoredToken();
       set({
         user: null,
         isAuthenticated: false,
         token: null,
-        isLoading: false
+        isLoading: false,
+        error: null
       });
     },
 
@@ -207,31 +217,45 @@ export const useAuthStore = create<AuthStore>()(persist(
       set({ isLoading: loading });
     },
 
+    clearError: () => {
+      set({ error: null });
+    },
+
     checkAuth: async () => {
-      const { token } = get();
+      const token = getStoredToken();
       
       if (!token) {
-        return;
-      }
-      
-      set({ isLoading: true });
-      
-      try {
-        // Simular verificação de token
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Em produção, verificaria o token no backend
-        // Por enquanto, apenas mantém o usuário logado se o token existir
-        
-        set({ isLoading: false });
-        
-      } catch (error) {
-        // Token inválido, fazer logout
         set({
           user: null,
           isAuthenticated: false,
           token: null,
           isLoading: false
+        });
+        return;
+      }
+      
+      set({ isLoading: true, error: null });
+      
+      try {
+        const response = await apiRequest('/api/auth/me');
+        
+        set({
+          user: response.user,
+          isAuthenticated: true,
+          token,
+          isLoading: false,
+          error: null
+        });
+        
+      } catch (error) {
+        // Token inválido, fazer logout
+        removeStoredToken();
+        set({
+          user: null,
+          isAuthenticated: false,
+          token: null,
+          isLoading: false,
+          error: null
         });
       }
     }
@@ -240,8 +264,8 @@ export const useAuthStore = create<AuthStore>()(persist(
     name: 'auth-storage',
     partialize: (state) => ({
       user: state.user,
-      isAuthenticated: state.isAuthenticated,
-      token: state.token
+      isAuthenticated: state.isAuthenticated
+      // token é gerenciado separadamente no localStorage
     })
   }
 ));
@@ -251,8 +275,8 @@ export const usePermissions = () => {
   const user = useAuthStore(state => state.user);
   
   const hasPermission = (permission: string) => {
-    if (!user || user.userType !== 'admin') return false;
-    return user.permissions?.includes(permission) || false;
+    if (!user || user.userType !== 'admin' || !user.admin) return false;
+    return user.admin.permissions.includes(permission);
   };
   
   const isAdmin = user?.userType === 'admin';
@@ -264,7 +288,7 @@ export const usePermissions = () => {
     isAdmin,
     isSeller,
     isBuyer,
-    permissions: user?.permissions || []
+    permissions: user?.admin?.permissions || []
   };
 };
 
@@ -273,9 +297,42 @@ export const useStoreData = () => {
   const user = useAuthStore(state => state.user);
   
   return {
-    storeId: user?.storeId,
-    storeName: user?.storeName,
-    storeSlug: user?.storeSlug,
-    hasStore: !!(user?.storeId)
+    sellerId: user?.seller?.id,
+    storeName: user?.seller?.storeName,
+    rating: user?.seller?.rating || 0,
+    totalSales: user?.seller?.totalSales || 0,
+    plan: user?.seller?.plan,
+    isVerified: user?.seller?.isVerified || false,
+    hasSeller: !!(user?.seller)
+  };
+};
+
+// Hook para dados do comprador
+export const useBuyerData = () => {
+  const user = useAuthStore(state => state.user);
+  
+  return {
+    buyerId: user?.buyer?.id,
+    wishlistCount: user?.buyer?.wishlistCount || 0,
+    orderCount: user?.buyer?.orderCount || 0,
+    hasBuyer: !!(user?.buyer)
+  };
+};
+
+// Hook para inicialização automática da autenticação
+export const useAuthInit = () => {
+  const checkAuth = useAuthStore(state => state.checkAuth);
+  const isLoading = useAuthStore(state => state.isLoading);
+  const isAuthenticated = useAuthStore(state => state.isAuthenticated);
+  
+  // Verificar autenticação na inicialização
+  React.useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+  
+  return {
+    isLoading,
+    isAuthenticated,
+    isInitialized: !isLoading
   };
 };

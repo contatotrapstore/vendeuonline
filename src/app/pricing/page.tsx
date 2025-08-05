@@ -1,99 +1,48 @@
 'use client';
 
-import { Check, Star, Crown, Building2, Zap } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import PlanSelector from '@/components/PlanSelector';
+import { CreditCard, Smartphone, FileText, Shield } from 'lucide-react';
 
-const plans = [
+const paymentMethods = [
   {
-    id: 'basico',
-    name: 'Básico',
-    price: 'Grátis',
-    period: '30 dias',
-    description: 'Ideal para quem está começando',
-    icon: Star,
-    color: 'from-gray-500 to-gray-600',
-    features: [
-      '5 anúncios ativos',
-      'Validade de 30 dias',
-      'Suporte por e-mail',
-      'Fotos básicas (até 3 por anúncio)',
-      'Localização no mapa',
-      'Contato via WhatsApp/Telefone'
-    ],
-    limitations: [
-      'Sem destaque nos resultados',
-      'Sem impulsionamento',
-      'Sem estatísticas detalhadas'
-    ]
+    icon: Smartphone,
+    name: 'PIX',
+    description: '5% de desconto à vista'
   },
   {
-    id: 'profissional',
-    name: 'Profissional',
-    price: 'R$ 29,90',
-    period: '/mês',
-    description: 'Para vendedores regulares',
-    icon: Zap,
-    color: 'from-blue-500 to-blue-600',
-    popular: true,
-    features: [
-      '20 anúncios ativos',
-      'Validade de 60 dias',
-      'Suporte prioritário',
-      'Fotos em alta qualidade (até 8 por anúncio)',
-      'Destaque na categoria',
-      'Impulsionamento básico (2x por mês)',
-      'Estatísticas básicas',
-      'Badge de vendedor verificado'
-    ]
+    icon: CreditCard,
+    name: 'Cartão de Crédito',
+    description: 'Até 12x sem juros'
   },
   {
-    id: 'premium',
-    name: 'Premium',
-    price: 'R$ 59,90',
-    period: '/mês',
-    description: 'Para vendedores experientes',
-    icon: Crown,
-    color: 'from-purple-500 to-purple-600',
-    features: [
-      '50 anúncios ativos',
-      'Validade de 90 dias',
-      'Suporte VIP (chat ao vivo)',
-      'Fotos profissionais ilimitadas',
-      'Destaque na página inicial',
-      'Impulsionamento avançado (5x por mês)',
-      'Estatísticas detalhadas',
-      'Loja personalizada',
-      'Múltiplas formas de contato'
-    ]
+    icon: FileText,
+    name: 'Boleto Bancário',
+    description: 'Vencimento em 3 dias úteis'
   },
   {
-    id: 'empresarial',
-    name: 'Empresarial',
-    price: 'R$ 99,90',
-    period: '/mês',
-    description: 'Para empresas e grandes vendedores',
-    icon: Building2,
-    color: 'from-emerald-500 to-emerald-600',
-    features: [
-      'Anúncios ilimitados',
-      'Validade de 120 dias',
-      'Gerente de conta dedicado',
-      'Fotos e vídeos profissionais',
-      'Destaque premium em todas as páginas',
-      'Impulsionamento ilimitado',
-      'Analytics completo',
-      'API para integração',
-      'Múltiplos usuários',
-      'Relatórios personalizados'
-    ]
+    icon: Shield,
+    name: 'Débito Automático',
+    description: 'Renovação automática'
   }
 ];
 
-const paymentMethods = [
-  'PIX (5% de desconto)',
-  'Cartão de Crédito (até 12x)',
-  'Boleto Bancário',
-  'Débito Automático'
+const benefits = [
+  {
+    title: 'Sem Compromisso',
+    description: 'Cancele a qualquer momento sem taxas ou multas'
+  },
+  {
+    title: 'Suporte Especializado',
+    description: 'Nossa equipe está pronta para ajudar você a vender mais'
+  },
+  {
+    title: 'Atualizações Gratuitas',
+    description: 'Novas funcionalidades incluídas automaticamente'
+  },
+  {
+    title: 'Garantia de Satisfação',
+    description: '30 dias de garantia ou seu dinheiro de volta'
+  }
 ];
 
 export default function PricingPage() {
@@ -106,143 +55,156 @@ export default function PricingPage() {
             Planos para Vendedores
           </h1>
           <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto mb-8">
-            Escolha o plano ideal para impulsionar suas vendas em Erechim-RS
+            Escolha o plano ideal para impulsionar suas vendas no marketplace
           </p>
           <div className="bg-yellow-400 text-yellow-900 px-6 py-3 rounded-full inline-block font-semibold">
-            🎉 30 dias grátis + Garantia de 7 dias
+            🎉 30 dias grátis + Garantia de satisfação
           </div>
         </div>
       </div>
 
       {/* Plans */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {plans.map((plan) => {
-            const Icon = plan.icon;
-            return (
-              <div
-                key={plan.id}
-                className={`relative bg-white rounded-2xl shadow-lg border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
-                  plan.popular ? 'border-blue-500 ring-4 ring-blue-100' : 'border-gray-200'
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-semibold">
-                      Mais Popular
-                    </span>
-                  </div>
-                )}
-                
-                <div className="p-8">
-                  <div className="text-center mb-8">
-                    <div className={`w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r ${plan.color} flex items-center justify-center`}>
-                      <Icon className="h-8 w-8 text-white" />
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                    <p className="text-gray-600 mb-4">{plan.description}</p>
-                    <div className="mb-6">
-                      <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
-                      {plan.period && (
-                        <span className="text-gray-600 ml-1">{plan.period}</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((feature, index) => (
-                      <li key={index} className="flex items-start">
-                        <Check className="h-5 w-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700 text-sm">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-
-                  {plan.limitations && (
-                    <div className="mb-6">
-                      <p className="text-sm font-medium text-gray-500 mb-2">Limitações:</p>
-                      <ul className="space-y-1">
-                        {plan.limitations.map((limitation, index) => (
-                          <li key={index} className="text-xs text-gray-500">
-                            • {limitation}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  <Link
-                    to={`/auth/register?plan=${plan.id}`}
-                    className={`w-full py-3 px-6 rounded-lg font-semibold text-center transition-all duration-300 block ${
-                      plan.popular
-                        ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-lg'
-                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                    }`}
-                  >
-                    {plan.price === 'Grátis' ? 'Começar Grátis' : 'Escolher Plano'}
-                  </Link>
-                </div>
-              </div>
-            );
-          })}
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Escolha seu Plano
+          </h2>
+          <p className="text-lg text-gray-600">
+            Selecione o plano que melhor atende às suas necessidades
+          </p>
         </div>
+        <PlanSelector />
+      </div>
 
-        {/* Payment Methods */}
-        <div className="mt-20 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8">Formas de Pagamento</h2>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
-            {paymentMethods.map((method, index) => (
-              <div key={index} className="bg-white p-6 rounded-lg shadow-sm border">
-                <p className="text-gray-700 font-medium">{method}</p>
+      {/* Payment Methods */}
+      <div className="bg-white py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Formas de Pagamento
+            </h2>
+            <p className="text-lg text-gray-600">
+              Escolha a forma de pagamento que melhor se adapta ao seu negócio
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {paymentMethods.map((method, index) => {
+              const Icon = method.icon;
+              return (
+                <div key={index} className="bg-gray-50 p-6 rounded-lg text-center hover:shadow-md transition-shadow">
+                  <div className="w-12 h-12 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                    <Icon className="w-6 h-6 text-blue-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">{method.name}</h3>
+                  <p className="text-sm text-gray-600">{method.description}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Benefits */}
+      <div className="bg-gray-50 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Por que escolher nossos planos?
+            </h2>
+            <p className="text-lg text-gray-600">
+              Benefícios exclusivos para impulsionar seu negócio
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {benefits.map((benefit, index) => (
+              <div key={index} className="text-center">
+                <div className="bg-white p-6 rounded-lg shadow-sm">
+                  <h3 className="font-semibold text-gray-900 mb-3">{benefit.title}</h3>
+                  <p className="text-gray-600 text-sm">{benefit.description}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
+      </div>
 
-        {/* FAQ */}
-        <div className="mt-20">
-          <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">Perguntas Frequentes</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Posso cancelar a qualquer momento?</h3>
-              <p className="text-gray-600">Sim, você pode cancelar seu plano a qualquer momento. Não há fidelidade.</p>
+      {/* FAQ Section */}
+      <div className="bg-white py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Perguntas Frequentes
+            </h2>
+          </div>
+          
+          <div className="space-y-6">
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <h3 className="font-semibold text-gray-900 mb-2">
+                Posso mudar de plano a qualquer momento?
+              </h3>
+              <p className="text-gray-600">
+                Sim! Você pode fazer upgrade ou downgrade do seu plano a qualquer momento. 
+                As mudanças entram em vigor imediatamente.
+              </p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Como funciona a garantia de 7 dias?</h3>
-              <p className="text-gray-600">Se não ficar satisfeito, devolvemos 100% do valor pago nos primeiros 7 dias.</p>
+            
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <h3 className="font-semibold text-gray-900 mb-2">
+                Como funciona o período de teste gratuito?
+              </h3>
+              <p className="text-gray-600">
+                Todos os planos pagos incluem 30 dias gratuitos. Você só será cobrado após 
+                o período de teste, e pode cancelar a qualquer momento.
+              </p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Posso fazer upgrade do plano?</h3>
-              <p className="text-gray-600">Sim, você pode fazer upgrade a qualquer momento e pagar apenas a diferença proporcional.</p>
+            
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <h3 className="font-semibold text-gray-900 mb-2">
+                O que acontece se eu cancelar minha assinatura?
+              </h3>
+              <p className="text-gray-600">
+                Seus anúncios continuarão ativos até o final do período pago. Após isso, 
+                você será automaticamente movido para o plano gratuito.
+              </p>
             </div>
-            <div className="bg-white p-6 rounded-lg shadow-sm border">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Há desconto para pagamento anual?</h3>
-              <p className="text-gray-600">Sim, oferecemos 20% de desconto para pagamentos anuais à vista.</p>
+            
+            <div className="bg-gray-50 p-6 rounded-lg">
+              <h3 className="font-semibold text-gray-900 mb-2">
+                Posso ter múltiplas lojas com um plano?
+              </h3>
+              <p className="text-gray-600">
+                Cada plano é válido para uma loja. Para múltiplas lojas, você precisará 
+                de assinaturas separadas ou pode considerar nosso plano Empresa Plus.
+              </p>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* CTA */}
-        <div className="mt-20 text-center">
-          <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl p-12 text-white">
-            <h2 className="text-3xl font-bold mb-4">Pronto para começar a vender?</h2>
-            <p className="text-xl mb-8 text-blue-100">
-              Junte-se a centenas de vendedores em Erechim-RS
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link
-                to="/auth/register"
-                className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
-              >
-                Começar Grátis
-              </Link>
-              <a
-                href="mailto:grupomaboon@gmail.com"
-                className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors"
-              >
-                Falar com Consultor
-              </a>
-            </div>
+      {/* CTA Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-16">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-3xl font-bold mb-4">
+            Pronto para começar a vender mais?
+          </h2>
+          <p className="text-xl text-blue-100 mb-8">
+            Junte-se a milhares de vendedores que já escolheram nosso marketplace
+          </p>
+          <div className="space-x-4">
+            <a
+              href="/auth/register"
+              className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors inline-block"
+            >
+              Começar Agora
+            </a>
+            <a
+              href="/contact"
+              className="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition-colors inline-block"
+            >
+              Falar com Vendas
+            </a>
           </div>
         </div>
       </div>

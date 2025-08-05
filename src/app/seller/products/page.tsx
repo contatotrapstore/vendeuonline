@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Plus, Search, Filter, Edit, Trash2, Eye, Package, AlertCircle } from 'lucide-react';
-import { useProductStore, Product } from '@/store/productStore';
+import { useProductStore } from '@/store/productStore';
+import { Product } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { Link } from 'react-router-dom';
 
@@ -47,7 +48,7 @@ export default function SellerProductsPage() {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          product.description.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || product.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? product.isActive : !product.isActive);
     const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
     
     return matchesSearch && matchesStatus && matchesCategory;
@@ -82,7 +83,7 @@ export default function SellerProductsPage() {
   };
 
   const handleStatusChange = (productId: string, newStatus: string) => {
-    updateProduct(productId, { status: newStatus as any });
+    updateProduct(productId, { isActive: newStatus === 'active' });
   };
 
   const handleDeleteProduct = (productId: string) => {
@@ -137,7 +138,7 @@ export default function SellerProductsPage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Produtos Ativos</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {sellerProducts.filter(p => p.status === 'active').length}
+                  {sellerProducts.filter(p => p.isActive).length}
                 </p>
               </div>
             </div>
@@ -252,9 +253,9 @@ export default function SellerProductsPage() {
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-16 w-16">
                                 <img
-                                  className="h-16 w-16 rounded-lg object-cover"
-                                  src={product.image}
+                                  src={product.images[0]?.url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzMkMzMC42Mjc0IDMyIDM2IDI2LjYyNzQgMzYgMjBDMzYgMTMuMzcyNiAzMC42Mjc0IDggMjQgOEMxNy4zNzI2IDggMTIgMTMuMzcyNiAxMiAyMEMxMiAyNi42Mjc0IDE3LjM3MjYgMzIgMjQgMzJaIiBmaWxsPSIjOUI5QjlCIi8+CjxwYXRoIGQ9Ik04IDU2TDIwIDQ0TDI4IDUyTDQ0IDM2TDU2IDQ4VjU2SDhaIiBmaWxsPSIjOUI5QjlCIi8+Cjwvc3ZnPgo='}
                                   alt={product.name}
+                                  className="h-10 w-10 rounded-lg object-cover"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
                                     target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzMkMzMC42Mjc0IDMyIDM2IDI2LjYyNzQgMzYgMjBDMzYgMTMuMzcyNiAzMC42Mjc0IDggMjQgOEMxNy4zNzI2IDggMTIgMTMuMzcyNiAxMiAyMEMxMiAyNi42Mjc0IDE3LjM3MjYgMzIgMjQgMzJaIiBmaWxsPSIjOUI5QjlCIi8+CjxwYXRoIGQ9Ik04IDU2TDIwIDQ0TDI4IDUyTDQ0IDM2TDU2IDQ4VjU2SDhaIiBmaWxsPSIjOUI5QjlCIi8+Cjwvc3ZnPgo=';
@@ -277,9 +278,9 @@ export default function SellerProductsPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <div>
                               <div className="font-medium">{formatPrice(product.price)}</div>
-                              {product.originalPrice && (
+                              {product.comparePrice && product.comparePrice > product.price && (
                                 <div className="text-gray-500 line-through text-xs">
-                                  {formatPrice(product.originalPrice)}
+                                  {formatPrice(product.comparePrice)}
                                 </div>
                               )}
                             </div>
@@ -294,13 +295,12 @@ export default function SellerProductsPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <select
-                              value={product.status}
+                              value={product.isActive ? 'active' : 'inactive'}
                               onChange={(e) => handleStatusChange(product.id, e.target.value)}
                               className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
                               <option value="active">Ativo</option>
                               <option value="inactive">Inativo</option>
-                              <option value="draft">Rascunho</option>
                             </select>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">

@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
-import { TrendingUp, TrendingDown, Eye, ShoppingCart, DollarSign, Package, Calendar, Download } from 'lucide-react';
+import { TrendingUp, TrendingDown, Eye, ShoppingCart, DollarSign, Package, Calendar, Download, Loader2, AlertCircle } from 'lucide-react';
+import { useAnalyticsStore, transformStatsToAnalyticsData, transformProductsToPerformance, generateCategoryData } from '@/store/analyticsStore';
+import { useStoreData } from '@/store/authStore';
+import { toast } from 'sonner';
 
 interface AnalyticsData {
   period: string;
@@ -26,46 +29,47 @@ interface CategoryData {
   color: string;
 }
 
-const mockAnalytics: AnalyticsData[] = [
-  { period: 'Jan', views: 1200, sales: 45, revenue: 2250, orders: 42 },
-  { period: 'Fev', views: 1450, sales: 52, revenue: 2890, orders: 48 },
-  { period: 'Mar', views: 1680, sales: 61, revenue: 3420, orders: 58 },
-  { period: 'Abr', views: 1520, sales: 48, revenue: 2980, orders: 45 },
-  { period: 'Mai', views: 1890, sales: 67, revenue: 4150, orders: 63 },
-  { period: 'Jun', views: 2100, sales: 78, revenue: 4890, orders: 74 }
-];
-
-const mockProducts: ProductPerformance[] = [
-  { name: 'iPhone 13 Pro', views: 450, sales: 12, revenue: 18000, conversion: 2.67 },
-  { name: 'Samsung Galaxy S22', views: 380, sales: 8, revenue: 9600, conversion: 2.11 },
-  { name: 'MacBook Air M2', views: 320, sales: 5, revenue: 12500, conversion: 1.56 },
-  { name: 'iPad Pro 11"', views: 290, sales: 7, revenue: 8400, conversion: 2.41 },
-  { name: 'AirPods Pro', views: 520, sales: 15, revenue: 3750, conversion: 2.88 }
-];
-
-const mockCategories: CategoryData[] = [
-  { name: 'Eletrônicos', value: 45, color: '#3B82F6' },
-  { name: 'Roupas', value: 25, color: '#8B5CF6' },
-  { name: 'Casa', value: 20, color: '#10B981' },
-  { name: 'Outros', value: 10, color: '#F59E0B' }
-];
-
 export default function SellerAnalyticsPage() {
-  const [timeRange, setTimeRange] = useState('6months');
   const [selectedMetric, setSelectedMetric] = useState('revenue');
+  const { stats, isLoading, error, period, fetchStoreStats, setPeriod, clearError } = useAnalyticsStore();
+  const { sellerId } = useStoreData();
 
-  const currentMonth = mockAnalytics[mockAnalytics.length - 1];
-  const previousMonth = mockAnalytics[mockAnalytics.length - 2];
-  
-  const viewsChange = ((currentMonth.views - previousMonth.views) / previousMonth.views) * 100;
-  const salesChange = ((currentMonth.sales - previousMonth.sales) / previousMonth.sales) * 100;
-  const revenueChange = ((currentMonth.revenue - previousMonth.revenue) / previousMonth.revenue) * 100;
-  const ordersChange = ((currentMonth.orders - previousMonth.orders) / previousMonth.orders) * 100;
+  useEffect(() => {
+    if (sellerId) {
+      fetchStoreStats(sellerId);
+    }
+  }, [sellerId, fetchStoreStats]);
 
-  const totalRevenue = mockAnalytics.reduce((sum, item) => sum + item.revenue, 0);
-  const totalSales = mockAnalytics.reduce((sum, item) => sum + item.sales, 0);
-  const totalViews = mockAnalytics.reduce((sum, item) => sum + item.views, 0);
+  const handlePeriodChange = async (newPeriod: '7d' | '30d' | '90d' | '1y') => {
+    if (sellerId) {
+      setPeriod(newPeriod);
+      await fetchStoreStats(sellerId, newPeriod);
+    }
+  };
+
+  const handleRetryFetch = () => {
+    if (sellerId) {
+      clearError();
+      fetchStoreStats(sellerId);
+    }
+  };
+
+  // Transformar dados da API para o formato dos gráficos
+  const analyticsData = stats ? transformStatsToAnalyticsData(stats) : [];
+  const productsData = stats ? transformProductsToPerformance(stats.topProducts) : [];
+  const categoriesData = generateCategoryData();
+
+  // Calcular métricas
+  const totalRevenue = stats?.summary.totalRevenue || 0;
+  const totalSales = stats?.summary.totalOrders || 0;
+  const totalViews = analyticsData.reduce((sum, item) => sum + item.views, 0);
   const avgConversion = totalViews > 0 ? (totalSales / totalViews) * 100 : 0;
+
+  // Calcular mudanças (comparação simples com dados disponíveis)
+  const revenueChange = 0; // Placeholder - API não retorna comparação ainda
+  const salesChange = 0;
+  const viewsChange = 0;
+  const ordersChange = 0;
 
   const getChangeIcon = (change: number) => {
     return change >= 0 ? 
@@ -76,6 +80,41 @@ export default function SellerAnalyticsPage() {
   const getChangeColor = (change: number) => {
     return change >= 0 ? 'text-green-600' : 'text-red-600';
   };
+
+  const handleExport = () => {
+    // Implementar exportação
+    console.log('Exportando dados...');
+  };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Carregando analytics...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="h-8 w-8 text-red-600 mx-auto mb-4" />
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={handleRetryFetch}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -88,17 +127,19 @@ export default function SellerAnalyticsPage() {
           </div>
           <div className="flex gap-3">
             <select 
-              value={timeRange} 
-              onChange={(e) => setTimeRange(e.target.value)}
+              value={period} 
+              onChange={(e) => handlePeriodChange(e.target.value as '7d' | '30d' | '90d' | '1y')}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              <option value="7days">Últimos 7 dias</option>
-              <option value="30days">Últimos 30 dias</option>
-              <option value="3months">Últimos 3 meses</option>
-              <option value="6months">Últimos 6 meses</option>
-              <option value="1year">Último ano</option>
+              <option value="7d">Últimos 7 dias</option>
+              <option value="30d">Últimos 30 dias</option>
+              <option value="90d">Últimos 90 dias</option>
+              <option value="1y">Último ano</option>
             </select>
-            <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2">
+            <button 
+              onClick={handleExport}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+            >
               <Download className="h-4 w-4" />
               Exportar
             </button>
@@ -197,7 +238,7 @@ export default function SellerAnalyticsPage() {
               </select>
             </div>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={mockAnalytics}>
+              <BarChart data={analyticsData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="period" />
                 <YAxis />
@@ -224,7 +265,7 @@ export default function SellerAnalyticsPage() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
-                  data={mockCategories}
+                  data={categoriesData}
                   cx="50%"
                   cy="50%"
                   innerRadius={60}
@@ -232,7 +273,7 @@ export default function SellerAnalyticsPage() {
                   paddingAngle={5}
                   dataKey="value"
                 >
-                  {mockCategories.map((entry, index) => (
+                  {categoriesData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
@@ -240,7 +281,7 @@ export default function SellerAnalyticsPage() {
               </PieChart>
             </ResponsiveContainer>
             <div className="flex flex-wrap gap-4 mt-4">
-              {mockCategories.map((category, index) => (
+              {categoriesData.map((category, index) => (
                 <div key={index} className="flex items-center">
                   <div 
                     className="w-3 h-3 rounded-full mr-2" 
@@ -259,7 +300,7 @@ export default function SellerAnalyticsPage() {
         <div className="bg-white p-6 rounded-lg shadow-sm border mb-8">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Tendência de Performance</h3>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={mockAnalytics}>
+            <LineChart data={analyticsData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="period" />
               <YAxis yAxisId="left" />
@@ -300,8 +341,8 @@ export default function SellerAnalyticsPage() {
                 </tr>
               </thead>
               <tbody>
-                {mockProducts.map((product, index) => (
-                  <tr key={index} className="border-b border-gray-100 hover:bg-gray-50">
+                {productsData.length > 0 ? productsData.map((product, index) => (
+                  <tr key={product.id} className="border-b border-gray-100 hover:bg-gray-50">
                     <td className="py-3 px-4 font-medium text-gray-900">{product.name}</td>
                     <td className="py-3 px-4 text-gray-600">{product.views}</td>
                     <td className="py-3 px-4 text-gray-600">{product.sales}</td>
@@ -318,7 +359,13 @@ export default function SellerAnalyticsPage() {
                       </span>
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={5} className="py-8 px-4 text-center text-gray-500">
+                      Nenhum produto encontrado
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>

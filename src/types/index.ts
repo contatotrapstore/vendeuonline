@@ -173,6 +173,20 @@ export interface Store {
   seoDescription?: string;
   createdAt: string;
   updatedAt: string;
+  // Campos opcionais retornados pela API com includes
+  seller?: {
+    id: string;
+    storeName: string;
+    rating: number;
+    totalSales: number;
+    plan?: SellerPlan;
+  };
+  _count?: {
+    products: number;
+    orders: number;
+    reviews: number;
+  };
+  products?: Product[];
 }
 
 export interface StoreSocialMedia {
@@ -180,6 +194,7 @@ export interface StoreSocialMedia {
   facebook?: string;
   twitter?: string;
   youtube?: string;
+  whatsapp?: string;
 }
 
 export interface StoreFeatures {

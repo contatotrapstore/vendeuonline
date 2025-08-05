@@ -7,10 +7,10 @@ import { Star, MapPin, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 interface Store {
   id: string;
   name: string;
-  logo: string;
+  logo?: string;
   products: number;
   rating: number;
-  location: string;
+  city: string;
   description?: string;
   category?: string;
   isVerified?: boolean;
@@ -107,7 +107,7 @@ export function FeaturedStores({ stores, className = "" }: FeaturedStoresProps) 
                           </div>
                         )}
                         <img
-                          src={store.logo}
+                          src={store.logo || '/placeholder-store.png'}
                           alt={`Logo da ${store.name}`}
                           className={`w-full h-full object-cover rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-md ${
                             imageLoadStates[store.id] ? 'opacity-100' : 'opacity-0'
@@ -149,7 +149,7 @@ export function FeaturedStores({ stores, className = "" }: FeaturedStoresProps) 
                           </div>
                           <div className="flex items-center">
                             <MapPin className="h-4 w-4 mr-1.5 text-gray-400" />
-                            <span className="text-sm font-medium">{store.location}</span>
+                            <span className="text-sm font-medium">{store.city}</span>
                           </div>
                         </div>
                         

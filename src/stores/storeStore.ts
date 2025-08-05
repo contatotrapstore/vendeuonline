@@ -1,190 +1,297 @@
 import { create } from 'zustand';
 import { Store } from '@/types';
 
-interface StoreState {
-  stores: Store[];
-  loading: boolean;
-  error: string | null;
-  fetchStores: () => Promise<void>;
-  addStore: (store: Omit<Store, 'id'>) => void;
-  updateStore: (id: string, store: Partial<Store>) => void;
-  deleteStore: (id: string) => void;
+// Utilitário para gerenciar token no localStorage
+function getStoredToken(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('auth_token')
 }
 
-// Mock data para demonstração
-const mockStores: Store[] = [
-  {
-    id: '1',
-    sellerId: 'seller1',
-    name: 'TechStore Erechim',
-    slug: 'techstore-erechim',
-    description: 'Especializada em eletrônicos e tecnologia de ponta. Oferecemos os melhores produtos com garantia e suporte técnico.',
-    logo: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=tech%20store%20logo%20electronics&image_size=square',
-    banner: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=electronics%20store%20banner&image_size=landscape_16_9',
-    address: 'Rua Sete de Setembro, 123 - Centro',
-    city: 'Erechim',
-    state: 'RS',
-    zipCode: '99700-000',
-    phone: '(54) 3321-1234',
-    email: 'contato@techstore.com.br',
-    website: 'https://techstore.com.br',
-    socialMedia: {
-      instagram: '@techstore_erechim',
-      facebook: 'techstore.erechim'
-    },
-    category: 'electronics',
-    isActive: true,
-    isVerified: true,
-    rating: 4.8,
-    reviewCount: 156,
-    productCount: 89,
-    salesCount: 234,
-    plan: 'profissional',
-    features: {
-      customDomain: true,
-      analytics: true,
-      promotions: true,
-      multiplePayments: true,
-      inventory: true,
-      reports: true
-    },
-    theme: {
-      primaryColor: '#3B82F6',
-      secondaryColor: '#1E40AF',
-      fontFamily: 'Inter',
-      layout: 'grid'
-    },
-    createdAt: new Date('2023-01-15').toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: '2',
-    sellerId: 'seller2',
-    name: 'Moda & Estilo',
-    slug: 'moda-estilo',
-    description: 'Roupas e acessórios da moda para toda a família. Qualidade e estilo em um só lugar.',
-    logo: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=fashion%20clothing%20store%20logo&image_size=square',
-    banner: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=fashion%20clothing%20store%20banner&image_size=landscape_16_9',
-    address: 'Av. Maurício Cardoso, 456 - Centro',
-    city: 'Erechim',
-    state: 'RS',
-    zipCode: '99700-001',
-    phone: '(54) 3322-5678',
-    email: 'vendas@modaestilo.com.br',
-    website: 'https://modaestilo.com.br',
-    socialMedia: {
-      instagram: '@modaestilo_erechim',
-      facebook: 'moda.estilo.erechim'
-    },
-    category: 'clothing',
-    isActive: true,
-    isVerified: true,
-    rating: 4.6,
-    reviewCount: 89,
-    productCount: 234,
-    salesCount: 156,
-    plan: 'premium',
-    features: {
-      customDomain: true,
-      analytics: true,
-      promotions: true,
-      multiplePayments: true,
-      inventory: true,
-      reports: true
-    },
-    theme: {
-      primaryColor: '#EC4899',
-      secondaryColor: '#BE185D',
-      fontFamily: 'Poppins',
-      layout: 'grid'
-    },
-    createdAt: new Date('2023-03-20').toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: '3',
-    sellerId: 'seller3',
-    name: 'Casa & Decoração',
-    slug: 'casa-decoracao',
-    description: 'Móveis, decoração e utensílios para deixar sua casa ainda mais bonita e funcional.',
-    logo: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=home%20decoration%20furniture%20store%20logo&image_size=square',
-    banner: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=home%20furniture%20store%20banner&image_size=landscape_16_9',
-    address: 'Rua Protásio Alves, 789 - Bairro Fátima',
-    city: 'Erechim',
-    state: 'RS',
-    zipCode: '99700-002',
-    phone: '(54) 3323-9012',
-    email: 'info@casadecoração.com.br',
-    website: 'https://casadecoração.com.br',
-    socialMedia: {
-      instagram: '@casadecoração_erechim'
-    },
-    category: 'home',
-    isActive: true,
-    isVerified: false,
-    rating: 4.4,
-    reviewCount: 67,
-    productCount: 145,
-    salesCount: 89,
-    plan: 'basico',
-    features: {
-      customDomain: false,
-      analytics: true,
-      promotions: false,
-      multiplePayments: true,
-      inventory: true,
-      reports: false
-    },
-    theme: {
-      primaryColor: '#10B981',
-      secondaryColor: '#047857',
-      fontFamily: 'Roboto',
-      layout: 'list'
-    },
-    createdAt: new Date('2023-06-10').toISOString(),
-    updatedAt: new Date().toISOString()
+// Utilitário para requisições HTTP autenticadas
+async function apiRequest(url: string, options: RequestInit = {}) {
+  const token = getStoredToken()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...Object.fromEntries(new Headers(options.headers || {}).entries())
   }
-];
+  
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+  
+  const response = await fetch(url, {
+    ...options,
+    headers
+  })
+  
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+  
+  return response.json()
+}
+
+interface StoreFilters {
+  search?: string;
+  category?: string;
+  city?: string;
+  isVerified?: boolean;
+  isActive?: boolean;
+  plan?: string;
+}
+
+interface StorePagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+interface CreateStoreData {
+  name: string;
+  slug: string;
+  description: string;
+  category: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  phone: string;
+  email: string;
+  website?: string;
+  socialMedia?: {
+    instagram?: string;
+    facebook?: string;
+    twitter?: string;
+  };
+  logo?: string;
+  banner?: string;
+}
+
+interface StoreState {
+  stores: Store[];
+  currentStore: Store | null;
+  loading: boolean;
+  error: string | null;
+  filters: StoreFilters;
+  pagination: StorePagination;
+  
+  // API functions
+  fetchStores: (filters?: StoreFilters, page?: number, limit?: number) => Promise<void>;
+  fetchStoreById: (id: string) => Promise<Store | null>;
+  fetchStoreBySlug: (slug: string) => Promise<Store | null>;
+  createStore: (data: CreateStoreData) => Promise<Store>;
+  updateStore: (id: string, data: Partial<CreateStoreData>) => Promise<Store>;
+  deleteStore: (id: string) => Promise<void>;
+  
+  // Local state management
+  setCurrentStore: (store: Store | null) => void;
+  setFilters: (filters: Partial<StoreFilters>) => void;
+  resetFilters: () => void;
+  clearError: () => void;
+  
+  // Convenience methods
+  getStoresByCategory: (category: string) => Store[];
+  getVerifiedStores: () => Store[];
+  getFeaturedStores: () => Store[];
+}
+
+const defaultFilters: StoreFilters = {
+  search: '',
+  category: '',
+  city: '',
+  isVerified: undefined,
+  isActive: undefined,
+  plan: ''
+};
 
 export const useStoreStore = create<StoreState>((set, get) => ({
   stores: [],
+  currentStore: null,
   loading: false,
   error: null,
+  filters: defaultFilters,
+  pagination: {
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false
+  },
 
-  fetchStores: async () => {
-    set({ loading: true, error: null });
+  fetchStores: async (filters = {}, page = 1, limit = 10) => {
     try {
-      // Simular delay de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      set({ stores: mockStores, loading: false });
+      set({ loading: true, error: null });
+      
+      const queryParams = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString(),
+        ...Object.fromEntries(
+          Object.entries(filters).filter(([_, value]) => value !== undefined && value !== '')
+        )
+      });
+      
+      const response = await apiRequest(`/api/stores?${queryParams}`);
+      
+      set({
+        stores: response.stores,
+        pagination: {
+          page: response.pagination.page,
+          limit: response.pagination.limit,
+          total: response.pagination.total,
+          totalPages: response.pagination.totalPages,
+          hasNext: response.pagination.hasNext,
+          hasPrev: response.pagination.hasPrev
+        },
+        loading: false
+      });
     } catch (error) {
-      set({ error: 'Erro ao carregar lojas', loading: false });
+      set({
+        error: error instanceof Error ? error.message : 'Erro ao carregar lojas',
+        loading: false
+      });
+      throw error;
     }
   },
 
-  addStore: (storeData) => {
-    const newStore: Store = {
-      ...storeData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    set(state => ({ stores: [...state.stores, newStore] }));
+  fetchStoreById: async (id: string) => {
+    try {
+      set({ loading: true, error: null });
+      
+      const store = await apiRequest(`/api/stores/${id}`);
+      
+      set({ currentStore: store, loading: false });
+      return store;
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Erro ao carregar loja',
+        loading: false
+      });
+      throw error;
+    }
   },
 
-  updateStore: (id, storeData) => {
-    set(state => ({
-      stores: state.stores.map(store =>
-        store.id === id
-          ? { ...store, ...storeData, updatedAt: new Date().toISOString() }
-          : store
-      )
-    }));
+  fetchStoreBySlug: async (slug: string) => {
+    try {
+      set({ loading: true, error: null });
+      
+      const store = await apiRequest(`/api/stores/slug/${slug}`);
+      
+      set({ currentStore: store, loading: false });
+      return store;
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Erro ao carregar loja',
+        loading: false
+      });
+      throw error;
+    }
   },
 
-  deleteStore: (id) => {
-    set(state => ({
-      stores: state.stores.filter(store => store.id !== id)
-    }));
+  createStore: async (data: CreateStoreData) => {
+    try {
+      set({ loading: true, error: null });
+      
+      const newStore = await apiRequest('/api/stores', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      
+      set(state => ({
+        stores: [...state.stores, newStore],
+        loading: false
+      }));
+      
+      return newStore;
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Erro ao criar loja',
+        loading: false
+      });
+      throw error;
+    }
+  },
+
+  updateStore: async (id: string, data: Partial<CreateStoreData>) => {
+    try {
+      set({ loading: true, error: null });
+      
+      const updatedStore = await apiRequest(`/api/stores/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+      
+      set(state => ({
+        stores: state.stores.map(store => 
+          store.id === id ? updatedStore : store
+        ),
+        currentStore: state.currentStore?.id === id ? updatedStore : state.currentStore,
+        loading: false
+      }));
+      
+      return updatedStore;
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Erro ao atualizar loja',
+        loading: false
+      });
+      throw error;
+    }
+  },
+
+  deleteStore: async (id: string) => {
+    try {
+      set({ loading: true, error: null });
+      
+      await apiRequest(`/api/stores/${id}`, {
+        method: 'DELETE',
+      });
+      
+      set(state => ({
+        stores: state.stores.filter(store => store.id !== id),
+        currentStore: state.currentStore?.id === id ? null : state.currentStore,
+        loading: false
+      }));
+    } catch (error) {
+      set({
+        error: error instanceof Error ? error.message : 'Erro ao deletar loja',
+        loading: false
+      });
+      throw error;
+    }
+  },
+
+  setCurrentStore: (store: Store | null) => {
+    set({ currentStore: store });
+  },
+
+  setFilters: (newFilters: Partial<StoreFilters>) => {
+    const updatedFilters = { ...get().filters, ...newFilters };
+    set({ filters: updatedFilters });
+    get().fetchStores(updatedFilters, 1);
+  },
+
+  resetFilters: () => {
+    set({ filters: defaultFilters });
+    get().fetchStores(defaultFilters, 1);
+  },
+
+  clearError: () => {
+    set({ error: null });
+  },
+
+  getStoresByCategory: (category: string) => {
+    return get().stores.filter(store => store.category === category);
+  },
+
+  getVerifiedStores: () => {
+    return get().stores.filter(store => store.isVerified);
+  },
+
+  getFeaturedStores: () => {
+    return get().stores.filter(store => store.isVerified && store.rating >= 4.5).slice(0, 6);
   }
 }));

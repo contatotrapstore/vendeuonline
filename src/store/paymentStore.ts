@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiRequest } from '@/lib/api';
 
 export interface PaymentMethod {
   id: string;
@@ -45,16 +46,19 @@ export interface PaymentStore {
   payments: Payment[];
   currentPayment: Payment | null;
   isProcessing: boolean;
+  loading: boolean;
   error: string | null;
   
   // Payment methods
   paymentMethods: PaymentMethod[];
   
   // Actions
+  fetchPaymentMethods: () => Promise<void>;
   createPayment: (orderId: string, paymentData: PaymentData) => Promise<Payment>;
   processPayment: (paymentId: string) => Promise<boolean>;
   getPayment: (paymentId: string) => Payment | null;
   getPaymentsByOrder: (orderId: string) => Payment[];
+  getPaymentStatus: (paymentId: string) => Promise<void>;
   updatePaymentStatus: (paymentId: string, status: Payment['status']) => void;
   generatePixCode: (amount: number) => string;
   generatePixQrCode: (pixCode: string) => string;
@@ -62,77 +66,60 @@ export interface PaymentStore {
   setCurrentPayment: (payment: Payment | null) => void;
 }
 
-// Mock payment methods
-const mockPaymentMethods: PaymentMethod[] = [
-  {
-    id: 'pix',
-    type: 'pix',
-    name: 'PIX',
-    icon: '🔄',
-    enabled: true,
-    processingTime: 'Instantâneo',
-    fee: 0
-  },
-  {
-    id: 'credit_card',
-    type: 'credit_card',
-    name: 'Cartão de Crédito',
-    icon: '💳',
-    enabled: true,
-    processingTime: '1-2 dias úteis',
-    fee: 3.99
-  },
-  {
-    id: 'debit_card',
-    type: 'debit_card',
-    name: 'Cartão de Débito',
-    icon: '💳',
-    enabled: true,
-    processingTime: 'Instantâneo',
-    fee: 2.99
-  },
-  {
-    id: 'boleto',
-    type: 'boleto',
-    name: 'Boleto Bancário',
-    icon: '📄',
-    enabled: true,
-    processingTime: '1-3 dias úteis',
-    fee: 0
-  }
-];
+
 
 export const usePaymentStore = create<PaymentStore>((set, get) => ({
   payments: [],
   currentPayment: null,
   isProcessing: false,
+  loading: false,
   error: null,
-  paymentMethods: mockPaymentMethods,
+  paymentMethods: [],
+
+  fetchPaymentMethods: async () => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiRequest('/api/payment/methods');
+      set({ paymentMethods: response.data || [], loading: false });
+    } catch (error: any) {
+      console.error('Erro ao buscar métodos de pagamento:', error);
+      set({ 
+        paymentMethods: [], 
+        loading: false, 
+        error: 'Erro ao carregar métodos de pagamento' 
+      });
+    }
+  },
 
   createPayment: async (orderId: string, paymentData: PaymentData) => {
     set({ isProcessing: true, error: null });
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const response = await apiRequest('/api/payment/create', {
+        method: 'POST',
+        body: JSON.stringify({
+          orderId,
+          paymentMethod: paymentData.method.type.toUpperCase(),
+          amount: paymentData.amount,
+          installments: paymentData.installments,
+          cardData: paymentData.cardData,
+          pixData: paymentData.pixData
+        })
+      });
+
       const payment: Payment = {
-        id: `payment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: response.data.id,
         orderId,
         amount: paymentData.amount,
         method: paymentData.method,
-        status: 'pending',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        transactionId: `txn_${Date.now()}`
+        status: response.data.status,
+        createdAt: new Date(response.data.createdAt),
+        updatedAt: new Date(response.data.updatedAt),
+        transactionId: response.data.transactionId,
+        pixCode: response.data.pixCode,
+        pixQrCode: response.data.pixQrCode,
+        expiresAt: response.data.expiresAt ? new Date(response.data.expiresAt) : undefined
       };
-
-      // Generate PIX code and QR code for PIX payments
-      if (paymentData.method.type === 'pix') {
-        payment.pixCode = get().generatePixCode(paymentData.amount);
-        payment.pixQrCode = get().generatePixQrCode(payment.pixCode);
-        payment.expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
-      }
 
       set(state => ({
         payments: [...state.payments, payment],
@@ -141,9 +128,10 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
       }));
 
       return payment;
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erro ao criar pagamento:', error);
       set({ 
-        error: 'Erro ao criar pagamento. Tente novamente.',
+        error: 'Erro ao criar pagamento', 
         isProcessing: false 
       });
       throw error;
@@ -162,25 +150,16 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
       // Update status to processing
       get().updatePaymentStatus(paymentId, 'processing');
 
-      // Simulate payment processing
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Simulate success/failure (90% success rate)
-      const isSuccess = Math.random() > 0.1;
-      
-      if (isSuccess) {
-        get().updatePaymentStatus(paymentId, 'approved');
-        set({ isProcessing: false });
-        return true;
-      } else {
-        get().updatePaymentStatus(paymentId, 'rejected');
-        set({ 
-          error: 'Pagamento rejeitado. Verifique os dados e tente novamente.',
-          isProcessing: false 
-        });
-        return false;
-      }
-    } catch (error) {
+      const response = await apiRequest(`/api/payment/${paymentId}/process`, {
+        method: 'POST'
+      });
+
+      const newStatus = response.data.status;
+      get().updatePaymentStatus(paymentId, newStatus);
+      set({ isProcessing: false });
+      return newStatus === 'approved';
+    } catch (error: any) {
+      console.error('Erro ao processar pagamento:', error);
       set({ 
         error: 'Erro ao processar pagamento. Tente novamente.',
         isProcessing: false 
@@ -195,6 +174,35 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
 
   getPaymentsByOrder: (orderId: string) => {
     return get().payments.filter(p => p.orderId === orderId);
+  },
+
+  getPaymentStatus: async (paymentId: string) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await apiRequest(`/api/payment/${paymentId}/status`);
+      
+      // Atualizar o pagamento com o status mais recente
+      const updatedPayment = {
+        ...response.data.payment,
+        updatedAt: new Date()
+      };
+      
+      set(state => ({
+        payments: state.payments.map(p => 
+          p.id === paymentId ? { ...p, ...updatedPayment } : p
+        ),
+        currentPayment: state.currentPayment?.id === paymentId 
+          ? { ...state.currentPayment, ...updatedPayment }
+          : state.currentPayment,
+        loading: false
+      }));
+    } catch (error: any) {
+      console.error('Erro ao buscar status do pagamento:', error);
+      set({ 
+        loading: false,
+        error: 'Erro ao buscar status do pagamento'
+      });
+    }
   },
 
   updatePaymentStatus: (paymentId: string, status: Payment['status']) => {

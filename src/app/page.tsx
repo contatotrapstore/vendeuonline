@@ -1,37 +1,35 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useEffect } from 'react';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { ProductCard } from '@/components/ui/ProductCard';
 import HeroSection from '../components/ui/HeroSection';
 import { FeaturedStores } from '@/components/ui/FeaturedStores';
 import { useProductStore } from '@/store/productStore';
-
-
-
-const mockStores = [
-  {
-    id: '1',
-    name: 'Eletrônicos Erechim',
-    logo: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=modern%20electronics%20store%20logo%20erechim%20rs&image_size=square',
-    products: 156,
-    rating: 4.7,
-    location: 'Erechim, RS'
-  },
-  {
-    id: '2',
-    name: 'Móveis & Decoração',
-    logo: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=furniture%20store%20logo%20modern%20design&image_size=square',
-    products: 89,
-    rating: 4.5,
-    location: 'Erechim, RS'
-  }
-];
+import { useStoreStore } from "@/stores/storeStore";
 
 export default function HomePage() {
-  const { products } = useProductStore();
+  const { products, fetchProducts } = useProductStore();
+  const { stores, fetchStores, loading: storesLoading } = useStoreStore();
+  
   const featuredProducts = products.filter(p => p.isFeatured).slice(0, 12);
   const allProducts = products.slice(0, 20);
+  const featuredStores = stores.slice(0, 6).map(store => ({
+    id: store.id,
+    name: store.name,
+    logo: store.logo,
+    products: store.productCount || 0,
+    rating: store.rating,
+    city: store.city,
+    description: store.description,
+    category: store.category,
+    isVerified: store.isVerified
+  })); // Mostrar até 6 lojas em destaque
+  
+  useEffect(() => {
+    fetchProducts();
+    fetchStores();
+  }, [fetchProducts, fetchStores]);
   
   return (
     <div className="min-h-screen bg-gray-50">
@@ -79,7 +77,11 @@ export default function HomePage() {
             <h2 className="text-4xl font-bold text-gray-900 mb-4">Lojas Parceiras</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">Conheça as melhores lojas da nossa plataforma</p>
           </div>
-          <FeaturedStores stores={mockStores} />
+          {storesLoading ? (
+            <div className="text-center py-12 text-gray-500">Carregando lojas...</div>
+          ) : (
+            <FeaturedStores stores={featuredStores} />
+          )}
         </div>
       </section>
     </div>

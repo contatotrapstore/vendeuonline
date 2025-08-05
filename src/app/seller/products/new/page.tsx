@@ -48,7 +48,7 @@ const conditionOptions = [
 
 export default function NewProductPage() {
   const navigate = useNavigate();
-  const { addProduct } = useProductStore();
+  const { createProduct } = useProductStore();
   const { user } = useAuthStore();
   
   const [isLoading, setIsLoading] = useState(false);
@@ -125,27 +125,34 @@ export default function NewProductPage() {
       const imageUrls = formData.images.map(img => img.url);
 
       const productData = {
-        ...formData,
-        images: imageUrls,
-        specifications: cleanSpecs,
-        status,
-        sellerId: user?.id || 'current-user',
-        storeId: user?.id || 'current-store',
-        image: imageUrls[0] || '',
-        seller: user?.name || 'Vendedor',
-        store: user?.name || 'Minha Loja',
-        location: 'São Paulo, SP',
-        rating: 0,
-        reviews: 0,
-        sold: 0,
-        shipping: {
-          free: formData.freeShipping,
-          estimatedDays: formData.freeShipping ? 3 : 7,
-          price: formData.freeShipping ? undefined : 15.99
-        }
+        name: formData.name,
+        description: formData.description,
+        price: formData.price,
+        categoryId: formData.category,
+        brand: formData.brand,
+        condition: formData.condition,
+        stock: formData.stock,
+        minStock: Math.max(1, Math.floor(formData.stock * 0.1)),
+        weight: formData.weight,
+        dimensions: {
+           ...formData.dimensions,
+           unit: 'cm' as const
+         },
+        isFeatured: false,
+        images: formData.images.map((img, index) => ({
+          id: `img-${index}`,
+          url: img.url,
+          alt: formData.name,
+          isMain: index === 0,
+          order: index
+        })),
+        specifications: cleanSpecs.map(spec => ({
+          name: spec.key,
+          value: spec.value
+        }))
       };
 
-      addProduct(productData);
+      await createProduct(productData);
       
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1000));

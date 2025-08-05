@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Star, Heart, Share2, ShoppingCart, Truck, Shield, ArrowLeft, Plus, Minus, MapPin, MessageCircle } from 'lucide-react';
-import { useProductStore, Product } from '@/store/productStore';
+import { useProductStore } from '@/store/productStore';
+import { Product } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { Link } from 'react-router-dom';
 
@@ -50,8 +51,8 @@ export default function ProductDetailPage() {
   };
 
   const calculateDiscount = () => {
-    if (product.originalPrice && product.originalPrice > product.price) {
-      return Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
+    if (product.comparePrice && product.comparePrice > product.price) {
+      return Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100);
     }
     return 0;
   };
@@ -133,7 +134,7 @@ export default function ProductDetailPage() {
             {/* Main Image */}
             <div className="aspect-square bg-white rounded-lg border overflow-hidden">
               <img
-                src={product.images[selectedImage] || product.image}
+                src={product.images[selectedImage]?.url || product.images[0]?.url}
                 alt={product.name}
                 className="w-full h-full object-cover"
                 onError={(e) => {
@@ -155,7 +156,7 @@ export default function ProductDetailPage() {
                     }`}
                   >
                     <img
-                      src={image}
+                      src={image.url}
                       alt={`${product.name} ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
@@ -176,9 +177,9 @@ export default function ProductDetailPage() {
                   <span className="text-sm text-gray-600 ml-1">({product.rating})</span>
                 </div>
                 <span className="text-sm text-gray-500">•</span>
-                <span className="text-sm text-gray-600">{product.reviews} avaliações</span>
+                <span className="text-sm text-gray-600">{product.reviewCount} avaliações</span>
                 <span className="text-sm text-gray-500">•</span>
-                <span className="text-sm text-gray-600">{product.sold} vendidos</span>
+                <span className="text-sm text-gray-600">{product.salesCount} vendidos</span>
               </div>
             </div>
 
@@ -188,10 +189,10 @@ export default function ProductDetailPage() {
                 <span className="text-3xl font-bold text-gray-900">
                   {formatPrice(product.price)}
                 </span>
-                {product.originalPrice && (
+                {product.comparePrice && (
                   <>
                     <span className="text-lg text-gray-500 line-through">
-                      {formatPrice(product.originalPrice)}
+                      {formatPrice(product.comparePrice)}
                     </span>
                     <span className="bg-red-100 text-red-800 text-sm font-medium px-2 py-1 rounded">
                       -{discount}%
@@ -199,7 +200,7 @@ export default function ProductDetailPage() {
                   </>
                 )}
               </div>
-              {product.freeShipping && (
+              {product.specifications?.find(spec => spec.name === 'Frete Grátis')?.value === 'Sim' && (
                 <div className="flex items-center gap-2 text-green-600">
                   <Truck className="h-4 w-4" />
                   <span className="text-sm font-medium">Frete grátis</span>
@@ -217,7 +218,7 @@ export default function ProductDetailPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-gray-600">Vendido por</p>
-                  <p className="font-medium text-gray-900">{product.seller}</p>
+                  <p className="font-medium text-gray-900">Vendedor ID: {product.sellerId}</p>
                   <div className="flex items-center gap-1 mt-1">
                     {renderStars(4.5)}
                     <span className="text-xs text-gray-600 ml-1">(4.5)</span>
@@ -225,7 +226,7 @@ export default function ProductDetailPage() {
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <MapPin className="h-4 w-4" />
-                  <span className="text-sm">{product.location}</span>
+                  <span className="text-sm">{product.specifications?.find(spec => spec.name === 'Localização')?.value || 'Não informado'}</span>
                 </div>
               </div>
             </div>
@@ -357,7 +358,7 @@ export default function ProductDetailPage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {product.specifications.map((spec, index) => (
                       <div key={index} className="flex justify-between py-2 border-b border-gray-100">
-                        <span className="font-medium text-gray-700">{spec.key}:</span>
+                        <span className="font-medium text-gray-700">{spec.name}:</span>
                         <span className="text-gray-600">{spec.value}</span>
                       </div>
                     ))}
@@ -388,7 +389,7 @@ export default function ProductDetailPage() {
                       <p>• Entrega via Correios ou transportadora</p>
                       <p>• Prazo: 3-7 dias úteis</p>
                       <p>• Rastreamento incluído</p>
-                      {product.freeShipping && <p>• Frete grátis para todo o Brasil</p>}
+                      {product.specifications?.find(spec => spec.name === 'Frete Grátis')?.value === 'Sim' && <p>• Frete grátis para todo o Brasil</p>}
                     </div>
                   </div>
                   

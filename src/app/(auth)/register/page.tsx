@@ -2,11 +2,12 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Store, Mail, Lock, User, Phone, MapPin, Building } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin, Building, Store } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import Logo from '@/components/ui/Logo';
 
 const baseSchema = {
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -74,15 +75,43 @@ export default function RegisterPage() {
     setIsLoading(true);
     
     try {
-      // Simulação de registro - substituir pela API real
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Usar a API real de registro
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          phone: data.phone,
+          password: data.password,
+          userType: data.userType,
+          city: data.city,
+          state: data.state,
+          // Campos específicos para vendedor
+          ...(data.userType === 'seller' && {
+            storeName: data.storeName,
+            storeDescription: data.storeDescription,
+            cnpj: data.cnpj,
+            address: data.address,
+            zipCode: data.zipCode,
+            category: data.category
+          })
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao criar conta');
+      }
       
       toast.success('Conta criada com sucesso!');
       
       // Redirecionar para login
       navigate('/login');
     } catch (error) {
-      toast.error('Erro ao criar conta. Tente novamente.');
+      toast.error(error instanceof Error ? error.message : 'Erro ao criar conta. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -97,7 +126,7 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <Store className="h-12 w-12 text-primary" />
+          <Logo size="lg" showText={false} />
         </div>
         <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
           Criar nova conta
@@ -106,7 +135,7 @@ export default function RegisterPage() {
           Ou{' '}
           <Link
             to="/login"
-            className="font-medium text-primary hover:text-primary/80 transition-colors"
+            className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
           >
             entrar na sua conta existente
           </Link>
@@ -130,8 +159,8 @@ export default function RegisterPage() {
                     onChange={() => handleUserTypeChange('buyer')}
                     className="sr-only peer"
                   />
-                  <div className="p-4 text-center border-2 rounded-lg cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 transition-all">
-                    <User className="h-8 w-8 mx-auto mb-2 text-gray-400 peer-checked:text-primary" />
+                  <div className="p-4 text-center border-2 rounded-lg cursor-pointer peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all">
+                    <User className="h-8 w-8 mx-auto mb-2 text-gray-400 peer-checked:text-blue-600" />
                     <div className="font-medium">Comprador</div>
                     <div className="text-xs text-gray-500 mt-1">Quero comprar produtos</div>
                   </div>
@@ -144,8 +173,8 @@ export default function RegisterPage() {
                     onChange={() => handleUserTypeChange('seller')}
                     className="sr-only peer"
                   />
-                  <div className="p-4 text-center border-2 rounded-lg cursor-pointer peer-checked:border-primary peer-checked:bg-primary/5 transition-all">
-                    <Store className="h-8 w-8 mx-auto mb-2 text-gray-400 peer-checked:text-primary" />
+                  <div className="p-4 text-center border-2 rounded-lg cursor-pointer peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all">
+                    <Building className="h-8 w-8 mx-auto mb-2 text-gray-400 peer-checked:text-blue-600" />
                     <div className="font-medium">Vendedor</div>
                     <div className="text-xs text-gray-500 mt-1">Quero vender produtos</div>
                   </div>
@@ -168,7 +197,7 @@ export default function RegisterPage() {
                     id="name"
                     type="text"
                     {...register('name')}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Seu nome completo"
                   />
                 </div>
@@ -190,7 +219,7 @@ export default function RegisterPage() {
                     id="email"
                     type="email"
                     {...register('email')}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="seu@email.com"
                   />
                 </div>
@@ -212,7 +241,7 @@ export default function RegisterPage() {
                     id="phone"
                     type="tel"
                     {...register('phone')}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="(11) 99999-9999"
                   />
                 </div>
@@ -234,7 +263,7 @@ export default function RegisterPage() {
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     {...register('password')}
-                    className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                    className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Mínimo 6 caracteres"
                   />
                   <button
@@ -267,7 +296,7 @@ export default function RegisterPage() {
                     id="confirmPassword"
                     type={showConfirmPassword ? 'text' : 'password'}
                     {...register('confirmPassword')}
-                    className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                    className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Confirme sua senha"
                   />
                   <button
@@ -300,7 +329,7 @@ export default function RegisterPage() {
                     id="city"
                     type="text"
                     {...register('city')}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Sua cidade"
                   />
                 </div>
@@ -317,7 +346,7 @@ export default function RegisterPage() {
                 <select
                   id="state"
                   {...register('state')}
-                  className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                  className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Selecione o estado</option>
                   <option value="SP">São Paulo</option>
@@ -353,7 +382,7 @@ export default function RegisterPage() {
                         id="storeName"
                         type="text"
                         {...register('storeName' as any)}
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Nome da sua loja"
                       />
                     </div>
@@ -375,7 +404,7 @@ export default function RegisterPage() {
                         id="cnpj"
                         type="text"
                         {...register('cnpj' as any)}
-                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         placeholder="00.000.000/0000-00"
                       />
                     </div>
@@ -389,7 +418,7 @@ export default function RegisterPage() {
                     <select
                       id="category"
                       {...register('category' as any)}
-                      className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary"
+                      className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="">Selecione uma categoria</option>
                       <option value="eletronicos">Eletrônicos</option>
@@ -415,7 +444,7 @@ export default function RegisterPage() {
                       id="zipCode"
                       type="text"
                       {...register('zipCode' as any)}
-                      className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                      className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       placeholder="00000-000"
                     />
                     {(errors as any).zipCode && (
@@ -433,7 +462,7 @@ export default function RegisterPage() {
                     id="address"
                     type="text"
                     {...register('address' as any)}
-                    className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                    className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Rua, número, bairro"
                   />
                   {(errors as any).address && (
@@ -450,7 +479,7 @@ export default function RegisterPage() {
                     id="storeDescription"
                     rows={3}
                     {...register('storeDescription' as any)}
-                    className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary focus:border-primary"
+                    className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Conte um pouco sobre sua loja e produtos..."
                   />
                   {(errors as any).storeDescription && (
@@ -467,7 +496,7 @@ export default function RegisterPage() {
                 name="terms"
                 type="checkbox"
                 required
-                className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
                 Eu aceito os{' '}
@@ -486,7 +515,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {isLoading ? 'Criando conta...' : 'Criar conta'}
               </button>

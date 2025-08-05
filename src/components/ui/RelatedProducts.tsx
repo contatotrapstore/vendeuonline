@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ProductCard } from './ProductCard';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Product } from '@/store/productStore';
+import { Product } from '@/types';
 
 interface RelatedProductsProps {
   products: Product[];

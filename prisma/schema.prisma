@@ -32,6 +32,7 @@ model User {
   orders    Order[]
   reviews   Review[]
   notifications Notification[]
+  subscriptions Subscription[]
 
   @@map("users")
 }
@@ -59,7 +60,7 @@ model Seller {
   address         String
   zipCode         String
   category        String
-  plan            SellerPlan  @default(BASIC)
+  plan            SellerPlan  @default(GRATUITO)
   isActive        Boolean     @default(true)
   rating          Float       @default(0)
   totalSales      Int         @default(0)
@@ -129,7 +130,7 @@ model Store {
   reviewCount  Int               @default(0)
   productCount Int               @default(0)
   salesCount   Int               @default(0)
-  plan         SellerPlan        @default(BASIC)
+  plan         SellerPlan        @default(GRATUITO)
   features     Json?             // StoreFeatures
   theme        Json?             // StoreTheme
   seoTitle     String?
@@ -316,6 +317,48 @@ model Notification {
   @@map("notifications")
 }
 
+model Plan {
+  id              String      @id @default(cuid())
+  name            String      @unique
+  slug            String      @unique
+  description     String
+  price           Float
+  billingPeriod   String      // "monthly" ou "yearly"
+  maxAds          Int         // -1 para ilimitado
+  adDuration      Int         // duração em dias
+  maxPhotos       Int
+  support         String
+  features        String[]
+  isActive        Boolean     @default(true)
+  order           Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  // Relacionamentos
+  subscriptions   Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id              String            @id @default(cuid())
+  userId          String
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId          String
+  plan            Plan              @relation(fields: [planId], references: [id])
+  status          SubscriptionStatus @default(ACTIVE)
+  startDate       DateTime          @default(now())
+  endDate         DateTime?
+  autoRenew       Boolean           @default(true)
+  paymentMethod   PaymentMethod?
+  lastPayment     DateTime?
+  nextPayment     DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@map("subscriptions")
+}
+
 // Enums
 enum UserType {
   BUYER
@@ -324,9 +367,11 @@ enum UserType {
 }
 
 enum SellerPlan {
-  BASIC
-  PREMIUM
-  ENTERPRISE
+  GRATUITO
+  MICRO_EMPRESA
+  PEQUENA_EMPRESA
+  EMPRESA_SIMPLES
+  EMPRESA_PLUS
 }
 
 enum OrderStatus {
@@ -364,4 +409,12 @@ enum NotificationType {
   STOCK_LOW
   PROMOTION_STARTED
   SYSTEM_UPDATE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  INACTIVE
+  CANCELLED
+  EXPIRED
+  PENDING
 }

@@ -1,125 +1,55 @@
 'use client';
 
-import { useState } from 'react';
-import { Search, MapPin, Star, Users, Package, Filter, Grid, List } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, MapPin, Star, Users, Package, Filter, Grid, List, Loader2 } from 'lucide-react';
 import { APP_CONFIG } from '@/config/app';
 import { Link } from 'react-router-dom';
+import { useStoreStore } from '@/stores/storeStore';
 
-interface Store {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  rating: number;
-  reviewCount: number;
-  productCount: number;
-  location: string;
-  image: string;
-  verified: boolean;
-  plan: string;
-  joinedDate: string;
-}
 
-const mockStores: Store[] = [
-  {
-    id: '1',
-    name: 'TechStore Erechim',
-    description: 'Especializada em eletrônicos e tecnologia com os melhores preços da região.',
-    category: 'Eletrônicos',
-    rating: 4.8,
-    reviewCount: 156,
-    productCount: 89,
-    location: 'Centro, Erechim',
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=modern_electronics_store_front_blue_purple_theme&image_size=square',
-    verified: true,
-    plan: 'Premium',
-    joinedDate: '2023-03-15'
-  },
-  {
-    id: '2',
-    name: 'Casa & Decoração',
-    description: 'Móveis e decoração para transformar sua casa em um lar aconchegante.',
-    category: 'Móveis',
-    rating: 4.6,
-    reviewCount: 89,
-    productCount: 124,
-    location: 'Bairro Progresso, Erechim',
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=furniture_home_decor_store_cozy_interior&image_size=square',
-    verified: true,
-    plan: 'Profissional',
-    joinedDate: '2023-01-20'
-  },
-  {
-    id: '3',
-    name: 'Moda Feminina Elegante',
-    description: 'Roupas femininas modernas e elegantes para todas as ocasiões.',
-    category: 'Roupas',
-    rating: 4.9,
-    reviewCount: 203,
-    productCount: 67,
-    location: 'Centro, Erechim',
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=elegant_womens_clothing_boutique_fashion_store&image_size=square',
-    verified: true,
-    plan: 'Empresarial',
-    joinedDate: '2022-11-10'
-  },
-  {
-    id: '4',
-    name: 'AutoPeças RS',
-    description: 'Peças automotivas originais e acessórios para seu veículo.',
-    category: 'Veículos',
-    rating: 4.5,
-    reviewCount: 78,
-    productCount: 156,
-    location: 'Industrial, Erechim',
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=automotive_parts_store_garage_professional&image_size=square',
-    verified: false,
-    plan: 'Básico',
-    joinedDate: '2023-06-05'
-  },
-  {
-    id: '5',
-    name: 'Sabores da Terra',
-    description: 'Produtos alimentícios artesanais e orgânicos direto do produtor.',
-    category: 'Comida',
-    rating: 4.7,
-    reviewCount: 134,
-    productCount: 45,
-    location: 'Rural, Erechim',
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=organic_food_market_fresh_products_artisanal&image_size=square',
-    verified: true,
-    plan: 'Profissional',
-    joinedDate: '2023-02-28'
-  }
-];
 
 export default function StoresPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('rating');
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredStores = mockStores
-    .filter(store => {
-      const matchesSearch = store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           store.description.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || store.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'rating':
-          return b.rating - a.rating;
-        case 'products':
-          return b.productCount - a.productCount;
-        case 'reviews':
-          return b.reviewCount - a.reviewCount;
-        case 'name':
-          return a.name.localeCompare(b.name);
-        default:
-          return 0;
-      }
-    });
+  const {
+    stores,
+    loading,
+    error,
+    pagination,
+    fetchStores,
+    setFilters,
+    clearError
+  } = useStoreStore();
+
+  // Carregar lojas quando o componente monta ou filtros mudam
+  useEffect(() => {
+    const filters = {
+      search: searchTerm || undefined,
+      category: selectedCategory === 'all' ? undefined : selectedCategory
+    };
+    
+    const sortMapping: Record<string, string> = {
+      'rating': 'rating',
+      'products': 'salesCount',
+      'reviews': 'rating',
+      'name': 'name'
+    };
+
+    fetchStores(filters, currentPage, 12).catch(console.error);
+  }, [searchTerm, selectedCategory, sortBy, currentPage, fetchStores]);
+
+  // Função para lidar com mudanças de filtro
+  const handleFilterChange = (newFilters: any) => {
+    setCurrentPage(1); // Reset para primeira página
+    if (newFilters.search !== undefined) setSearchTerm(newFilters.search);
+    if (newFilters.category !== undefined) setSelectedCategory(newFilters.category);
+  };
+
+  const filteredStores = stores;
 
   const getPlanBadgeColor = (plan: string) => {
     switch (plan) {
@@ -160,8 +90,12 @@ export default function StoresPage() {
                     type="text"
                     placeholder="Buscar lojas..."
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setSearchTerm(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={loading}
                   />
                 </div>
               </div>
@@ -170,8 +104,12 @@ export default function StoresPage() {
               <div>
                 <select
                   value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={loading}
                 >
                   <option value="all">Todas as Categorias</option>
                   {APP_CONFIG.categories.map(category => (
@@ -184,8 +122,12 @@ export default function StoresPage() {
               <div>
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  disabled={loading}
                 >
                   <option value="rating">Melhor Avaliação</option>
                   <option value="products">Mais Produtos</option>
@@ -198,7 +140,14 @@ export default function StoresPage() {
             {/* View Mode and Results */}
             <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
               <p className="text-gray-600">
-                {filteredStores.length} loja{filteredStores.length !== 1 ? 's' : ''} encontrada{filteredStores.length !== 1 ? 's' : ''}
+                {loading ? (
+                  <span className="flex items-center space-x-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Carregando lojas...</span>
+                  </span>
+                ) : (
+                  `${pagination.total || 0} loja${(pagination.total || 0) !== 1 ? 's' : ''} encontrada${(pagination.total || 0) !== 1 ? 's' : ''}`
+                )}
               </p>
               
               <div className="flex items-center space-x-2">
@@ -226,18 +175,60 @@ export default function StoresPage() {
             </div>
           </div>
 
-          {/* Stores Grid/List */}
-          {filteredStores.length === 0 ? (
+          {/* Error State */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-2xl p-6 mb-8">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                    <span className="text-red-600 text-sm">!</span>
+                  </div>
+                  <div>
+                    <h3 className="text-red-800 font-medium">Erro ao carregar lojas</h3>
+                    <p className="text-red-600 text-sm">{error}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    clearError();
+                    fetchStores({}, currentPage, 12);
+                  }}
+                  className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                >
+                  Tentar novamente
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && (
+            <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+              <Loader2 className="h-16 w-16 text-blue-500 mx-auto mb-4 animate-spin" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Carregando lojas...
+              </h3>
+              <p className="text-gray-600">
+                Aguarde enquanto buscamos as melhores lojas para você.
+              </p>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loading && !error && filteredStores.length === 0 && (
             <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
               <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
                 Nenhuma loja encontrada
               </h3>
               <p className="text-gray-600">
-                Tente ajustar seus filtros de busca.
+                Tente ajustar seus filtros de busca ou explore outras categorias.
               </p>
             </div>
-          ) : (
+          )}
+
+          {/* Stores Grid/List */}
+          {!loading && !error && filteredStores.length > 0 && (
             <div className={viewMode === 'grid' 
               ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-8' 
               : 'space-y-6'
@@ -249,11 +240,15 @@ export default function StoresPage() {
                   }`}>
                     <div className={viewMode === 'list' ? 'w-48 flex-shrink-0' : ''}>
                       <img
-                        src={store.image}
+                        src={store.logo || store.banner || 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=modern_store_front_placeholder&image_size=square'}
                         alt={store.name}
                         className={`w-full object-cover ${
                           viewMode === 'list' ? 'h-full' : 'h-48'
                         }`}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=modern_store_front_placeholder&image_size=square';
+                        }}
                       />
                     </div>
                     
@@ -264,16 +259,16 @@ export default function StoresPage() {
                             <h3 className="text-xl font-bold text-gray-900">
                               {store.name}
                             </h3>
-                            {store.verified && (
+                            {store.isVerified && (
                               <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
                                 <span className="text-white text-xs">✓</span>
                               </div>
                             )}
                           </div>
                           <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
-                            getPlanBadgeColor(store.plan)
+                            getPlanBadgeColor(store.seller?.plan || 'Básico')
                           }`}>
-                            {store.plan}
+                            {store.seller?.plan || 'Básico'}
                           </span>
                         </div>
                       </div>
@@ -283,39 +278,85 @@ export default function StoresPage() {
                       </p>
 
                       <div className="space-y-3">
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          <div className="flex items-center space-x-1">
-                            <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                            <span className="font-medium">{store.rating}</span>
-                            <span>({store.reviewCount})</span>
+                          <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <div className="flex items-center space-x-1">
+                              <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                              <span className="font-medium">{store.seller?.rating?.toFixed(1) || '0.0'}</span>
+                              <span>({store._count?.reviews || 0})</span>
+                            </div>
+                            <div className="flex items-center space-x-1">
+                              <Package className="h-4 w-4" />
+                              <span>{store._count?.products || 0} produtos</span>
+                            </div>
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <Package className="h-4 w-4" />
-                            <span>{store.productCount} produtos</span>
+
+                          <div className="flex items-center space-x-1 text-sm text-gray-600">
+                            <MapPin className="h-4 w-4" />
+                            <span>{store.city}, {store.state}</span>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-2">
+                            <span className="text-xs text-gray-500">
+                              Desde {new Date(store.createdAt).toLocaleDateString('pt-BR', {
+                                month: 'long',
+                                year: 'numeric'
+                              })}
+                            </span>
+                            <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
+                              {store.category}
+                            </span>
                           </div>
                         </div>
-
-                        <div className="flex items-center space-x-1 text-sm text-gray-600">
-                          <MapPin className="h-4 w-4" />
-                          <span>{store.location}</span>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-2">
-                          <span className="text-xs text-gray-500">
-                            Desde {new Date(store.joinedDate).toLocaleDateString('pt-BR', {
-                              month: 'long',
-                              year: 'numeric'
-                            })}
-                          </span>
-                          <span className="inline-block px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs">
-                            {store.category}
-                          </span>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </Link>
               ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && !error && pagination.totalPages > 1 && (
+            <div className="flex items-center justify-center space-x-2 mt-12">
+              <button
+                onClick={() => setCurrentPage(currentPage - 1)}
+                disabled={!pagination.hasPrev}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Anterior
+              </button>
+              
+              <div className="flex items-center space-x-1">
+                {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
+                  const pageNum = Math.max(1, Math.min(
+                    pagination.totalPages - 4,
+                    Math.max(1, currentPage - 2)
+                  )) + i;
+                  
+                  if (pageNum > pagination.totalPages) return null;
+                  
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-2 rounded-lg transition-colors ${
+                        pageNum === currentPage
+                          ? 'bg-blue-600 text-white'
+                          : 'text-gray-600 hover:bg-gray-100'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={!pagination.hasNext}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Próxima
+              </button>
             </div>
           )}
 

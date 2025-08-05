@@ -1,128 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Package, Truck, CheckCircle, Clock, X, Eye, MessageCircle } from 'lucide-react';
+import { Package, Truck, CheckCircle, Clock, X, Eye, MessageCircle, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useOrderStore, Order } from '@/store/orderStore';
 
-interface OrderItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
-
-interface Order {
-  id: string;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
-  total: number;
-  items: OrderItem[];
-  store: {
-    name: string;
-    id: string;
-  };
-  createdAt: Date;
-  estimatedDelivery?: Date;
-  trackingCode?: string;
-  paymentMethod: string;
-}
-
-// Mock orders data
-const mockOrders: Order[] = [
-  {
-    id: 'ORD001',
-    status: 'delivered',
-    total: 4299.99,
-    items: [
-      {
-        id: '1',
-        name: 'Samsung Galaxy S24 Ultra 256GB',
-        price: 4299.99,
-        quantity: 1,
-        image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=samsung%20galaxy%20s24%20ultra&image_size=square'
-      }
-    ],
-    store: {
-      name: 'TechStore Premium',
-      id: 'store1'
-    },
-    createdAt: new Date('2024-01-15'),
-    estimatedDelivery: new Date('2024-01-20'),
-    trackingCode: 'BR123456789',
-    paymentMethod: 'PIX'
-  },
-  {
-    id: 'ORD002',
-    status: 'shipped',
-    total: 1899.99,
-    items: [
-      {
-        id: '4',
-        name: 'Smart TV LG 55" 4K UHD',
-        price: 1899.99,
-        quantity: 1,
-        image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=lg%20smart%20tv%2055%20inch&image_size=square'
-      }
-    ],
-    store: {
-      name: 'LG Electronics',
-      id: 'store2'
-    },
-    createdAt: new Date('2024-01-20'),
-    estimatedDelivery: new Date('2024-01-27'),
-    trackingCode: 'BR987654321',
-    paymentMethod: 'Cartão de Crédito'
-  },
-  {
-    id: 'ORD003',
-    status: 'confirmed',
-    total: 699.98,
-    items: [
-      {
-        id: '5',
-        name: 'Tênis Nike Air Max 270',
-        price: 399.99,
-        quantity: 1,
-        image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=nike%20air%20max%20270%20sneakers&image_size=square'
-      },
-      {
-        id: '6',
-        name: 'Cafeteira Nespresso Essenza Mini',
-        price: 299.99,
-        quantity: 1,
-        image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=nespresso%20essenza%20mini%20coffee%20machine&image_size=square'
-      }
-    ],
-    store: {
-      name: 'Nike Store',
-      id: 'store3'
-    },
-    createdAt: new Date('2024-01-22'),
-    estimatedDelivery: new Date('2024-01-29'),
-    paymentMethod: 'PIX'
-  },
-  {
-    id: 'ORD004',
-    status: 'pending',
-    total: 2199.99,
-    items: [
-      {
-        id: '3',
-        name: 'Notebook Dell Inspiron 15 3000',
-        price: 2199.99,
-        quantity: 1,
-        image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=dell%20inspiron%20laptop&image_size=square'
-      }
-    ],
-    store: {
-      name: 'Dell Store',
-      id: 'store4'
-    },
-    createdAt: new Date('2024-01-25'),
-    estimatedDelivery: new Date('2024-02-05'),
-    paymentMethod: 'Boleto Bancário'
-  }
-];
+// Configuração de status dos pedidos
 
 const statusConfig = {
   pending: {
@@ -153,22 +36,22 @@ const statusConfig = {
 };
 
 export default function BuyerOrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
+  const {
+    orders,
+    isLoading,
+    error,
+    fetchOrders,
+    updateOrderStatus,
+    addTrackingCode,
+    cancelOrder
+  } = useOrderStore();
+  
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call
-    const loadOrders = async () => {
-      setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setOrders(mockOrders);
-      setIsLoading(false);
-    };
-    
-    loadOrders();
-  }, []);
+    fetchOrders();
+  }, [fetchOrders]);
 
   const filteredOrders = selectedStatus === 'all' 
     ? orders 
@@ -188,29 +71,51 @@ export default function BuyerOrdersPage() {
     // In a real app, this would open chat or contact form
   };
 
-  const handleCancelOrder = (orderId: string) => {
-    setOrders(prev => prev.map(order => 
-      order.id === orderId 
-        ? { ...order, status: 'cancelled' as const }
-        : order
-    ));
-    toast.success('Pedido cancelado com sucesso');
+  const handleCancelOrder = async (orderId: string) => {
+    if (confirm('Tem certeza que deseja cancelar este pedido?')) {
+      try {
+        await cancelOrder(orderId, 'Cancelado pelo cliente');
+        toast.success('Pedido cancelado com sucesso');
+      } catch (error) {
+        toast.error('Erro ao cancelar pedido');
+      }
+    }
+  };
+
+  const handleRetryFetch = () => {
+    fetchOrders();
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-6xl mx-auto px-4">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-            <div className="grid gap-6">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-white rounded-lg p-6 space-y-4">
-                  <div className="h-4 bg-gray-200 rounded w-1/3"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  <div className="h-20 bg-gray-200 rounded"></div>
-                </div>
-              ))}
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+              <p className="text-gray-600">Carregando seus pedidos...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Erro ao carregar pedidos</h3>
+              <p className="text-gray-600 mb-4">{error}</p>
+              <button
+                onClick={handleRetryFetch}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Tentar novamente
+              </button>
             </div>
           </div>
         </div>
@@ -279,7 +184,7 @@ export default function BuyerOrdersPage() {
                       <div>
                         <h3 className="font-semibold text-gray-900">Pedido #{order.id}</h3>
                         <p className="text-sm text-gray-600">
-                          {order.createdAt.toLocaleDateString('pt-BR')} • {order.store.name}
+                          {new Date(order.createdAt).toLocaleDateString('pt-BR')} • {order.store?.name || 'Loja'}
                         </p>
                       </div>
                       <div className={`flex items-center gap-2 px-3 py-1 rounded-full border text-sm font-medium ${statusInfo.color}`}>
@@ -302,13 +207,13 @@ export default function BuyerOrdersPage() {
                         <div key={item.id} className="flex items-center gap-4">
                           <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                             <img
-                              src={item.image}
-                              alt={item.name}
+                              src={item.product.images[0]?.url || 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=product%20placeholder&image_size=square'}
+                              alt={item.product.name}
                               className="w-full h-full object-cover"
                             />
                           </div>
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{item.name}</h4>
+                            <h4 className="font-medium text-gray-900">{item.product.name}</h4>
                             <p className="text-sm text-gray-600">
                               Qtd: {item.quantity} • R$ {item.price.toFixed(2).replace('.', ',')}
                             </p>
@@ -321,11 +226,6 @@ export default function BuyerOrdersPage() {
                   {/* Order Actions */}
                   <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                     <div className="flex items-center gap-4">
-                      {order.estimatedDelivery && (
-                        <p className="text-sm text-gray-600">
-                          Entrega prevista: {order.estimatedDelivery.toLocaleDateString('pt-BR')}
-                        </p>
-                      )}
                       {order.trackingCode && (
                         <p className="text-sm text-gray-600">
                           Código: {order.trackingCode}
@@ -354,7 +254,7 @@ export default function BuyerOrdersPage() {
                       )}
                       
                       <button
-                        onClick={() => handleContactStore(order.store.name)}
+                        onClick={() => handleContactStore(order.store?.name || 'Loja')}
                         className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium flex items-center gap-2"
                       >
                         <MessageCircle className="h-4 w-4" />
@@ -406,8 +306,8 @@ export default function BuyerOrdersPage() {
                     <div>
                       <h3 className="font-medium text-gray-900 mb-2">Informações</h3>
                       <div className="text-sm text-gray-600 space-y-1">
-                        <p>Data: {selectedOrder.createdAt.toLocaleDateString('pt-BR')}</p>
-                        <p>Loja: {selectedOrder.store.name}</p>
+                        <p>Data: {new Date(selectedOrder.createdAt).toLocaleDateString('pt-BR')}</p>
+                        <p>Loja ID: {selectedOrder.storeId}</p>
                         <p>Pagamento: {selectedOrder.paymentMethod}</p>
                         {selectedOrder.trackingCode && (
                           <p>Rastreamento: {selectedOrder.trackingCode}</p>
@@ -424,13 +324,13 @@ export default function BuyerOrdersPage() {
                         <div key={item.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                           <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
                             <img
-                              src={item.image}
-                              alt={item.name}
+                              src={item.product.images[0]?.url || 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=product%20placeholder&image_size=square'}
+                              alt={item.product.name}
                               className="w-full h-full object-cover"
                             />
                           </div>
                           <div className="flex-1">
-                            <h4 className="font-medium text-gray-900">{item.name}</h4>
+                            <h4 className="font-medium text-gray-900">{item.product.name}</h4>
                             <p className="text-sm text-gray-600">
                               Quantidade: {item.quantity}
                             </p>

@@ -1,141 +1,67 @@
 'use client';
 
-import { useState } from 'react';
-import { Star, MapPin, Phone, Mail, MessageCircle, Package, Users, Calendar, Shield, Filter, Grid, List, Heart } from 'lucide-react';
-import { APP_CONFIG } from '@/config/app';
+import { useState, useEffect } from 'react';
+import { Star, MapPin, Phone, Mail, MessageCircle, Package, Users, Calendar, Shield, Filter, Grid, List, Heart, Loader2, AlertCircle } from 'lucide-react';
+import { useStoreStore } from '@/stores/storeStore';
+import { useProductStore } from '@/store/productStore';
 import { Link } from 'react-router-dom';
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  rating: number;
-  reviewCount: number;
-  category: string;
-  inStock: boolean;
-}
 
-interface StoreDetails {
-  id: string;
-  name: string;
-  description: string;
-  category: string;
-  rating: number;
-  reviewCount: number;
-  productCount: number;
-  location: string;
-  address: string;
-  phone: string;
-  email: string;
-  whatsapp: string;
-  image: string;
-  coverImage: string;
-  verified: boolean;
-  plan: string;
-  joinedDate: string;
-  responseTime: string;
-  deliveryOptions: string[];
-  paymentMethods: string[];
-  businessHours: { [key: string]: string };
-  policies: {
-    returns: string;
-    warranty: string;
-    shipping: string;
-  };
-}
 
-const mockStore: StoreDetails = {
-  id: '1',
-  name: 'TechStore Erechim',
-  description: 'Especializada em eletrônicos e tecnologia com os melhores preços da região. Oferecemos produtos de qualidade com garantia e suporte técnico especializado.',
-  category: 'Eletrônicos',
-  rating: 4.8,
-  reviewCount: 156,
-  productCount: 89,
-  location: 'Centro, Erechim',
-  address: 'Rua Sete de Setembro, 123 - Centro, Erechim - RS',
-  phone: '(54) 3321-1234',
-  email: 'contato@techstoreerechim.com.br',
-  whatsapp: '5554999887766',
-  image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=modern_electronics_store_front_blue_purple_theme&image_size=square',
-  coverImage: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=electronics_store_interior_modern_technology_displays&image_size=landscape_16_9',
-  verified: true,
-  plan: 'Premium',
-  joinedDate: '2023-03-15',
-  responseTime: '2 horas',
-  deliveryOptions: ['Retirada no Local', 'Entrega Local', 'Correios'],
-  paymentMethods: ['PIX', 'Cartão de Crédito', 'Cartão de Débito', 'Boleto'],
-  businessHours: {
-    'Segunda': '08:00 - 18:00',
-    'Terça': '08:00 - 18:00',
-    'Quarta': '08:00 - 18:00',
-    'Quinta': '08:00 - 18:00',
-    'Sexta': '08:00 - 18:00',
-    'Sábado': '08:00 - 12:00',
-    'Domingo': 'Fechado'
-  },
-  policies: {
-    returns: 'Aceitamos devoluções em até 7 dias para produtos com defeito.',
-    warranty: 'Todos os produtos possuem garantia do fabricante.',
-    shipping: 'Entrega grátis para compras acima de R$ 200 na região de Erechim.'
-  }
-};
 
-const mockProducts: Product[] = [
-  {
-    id: '1',
-    name: 'Smartphone Samsung Galaxy A54',
-    price: 1299.99,
-    originalPrice: 1499.99,
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=samsung_galaxy_smartphone_modern_sleek_design&image_size=square',
-    rating: 4.7,
-    reviewCount: 23,
-    category: 'Eletrônicos',
-    inStock: true
-  },
-  {
-    id: '2',
-    name: 'Notebook Lenovo IdeaPad 3',
-    price: 2499.99,
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=lenovo_laptop_notebook_modern_professional&image_size=square',
-    rating: 4.5,
-    reviewCount: 18,
-    category: 'Eletrônicos',
-    inStock: true
-  },
-  {
-    id: '3',
-    name: 'Fone Bluetooth JBL Tune 510BT',
-    price: 199.99,
-    originalPrice: 249.99,
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=jbl_bluetooth_headphones_wireless_modern&image_size=square',
-    rating: 4.8,
-    reviewCount: 45,
-    category: 'Eletrônicos',
-    inStock: false
-  },
-  {
-    id: '4',
-    name: 'Smart TV LG 50" 4K',
-    price: 1899.99,
-    image: 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=lg_smart_tv_4k_modern_television_display&image_size=square',
-    rating: 4.6,
-    reviewCount: 12,
-    category: 'Eletrônicos',
-    inStock: true
-  }
-];
+
+
 
 export default function StorePage({ params }: { params: { id: string } }) {
   const [activeTab, setActiveTab] = useState('products');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [sortBy, setSortBy] = useState('popular');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [storeProducts, setStoreProducts] = useState<any[]>([]);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsError, setProductsError] = useState<string | null>(null);
 
-  const filteredProducts = mockProducts
-    .filter(product => categoryFilter === 'all' || product.category === categoryFilter)
+  // Store hooks
+  const { 
+    currentStore, 
+    loading: storeLoading, 
+    error: storeError, 
+    fetchStoreById,
+    clearError: clearStoreError 
+  } = useStoreStore();
+  
+  const { getProductsByStore } = useProductStore();
+
+  // Carregar dados da loja e produtos
+  useEffect(() => {
+    const loadStoreData = async () => {
+      try {
+        await fetchStoreById(params.id);
+      } catch (error) {
+        console.error('Erro ao carregar loja:', error);
+      }
+    };
+
+    const loadStoreProducts = async () => {
+      try {
+        setProductsLoading(true);
+        setProductsError(null);
+        const products = await getProductsByStore(params.id);
+        setStoreProducts(products);
+      } catch (error) {
+        setProductsError(error instanceof Error ? error.message : 'Erro ao carregar produtos');
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+
+    loadStoreData();
+    loadStoreProducts();
+  }, [params.id, fetchStoreById, getProductsByStore]);
+
+  // Filtrar e ordenar produtos
+  const filteredProducts = storeProducts
+    .filter(product => categoryFilter === 'all' || product.category?.name === categoryFilter)
     .sort((a, b) => {
       switch (sortBy) {
         case 'price-low':
@@ -143,11 +69,11 @@ export default function StorePage({ params }: { params: { id: string } }) {
         case 'price-high':
           return b.price - a.price;
         case 'rating':
-          return b.rating - a.rating;
+          return (b.averageRating || 0) - (a.averageRating || 0);
         case 'name':
           return a.name.localeCompare(b.name);
         default:
-          return b.reviewCount - a.reviewCount;
+          return (b.reviewCount || 0) - (a.reviewCount || 0);
       }
     });
 
@@ -161,16 +87,51 @@ export default function StorePage({ params }: { params: { id: string } }) {
     }
   };
 
+  // Estados de carregamento e erro
+  if (storeLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Carregando loja...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (storeError || !currentStore) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Erro ao carregar loja</h2>
+          <p className="text-gray-600 mb-4">{storeError || 'Loja não encontrada'}</p>
+          <button
+            onClick={() => {
+              clearStoreError();
+              window.location.reload();
+            }}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Store Header */}
       <div className="relative">
         <div className="h-64 bg-gradient-to-br from-blue-600 to-purple-600">
-          <img
-            src={mockStore.coverImage}
-            alt={mockStore.name}
-            className="w-full h-full object-cover opacity-30"
-          />
+          {currentStore.banner && (
+            <img
+              src={currentStore.banner}
+              alt={currentStore.name}
+              className="w-full h-full object-cover opacity-30"
+            />
+          )}
         </div>
         
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -180,40 +141,40 @@ export default function StorePage({ params }: { params: { id: string } }) {
             <div className="flex flex-col md:flex-row items-start md:items-end space-y-4 md:space-y-0 md:space-x-6">
               <div className="w-24 h-24 bg-white rounded-2xl p-2 shadow-lg">
                 <img
-                  src={mockStore.image}
-                  alt={mockStore.name}
+                  src={currentStore.logo || 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=store_logo_placeholder&image_size=square'}
+                  alt={currentStore.name}
                   className="w-full h-full object-cover rounded-xl"
                 />
               </div>
               
               <div className="flex-1 text-white">
                 <div className="flex items-center space-x-3 mb-2">
-                  <h1 className="text-3xl md:text-4xl font-bold">{mockStore.name}</h1>
-                  {mockStore.verified && (
+                  <h1 className="text-3xl md:text-4xl font-bold">{currentStore.name}</h1>
+                  {currentStore.isVerified && (
                     <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
                       <Shield className="h-5 w-5 text-white" />
                     </div>
                   )}
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    getPlanBadgeColor(mockStore.plan)
+                    getPlanBadgeColor(currentStore.plan || 'Básico')
                   }`}>
-                    {mockStore.plan}
+                    {currentStore.plan || 'Básico'}
                   </span>
                 </div>
                 
                 <div className="flex flex-wrap items-center gap-4 text-sm">
                   <div className="flex items-center space-x-1">
                     <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                    <span className="font-medium">{mockStore.rating}</span>
-                    <span className="text-gray-300">({mockStore.reviewCount} avaliações)</span>
+                    <span className="font-medium">{currentStore.rating?.toFixed(1) || '0.0'}</span>
+                    <span className="text-gray-300">({currentStore.reviewCount || 0} avaliações)</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Package className="h-4 w-4" />
-                    <span>{mockStore.productCount} produtos</span>
+                    <span>{currentStore.productCount || storeProducts.length} produtos</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <MapPin className="h-4 w-4" />
-                    <span>{mockStore.location}</span>
+                    <span>{currentStore.city}, {currentStore.state}</span>
                   </div>
                 </div>
               </div>
@@ -233,36 +194,35 @@ export default function StorePage({ params }: { params: { id: string } }) {
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Descrição</h4>
-                    <p className="text-gray-600 text-sm">{mockStore.description}</p>
+                    <p className="text-gray-600 text-sm">{currentStore.description || 'Nenhuma descrição disponível.'}</p>
                   </div>
                   
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Contato</h4>
                     <div className="space-y-2 text-sm">
-                      <div className="flex items-center space-x-2">
-                        <Phone className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-600">{mockStore.phone}</span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Mail className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-600">{mockStore.email}</span>
-                      </div>
+                      {currentStore.phone && (
+                        <div className="flex items-center space-x-2">
+                          <Phone className="h-4 w-4 text-gray-400" />
+                          <span className="text-gray-600">{currentStore.phone}</span>
+                        </div>
+                      )}
+                      {currentStore.email && (
+                        <div className="flex items-center space-x-2">
+                          <Mail className="h-4 w-4 text-gray-400" />
+                          <span className="text-gray-600">{currentStore.email}</span>
+                        </div>
+                      )}
                       <div className="flex items-center space-x-2">
                         <MapPin className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-600">{mockStore.address}</span>
+                        <span className="text-gray-600">{currentStore.address || `${currentStore.city}, ${currentStore.state}`}</span>
                       </div>
                     </div>
                   </div>
                   
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Tempo de Resposta</h4>
-                    <p className="text-gray-600 text-sm">{mockStore.responseTime}</p>
-                  </div>
-                  
-                  <div>
                     <h4 className="font-medium text-gray-900 mb-2">Membro desde</h4>
                     <p className="text-gray-600 text-sm">
-                      {new Date(mockStore.joinedDate).toLocaleDateString('pt-BR', {
+                      {new Date(currentStore.createdAt).toLocaleDateString('pt-BR', {
                         month: 'long',
                         year: 'numeric'
                       })}
@@ -272,20 +232,27 @@ export default function StorePage({ params }: { params: { id: string } }) {
                 
                 {/* Contact Buttons */}
                 <div className="mt-6 space-y-3">
-                  <a
-                    href={`https://wa.me/${mockStore.whatsapp}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full flex items-center justify-center space-x-2 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors"
-                  >
-                    <MessageCircle className="h-5 w-5" />
-                    <span>WhatsApp</span>
-                  </a>
+                  {currentStore.socialMedia?.whatsapp && (
+                    <a
+                      href={`https://wa.me/${currentStore.socialMedia.whatsapp}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full flex items-center justify-center space-x-2 bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition-colors"
+                    >
+                      <MessageCircle className="h-5 w-5" />
+                      <span>WhatsApp</span>
+                    </a>
+                  )}
                   
-                  <button className="w-full flex items-center justify-center space-x-2 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors">
-                    <Mail className="h-5 w-5" />
-                    <span>Enviar E-mail</span>
-                  </button>
+                  {currentStore.email && (
+                    <a
+                      href={`mailto:${currentStore.email}`}
+                      className="w-full flex items-center justify-center space-x-2 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      <Mail className="h-5 w-5" />
+                      <span>Enviar E-mail</span>
+                    </a>
+                  )}
                 </div>
               </div>
             </div>
@@ -297,9 +264,9 @@ export default function StorePage({ params }: { params: { id: string } }) {
                 <div className="border-b border-gray-200">
                   <nav className="flex space-x-8 px-6">
                     {[
-                      { id: 'products', name: 'Produtos', count: mockStore.productCount },
+                      { id: 'products', name: 'Produtos', count: currentStore.productCount || storeProducts.length },
                       { id: 'about', name: 'Sobre' },
-                      { id: 'reviews', name: 'Avaliações', count: mockStore.reviewCount },
+                      { id: 'reviews', name: 'Avaliações', count: currentStore.reviewCount || 0 },
                       { id: 'policies', name: 'Políticas' }
                     ].map(tab => (
                       <button
@@ -333,6 +300,7 @@ export default function StorePage({ params }: { params: { id: string } }) {
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value)}
                             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            disabled={productsLoading}
                           >
                             <option value="popular">Mais Popular</option>
                             <option value="price-low">Menor Preço</option>
@@ -350,6 +318,7 @@ export default function StorePage({ params }: { params: { id: string } }) {
                                 ? 'bg-blue-100 text-blue-600' 
                                 : 'text-gray-400 hover:text-gray-600'
                             }`}
+                            disabled={productsLoading}
                           >
                             <Grid className="h-5 w-5" />
                           </button>
@@ -360,73 +329,128 @@ export default function StorePage({ params }: { params: { id: string } }) {
                                 ? 'bg-blue-100 text-blue-600' 
                                 : 'text-gray-400 hover:text-gray-600'
                             }`}
+                            disabled={productsLoading}
                           >
                             <List className="h-5 w-5" />
                           </button>
                         </div>
                       </div>
 
+                      {/* Products Loading State */}
+                      {productsLoading && (
+                        <div className="flex justify-center items-center py-12">
+                          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                          <span className="ml-3 text-gray-600">Carregando produtos...</span>
+                        </div>
+                      )}
+
+                      {/* Products Error State */}
+                      {productsError && (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+                          <div className="flex items-center space-x-3">
+                            <AlertCircle className="h-6 w-6 text-red-600" />
+                            <div>
+                              <h3 className="text-red-800 font-medium">Erro ao carregar produtos</h3>
+                              <p className="text-red-600 text-sm mt-1">{productsError}</p>
+                            </div>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  setProductsLoading(true);
+                                  setProductsError(null);
+                                  const products = await getProductsByStore(params.id);
+                                  setStoreProducts(products);
+                                } catch (error) {
+                                  setProductsError(error instanceof Error ? error.message : 'Erro ao carregar produtos');
+                                } finally {
+                                  setProductsLoading(false);
+                                }
+                              }}
+                              className="ml-auto bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                            >
+                              Tentar novamente
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Products Grid */}
-                      <div className={viewMode === 'grid' 
-                        ? 'grid md:grid-cols-2 lg:grid-cols-3 gap-6' 
-                        : 'space-y-4'
-                      }>
-                        {filteredProducts.map(product => (
-                          <Link key={product.id} to={`/products/${product.id}`}>
-                            <div className={`bg-gray-50 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer ${
-                              viewMode === 'list' ? 'flex' : ''
-                            }`}>
-                              <div className={viewMode === 'list' ? 'w-32 flex-shrink-0' : ''}>
-                                <img
-                                  src={product.image}
-                                  alt={product.name}
-                                  className={`w-full object-cover ${
-                                    viewMode === 'list' ? 'h-full' : 'h-48'
-                                  }`}
-                                />
-                              </div>
-                              
-                              <div className="p-4 flex-1">
-                                <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                                  {product.name}
-                                </h4>
-                                
-                                <div className="flex items-center space-x-2 mb-2">
-                                  <div className="flex items-center space-x-1">
-                                    <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                                    <span className="text-sm font-medium">{product.rating}</span>
-                                    <span className="text-sm text-gray-500">({product.reviewCount})</span>
-                                  </div>
-                                </div>
-                                
-                                <div className="flex items-center justify-between">
-                                  <div>
-                                    <div className="flex items-center space-x-2">
-                                      <span className="text-lg font-bold text-blue-600">
-                                        R$ {product.price.toFixed(2)}
-                                      </span>
-                                      {product.originalPrice && (
-                                        <span className="text-sm text-gray-500 line-through">
-                                          R$ {product.originalPrice.toFixed(2)}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <span className={`text-xs ${
-                                      product.inStock ? 'text-green-600' : 'text-red-600'
-                                    }`}>
-                                      {product.inStock ? 'Em estoque' : 'Fora de estoque'}
-                                    </span>
+                      {!productsLoading && !productsError && (
+                        <>
+                          <div className={viewMode === 'grid' 
+                            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+                            : 'space-y-4'
+                          }>
+                            {filteredProducts.map((product) => (
+                              <Link key={product.id} to={`/products/${product.id}`}>
+                                <div className={`bg-gray-50 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer ${
+                                  viewMode === 'list' ? 'flex' : ''
+                                }`}>
+                                  <div className={viewMode === 'list' ? 'w-32 flex-shrink-0' : ''}>
+                                    <img
+                                      src={product.images?.[0] || product.image || 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=product_placeholder&image_size=square'}
+                                      alt={product.name}
+                                      className={`w-full object-cover ${
+                                        viewMode === 'list' ? 'h-full' : 'h-48'
+                                      }`}
+                                    />
                                   </div>
                                   
-                                  <button className="p-2 text-gray-400 hover:text-red-500 transition-colors">
-                                    <Heart className="h-5 w-5" />
-                                  </button>
+                                  <div className="p-4 flex-1">
+                                    <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2">
+                                      {product.name}
+                                    </h4>
+                                    
+                                    <div className="flex items-center space-x-2 mb-2">
+                                      <div className="flex items-center space-x-1">
+                                        <Star className="h-4 w-4 text-yellow-400 fill-current" />
+                                        <span className="text-sm font-medium">{product.averageRating?.toFixed(1) || '0.0'}</span>
+                                        <span className="text-sm text-gray-500">({product.reviewCount || 0})</span>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-between">
+                                      <div>
+                                        <div className="flex items-center space-x-2">
+                                          <span className="text-lg font-bold text-blue-600">
+                                            R$ {product.price.toFixed(2)}
+                                          </span>
+                                          {product.originalPrice && product.originalPrice > product.price && (
+                                            <span className="text-sm text-gray-500 line-through">
+                                              R$ {product.originalPrice.toFixed(2)}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <span className={`text-xs ${
+                                          product.stock > 0 ? 'text-green-600' : 'text-red-600'
+                                        }`}>
+                                          {product.stock > 0 ? `${product.stock} em estoque` : 'Fora de estoque'}
+                                        </span>
+                                      </div>
+                                      
+                                      <button className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                                        <Heart className="h-5 w-5" />
+                                      </button>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
+                              </Link>
+                            ))}
+                          </div>
+
+                          {filteredProducts.length === 0 && storeProducts.length > 0 && (
+                            <div className="text-center py-12">
+                              <p className="text-gray-500">Nenhum produto encontrado com os filtros aplicados.</p>
                             </div>
-                          </Link>
-                        ))}
-                      </div>
+                          )}
+
+                          {storeProducts.length === 0 && (
+                            <div className="text-center py-12">
+                              <p className="text-gray-500">Esta loja ainda não possui produtos cadastrados.</p>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   )}
 
@@ -435,40 +459,70 @@ export default function StorePage({ params }: { params: { id: string } }) {
                     <div className="space-y-6">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Sobre a Loja</h3>
-                        <p className="text-gray-700 leading-relaxed">{mockStore.description}</p>
+                        <p className="text-gray-700 leading-relaxed">
+                          {currentStore.description || 'Nenhuma descrição disponível para esta loja.'}
+                        </p>
                       </div>
                       
                       <div>
-                        <h4 className="font-semibold text-gray-900 mb-3">Horário de Funcionamento</h4>
-                        <div className="grid md:grid-cols-2 gap-2">
-                          {Object.entries(mockStore.businessHours).map(([day, hours]) => (
-                            <div key={day} className="flex justify-between py-2 px-3 bg-gray-50 rounded">
-                              <span className="font-medium">{day}</span>
-                              <span className="text-gray-600">{hours}</span>
+                        <h4 className="font-semibold text-gray-900 mb-3">Informações da Loja</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <MapPin className="h-5 w-5 text-gray-500" />
+                              <div>
+                                <p className="font-medium text-gray-900">Localização</p>
+                                <p className="text-gray-600">
+                                  {currentStore.city && currentStore.state 
+                                    ? `${currentStore.city}, ${currentStore.state}`
+                                    : 'Localização não informada'
+                                  }
+                                </p>
+                              </div>
                             </div>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-3">Opções de Entrega</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {mockStore.deliveryOptions.map(option => (
-                            <span key={option} className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                              {option}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-semibold text-gray-900 mb-3">Formas de Pagamento</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {mockStore.paymentMethods.map(method => (
-                            <span key={method} className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">
-                              {method}
-                            </span>
-                          ))}
+                          </div>
+                          
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <Calendar className="h-5 w-5 text-gray-500" />
+                              <div>
+                                <p className="font-medium text-gray-900">Membro desde</p>
+                                <p className="text-gray-600">
+                                  {currentStore.createdAt 
+                                    ? new Date(currentStore.createdAt).toLocaleDateString('pt-BR', {
+                                        year: 'numeric',
+                                        month: 'long'
+                                      })
+                                    : 'Data não disponível'
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <Package className="h-5 w-5 text-gray-500" />
+                              <div>
+                                <p className="font-medium text-gray-900">Total de Produtos</p>
+                                <p className="text-gray-600">
+                                  {currentStore.productCount || storeProducts.length} produtos
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="bg-gray-50 p-4 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <Star className="h-5 w-5 text-gray-500" />
+                              <div>
+                                <p className="font-medium text-gray-900">Avaliação</p>
+                                <p className="text-gray-600">
+                                  {currentStore.rating?.toFixed(1) || '0.0'} ({currentStore.reviewCount || 0} avaliações)
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -487,17 +541,23 @@ export default function StorePage({ params }: { params: { id: string } }) {
                     <div className="space-y-6">
                       <div>
                         <h4 className="font-semibold text-gray-900 mb-2">Política de Devolução</h4>
-                        <p className="text-gray-700">{mockStore.policies.returns}</p>
+                        <p className="text-gray-700">
+                          Política de devolução não informada. Entre em contato com a loja para mais informações.
+                        </p>
                       </div>
                       
                       <div>
                         <h4 className="font-semibold text-gray-900 mb-2">Garantia</h4>
-                        <p className="text-gray-700">{mockStore.policies.warranty}</p>
+                        <p className="text-gray-700">
+                          Informações de garantia não disponíveis. Entre em contato com a loja para mais detalhes.
+                        </p>
                       </div>
                       
                       <div>
                         <h4 className="font-semibold text-gray-900 mb-2">Entrega</h4>
-                        <p className="text-gray-700">{mockStore.policies.shipping}</p>
+                        <p className="text-gray-700">
+                          Informações de entrega não disponíveis. Entre em contato com a loja para mais detalhes.
+                        </p>
                       </div>
                     </div>
                   )}

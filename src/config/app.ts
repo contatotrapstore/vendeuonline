@@ -56,85 +56,13 @@ export const APP_CONFIG = {
     'Móveis'
   ],
   
-  // Planos de preços
-  plans: {
-    basic: {
-      id: 'basico',
-      name: 'Básico',
-      price: 0,
-      period: '30 dias',
-      maxAds: 5,
-      validity: 30,
-      support: 'E-mail',
-      features: [
-        '5 anúncios ativos',
-        'Validade de 30 dias',
-        'Suporte por e-mail',
-        'Fotos básicas (até 3 por anúncio)',
-        'Localização no mapa',
-        'Contato via WhatsApp/Telefone'
-      ]
-    },
-    professional: {
-      id: 'profissional',
-      name: 'Profissional',
-      price: 29.90,
-      period: 'mensal',
-      maxAds: 20,
-      validity: 60,
-      support: 'Prioritário',
-      features: [
-        '20 anúncios ativos',
-        'Validade de 60 dias',
-        'Suporte prioritário',
-        'Fotos em alta qualidade (até 8 por anúncio)',
-        'Destaque na categoria',
-        'Impulsionamento básico (2x por mês)',
-        'Estatísticas básicas',
-        'Badge de vendedor verificado'
-      ]
-    },
-    premium: {
-      id: 'premium',
-      name: 'Premium',
-      price: 59.90,
-      period: 'mensal',
-      maxAds: 50,
-      validity: 90,
-      support: 'VIP',
-      features: [
-        '50 anúncios ativos',
-        'Validade de 90 dias',
-        'Suporte VIP (chat ao vivo)',
-        'Fotos profissionais ilimitadas',
-        'Destaque na página inicial',
-        'Impulsionamento avançado (5x por mês)',
-        'Estatísticas detalhadas',
-        'Loja personalizada',
-        'Múltiplas formas de contato'
-      ]
-    },
-    enterprise: {
-      id: 'empresarial',
-      name: 'Empresarial',
-      price: 99.90,
-      period: 'mensal',
-      maxAds: -1, // Ilimitado
-      validity: 120,
-      support: 'Dedicado',
-      features: [
-        'Anúncios ilimitados',
-        'Validade de 120 dias',
-        'Gerente de conta dedicado',
-        'Fotos e vídeos profissionais',
-        'Destaque premium em todas as páginas',
-        'Impulsionamento ilimitado',
-        'Analytics completo',
-        'API para integração',
-        'Múltiplos usuários',
-        'Relatórios personalizados'
-      ]
-    }
+  // Configurações de planos (gerenciados via API)
+  planLimits: {
+    free: { maxAds: 1, maxPhotos: 3 },
+    micro: { maxAds: 2, maxPhotos: 6 },
+    small: { maxAds: 5, maxPhotos: 10 },
+    simple: { maxAds: 10, maxPhotos: 15 },
+    plus: { maxAds: 20, maxPhotos: 20 }
   },
   
   // Formas de pagamento
@@ -192,13 +120,7 @@ export const APP_CONFIG = {
     enableChat: true,
     enableReviews: true,
     enableWishlist: true,
-    enableCompare: true,
-    maxPhotosPerAd: {
-      basic: 3,
-      professional: 8,
-      premium: 15,
-      enterprise: 25
-    }
+    enableCompare: true
   },
   
   // Limites e configurações
@@ -220,10 +142,9 @@ export const isValidCategory = (category: string): boolean => {
   return APP_CONFIG.categories.includes(category);
 };
 
-// Função para obter informações do plano
-export const getPlanInfo = (planId: string) => {
-  const plans = APP_CONFIG.plans;
-  return Object.values(plans).find(plan => plan.id === planId);
+// Função para obter limites do plano
+export const getPlanLimits = (planType: string) => {
+  return APP_CONFIG.planLimits[planType as keyof typeof APP_CONFIG.planLimits] || APP_CONFIG.planLimits.free;
 };
 
 // Função para formatar preço
