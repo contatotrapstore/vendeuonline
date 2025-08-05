@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getUserFromToken } from '@/lib/auth'
+// Middleware compatível com Edge Runtime
+// Usando apenas Web APIs padrão
 
 // Rotas que requerem autenticação
 const protectedRoutes = [
@@ -15,7 +15,7 @@ const protectedRoutes = [
 ]
 
 // Rotas que requerem tipos específicos de usuário
-const roleBasedRoutes = {
+const roleBasedRoutes: Record<string, string[]> = {
   '/seller': ['SELLER', 'ADMIN'],
   '/admin': ['ADMIN'],
   '/buyer': ['BUYER', 'ADMIN'],
@@ -64,12 +64,50 @@ function getRequiredRoles(pathname: string): string[] | null {
   return null
 }
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
+// Função simples para decodificar JWT sem bibliotecas externas
+function decodeJWT(token: string): any {
+  try {
+    const parts = token.split('.')
+    if (parts.length !== 3) {
+      return null
+    }
+    
+    // Decodificar o payload (segunda parte)
+    const payload = parts[1]
+    // Adicionar padding se necessário
+    const paddedPayload = payload + '='.repeat((4 - payload.length % 4) % 4)
+    const decoded = atob(paddedPayload.replace(/-/g, '+').replace(/_/g, '/'))
+    return JSON.parse(decoded)
+  } catch {
+    return null
+  }
+}
+
+// Verificação básica de token (sem validação de assinatura)
+function verifyTokenBasic(token: string): any {
+  const payload = decodeJWT(token)
+  if (!payload) {
+    return null
+  }
+  
+  // Verificar se o token não expirou
+  if (payload.exp && payload.exp < Date.now() / 1000) {
+    return null
+  }
+  
+  return payload
+}
+
+export async function middleware(request: Request) {
+  const url = new URL(request.url)
+  const pathname = url.pathname
   const method = request.method
   
   // Criar resposta com headers de segurança
-  const response = NextResponse.next()
+  const response = new Response(null, {
+    status: 200,
+    headers: new Headers()
+  })
   
   // Aplicar headers de segurança a todas as respostas
   Object.entries(securityHeaders).forEach(([key, value]) => {
@@ -85,35 +123,56 @@ export async function middleware(request: NextRequest) {
     
     // Para rotas da API protegidas, verificar autenticação
     try {
-      const user = await getUserFromToken(request)
+      const authHeader = request.headers.get('authorization')
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return new Response(
+          JSON.stringify({ error: 'Token de autenticação necessário' }),
+          { 
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+          }
+        )
+      }
       
-      if (!user) {
-        return NextResponse.json(
-          { error: 'Token de autenticação necessário' },
-          { status: 401 }
+      const token = authHeader.substring(7)
+      const payload = verifyTokenBasic(token)
+      
+      if (!payload || !payload.userId) {
+        return new Response(
+          JSON.stringify({ error: 'Token inválido' }),
+          { 
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
+          }
         )
       }
       
       // Verificar permissões baseadas em role
       const requiredRoles = getRequiredRoles(pathname)
-      if (requiredRoles && !requiredRoles.includes(user.type)) {
-        return NextResponse.json(
-          { error: 'Acesso negado' },
-          { status: 403 }
+      if (requiredRoles && !requiredRoles.includes(payload.type)) {
+        return new Response(
+          JSON.stringify({ error: 'Acesso negado' }),
+          { 
+            status: 403,
+            headers: { 'Content-Type': 'application/json' }
+          }
         )
       }
       
       // Adicionar informações do usuário aos headers para as API routes
-      response.headers.set('x-user-id', user.id)
-      response.headers.set('x-user-type', user.type)
-      response.headers.set('x-user-email', user.email)
+      response.headers.set('x-user-id', payload.userId)
+      response.headers.set('x-user-type', payload.type || '')
+      response.headers.set('x-user-email', payload.email || '')
       
       return response
     } catch (error) {
       console.error('Erro na autenticação do middleware:', error)
-      return NextResponse.json(
-        { error: 'Erro interno do servidor' },
-        { status: 500 }
+      return new Response(
+        JSON.stringify({ error: 'Erro interno do servidor' }),
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
       )
     }
   }
@@ -121,20 +180,29 @@ export async function middleware(request: NextRequest) {
   // Para rotas de páginas, verificar se precisa de autenticação
   if (isProtectedRoute(pathname)) {
     try {
-      const user = await getUserFromToken(request)
-      
-      if (!user) {
+      const authHeader = request.headers.get('authorization')
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
         // Redirecionar para login se não autenticado
         const loginUrl = new URL('/login', request.url)
         loginUrl.searchParams.set('redirect', pathname)
-        return NextResponse.redirect(loginUrl)
+        return Response.redirect(loginUrl.toString(), 302)
+      }
+      
+      const token = authHeader.substring(7)
+      const payload = verifyTokenBasic(token)
+      
+      if (!payload || !payload.userId) {
+        // Redirecionar para login se token inválido
+        const loginUrl = new URL('/login', request.url)
+        loginUrl.searchParams.set('redirect', pathname)
+        return Response.redirect(loginUrl.toString(), 302)
       }
       
       // Verificar permissões baseadas em role
       const requiredRoles = getRequiredRoles(pathname)
-      if (requiredRoles && !requiredRoles.includes(user.type)) {
+      if (requiredRoles && !requiredRoles.includes(payload.type)) {
         // Redirecionar para página de acesso negado
-        return NextResponse.redirect(new URL('/unauthorized', request.url))
+        return Response.redirect(new URL('/unauthorized', request.url).toString(), 302)
       }
       
       return response
@@ -143,7 +211,7 @@ export async function middleware(request: NextRequest) {
       // Em caso de erro, redirecionar para login
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('redirect', pathname)
-      return NextResponse.redirect(loginUrl)
+      return Response.redirect(loginUrl.toString(), 302)
     }
   }
   
