@@ -79,16 +79,22 @@ async function getAuthenticatedUser(req: VercelRequest) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  console.log('[STORES] Iniciando handler de stores')
+  console.log('[STORES] Método:', req.method)
+  console.log('[STORES] Query params:', JSON.stringify(req.query, null, 2))
+  
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 
   if (req.method === 'OPTIONS') {
+    console.log('[STORES] Respondendo OPTIONS')
     return res.status(200).end()
   }
 
   try {
+    console.log('[STORES] Testando conexão com Prisma...')
     if (req.method === 'GET') {
       // Listar lojas com filtros e paginação
       const query = querySchema.parse(req.query)
@@ -258,16 +264,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(201).json(store)
     }
 
+    console.log('[STORES] Método não permitido:', req.method)
     return res.status(405).json({ error: 'Método não permitido' })
   } catch (error) {
+    console.error('[STORES] Erro capturado:', error)
+    console.error('[STORES] Stack trace:', error instanceof Error ? error.stack : 'N/A')
+    
     if (error instanceof z.ZodError) {
+      console.log('[STORES] Erro de validação Zod:', error.issues)
       return res.status(400).json({
         error: 'Dados inválidos',
         details: error.issues
       })
     }
 
-    console.error('Erro na API de lojas:', error)
+    // Log específico para erros do Prisma
+    if (error && typeof error === 'object' && 'code' in error) {
+      console.error('[STORES] Erro do Prisma - Code:', (error as any).code)
+      console.error('[STORES] Erro do Prisma - Message:', (error as any).message)
+    }
+
+    console.error('[STORES] Erro na API de lojas:', error)
     return res.status(500).json({ error: 'Erro interno do servidor' })
+  } finally {
+    console.log('[STORES] Desconectando Prisma...')
+    await prisma.$disconnect()
+    console.log('[STORES] Prisma desconectado')
   }
 }

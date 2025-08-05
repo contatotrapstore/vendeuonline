@@ -1,7 +1,8 @@
 # TODO:
 
-- [x] add-vercel-node-dependency: Adicionar dependência @vercel/node ao package.json (priority: High)
-- [x] fix-vercel-json-config: Corrigir configuração do vercel.json removendo rewrites desnecessários (priority: High)
-- [x] verify-api-format: Verificar se APIs estão no formato correto para Vercel serverless functions (priority: High)
-- [x] test-build-locally: Testar build local para garantir funcionamento (priority: Medium)
-- [x] validate-deployment: Validar se deploy funciona corretamente após correções (priority: Medium)
+- [x] fix-database-url: Corrigir DATABASE_URL no .env removendo placeholder [YOUR-PASSWORD] (priority: High)
+- [x] fix-csp-google-fonts: Corrigir CSP no vercel.json para permitir Google Fonts corretamente (priority: High)
+- [x] add-api-logging: Adicionar logs detalhados nas APIs para debug dos erros 500 (priority: High)
+- [x] test-prisma-connection: Testar conexão do Prisma com banco de dados (priority: High)
+- [x] verify-env-variables: Verificar se todas as variáveis de ambiente necessárias estão configuradas (priority: Medium)
+- [x] test-apis-locally: Testar APIs localmente após correções (priority: Medium)

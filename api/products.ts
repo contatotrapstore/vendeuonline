@@ -87,16 +87,22 @@ async function getAuthenticatedUser(req: VercelRequest) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  console.log('[PRODUCTS] Iniciando handler de produtos')
+  console.log('[PRODUCTS] Método:', req.method)
+  console.log('[PRODUCTS] Query params:', JSON.stringify(req.query, null, 2))
+  
   // CORS
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 
   if (req.method === 'OPTIONS') {
+    console.log('[PRODUCTS] Respondendo OPTIONS')
     return res.status(200).end()
   }
 
   try {
+    console.log('[PRODUCTS] Testando conexão com Prisma...')
     if (req.method === 'GET') {
       // Listar produtos com filtros e paginação
       const query = querySchema.parse(req.query)
@@ -277,16 +283,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(201).json(product)
     }
 
+    console.log('[PRODUCTS] Método não permitido:', req.method)
     return res.status(405).json({ error: 'Método não permitido' })
   } catch (error) {
+    console.error('[PRODUCTS] Erro capturado:', error)
+    console.error('[PRODUCTS] Stack trace:', error instanceof Error ? error.stack : 'N/A')
+    
     if (error instanceof z.ZodError) {
+      console.log('[PRODUCTS] Erro de validação Zod:', error.issues)
       return res.status(400).json({
         error: 'Dados inválidos',
         details: error.issues
       })
     }
 
-    console.error('Erro na API de produtos:', error)
+    // Log específico para erros do Prisma
+    if (error && typeof error === 'object' && 'code' in error) {
+      console.error('[PRODUCTS] Erro do Prisma - Code:', (error as any).code)
+      console.error('[PRODUCTS] Erro do Prisma - Message:', (error as any).message)
+    }
+
+    console.error('[PRODUCTS] Erro na API de produtos:', error)
     return res.status(500).json({ error: 'Erro interno do servidor' })
+  } finally {
+    console.log('[PRODUCTS] Desconectando Prisma...')
+    await prisma.$disconnect()
+    console.log('[PRODUCTS] Prisma desconectado')
   }
 }
