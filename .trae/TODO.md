@@ -1,7 +1,7 @@
 # TODO:
 
-- [x] analyze-middleware-dependencies: Analisar dependências incompatíveis no middleware atual (priority: High)
-- [x] create-edge-compatible-middleware: Criar middleware compatível com Edge Runtime usando apenas Web APIs (priority: High)
-- [x] implement-simple-jwt-verification: Implementar verificação JWT básica sem bibliotecas externas (priority: High)
-- [x] maintain-security-headers: Manter headers de segurança no novo middleware (priority: Medium)
-- [x] test-middleware-build: Testar build do middleware após correções (priority: Medium)
+- [x] add-vercel-node-dependency: Adicionar dependência @vercel/node ao package.json (priority: High)
+- [x] fix-vercel-json-config: Corrigir configuração do vercel.json removendo rewrites desnecessários (priority: High)
+- [x] verify-api-format: Verificar se APIs estão no formato correto para Vercel serverless functions (priority: High)
+- [x] test-build-locally: Testar build local para garantir funcionamento (priority: Medium)
+- [x] validate-deployment: Validar se deploy funciona corretamente após correções (priority: Medium)
