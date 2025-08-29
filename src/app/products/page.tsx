@@ -5,6 +5,9 @@ import { Search, Filter, Grid, List, SlidersHorizontal, Loader2, AlertCircle } f
 import { ProductCard } from '@/components/ui/ProductCard';
 import { ProductFilters } from '@/components/ui/ProductFilters';
 import { useProductStore } from '@/store/productStore';
+import { useCart } from '@/store/cartStore';
+import { useWishlistStore } from '@/store/wishlistStore';
+import { EmptySearch, EmptyProducts } from '@/components/ui/feedback/EmptyState';
 
 const categories = [
   'Todos',
@@ -34,6 +37,7 @@ export default function ProductsPage() {
     filters,
     loading,
     error,
+    isEmpty,
     pagination,
     fetchProducts,
     setFilters,
@@ -44,6 +48,10 @@ export default function ProductsPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Cart and Wishlist hooks
+  const { addItem, openCart } = useCart();
+  const { items: wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
 
   // Carregar produtos iniciais
   useEffect(() => {
@@ -298,32 +306,39 @@ export default function ProductsPage() {
                       product={product}
                       viewMode={viewMode}
                       onAddToCart={(product) => {
-                        // TODO: Implementar adicionar ao carrinho
-                        console.log('Adicionar ao carrinho:', product.name);
+                        addItem({
+                          id: product.id,
+                          name: product.name,
+                          price: product.price,
+                          image: product.images?.[0]?.url || '/placeholder-product.png',
+                          store: product.store?.name || 'Loja',
+                          maxQuantity: product.stock
+                        });
+                        openCart();
                       }}
                       onToggleWishlist={(product) => {
-                        // TODO: Implementar lista de desejos
-                        console.log('Toggle wishlist:', product.name);
+                        if (isInWishlist(product.id)) {
+                          const wishlistItem = wishlistItems.find(item => item.productId === product.id);
+                          if (wishlistItem) {
+                            removeFromWishlist(wishlistItem.id);
+                          }
+                        } else {
+                          addToWishlist(product.id);
+                        }
                       }}
                     />
                   </Suspense>
                 ))}
               </div>
-            ) : !loading && !error && (
-              <div className="text-center py-12">
-                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="h-12 w-12 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum produto encontrado</h3>
-                <p className="text-gray-600 mb-4">Tente ajustar os filtros ou buscar por outros termos</p>
-                <button
-                  onClick={handleClearFilters}
-                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                  disabled={loading}
-                >
-                  Limpar Filtros
-                </button>
-              </div>
+            ) : !loading && !error && isEmpty && (
+              filters.search ? (
+                <EmptySearch 
+                  searchTerm={filters.search}
+                  onClearSearch={handleClearFilters}
+                />
+              ) : (
+                <EmptyProducts />
+              )
             )}
 
             {/* Pagination */}

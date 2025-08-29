@@ -14,7 +14,8 @@ import {
   BarChart3,
   Settings,
   Users,
-  Clock
+  Clock,
+  Store
 } from 'lucide-react';
 
 // Dados mock para o dashboard do vendedor
@@ -165,8 +166,14 @@ export default function SellerDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Painel do Vendedor</h1>
-              <p className="text-gray-600">Bem-vindo, {user.name} - {storeName}</p>
+              <div className="flex items-center space-x-3 mb-2">
+                <h1 className="text-2xl font-bold text-gray-900">Painel do Vendedor</h1>
+                <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border bg-green-100 text-green-800 border-green-200">
+                  <Store className="h-3 w-3 mr-1" />
+                  Vendedor
+                </div>
+              </div>
+              <p className="text-gray-600">Bem-vindo, {user.name} • {storeName} • Gerencie seus produtos e vendas</p>
             </div>
             <div className="flex items-center space-x-4">
               <button 

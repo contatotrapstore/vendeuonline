@@ -14,7 +14,6 @@ interface Plan {
   billingPeriod: 'MONTHLY' | 'YEARLY' | 'LIFETIME';
   maxAds: number;
   maxPhotosPerAd: number;
-  maxHighlightsPerDay: number;
   supportLevel: 'EMAIL' | 'CHAT' | 'PHONE' | 'PRIORITY';
   features: string[];
   isActive: boolean;
@@ -207,19 +206,9 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
                   <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                   <span>Até {plan.maxPhotosPerAd} fotos por anúncio</span>
                 </div>
-                {plan.maxHighlightsPerDay > 0 && (
-                  <div className="flex items-center text-sm text-gray-700">
-                    <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                    <span>{plan.maxHighlightsPerDay} destaques por dia</span>
-                  </div>
-                )}
                 <div className="flex items-center text-sm text-gray-700">
                   <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                   <span>Anúncio extra por R$ 14,90</span>
-                </div>
-                <div className="flex items-center text-sm text-gray-700">
-                  <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Destaque extra por R$ 4,90</span>
                 </div>
                 <div className="flex items-center text-sm text-gray-700">
                   <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />

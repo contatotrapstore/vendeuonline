@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { apiRequest } from '@/lib/api';
+import { useAuthStore } from './authStore';
 
 export interface WishlistItem {
   id: string;
@@ -41,7 +42,12 @@ export const useWishlistStore = create<WishlistStore>()(persist(
     fetchWishlist: async () => {
       set({ loading: true, error: null });
       try {
-        const response = await apiRequest('/api/buyer/wishlist');
+        const token = useAuthStore.getState().token;
+        const response = await apiRequest('/api/wishlist', {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         set({ items: response.data || [], loading: false });
       } catch (error: any) {
         console.error('Erro ao buscar wishlist:', error);
@@ -56,8 +62,12 @@ export const useWishlistStore = create<WishlistStore>()(persist(
     addToWishlist: async (productId: string) => {
       set({ loading: true, error: null });
       try {
-        const response = await apiRequest('/api/buyer/wishlist', {
+        const token = useAuthStore.getState().token;
+        const response = await apiRequest('/api/wishlist', {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({ productId })
         });
         
@@ -79,8 +89,12 @@ export const useWishlistStore = create<WishlistStore>()(persist(
     removeFromWishlist: async (itemId: string) => {
       set({ loading: true, error: null });
       try {
-        await apiRequest(`/api/buyer/wishlist/${itemId}`, {
-          method: 'DELETE'
+        const token = useAuthStore.getState().token;
+        await apiRequest(`/api/wishlist/${itemId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
         
         set(state => ({

@@ -1,39 +1,7 @@
 import { create } from 'zustand'
 import { Product } from '@/types';
-
-// Utilitário para gerenciar token no localStorage
-const getStoredToken = () => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('auth-token');
-  }
-  return null;
-};
-
-// Utilitário para fazer requisições autenticadas
-const apiRequest = async (url: string, options: RequestInit = {}) => {
-  const token = getStoredToken();
-  
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...Object.fromEntries(new Headers(options.headers || {}).entries())
-  };
-  
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-  
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
-    throw new Error(errorData.error || `Erro ${response.status}`);
-  }
-  
-  return response.json();
-};
+import { apiRequest, get, post, put, del } from '@/lib/api-client';
+import { appCache } from '@/lib/cache';
 
 
 
@@ -56,6 +24,7 @@ interface ProductStore {
   filters: ProductFilters;
   loading: boolean;
   error: string | null;
+  isEmpty: boolean;
   pagination: {
     page: number;
     limit: number;
@@ -150,11 +119,32 @@ export const useProductStore = create<ProductStore>((set, get) => ({
   filters: defaultFilters,
   loading: false,
   error: null,
+  isEmpty: false,
   pagination: initialPagination,
 
   fetchProducts: async (params = {}) => {
     try {
       set({ loading: true, error: null });
+      
+      // Verificar cache primeiro
+      const cachedData = appCache.getProducts(params);
+      if (cachedData) {
+        set({ 
+          products: cachedData.products || [],
+          filteredProducts: cachedData.products || [],
+          isEmpty: !cachedData.products || cachedData.products.length === 0,
+          pagination: cachedData.pagination || {
+            page: params.page || 1,
+            limit: params.limit || 20,
+            total: cachedData.products?.length || 0,
+            totalPages: Math.ceil((cachedData.products?.length || 0) / (params.limit || 20)),
+            hasNext: false,
+            hasPrev: false
+          },
+          loading: false 
+        });
+        return;
+      }
       
       const searchParams = new URLSearchParams();
       if (params.page) searchParams.append('page', params.page.toString());
@@ -166,33 +156,51 @@ export const useProductStore = create<ProductStore>((set, get) => ({
       if (params.sortBy) searchParams.append('sortBy', params.sortBy);
       if (params.sortOrder) searchParams.append('sortOrder', params.sortOrder);
       
-      const response = await apiRequest(`/api/products?${searchParams.toString()}`);
+      const response = await get(`/products?${searchParams.toString()}`);
+      
+      // Armazenar no cache
+      appCache.setProducts(params, response, 3 * 60 * 1000); // 3 minutos para produtos
       
       set({ 
-        products: response.products,
-        filteredProducts: response.products,
+        products: response.products || [],
+        filteredProducts: response.products || [],
+        isEmpty: !response.products || response.products.length === 0,
         pagination: {
-          page: response.pagination.page,
-          limit: response.pagination.limit,
-          total: response.pagination.total,
-          totalPages: response.pagination.totalPages,
-          hasNext: response.pagination.hasNext,
-          hasPrev: response.pagination.hasPrev,
+          page: response.pagination?.page || 1,
+          limit: response.pagination?.limit || 20,
+          total: response.pagination?.total || 0,
+          totalPages: response.pagination?.totalPages || 0,
+          hasNext: response.pagination?.hasNext || false,
+          hasPrev: response.pagination?.hasPrev || false,
         },
         loading: false 
       });
     } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Erro ao carregar produtos',
-        loading: false 
-      });
+      // Se for erro 404 ou similar, tratar como lista vazia em vez de erro
+      const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar produtos';
+      const isNotFoundError = errorMessage.includes('404') || errorMessage.includes('não encontrado');
+      
+      if (isNotFoundError) {
+        set({ 
+          products: [],
+          filteredProducts: [],
+          isEmpty: true,
+          loading: false,
+          error: null
+        });
+      } else {
+        set({ 
+          error: errorMessage,
+          loading: false 
+        });
+      }
     }
   },
   
   fetchProductById: async (id) => {
     try {
       set({ loading: true, error: null });
-      const product = await apiRequest(`/api/products/${id}`);
+      const product = await get(`/products/${id}`);
       set({ loading: false });
       return product;
     } catch (error) {
@@ -208,10 +216,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      await apiRequest('/api/products', {
-        method: 'POST',
-        body: JSON.stringify(productData),
-      });
+      await post('/products', productData);
       
       // Recarregar produtos após criação
       await get().fetchProducts();
@@ -229,10 +234,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      await apiRequest(`/api/products/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(updates),
-      });
+      await put(`/products/${id}`, updates);
       
       // Atualizar produto na lista local
       const products = get().products.map(product => 
@@ -252,9 +254,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      await apiRequest(`/api/products/${id}`, {
-        method: 'DELETE',
-      });
+      await del(`/products/${id}`);
       
       // Remover produto da lista local
       const products = get().products.filter(product => product.id !== id);
@@ -311,7 +311,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
   getProductsByStore: async (storeId) => {
     try {
-      const response = await apiRequest(`/api/products?storeId=${storeId}`);
+      const response = await get(`/products?storeId=${storeId}`);
       return response.products;
     } catch (error) {
       console.error('Erro ao carregar produtos da loja:', error);
@@ -321,7 +321,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
   getFeaturedProducts: async () => {
     try {
-      const response = await apiRequest('/api/products?featured=true&limit=8');
+      const response = await get('/api/products?featured=true&limit=8');
       return response.products;
     } catch (error) {
       console.error('Erro ao carregar produtos em destaque:', error);
@@ -331,7 +331,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
   getRelatedProducts: async (productId, limit = 4) => {
     try {
-      const response = await apiRequest(`/api/products/${productId}/related?limit=${limit}`);
+      const response = await get(`/products/${productId}/related?limit=${limit}`);
       return response.products;
     } catch (error) {
       console.error('Erro ao carregar produtos relacionados:', error);

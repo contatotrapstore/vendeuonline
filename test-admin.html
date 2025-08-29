@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste Admin Login</title>
+</head>
+<body>
+    <h1>Teste de Login Admin</h1>
+    <button onclick="loginAdmin()">Login como Admin</button>
+    <button onclick="checkUser()">Verificar Usuário Atual</button>
+    <button onclick="goToAdmin()">Ir para Admin</button>
+    
+    <div id="result"></div>
+
+    <script>
+        async function loginAdmin() {
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@vendeuonline.com',
+                        password: '123456',
+                        userType: 'admin'
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (data.token) {
+                    localStorage.setItem('auth-token', data.token);
+                    document.getElementById('result').innerHTML = `
+                        <h3>Login realizado com sucesso!</h3>
+                        <p><strong>Nome:</strong> ${data.user.name}</p>
+                        <p><strong>Email:</strong> ${data.user.email}</p>
+                        <p><strong>Tipo:</strong> ${data.user.userType}</p>
+                        <p><strong>Token:</strong> ${data.token.substring(0, 50)}...</p>
+                    `;
+                } else {
+                    document.getElementById('result').innerHTML = `<p style="color: red">Erro: ${data.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<p style="color: red">Erro: ${error.message}</p>`;
+            }
+        }
+
+        function checkUser() {
+            const token = localStorage.getItem('auth-token');
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    document.getElementById('result').innerHTML = `
+                        <h3>Token encontrado:</h3>
+                        <p><strong>User ID:</strong> ${payload.userId}</p>
+                        <p><strong>Email:</strong> ${payload.email}</p>
+                        <p><strong>Type:</strong> ${payload.type}</p>
+                        <p><strong>Expira em:</strong> ${new Date(payload.exp * 1000).toLocaleString()}</p>
+                    `;
+                } catch (e) {
+                    document.getElementById('result').innerHTML = `<p style="color: red">Erro ao decodificar token</p>`;
+                }
+            } else {
+                document.getElementById('result').innerHTML = `<p>Nenhum token encontrado</p>`;
+            }
+        }
+
+        function goToAdmin() {
+            window.location.href = '/admin';
+        }
+    </script>
+</body>
+</html>

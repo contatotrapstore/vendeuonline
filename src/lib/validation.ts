@@ -260,9 +260,28 @@ export const subscriptionSchemas = {
 // Validações de pagamento
 export const createPaymentSchema = z.object({
   planId: z.string().min(1, 'ID do plano é obrigatório'),
-  paymentMethod: z.enum(['pix', 'credit_card'], {
-    message: 'Método de pagamento deve ser PIX ou cartão de crédito'
-  })
+  paymentMethod: z.enum(['pix', 'credit_card', 'boleto'], {
+    message: 'Método de pagamento deve ser PIX, cartão de crédito ou boleto'
+  }),
+  cpf: commonValidations.cpf.optional(),
+  postalCode: commonValidations.cep.optional(),
+  addressNumber: z.string().optional(),
+  installments: z.number().int().min(1).max(12).optional(),
+  creditCard: z.object({
+    holderName: z.string().min(1, 'Nome do titular é obrigatório'),
+    number: z.string().min(1, 'Número do cartão é obrigatório'),
+    expiryMonth: z.string().min(1, 'Mês de vencimento é obrigatório'),
+    expiryYear: z.string().min(1, 'Ano de vencimento é obrigatório'),
+    ccv: z.string().min(3, 'CVV deve ter pelo menos 3 dígitos')
+  }).optional()
+}).refine((data) => {
+  if (data.paymentMethod === 'credit_card') {
+    return !!data.creditCard;
+  }
+  return true;
+}, {
+  message: 'Dados do cartão são obrigatórios para pagamento com cartão de crédito',
+  path: ['creditCard']
 });
 
 export const paymentWebhookSchema = z.object({

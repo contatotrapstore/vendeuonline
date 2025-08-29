@@ -4,13 +4,8 @@ import { Toaster } from 'sonner';
 import App from "./App";
 import "./index.css";
 
-// Inicializar MSW em desenvolvimento
-if (import.meta.env.DEV) {
-  const { worker } = await import('./mocks/browser')
-  await worker.start({
-    onUnhandledRequest: 'bypass'
-  })
-}
+// MSW desabilitado - usando APIs reais do Supabase
+console.log('🚀 Conectando com APIs reais (Supabase)');
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

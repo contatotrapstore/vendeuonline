@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { apiRequest } from '@/lib/api';
 
 export interface User {
   id: string;
@@ -46,13 +45,30 @@ export const useUserStore = create<UserStore>((set, get) => ({
   fetchUsers: async () => {
     set({ loading: true, error: null });
     try {
-      const response = await apiRequest('/api/admin/users');
-      set({ users: response.data || [], loading: false });
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('Token não encontrado');
+      }
+
+      const response = await fetch('/api/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao buscar usuários');
+      }
+
+      const data = await response.json();
+      set({ users: data.data || [], loading: false });
     } catch (error: any) {
       console.error('Erro ao buscar usuários:', error);
       set({
         users: [],
-        error: 'Erro ao carregar usuários',
+        error: error.message || 'Erro ao carregar usuários',
         loading: false
       });
     }
@@ -61,10 +77,24 @@ export const useUserStore = create<UserStore>((set, get) => ({
   updateUserStatus: async (userId: string, status: 'active' | 'inactive') => {
     set({ loading: true, error: null });
     try {
-      await apiRequest(`/api/admin/users/${userId}/status`, {
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('Token não encontrado');
+      }
+
+      const response = await fetch(`/api/admin/users/${userId}/status`, {
         method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ status })
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao atualizar status');
+      }
       
       // Atualizar localmente
       const { users } = get();
@@ -76,7 +106,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
     } catch (error: any) {
       console.error('Erro ao atualizar status do usuário:', error);
       set({
-        error: 'Erro ao atualizar status do usuário',
+        error: error.message || 'Erro ao atualizar status do usuário',
         loading: false
       });
     }
@@ -85,9 +115,23 @@ export const useUserStore = create<UserStore>((set, get) => ({
   deleteUser: async (userId: string) => {
     set({ loading: true, error: null });
     try {
-      await apiRequest(`/api/admin/users/${userId}`, {
-        method: 'DELETE'
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('Token não encontrado');
+      }
+
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao excluir usuário');
+      }
       
       // Remover localmente
       const { users } = get();
@@ -97,7 +141,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
     } catch (error: any) {
       console.error('Erro ao excluir usuário:', error);
       set({
-        error: 'Erro ao excluir usuário',
+        error: error.message || 'Erro ao excluir usuário',
         loading: false
       });
     }

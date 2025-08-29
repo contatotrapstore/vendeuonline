@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { Heart, Star, MapPin, Truck, ShoppingCart, Eye } from 'lucide-react';
+import { Heart, Star, MapPin, Truck, ShoppingCart } from 'lucide-react';
 import { Product } from '@/types';
 import { Link } from 'react-router-dom';
+import { ProductImage } from '@/components/ui/LazyImage';
 
 interface ProductCardProps {
   product: Product;
@@ -23,7 +24,6 @@ export function ProductCard({
   isInWishlist = false
 }: ProductCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [imageError, setImageError] = useState(false);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -68,27 +68,14 @@ export function ProductCard({
           <div className="flex gap-4">
             {/* Image */}
             <div className="relative w-32 h-32 flex-shrink-0">
-              {!imageLoaded && !imageError && (
-                <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-lg" />
-              )}
-              {imageError ? (
-                <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center">
-                  <div className="text-gray-400 text-center">
-                    <Eye className="h-8 w-8 mx-auto mb-1" />
-                    <span className="text-xs">Imagem não disponível</span>
-                  </div>
-                </div>
-              ) : (
-                <img
-                  src={product.images[0]?.url || '/placeholder-image.jpg'}
-                  alt={product.name}
-                  className={`w-full h-full object-cover rounded-lg transition-opacity duration-200 ${
-                    imageLoaded ? 'opacity-100' : 'opacity-0'
-                  }`}
-                  onLoad={() => setImageLoaded(true)}
-                  onError={() => setImageError(true)}
-                />
-              )}
+              <ProductImage
+                src={product.images[0]?.url || '/placeholder-image.jpg'}
+                alt={product.name}
+                className="w-full h-full object-cover rounded-lg"
+                product={{ name: product.name, category: product.category }}
+                onLoad={() => setImageLoaded(true)}
+                onError={() => setImageError(true)}
+              />
               
               {/* Discount Badge */}
               {product.comparePrice && (
@@ -191,27 +178,14 @@ export function ProductCard({
       <div className="bg-white rounded-lg border border-gray-200 hover:shadow-xl hover:border-gray-300 transition-all duration-300 overflow-hidden group transform hover:-translate-y-1">
         {/* Image */}
         <div className="relative aspect-square overflow-hidden bg-gray-50">
-          {!imageLoaded && !imageError && (
-            <div className="absolute inset-0 bg-gray-200 animate-pulse" />
-          )}
-          {imageError ? (
-            <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-              <div className="text-gray-400 text-center">
-                <Eye className="h-12 w-12 mx-auto mb-2" />
-                <span className="text-sm">Imagem não disponível</span>
-              </div>
-            </div>
-          ) : (
-            <img
-              src={product.images[0]?.url || '/placeholder-image.jpg'}
-              alt={product.name}
-              className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-200 ${
-                imageLoaded ? 'opacity-100' : 'opacity-0'
-              }`}
-              onLoad={() => setImageLoaded(true)}
-              onError={() => setImageError(true)}
-            />
-          )}
+          <ProductImage
+            src={product.images[0]?.url || '/placeholder-image.jpg'}
+            alt={product.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+            product={{ name: product.name, category: product.category }}
+            onLoad={() => setImageLoaded(true)}
+            onError={() => setImageError(true)}
+          />
           
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">

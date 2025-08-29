@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import Logo from '@/components/ui/Logo';
+import NotificationBell from '@/components/ui/NotificationBell';
+import GlobalSearch from '@/components/ui/GlobalSearch';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -47,7 +49,7 @@ const Navbar = () => {
           { to: '/admin/users', label: 'Usuários', icon: Users },
           { to: '/admin/stores', label: 'Lojas', icon: Store },
           { to: '/admin/products', label: 'Produtos', icon: Package },
-          { to: '/admin/settings', label: 'Configurações', icon: Settings }
+          { to: '/admin/plans', label: 'Configurar Planos', icon: Settings }
         ];
       
       case 'seller':
@@ -66,8 +68,8 @@ const Navbar = () => {
           { to: '/products', label: 'Produtos', icon: null },
           { to: '/stores', label: 'Lojas', icon: null },
           { to: '/pricing', label: 'Planos', icon: null },
-          { to: '/favorites', label: 'Favoritos', icon: Heart },
-          { to: '/orders', label: 'Pedidos', icon: Package }
+          { to: '/buyer/wishlist', label: 'Favoritos', icon: Heart },
+          { to: '/buyer/orders', label: 'Pedidos', icon: Package }
         ];
     }
   };
@@ -97,6 +99,44 @@ const Navbar = () => {
       default:
         return 'Usuário';
     }
+  };
+
+  const getUserTypeColor = () => {
+    switch (user?.userType) {
+      case 'admin':
+        return 'from-red-600 to-red-700';
+      case 'seller':
+        return 'from-green-600 to-green-700';
+      case 'buyer':
+      default:
+        return 'from-blue-600 to-blue-700';
+    }
+  };
+
+  const getUserTypeBadge = () => {
+    if (!user) return null;
+    
+    const badgeColors = {
+      admin: 'bg-red-100 text-red-800 border-red-200',
+      seller: 'bg-green-100 text-green-800 border-green-200',
+      buyer: 'bg-blue-100 text-blue-800 border-blue-200'
+    };
+
+    const badgeIcons = {
+      admin: Shield,
+      seller: Store,
+      buyer: User
+    };
+
+    const Icon = badgeIcons[user.userType as keyof typeof badgeIcons] || User;
+    const colorClass = badgeColors[user.userType as keyof typeof badgeColors] || badgeColors.buyer;
+
+    return (
+      <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${colorClass}`}>
+        <Icon className="h-3 w-3 mr-1" />
+        {getUserTypeLabel()}
+      </div>
+    );
   };
 
   const handleLogout = () => {
@@ -142,28 +182,14 @@ const Navbar = () => {
           {/* Central Search Bar */}
           <div className="hidden lg:flex flex-1 max-w-md mx-3">
             {(!isAuthenticated || user?.userType === 'buyer') && (
-              <div className="relative group w-full">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 group-focus-within:text-blue-500 transition-colors duration-200" />
-                <input
-                  type="text"
-                  placeholder="Buscar produtos..."
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900 placeholder-gray-500 bg-white transition-all duration-200"
-                />
-              </div>
+              <GlobalSearch className="w-full" placeholder="Buscar produtos, lojas..." />
             )}
           </div>
 
           {/* Right side */}
           <div className="flex items-center space-x-2">
             {/* Notifications (apenas para usuários autenticados) */}
-            {isAuthenticated && (
-              <button className="relative p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 group">
-                <Bell className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
-                  3
-                </span>
-              </button>
-            )}
+            {isAuthenticated && <NotificationBell />}
 
             {/* Cart (apenas para compradores) */}
             {(!isAuthenticated || user?.userType === 'buyer') && (
@@ -185,8 +211,11 @@ const Navbar = () => {
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
                   className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-all duration-200 group"
                 >
-                  <div className="h-7 w-7 bg-gradient-to-br from-blue-600 to-blue-700 rounded-full flex items-center justify-center">
-                    <User className="h-4 w-4 text-white" />
+                  <div className={`h-7 w-7 bg-gradient-to-br ${getUserTypeColor()} rounded-full flex items-center justify-center ring-2 ring-white shadow-sm`}>
+                    {(() => {
+                      const Icon = getUserTypeIcon();
+                      return <Icon className="h-4 w-4 text-white" />;
+                    })()}
                   </div>
                   <span className="hidden lg:block text-sm font-medium text-gray-700 group-hover:text-blue-600 transition-colors duration-200 max-w-24 truncate">
                     {user.name}
@@ -197,28 +226,34 @@ const Navbar = () => {
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-3 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50 backdrop-blur-sm">
                     <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                      <p className="text-xs text-gray-500 mt-1">{user.email}</p>
-                      <p className="text-xs text-blue-600 font-medium mt-1">{getUserTypeLabel()}</p>
+                      <div className="flex items-center justify-between mb-2">
+                        <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                        {getUserTypeBadge()}
+                      </div>
+                      <p className="text-xs text-gray-500">{user.email}</p>
                     </div>
                     
+{user.userType !== 'admin' && (
                     <Link
-                      to={user.userType === 'admin' ? '/admin/profile' : user.userType === 'seller' ? '/seller/profile' : '/profile'}
+                      to={user.userType === 'seller' ? '/seller/profile' : '/buyer/profile'}
                       className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 font-medium"
                       onClick={() => setIsProfileOpen(false)}
                     >
                       <User className="h-4 w-4" />
                       <span>Meu Perfil</span>
                     </Link>
+                    )}
                     
+{user.userType !== 'admin' && (
                     <Link
-                      to={user.userType === 'admin' ? '/admin/settings' : user.userType === 'seller' ? '/seller/settings' : '/settings'}
+                      to={user.userType === 'seller' ? '/seller/settings' : '/buyer/settings'}
                       className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 font-medium"
                       onClick={() => setIsProfileOpen(false)}
                     >
                       <Settings className="h-4 w-4" />
                       <span>Configurações</span>
                     </Link>
+                    )}
                     
                     <hr className="my-2 border-gray-100" />
                     <button
@@ -262,14 +297,7 @@ const Navbar = () => {
       {/* Mobile Search Bar */}
       <div className="lg:hidden px-4 py-3 bg-gray-50 border-t border-gray-200">
         {(!isAuthenticated || user?.userType === 'buyer') && (
-          <div className="relative group">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4 group-focus-within:text-blue-500 transition-colors duration-200" />
-            <input
-              type="text"
-              placeholder="Buscar produtos..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-sm text-gray-900 placeholder-gray-500 bg-white transition-all duration-200"
-            />
-          </div>
+          <GlobalSearch className="w-full" placeholder="Buscar produtos, lojas..." />
         )}
       </div>
 

@@ -74,3 +74,6 @@ export function createAuthResponse(user: any, token: string) {
     expiresIn: JWT_EXPIRES_IN
   }
 }
+
+// Alias for verifyToken
+export const verifyJWT = verifyToken

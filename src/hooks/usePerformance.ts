@@ -84,7 +84,7 @@ export const usePerformanceMonitor = () => {
       }));
       
       // Log para desenvolvimento
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.MODE === 'development') {
         console.log(`${componentName} render time: ${renderTime.toFixed(2)}ms`);
       }
     };
@@ -348,7 +348,7 @@ export const performanceUtils = {
     const result = await fn();
     const end = performance.now();
     
-    if (label && process.env.NODE_ENV === 'development') {
+    if (label && import.meta.env.MODE === 'development') {
       console.log(`${label}: ${(end - start).toFixed(2)}ms`);
     }
     

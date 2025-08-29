@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Suspense, lazy } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { usePageTracking } from "@/hooks/useAnalytics";
 
 // Lazy loading das páginas principais
@@ -26,6 +27,12 @@ const AdminDashboard = lazy(() => import("@/app/admin/page"));
 const AdminUsers = lazy(() => import("@/app/admin/users/page"));
 const AdminBanners = lazy(() => import("@/app/admin/banners/page"));
 const AdminPricing = lazy(() => import("@/app/admin/pricing/page"));
+const AdminSubscriptions = lazy(() => import("@/app/admin/subscriptions/page"));
+const AdminStores = lazy(() => import("@/app/admin/stores/page"));
+const AdminProducts = lazy(() => import("@/app/admin/products/page"));
+const AdminPlans = lazy(() => import("@/app/admin/plans/page"));
+const AdminTest = lazy(() => import("@/app/admin/test/page"));
+const DebugAdmin = lazy(() => import("@/app/debug-admin"));
 
 // Seller Pages
 const SellerDashboard = lazy(() => import("@/app/seller/page"));
@@ -39,6 +46,9 @@ const BuyerDashboard = lazy(() => import("@/app/buyer/page"));
 const BuyerOrders = lazy(() => import("@/app/buyer/orders/page"));
 const BuyerWishlist = lazy(() => import("@/app/buyer/wishlist/page"));
 const BuyerHistory = lazy(() => import("@/app/buyer/history/page"));
+const BuyerProfile = lazy(() => import("@/app/buyer/profile/page"));
+const BuyerSettings = lazy(() => import("@/app/buyer/settings/page"));
+const BuyerNotifications = lazy(() => import("@/app/buyer/notifications/page"));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -54,7 +64,8 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Navbar />
+      <ErrorBoundary showDetails={import.meta.env.MODE === 'development'}>
+        <Navbar />
         <main className="flex-1">
           <Suspense fallback={<LoadingSpinner />}>
             <Routes>
@@ -85,6 +96,14 @@ function AppContent() {
               <Route path="/admin/users" element={<AdminUsers />} />
               <Route path="/admin/banners" element={<AdminBanners />} />
               <Route path="/admin/pricing" element={<AdminPricing />} />
+              <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
+              <Route path="/admin/stores" element={<AdminStores />} />
+              <Route path="/admin/products" element={<AdminProducts />} />
+              <Route path="/admin/plans" element={<AdminPlans />} />
+              <Route path="/admin/test" element={<AdminTest />} />
+              
+              {/* Debug Routes */}
+              <Route path="/debug-admin" element={<DebugAdmin />} />
               
               {/* Seller Routes */}
               <Route path="/seller" element={<SellerDashboard />} />
@@ -102,6 +121,11 @@ function AppContent() {
               <Route path="/buyer/wishlist" element={<BuyerWishlist />} />
               <Route path="/favorites" element={<BuyerWishlist />} />
               <Route path="/buyer/history" element={<BuyerHistory />} />
+              <Route path="/buyer/profile" element={<BuyerProfile />} />
+              <Route path="/profile" element={<BuyerProfile />} />
+              <Route path="/buyer/settings" element={<BuyerSettings />} />
+              <Route path="/settings" element={<BuyerSettings />} />
+              <Route path="/buyer/notifications" element={<BuyerNotifications />} />
               
               {/* 404 Route */}
               <Route path="*" element={
@@ -116,7 +140,8 @@ function AppContent() {
             </Routes>
           </Suspense>
         </main>
-      <Footer />
+        <Footer />
+      </ErrorBoundary>
     </div>
   );
 }

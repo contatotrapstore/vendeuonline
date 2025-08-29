@@ -105,6 +105,8 @@ export interface Product {
   salesCount: number;
   createdAt: string;
   updatedAt: string;
+  // Relação opcional com store (pode ser incluída via join)
+  store?: Store;
 }
 
 export interface ProductImage {

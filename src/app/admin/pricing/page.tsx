@@ -24,19 +24,20 @@ export default function AdminPricingPage() {
     fetchPlans();
   }, [fetchPlans]);
 
-  const handleStatusToggle = async (planId: string) => {
+  const handleStatusToggle = async (planId: number) => {
     const plan = plans.find(p => p.id === planId);
     if (!plan) return;
     
     try {
-      await updatePlan(planId, { isActive: !plan.isActive });
-      toast.success('Status do plano atualizado');
+      // Como não temos campo isActive na nova estrutura, vamos simular ativação/desativação
+      // Por ora, apenas mostra uma mensagem
+      toast.info('Funcionalidade de ativação/desativação será implementada');
     } catch (error) {
       toast.error('Erro ao atualizar status do plano');
     }
   };
 
-  const handleDelete = async (planId: string) => {
+  const handleDelete = async (planId: number) => {
     if (confirm('Tem certeza que deseja excluir este plano?')) {
       try {
         await deletePlan(planId);
@@ -67,14 +68,6 @@ export default function AdminPricingPage() {
     }
   };
 
-  const getSupportLabel = (support: string) => {
-    const labels = {
-      BASIC: 'Básico',
-      PRIORITY: 'Prioritário',
-      DEDICATED: 'Dedicado'
-    };
-    return labels[support as keyof typeof labels] || support;
-  };
 
   // Calcular estatísticas dos planos
   const totalSubscribers = plans.reduce((sum, plan) => sum + (plan._count?.subscriptions || 0), 0);
@@ -163,9 +156,9 @@ export default function AdminPricingPage() {
                 <Crown className="h-6 w-6 text-purple-600" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Planos Ativos</p>
+                <p className="text-sm font-medium text-gray-500">Total Planos</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {plans.filter(p => p.isActive).length}
+                  {plans.length}
                 </p>
               </div>
             </div>
@@ -199,10 +192,8 @@ export default function AdminPricingPage() {
                     {getPlanIcon(plan.name)}
                     <h3 className="font-bold text-lg">{plan.name}</h3>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    plan.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {plan.isActive ? 'Ativo' : 'Inativo'}
+                  <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    Ativo
                   </span>
                 </div>
               </div>
@@ -224,26 +215,35 @@ export default function AdminPricingPage() {
                 {/* Features */}
                 <div className="space-y-2 mb-4 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Anúncios:</span>
+                    <span className="text-gray-600">Máx. Anúncios:</span>
                     <span className="font-medium">
-                      {plan.maxListings === -1 ? 'Ilimitados' : plan.maxListings}
+                      {plan.maxAds === -1 ? 'Ilimitados' : plan.maxAds}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Duração:</span>
-                    <span className="font-medium">{plan.listingDuration} dias</span>
+                    <span className="text-gray-600">Fotos por anúncio:</span>
+                    <span className="font-medium">{plan.maxPhotos}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Suporte:</span>
-                    <span className="font-medium">{getSupportLabel(plan.support)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Destaque:</span>
-                    <span className={`font-medium ${plan.featured ? 'text-green-600' : 'text-red-600'}`}>
-                      {plan.featured ? 'Sim' : 'Não'}
-                    </span>
+                    <span className="text-gray-600">Período:</span>
+                    <span className="font-medium">{plan.billingPeriod === 'MONTHLY' ? 'Mensal' : 'Anual'}</span>
                   </div>
                 </div>
+                
+                {/* Features List */}
+                {plan.features && plan.features.length > 0 && (
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Recursos:</h4>
+                    <ul className="text-xs text-gray-600 space-y-1">
+                      {plan.features.map((feature, index) => (
+                        <li key={index} className="flex items-center">
+                          <span className="w-1 h-1 bg-blue-600 rounded-full mr-2"></span>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 
                 {/* Stats */}
                 <div className="border-t pt-4 mb-4">
@@ -283,13 +283,9 @@ export default function AdminPricingPage() {
                   <button
                     onClick={() => handleStatusToggle(plan.id)}
                     disabled={loading}
-                    className={`px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-50 ${
-                      plan.isActive 
-                        ? 'bg-red-100 text-red-700 hover:bg-red-200' 
-                        : 'bg-green-100 text-green-700 hover:bg-green-200'
-                    }`}
+                    className="px-3 py-1 rounded text-xs font-medium transition-colors disabled:opacity-50 bg-blue-100 text-blue-700 hover:bg-blue-200"
                   >
-                    {plan.isActive ? 'Desativar' : 'Ativar'}
+                    Gerenciar
                   </button>
                 </div>
               </div>

@@ -1,21 +1,15 @@
 import { create } from 'zustand';
-import { apiRequest } from '@/lib/api';
 
 export interface Plan {
-  id: string;
+  id: number;
   name: string;
   description: string;
   price: number;
   billingPeriod: 'MONTHLY' | 'YEARLY';
-  maxListings: number;
-  listingDuration: number;
-  featured: boolean;
-  priority: boolean;
-  support: 'BASIC' | 'PRIORITY' | 'DEDICATED';
-  analytics: boolean;
-  customBranding: boolean;
-  apiAccess: boolean;
-  isActive: boolean;
+  maxAds: number;
+  maxPhotos: number;
+  features: string[];
+  popular?: boolean;
   order: number;
   createdAt: string;
   updatedAt: string;
@@ -31,9 +25,9 @@ interface PlanStore {
   
   // Actions
   fetchPlans: () => Promise<void>;
-  createPlan: (planData: Partial<Plan>) => Promise<void>;
-  updatePlan: (id: string, planData: Partial<Plan>) => Promise<void>;
-  deletePlan: (id: string) => Promise<void>;
+  createPlan: (planData: Omit<Plan, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  updatePlan: (id: number, planData: Partial<Plan>) => Promise<void>;
+  deletePlan: (id: number) => Promise<void>;
   clearError: () => void;
 }
 
@@ -45,92 +39,146 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
   fetchPlans: async () => {
     set({ loading: true, error: null });
     try {
-      const response = await apiRequest('/api/plans');
-      if (response.success) {
-        set({ plans: response.data, loading: false });
-      } else {
-        set({ error: response.error || 'Erro ao carregar planos', loading: false });
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('Token não encontrado');
       }
-    } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Erro ao carregar planos', 
-        loading: false 
+
+      const response = await fetch('/api/admin/plans', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao buscar planos');
+      }
+
+      const data = await response.json();
+      set({ plans: data.data || [], loading: false });
+    } catch (error: any) {
+      console.error('Erro ao buscar planos:', error);
+      set({
+        plans: [],
+        error: error.message || 'Erro ao carregar planos',
+        loading: false
       });
     }
   },
 
-  createPlan: async (planData) => {
+  createPlan: async (planData: Omit<Plan, 'id' | 'createdAt' | 'updatedAt'>) => {
     set({ loading: true, error: null });
     try {
-      const response = await apiRequest('/api/plans', {
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('Token não encontrado');
+      }
+
+      const response = await fetch('/api/admin/plans', {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify(planData)
       });
-      
-      if (response.success) {
-        const { plans } = get();
-        set({ 
-          plans: [...plans, response.data],
-          loading: false 
-        });
-      } else {
-        set({ error: response.error || 'Erro ao criar plano', loading: false });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao criar plano');
       }
-    } catch (error) {
+
+      const data = await response.json();
+      const { plans } = get();
       set({ 
-        error: error instanceof Error ? error.message : 'Erro ao criar plano', 
+        plans: [...plans, data.data],
         loading: false 
+      });
+    } catch (error: any) {
+      console.error('Erro ao criar plano:', error);
+      set({
+        error: error.message || 'Erro ao criar plano',
+        loading: false
       });
     }
   },
 
-  updatePlan: async (id, planData) => {
+  updatePlan: async (id: number, planData: Partial<Plan>) => {
     set({ loading: true, error: null });
     try {
-      const response = await apiRequest(`/api/plans/${id}`, {
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('Token não encontrado');
+      }
+
+      const response = await fetch(`/api/admin/plans/${id}`, {
         method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify(planData)
       });
-      
-      if (response.success) {
-        const { plans } = get();
-        set({ 
-          plans: plans.map(plan => 
-            plan.id === id ? { ...plan, ...response.data } : plan
-          ),
-          loading: false 
-        });
-      } else {
-        set({ error: response.error || 'Erro ao atualizar plano', loading: false });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao atualizar plano');
       }
-    } catch (error) {
+
+      const data = await response.json();
+      const { plans } = get();
+      const updatedPlans = plans.map(plan => 
+        plan.id === id ? { ...plan, ...data.data } : plan
+      );
+      
       set({ 
-        error: error instanceof Error ? error.message : 'Erro ao atualizar plano', 
+        plans: updatedPlans,
         loading: false 
+      });
+    } catch (error: any) {
+      console.error('Erro ao atualizar plano:', error);
+      set({
+        error: error.message || 'Erro ao atualizar plano',
+        loading: false
       });
     }
   },
 
-  deletePlan: async (id) => {
+  deletePlan: async (id: number) => {
     set({ loading: true, error: null });
     try {
-      const response = await apiRequest(`/api/plans/${id}`, {
-        method: 'DELETE'
-      });
-      
-      if (response.success) {
-        const { plans } = get();
-        set({ 
-          plans: plans.filter(plan => plan.id !== id),
-          loading: false 
-        });
-      } else {
-        set({ error: response.error || 'Erro ao excluir plano', loading: false });
+      const token = localStorage.getItem('auth-token');
+      if (!token) {
+        throw new Error('Token não encontrado');
       }
-    } catch (error) {
+
+      const response = await fetch(`/api/admin/plans/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Erro ao excluir plano');
+      }
+
+      const { plans } = get();
+      const updatedPlans = plans.filter(plan => plan.id !== id);
+      
       set({ 
-        error: error instanceof Error ? error.message : 'Erro ao excluir plano', 
+        plans: updatedPlans,
         loading: false 
+      });
+    } catch (error: any) {
+      console.error('Erro ao excluir plano:', error);
+      set({
+        error: error.message || 'Erro ao excluir plano',
+        loading: false
       });
     }
   },

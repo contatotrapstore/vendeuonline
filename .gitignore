@@ -45,9 +45,13 @@ build
 # Vercel
 .vercel
 
+# Next.js
+.next/
+
 # Temporary files
 *.tmp
 *.temp
+nul
 
 # OS generated files
 Thumbs.db
@@ -58,3 +62,9 @@ coverage/
 
 # nyc test coverage
 .nyc_output
+
+# Claude Code configuration
+.claude/
+
+# Environment files
+.env.production

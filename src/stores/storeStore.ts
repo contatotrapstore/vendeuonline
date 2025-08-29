@@ -1,35 +1,7 @@
 import { create } from 'zustand';
 import { Store } from '@/types';
-
-// Utilitário para gerenciar token no localStorage
-function getStoredToken(): string | null {
-  if (typeof window === 'undefined') return null
-  return localStorage.getItem('auth_token')
-}
-
-// Utilitário para requisições HTTP autenticadas
-async function apiRequest(url: string, options: RequestInit = {}) {
-  const token = getStoredToken()
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...Object.fromEntries(new Headers(options.headers || {}).entries())
-  }
-  
-  if (token) {
-    headers.Authorization = `Bearer ${token}`
-  }
-  
-  const response = await fetch(url, {
-    ...options,
-    headers
-  })
-  
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`)
-  }
-  
-  return response.json()
-}
+import { apiRequest, get, post, put, del } from '@/lib/api-client';
+import { appCache } from '@/lib/cache';
 
 interface StoreFilters {
   search?: string;
@@ -126,6 +98,25 @@ export const useStoreStore = create<StoreState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
+      // Verificar cache primeiro
+      const cacheParams = { ...filters, page, limit };
+      const cachedData = appCache.getStores(cacheParams);
+      if (cachedData) {
+        set({
+          stores: cachedData.data || cachedData.stores || [],
+          pagination: cachedData.pagination || {
+            page,
+            limit,
+            total: (cachedData.data || cachedData.stores || []).length,
+            totalPages: 1,
+            hasNext: false,
+            hasPrev: false
+          },
+          loading: false
+        });
+        return;
+      }
+      
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
@@ -134,17 +125,20 @@ export const useStoreStore = create<StoreState>((set, get) => ({
         )
       });
       
-      const response = await apiRequest(`/api/stores?${queryParams}`);
+      const response = await get(`/stores?${queryParams}`);
+      
+      // Armazenar no cache
+      appCache.setStores(cacheParams, response, 5 * 60 * 1000); // 5 minutos para lojas
       
       set({
-        stores: response.stores,
+        stores: response.data || response.stores || [],
         pagination: {
-          page: response.pagination.page,
-          limit: response.pagination.limit,
-          total: response.pagination.total,
-          totalPages: response.pagination.totalPages,
-          hasNext: response.pagination.hasNext,
-          hasPrev: response.pagination.hasPrev
+          page: response.pagination?.page || page,
+          limit: response.pagination?.limit || limit,
+          total: response.pagination?.total || 0,
+          totalPages: response.pagination?.totalPages || 0,
+          hasNext: response.pagination?.hasNext || false,
+          hasPrev: response.pagination?.hasPrev || false
         },
         loading: false
       });
@@ -161,7 +155,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      const store = await apiRequest(`/api/stores/${id}`);
+      const store = await get(`/stores/${id}`);
       
       set({ currentStore: store, loading: false });
       return store;
@@ -178,7 +172,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      const store = await apiRequest(`/api/stores/slug/${slug}`);
+      const store = await get(`/stores/slug/${slug}`);
       
       set({ currentStore: store, loading: false });
       return store;
@@ -195,10 +189,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      const newStore = await apiRequest('/api/stores', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      const newStore = await post('/stores', data);
       
       set(state => ({
         stores: [...state.stores, newStore],
@@ -219,10 +210,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      const updatedStore = await apiRequest(`/api/stores/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      const updatedStore = await put(`/stores/${id}`, data);
       
       set(state => ({
         stores: state.stores.map(store => 
@@ -246,9 +234,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      await apiRequest(`/api/stores/${id}`, {
-        method: 'DELETE',
-      });
+      await del(`/stores/${id}`);
       
       set(state => ({
         stores: state.stores.filter(store => store.id !== id),

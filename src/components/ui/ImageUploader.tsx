@@ -31,21 +31,18 @@ export default function ImageUploader({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadFile = async (file: File): Promise<UploadedImage | null> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('folder', folder);
-
+    // Usar Supabase Storage real ao invés de API mockada
+    const { supabaseStorage } = await import('@/lib/supabase');
+    
     try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Erro no upload');
-      }
+      const uploadResult = await supabaseStorage.uploadImage(file, 'products', folder);
+      
+      // Criar objeto compatível com UploadedImage
+      const result = {
+        url: uploadResult.publicUrl,
+        publicId: uploadResult.path,
+        secure_url: uploadResult.publicUrl
+      };
 
       return {
         url: result.data.url,

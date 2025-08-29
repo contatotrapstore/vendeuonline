@@ -1,6 +1,7 @@
 import React from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { apiRequest, post, get } from '@/lib/api-client';
 
 export interface User {
   id: string;
@@ -44,7 +45,7 @@ interface AuthState {
 }
 
 interface AuthActions {
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, userType?: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
@@ -85,31 +86,6 @@ const removeStoredToken = () => {
   }
 };
 
-// Utilitário para fazer requisições autenticadas
-const apiRequest = async (url: string, options: RequestInit = {}) => {
-  const token = getStoredToken();
-  
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...Object.fromEntries(new Headers(options.headers || {}).entries())
-  };
-  
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
-  
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
-    throw new Error(errorData.error || `Erro ${response.status}`);
-  }
-  
-  return response.json();
-};
 
 export const useAuthStore = create<AuthStore>()(persist(
   (set, get) => ({
@@ -117,20 +93,37 @@ export const useAuthStore = create<AuthStore>()(persist(
     user: null,
     isAuthenticated: false,
     isLoading: false,
-    token: getStoredToken(),
+    token: typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null,
     error: null,
 
     // Ações
-    login: async (email: string, password: string) => {
+    login: async (email: string, password: string, userType?: string) => {
       set({ isLoading: true, error: null });
       
       try {
-        const response = await apiRequest('/api/auth/login', {
-          method: 'POST',
-          body: JSON.stringify({ email, password }),
-        });
+        // Tentar login com userType se fornecido, senão tentar ambos os tipos
+        let response;
+        
+        if (userType) {
+          response = await post('/auth/login', { email, password, userType });
+        } else {
+          // Tentar primeiro como buyer, depois como seller
+          try {
+            response = await post('/auth/login', { email, password, userType: 'buyer' });
+          } catch {
+            try {
+              response = await post('/auth/login', { email, password, userType: 'seller' });
+            } catch {
+              response = await post('/auth/login', { email, password, userType: 'admin' });
+            }
+          }
+        }
         
         const { user, token } = response;
+        
+        console.log('Login successful - User data:', user);
+        console.log('Login successful - Token:', token);
+        console.log('User type:', user?.userType);
         
         // Armazenar token
         setStoredToken(token);
@@ -161,10 +154,7 @@ export const useAuthStore = create<AuthStore>()(persist(
       set({ isLoading: true, error: null });
       
       try {
-        const response = await apiRequest('/api/auth/register', {
-          method: 'POST',
-          body: JSON.stringify(userData),
-        });
+        const response = await post('/auth/register', userData);
         
         const { user, token } = response;
         
@@ -237,7 +227,7 @@ export const useAuthStore = create<AuthStore>()(persist(
       set({ isLoading: true, error: null });
       
       try {
-        const response = await apiRequest('/api/auth/me');
+        const response = await get('/auth/me');
         
         set({
           user: response.user,
@@ -276,19 +266,39 @@ export const usePermissions = () => {
   
   const hasPermission = (permission: string) => {
     if (!user || user.userType !== 'admin' || !user.admin) return false;
-    return user.admin.permissions.includes(permission);
+    
+    try {
+      const permissions = typeof user.admin.permissions === 'string' 
+        ? JSON.parse(user.admin.permissions) 
+        : user.admin.permissions;
+      
+      return Array.isArray(permissions) && (permissions.includes(permission) || permissions.includes('all'));
+    } catch {
+      return false;
+    }
   };
   
   const isAdmin = user?.userType === 'admin';
   const isSeller = user?.userType === 'seller';
   const isBuyer = user?.userType === 'buyer';
   
+  const getPermissions = () => {
+    if (!user?.admin?.permissions) return [];
+    try {
+      return typeof user.admin.permissions === 'string' 
+        ? JSON.parse(user.admin.permissions) 
+        : user.admin.permissions;
+    } catch {
+      return [];
+    }
+  };
+
   return {
     hasPermission,
     isAdmin,
     isSeller,
     isBuyer,
-    permissions: user?.admin?.permissions || []
+    permissions: getPermissions()
   };
 };
 
