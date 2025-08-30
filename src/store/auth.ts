@@ -75,21 +75,14 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
         
         try {
-          // Simulação de API call - substituir pela API real
-          const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email, password, userType }),
+          // Usar cliente de API centralizado
+          const { post } = await import('@/lib/api-client');
+          
+          const data = await post('/api/auth/login', {
+            email,
+            password,
+            userType
           });
-
-          if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Credenciais inválidas');
-          }
-
-          const data = await response.json();
           
           set({
             user: data.user,

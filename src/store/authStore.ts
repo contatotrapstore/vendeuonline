@@ -105,16 +105,16 @@ export const useAuthStore = create<AuthStore>()(persist(
         let response;
         
         if (userType) {
-          response = await post('/auth/login', { email, password, userType });
+          response = await post('/api/auth/login', { email, password, userType });
         } else {
           // Tentar primeiro como buyer, depois como seller
           try {
-            response = await post('/auth/login', { email, password, userType: 'buyer' });
+            response = await post('/api/auth/login', { email, password, userType: 'buyer' });
           } catch {
             try {
-              response = await post('/auth/login', { email, password, userType: 'seller' });
+              response = await post('/api/auth/login', { email, password, userType: 'seller' });
             } catch {
-              response = await post('/auth/login', { email, password, userType: 'admin' });
+              response = await post('/api/auth/login', { email, password, userType: 'admin' });
             }
           }
         }
@@ -154,7 +154,7 @@ export const useAuthStore = create<AuthStore>()(persist(
       set({ isLoading: true, error: null });
       
       try {
-        const response = await post('/auth/register', userData);
+        const response = await post('/api/auth/register', userData);
         
         const { user, token } = response;
         
@@ -227,7 +227,7 @@ export const useAuthStore = create<AuthStore>()(persist(
       set({ isLoading: true, error: null });
       
       try {
-        const response = await get('/auth/me');
+        const response = await get('/api/auth/me');
         
         set({
           user: response.user,

@@ -7,7 +7,9 @@ const isProduction = import.meta.env.MODE === 'production';
 
 // Base URLs for different environments
 const API_URLS = {
-  development: 'http://localhost:5173',
+  // Em desenvolvimento, usar '' para que requisições passem pelo proxy do Vite
+  development: '',
+  // Em produção, usar URL completa
   production: import.meta.env.VITE_API_URL || window.location.origin
 };
 
@@ -30,12 +32,20 @@ export const buildApiUrl = (endpoint: string): string => {
     return endpoint;
   }
   
-  // Se começar com /api, usa o servidor backend
+  // Em desenvolvimento, todas as requisições devem começar com /api para usar o proxy
+  if (isDevelopment) {
+    if (endpoint.startsWith('/api')) {
+      return endpoint; // Já tem /api, usar diretamente
+    }
+    // Adicionar /api/ ao início para usar o proxy
+    return `/api/${endpoint.replace(/^\//, '')}`;
+  }
+  
+  // Em produção, usar API_BASE_URL
   if (endpoint.startsWith('/api')) {
     return `${API_BASE_URL}${endpoint}`;
   }
   
-  // Caso contrário, adiciona /api/ ao início
   return `${API_BASE_URL}/api/${endpoint.replace(/^\//, '')}`;
 };
 

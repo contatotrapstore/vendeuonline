@@ -36,7 +36,7 @@ Um marketplace completo desenvolvido com React + TypeScript + Vite, permitindo q
 ```bash
 # Clonar repositório
 git clone <repository-url>
-cd MKT
+cd vendeu-online
 
 # Instalar dependências
 npm install
@@ -134,11 +134,42 @@ src/
 
 ## 🚀 Deploy
 
-O projeto está configurado para deploy no Vercel com as seguintes configurações:
+### **Deploy Rápido no Vercel**
 
-- Build command: `npm run build`
-- Output directory: `dist`
-- Node.js version: 18.x
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fseu-usuario%2Fvendeu-online&env=DATABASE_URL,JWT_SECRET,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY&project-name=vendeu-online&repository-name=vendeu-online)
+
+### **Configuração Manual**
+
+1. **Fork este repositório**
+2. **Conecte ao Vercel**
+3. **Configure as variáveis de ambiente**:
+
+```env
+# Obrigatórias
+DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres
+JWT_SECRET=cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac
+NEXT_PUBLIC_SUPABASE_URL=https://[PROJECT-REF].supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+
+# Opcionais (Pagamentos)
+ASAAS_API_KEY=sua-chave-asaas
+MERCADOPAGO_ACCESS_TOKEN=seu-token-mercadopago
+```
+
+### **Configurações do Vercel**
+- **Framework**: Vite
+- **Build Command**: `npm run vercel-build`
+- **Output Directory**: `dist`
+- **Install Command**: `npm install`
+- **Node.js Version**: 18.x
+
+### **📖 Guia Completo**
+Para instruções detalhadas, consulte: **[DEPLOY_GUIDE.md](./DEPLOY_GUIDE.md)**
+
+### **URLs Pós-Deploy**
+- **Frontend**: `https://seu-app.vercel.app`
+- **API Health**: `https://seu-app.vercel.app/api/health`
+- **Admin**: `https://seu-app.vercel.app/admin` (admin@test.com / 123456)
 
 ## 📄 Licença
 

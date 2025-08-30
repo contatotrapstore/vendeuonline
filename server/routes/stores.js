@@ -1,141 +1,13 @@
 import express from 'express';
 import { z } from 'zod';
+import { createClient } from '@supabase/supabase-js';
 
 const router = express.Router();
 
-// Mock data para demonstração
-const mockStores = [
-  {
-    id: 'store_1',
-    name: 'TechStore',
-    slug: 'techstore',
-    description: 'Sua loja de tecnologia especializada em smartphones, notebooks e acessórios',
-    logo: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=200',
-    banner: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
-    address: 'Rua da Tecnologia, 123',
-    city: 'São Paulo',
-    state: 'SP',
-    zipCode: '01234-567',
-    phone: '(11) 99999-9999',
-    email: 'contato@techstore.com',
-    whatsapp: '(11) 99999-9999',
-    website: 'https://techstore.com',
-    category: 'Eletrônicos',
-    isActive: true,
-    isVerified: true,
-    rating: 4.9,
-    reviewCount: 127,
-    productCount: 25,
-    salesCount: 890,
-    plan: 'PEQUENA_EMPRESA',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'store_2',
-    name: 'GalaxyShop',
-    slug: 'galaxyshop',
-    description: 'Especialista em produtos Samsung e Android',
-    logo: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=200',
-    banner: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
-    address: 'Av. Samsung, 456',
-    city: 'Rio de Janeiro',
-    state: 'RJ',
-    zipCode: '20000-000',
-    phone: '(21) 88888-8888',
-    email: 'contato@galaxyshop.com',
-    whatsapp: '(21) 88888-8888',
-    website: 'https://galaxyshop.com',
-    category: 'Eletrônicos',
-    isActive: true,
-    isVerified: true,
-    rating: 4.8,
-    reviewCount: 89,
-    productCount: 18,
-    salesCount: 567,
-    plan: 'MICRO_EMPRESA',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'store_3',
-    name: 'ComputerWorld',
-    slug: 'computerworld',
-    description: 'Notebooks, desktops e componentes para informática',
-    logo: 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?w=200',
-    banner: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
-    address: 'Rua dos Computadores, 789',
-    city: 'Belo Horizonte',
-    state: 'MG',
-    zipCode: '30000-000',
-    phone: '(31) 77777-7777',
-    email: 'contato@computerworld.com',
-    whatsapp: '(31) 77777-7777',
-    website: 'https://computerworld.com',
-    category: 'Eletrônicos',
-    isActive: true,
-    isVerified: true,
-    rating: 4.6,
-    reviewCount: 64,
-    productCount: 32,
-    salesCount: 234,
-    plan: 'EMPRESA_SIMPLES',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'store_4',
-    name: 'SneakerHouse',
-    slug: 'sneakerhouse',
-    description: 'Os melhores tênis e calçados esportivos',
-    logo: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200',
-    banner: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
-    address: 'Rua dos Tênis, 321',
-    city: 'Porto Alegre',
-    state: 'RS',
-    zipCode: '90000-000',
-    phone: '(51) 66666-6666',
-    email: 'contato@sneakerhouse.com',
-    whatsapp: '(51) 66666-6666',
-    website: 'https://sneakerhouse.com',
-    category: 'Moda & Beleza',
-    isActive: true,
-    isVerified: true,
-    rating: 4.7,
-    reviewCount: 156,
-    productCount: 45,
-    salesCount: 1234,
-    plan: 'EMPRESA_PLUS',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'store_5',
-    name: 'TVMax',
-    slug: 'tvmax',
-    description: 'Smart TVs, home theater e equipamentos de áudio e vídeo',
-    logo: 'https://images.unsplash.com/photo-1593784991095-a205069470b6?w=200',
-    banner: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800',
-    address: 'Av. das TVs, 654',
-    city: 'Salvador',
-    state: 'BA',
-    zipCode: '40000-000',
-    phone: '(71) 55555-5555',
-    email: 'contato@tvmax.com',
-    whatsapp: '(71) 55555-5555',
-    website: 'https://tvmax.com',
-    category: 'Eletrônicos',
-    isActive: true,
-    isVerified: true,
-    rating: 4.5,
-    reviewCount: 93,
-    productCount: 22,
-    salesCount: 456,
-    plan: 'GRATUITO',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+// Configurar cliente Supabase
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 // Schema de validação para query parameters
 const querySchema = z.object({
@@ -144,9 +16,10 @@ const querySchema = z.object({
   search: z.string().optional(),
   category: z.string().optional(),
   city: z.string().optional(),
-  isVerified: z.string().transform(val => val === 'true').optional(),
-  isActive: z.string().transform(val => val === 'true').optional(),
-  plan: z.string().optional(),
+  state: z.string().optional(),
+  verified: z.string().transform(val => val === 'true').optional(),
+  sortBy: z.enum(['name', 'rating', 'createdAt', 'sales']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc')
 });
 
 // GET /api/stores - Listar lojas
@@ -154,16 +27,89 @@ router.get('/', async (req, res) => {
   try {
     const query = querySchema.parse(req.query);
 
+    // Dados mock temporários enquanto configuramos Supabase
+    const mockStores = [
+      {
+        id: "store_1",
+        name: "TechStore",
+        slug: "techstore",
+        description: "Sua loja de tecnologia especializada em smartphones e acessórios",
+        logo: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=200",
+        banner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800",
+        address: "Rua da Tecnologia, 123",
+        city: "São Paulo",
+        state: "SP",
+        zipCode: "01234-567",
+        phone: "(11) 99999-9999",
+        email: "contato@techstore.com",
+        category: "Eletrônicos",
+        isActive: true,
+        isVerified: true,
+        rating: 4.8,
+        reviewCount: 127,
+        productCount: 25,
+        salesCount: 890,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: "store_2",
+        name: "Apple Store",
+        slug: "apple-store",
+        description: "Produtos Apple originais com garantia oficial",
+        logo: "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=200",
+        banner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800",
+        address: "Av. Paulista, 1000",
+        city: "São Paulo",
+        state: "SP",
+        zipCode: "01310-100",
+        phone: "(11) 88888-8888",
+        email: "contato@applestore.com",
+        category: "Eletrônicos",
+        isActive: true,
+        isVerified: true,
+        rating: 4.9,
+        reviewCount: 234,
+        productCount: 18,
+        salesCount: 1200,
+        createdAt: new Date().toISOString()
+      },
+      {
+        id: "store_3",
+        name: "ComputerShop",
+        slug: "computershop",
+        description: "Notebooks, desktops e acessórios para informática",
+        logo: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=200",
+        banner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800",
+        address: "Rua dos Computadores, 456",
+        city: "Rio de Janeiro",
+        state: "RJ",
+        zipCode: "20000-000",
+        phone: "(21) 77777-7777",
+        email: "contato@computershop.com",
+        category: "Informática",
+        isActive: true,
+        isVerified: true,
+        rating: 4.6,
+        reviewCount: 89,
+        productCount: 42,
+        salesCount: 567,
+        createdAt: new Date().toISOString()
+      }
+    ];
+
+    // Aplicar filtros simples
     let filteredStores = [...mockStores];
 
-    // Aplicar filtros
     if (query.search) {
       const searchTerm = query.search.toLowerCase();
       filteredStores = filteredStores.filter(store => 
         store.name.toLowerCase().includes(searchTerm) ||
-        store.description.toLowerCase().includes(searchTerm) ||
-        store.category.toLowerCase().includes(searchTerm)
+        store.description.toLowerCase().includes(searchTerm)
       );
+    }
+
+    if (query.verified) {
+      filteredStores = filteredStores.filter(store => store.isVerified);
     }
 
     if (query.category && query.category !== 'Todos') {
@@ -172,32 +118,16 @@ router.get('/', async (req, res) => {
       );
     }
 
-    if (query.city) {
-      filteredStores = filteredStores.filter(store => 
-        store.city.toLowerCase() === query.city.toLowerCase()
-      );
-    }
-
-    if (query.isVerified !== undefined) {
-      filteredStores = filteredStores.filter(store => store.isVerified === query.isVerified);
-    }
-
-    if (query.isActive !== undefined) {
-      filteredStores = filteredStores.filter(store => store.isActive === query.isActive);
-    }
-
-    if (query.plan) {
-      filteredStores = filteredStores.filter(store => store.plan === query.plan);
-    }
-
-    // Paginação
+    // Paginação simples
+    const startIndex = (query.page - 1) * query.limit;
+    const paginatedStores = filteredStores.slice(startIndex, startIndex + query.limit);
+    
     const total = filteredStores.length;
-    const skip = (query.page - 1) * query.limit;
-    const stores = filteredStores.slice(skip, skip + query.limit);
     const totalPages = Math.ceil(total / query.limit);
 
     res.json({
-      stores: stores,
+      success: true,
+      stores: paginatedStores,
       pagination: {
         page: query.page,
         limit: query.limit,
@@ -210,16 +140,10 @@ router.get('/', async (req, res) => {
 
   } catch (error) {
     console.error('Erro ao buscar lojas:', error);
-    
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        error: 'Parâmetros inválidos',
-        details: error.issues
-      });
-    }
-
-    res.status(500).json({
-      error: 'Erro interno do servidor'
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erro interno do servidor',
+      error: error.message 
     });
   }
 });
@@ -228,17 +152,21 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    
-    const store = mockStores.find(s => s.id === id);
-    
-    if (!store) {
+
+    const { data: store, error } = await supabase
+      .from('stores')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !store) {
       return res.status(404).json({
         error: 'Loja não encontrada'
       });
     }
-    
+
     res.json(store);
-    
+
   } catch (error) {
     console.error('Erro ao buscar loja:', error);
     res.status(500).json({
@@ -247,23 +175,64 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// GET /api/stores/slug/:slug - Buscar loja por slug
-router.get('/slug/:slug', async (req, res) => {
+// GET /api/stores/:id/products - Produtos de uma loja
+router.get('/:id/products', async (req, res) => {
   try {
-    const { slug } = req.params;
-    
-    const store = mockStores.find(s => s.slug === slug);
-    
-    if (!store) {
+    const { id } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 12;
+
+    // Verificar se a loja existe
+    const { data: store, error: storeError } = await supabase
+      .from('stores')
+      .select('id')
+      .eq('id', id)
+      .single();
+
+    if (storeError || !store) {
       return res.status(404).json({
         error: 'Loja não encontrada'
       });
     }
-    
-    res.json(store);
-    
+
+    // Buscar produtos da loja
+    const from = (page - 1) * limit;
+    const to = from + limit - 1;
+
+    const { data: products, error, count } = await supabase
+      .from('Product')
+      .select(`
+        *,
+        images:ProductImage(url, alt, order),
+        category:categories(*)
+      `)
+      .eq('storeId', id)
+      .eq('isActive', true)
+      .order('createdAt', { ascending: false })
+      .range(from, to);
+
+    if (error) {
+      throw error;
+    }
+
+    const total = count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    res.json({
+      success: true,
+      products: products || [],
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      }
+    });
+
   } catch (error) {
-    console.error('Erro ao buscar loja:', error);
+    console.error('Erro ao buscar produtos da loja:', error);
     res.status(500).json({
       error: 'Erro interno do servidor'
     });

@@ -6,15 +6,27 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vite.dev/config/
 export default defineConfig({
   server: {
-    port: 5173,
+    port: parseInt(process.env.VITE_FRONTEND_PORT || '5173'),
     host: true,
     open: true,
-    strictPort: true,
+    strictPort: false, // Permitir fallback de porta
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: `http://localhost:${process.env.VITE_API_PORT || '3001'}`,
         changeOrigin: true,
-        secure: false
+        secure: false,
+        rewrite: (path) => path, // Manter /api no path
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('❌ Proxy error:', err);
+          });
+          proxy.on('proxyReq', (proxyReq, req, _res) => {
+            console.log('🔄 Sending Request to the Target:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('✅ Received Response from the Target:', proxyRes.statusCode, req.url);
+          });
+        },
       }
     }
   },

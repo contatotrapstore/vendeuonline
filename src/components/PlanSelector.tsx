@@ -145,6 +145,7 @@ export default function PlanSelector({
   };
 
   const getBillingText = (period: string) => {
+    if (!period) return '';
     switch (period.toLowerCase()) {
       case 'monthly':
         return '/mês';
@@ -235,7 +236,7 @@ export default function PlanSelector({
                   </div>
                   <div className="flex items-center text-sm">
                     <Check className="h-4 w-4 text-green-500 mr-2" />
-                    <span>Suporte por {plan.support.toLowerCase()}</span>
+                    <span>Suporte por {plan.support ? plan.support.toLowerCase() : 'email'}</span>
                   </div>
                 </div>
                 
@@ -321,7 +322,7 @@ export default function PlanSelector({
                       </div>
                       <div className="flex items-center text-sm">
                         <Check className="h-4 w-4 text-green-500 mr-2" />
-                        <span>Suporte por {plan.support.toLowerCase()}</span>
+                        <span>Suporte por {plan.support ? plan.support.toLowerCase() : 'email'}</span>
                       </div>
                     </div>
                     

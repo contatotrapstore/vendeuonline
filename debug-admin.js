@@ -5,13 +5,13 @@ async function testAdminLogin() {
   try {
     // 1. Testar login
     console.log('1. Fazendo login...');
-    const loginResponse = await fetch('http://localhost:5173/api/auth/login', {
+    const loginResponse = await fetch('http://localhost:3001/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        email: 'admin@vendeuonline.com',
+        email: 'admin@test.com',
         password: '123456',
         userType: 'admin'
       })

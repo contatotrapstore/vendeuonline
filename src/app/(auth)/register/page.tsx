@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/store/authStore';
 import Logo from '@/components/ui/Logo';
 
 const baseSchema = {
@@ -50,9 +51,9 @@ type SellerFormData = z.infer<typeof sellerSchema>;
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [userType, setUserType] = useState<'buyer' | 'seller'>('buyer');
   const navigate = useNavigate();
+  const { register: registerUser, isLoading, error, clearError } = useAuthStore();
 
   const schema = userType === 'buyer' ? buyerSchema : sellerSchema;
   
@@ -72,48 +73,29 @@ export default function RegisterPage() {
   const watchedUserType = watch('userType');
 
   const onSubmit = async (data: any) => {
-    setIsLoading(true);
+    clearError();
     
     try {
-      // Usar a API real de registro
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          password: data.password,
-          userType: data.userType,
-          city: data.city,
-          state: data.state,
-          // Campos específicos para vendedor
-          ...(data.userType === 'seller' && {
-            storeName: data.storeName,
-            storeDescription: data.storeDescription,
-            cnpj: data.cnpj,
-            address: data.address,
-            zipCode: data.zipCode,
-            category: data.category
-          })
-        }),
-      });
+      // Preparar dados para o registro
+      const registerData = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
+        userType: data.userType,
+        city: data.city,
+        state: data.state
+      };
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Erro ao criar conta');
-      }
+      // Usar o authStore para registrar
+      await registerUser(registerData);
       
-      toast.success('Conta criada com sucesso!');
+      toast.success('Conta criada e login realizado com sucesso!');
       
-      // Redirecionar para login
-      navigate('/login');
+      // Redirecionar para a página inicial ou dashboard
+      navigate('/');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Erro ao criar conta. Tente novamente.');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -145,6 +127,13 @@ export default function RegisterPage() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-2xl">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            {/* Mensagem de erro global */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
             {/* Tipo de Usuário */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
