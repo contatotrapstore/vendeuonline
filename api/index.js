@@ -69,8 +69,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'API funcionando!', timestamp: new Date().toISOString() });
 });
 
-// Mock data
-const mockUsers = new Map();
+// Conectar ao banco de dados via Prisma - não usar dados mock
 const mockProducts = [
   {
     id: "1",
@@ -162,27 +161,60 @@ app.post('/api/auth/register', async (req, res) => {
 
     console.log('Registration request:', { name, email, phone, city, state, userType });
 
-    const userId = `user_${Date.now()}`;
+    // Verificar se o usuário já existe
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (existingUser) {
+      return res.status(409).json({ error: 'Este email já está cadastrado' });
+    }
+
     const hashedPassword = await hashPassword(password);
     
-    const user = {
-      id: userId,
-      name,
-      email, 
-      phone,
-      city,
-      state,
-      type: userType.toUpperCase(),
-      isVerified: false,
-      isActive: true,
-      avatar: null,
-      createdAt: new Date().toISOString()
-    };
+    // Criar usuário no banco de dados
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email, 
+        phone,
+        password: hashedPassword,
+        city,
+        state,
+        type: userType.toUpperCase(),
+        isVerified: false,
+        isActive: true,
+        avatar: null
+      }
+    });
 
-    mockUsers.set(email, { ...user, password: hashedPassword });
+    // Criar registro específico do tipo de usuário
+    if (userType === 'buyer') {
+      await prisma.buyer.create({
+        data: {
+          userId: user.id
+        }
+      });
+    } else if (userType === 'seller') {
+      await prisma.seller.create({
+        data: {
+          userId: user.id
+        }
+      });
+    }
 
-    const token = generateToken(user);
-    console.log('Mock user created successfully:', email);
+    const token = generateToken({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      city: user.city,
+      state: user.state,
+      type: user.type,
+      isVerified: user.isVerified
+    });
+
+    console.log('User created successfully in database:', email);
 
     res.status(201).json({
       message: 'Usuário criado com sucesso',
@@ -194,7 +226,8 @@ app.post('/api/auth/register', async (req, res) => {
         city: user.city,
         state: user.state,
         userType: userType,
-        isVerified: user.isVerified
+        isVerified: user.isVerified,
+        createdAt: user.createdAt.toISOString()
       },
       token
     });
@@ -208,39 +241,9 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password, userType } = req.body;
-    console.log('Login request:', { email, password: password ? '***' : 'missing' });
+    console.log('Login request:', { email, password: password ? '***' : 'missing', userType });
 
-    // Check mock users first
-    const mockUser = mockUsers.get(email);
-    if (mockUser && await comparePassword(password, mockUser.password)) {
-      const token = generateToken(mockUser);
-      console.log('Login successful for user:', email);
-      return res.json({
-        message: 'Login realizado com sucesso',
-        user: {
-          id: mockUser.id,
-          name: mockUser.name,
-          email: mockUser.email,
-          phone: mockUser.phone,
-          city: mockUser.city,
-          state: mockUser.state,
-          userType: mockUser.type.toLowerCase(),
-          isVerified: mockUser.isVerified,
-          ...(mockUser.type === 'BUYER' && {
-            buyer: { id: mockUser.id, wishlistCount: 0, orderCount: 0 }
-          }),
-          ...(mockUser.type === 'SELLER' && {
-            seller: { id: mockUser.id, storeName: `${mockUser.name} Store`, rating: 5, totalSales: 0, plan: 'gratuito', isVerified: true }
-          }),
-          ...(mockUser.type === 'ADMIN' && {
-            admin: { id: mockUser.id, permissions: ['all'] }
-          })
-        },
-        token
-      });
-    }
-
-    // Admin padrão
+    // Admin padrão (manter para testes)
     if (email === 'admin@test.com' && password === '123456') {
       const adminUser = {
         id: 'admin_1',
@@ -257,7 +260,7 @@ app.post('/api/auth/login', async (req, res) => {
       };
 
       const token = generateToken(adminUser);
-      console.log('Login successful for user:', email);
+      console.log('Login successful for admin user:', email);
 
       return res.json({
         message: 'Login realizado com sucesso',
@@ -270,8 +273,102 @@ app.post('/api/auth/login', async (req, res) => {
       });
     }
 
-    console.log('User found: No');
-    res.status(401).json({ error: 'Email ou senha inválidos' });
+    // Buscar usuário no banco de dados
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        buyer: true,
+        seller: {
+          include: {
+            store: true
+          }
+        },
+        admin: true
+      }
+    });
+
+    if (!user || !user.isActive) {
+      console.log('User not found or inactive:', email);
+      return res.status(401).json({ error: 'Email ou senha inválidos' });
+    }
+
+    // Verificar senha
+    const isValidPassword = await comparePassword(password, user.password);
+    if (!isValidPassword) {
+      console.log('Invalid password for user:', email);
+      return res.status(401).json({ error: 'Email ou senha inválidos' });
+    }
+
+    // Verificar tipo de usuário se especificado
+    if (userType && user.type.toLowerCase() !== userType.toLowerCase()) {
+      console.log('User type mismatch:', { expected: userType, actual: user.type });
+      return res.status(401).json({ error: 'Tipo de usuário incorreto' });
+    }
+
+    // Atualizar último login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastLogin: new Date() }
+    });
+
+    const token = generateToken({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      city: user.city,
+      state: user.state,
+      type: user.type,
+      isVerified: user.isVerified
+    });
+
+    console.log('Login successful for user:', email);
+
+    // Construir resposta com dados específicos do tipo de usuário
+    const userData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      city: user.city,
+      state: user.state,
+      userType: user.type.toLowerCase(),
+      isVerified: user.isVerified,
+      avatar: user.avatar,
+      createdAt: user.createdAt.toISOString()
+    };
+
+    if (user.type === 'BUYER' && user.buyer) {
+      userData.buyer = {
+        id: user.buyer.id,
+        wishlistCount: 0, // TODO: calcular do banco
+        orderCount: 0 // TODO: calcular do banco
+      };
+    }
+
+    if (user.type === 'SELLER' && user.seller) {
+      userData.seller = {
+        id: user.seller.id,
+        storeName: user.seller.store?.name || `${user.name} Store`,
+        rating: user.seller.rating,
+        totalSales: user.seller.totalSales,
+        plan: 'gratuito', // TODO: buscar plano atual
+        isVerified: user.seller.isVerified
+      };
+    }
+
+    if (user.type === 'ADMIN' && user.admin) {
+      userData.admin = {
+        id: user.admin.id,
+        permissions: JSON.parse(user.admin.permissions)
+      };
+    }
+
+    return res.json({
+      message: 'Login realizado com sucesso',
+      user: userData,
+      token
+    });
 
   } catch (error) {
     console.error('Erro no login:', error);
@@ -279,12 +376,70 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-app.get('/api/auth/me', authenticate, (req, res) => {
+app.get('/api/auth/me', authenticate, async (req, res) => {
   try {
     console.log('Profile request for user:', req.user);
     
+    // Buscar dados atualizados do usuário no banco
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      include: {
+        buyer: true,
+        seller: {
+          include: {
+            store: true
+          }
+        },
+        admin: true
+      }
+    });
+
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: 'Usuário não encontrado' });
+    }
+
+    // Construir dados do usuário para resposta
+    const userData = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      city: user.city,
+      state: user.state,
+      userType: user.type.toLowerCase(),
+      isVerified: user.isVerified,
+      avatar: user.avatar,
+      createdAt: user.createdAt.toISOString()
+    };
+
+    if (user.type === 'BUYER' && user.buyer) {
+      userData.buyer = {
+        id: user.buyer.id,
+        wishlistCount: 0, // TODO: calcular do banco
+        orderCount: 0 // TODO: calcular do banco
+      };
+    }
+
+    if (user.type === 'SELLER' && user.seller) {
+      userData.seller = {
+        id: user.seller.id,
+        storeName: user.seller.store?.name || `${user.name} Store`,
+        rating: user.seller.rating,
+        totalSales: user.seller.totalSales,
+        plan: 'gratuito', // TODO: buscar plano atual
+        isVerified: user.seller.isVerified
+      };
+    }
+
+    if (user.type === 'ADMIN' && user.admin) {
+      userData.admin = {
+        id: user.admin.id,
+        permissions: JSON.parse(user.admin.permissions)
+      };
+    }
+    
     res.json({
-      user: req.user
+      user: userData
     });
   } catch (error) {
     console.error('Erro ao buscar perfil:', error);

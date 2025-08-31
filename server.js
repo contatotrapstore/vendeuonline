@@ -256,97 +256,7 @@ app.post('/api/auth/login', async (req, res) => {
 });
 */
 
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    const { name, email, password, phone, city, state, userType } = req.body;
-
-    console.log('Registration request:', { name, email, phone, city, state, userType });
-
-    // Validações
-    if (!name || !email || !password || !phone || !city || !state || !userType) {
-      return res.status(400).json({ error: 'Todos os campos são obrigatórios' });
-    }
-
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'Senha deve ter pelo menos 6 caracteres' });
-    }
-
-    const normalizedEmail = email.toLowerCase();
-    const normalizedUserType = userType.toUpperCase();
-
-    // Mock check - simulate checking if user already exists
-    // For demo purposes, we'll allow registration unless it's the existing mock users
-    const mockExistingEmails = ['admin@test.com', 'joao@techstore.com', 'maria@email.com'];
-    
-    if (mockExistingEmails.includes(normalizedEmail)) {
-      return res.status(409).json({ error: 'Email já cadastrado' });
-    }
-
-    // Generate mock user ID
-    const newUserId = `user_${Date.now()}`;
-    
-    // Create mock new user object
-    const newUser = {
-      id: newUserId,
-      name,
-      email: normalizedEmail,
-      phone,
-      city,
-      state,
-      type: normalizedUserType,
-      isVerified: false,
-      isActive: true,
-      avatar: null,
-      createdAt: new Date().toISOString()
-    };
-
-    // Mock additional data based on user type
-    let additionalData = {};
-    
-    if (normalizedUserType === 'SELLER') {
-      const storeName = `Loja de ${name}`;
-      additionalData.seller = {
-        id: `seller_${newUserId}`,
-        storeName: storeName,
-        storeSlug: `${storeName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-        storeDescription: `Bem-vindos à ${storeName}!`,
-        rating: 0.0,
-        totalSales: 0,
-        commission: 5.0,
-        isVerified: false
-      };
-    } else if (normalizedUserType === 'BUYER') {
-      additionalData.buyer = {
-        id: `buyer_${newUserId}`,
-        preferences: {},
-        favoriteCategories: []
-      };
-    }
-
-    console.log('Mock user created successfully:', newUser.email);
-
-    // Gerar token
-    const token = generateToken(newUser);
-
-    // Preparar resposta sem senha
-    const { ...userWithoutPassword } = newUser;
-
-    res.status(201).json({
-      success: true,
-      message: 'Usuário criado com sucesso',
-      user: {
-        ...userWithoutPassword,
-        ...additionalData,
-        userType: newUser.type.toLowerCase()
-      },
-      token
-    });
-
-  } catch (error) {
-    console.error('Erro no registro:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
+// Registro será tratado pelo arquivo routes/auth.js
 
 // Rota de produtos (COMENTADA - usando arquivo routes/products.js)
 /*
@@ -2506,6 +2416,9 @@ app.delete('/api/admin/plans/:id', authenticateAdmin, auditMiddleware('DELETE', 
 
 // Função para iniciar servidor com fallback de porta
 const startServer = (port) => {
+  port = parseInt(port);
+  if (port > 65535) port = 3001; // Reset para porta padrão se ultrapassar limite
+  
   const server = app.listen(port, () => {
     console.log(`🚀 Servidor API rodando em http://localhost:${port}`);
     console.log(`📱 Frontend disponível em http://localhost:${process.env.VITE_FRONTEND_PORT || 5173}`);
