@@ -450,14 +450,53 @@ app.get('/api/auth/me', authenticate, async (req, res) => {
 // Products API
 app.get('/api/products', async (req, res) => {
   try {
+    const { page = 1, limit = 50, search, category, seller } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const where = {
+      isActive: true,
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
+        ]
+      }),
+      ...(category && { categoryId: category }),
+      ...(seller && { sellerId: seller })
+    };
+
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: {
+          images: true,
+          category: true,
+          seller: {
+            include: {
+              store: true,
+              user: {
+                select: { name: true, city: true, state: true }
+              }
+            }
+          }
+        },
+        skip,
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.product.count({ where })
+    ]);
+    
     res.json({
       success: true,
-      products: mockProducts,
+      products,
       pagination: {
-        page: 1,
-        limit: 50,
-        total: mockProducts.length,
-        totalPages: 1
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+        hasNext: skip + parseInt(limit) < total,
+        hasPrev: parseInt(page) > 1
       }
     });
   } catch (error) {
@@ -469,14 +508,51 @@ app.get('/api/products', async (req, res) => {
 // Stores API
 app.get('/api/stores', async (req, res) => {
   try {
+    const { page = 1, limit = 50, search } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const where = {
+      isActive: true,
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
+        ]
+      })
+    };
+
+    const [stores, total] = await Promise.all([
+      prisma.store.findMany({
+        where,
+        include: {
+          seller: {
+            include: {
+              user: {
+                select: { name: true, city: true, state: true }
+              }
+            }
+          },
+          _count: {
+            select: { products: true }
+          }
+        },
+        skip,
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.store.count({ where })
+    ]);
+    
     res.json({
       success: true,
-      stores: mockStores,
+      stores,
       pagination: {
-        page: 1,
-        limit: 50,
-        total: mockStores.length,
-        totalPages: 1
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+        hasNext: skip + parseInt(limit) < total,
+        hasPrev: parseInt(page) > 1
       }
     });
   } catch (error) {
@@ -488,10 +564,18 @@ app.get('/api/stores', async (req, res) => {
 // Plans API
 app.get('/api/plans', async (req, res) => {
   try {
+    const plans = await prisma.plan.findMany({
+      where: { isActive: true },
+      orderBy: { order: 'asc' }
+    });
+    
     res.json({
       success: true,
-      plans: mockPlans,
-      total: mockPlans.length
+      plans: plans.map(plan => ({
+        ...plan,
+        features: JSON.parse(plan.features || '[]')
+      })),
+      total: plans.length
     });
   } catch (error) {
     console.error('Erro ao buscar planos:', error);
@@ -554,14 +638,81 @@ app.get('/api/admin/stats', authenticate, async (req, res) => {
       return res.status(403).json({ error: 'Acesso negado' });
     }
 
+    const [
+      totalUsers,
+      buyers,
+      sellers,
+      admins,
+      totalStores,
+      activeStores,
+      pendingStores,
+      suspendedStores,
+      totalProducts,
+      approvedProducts,
+      pendingProducts,
+      totalOrders,
+      totalRevenue,
+      totalSubscriptions,
+      activeSubscriptions,
+      subscriptionRevenue
+    ] = await Promise.all([
+      prisma.user.count(),
+      prisma.user.count({ where: { type: 'BUYER' } }),
+      prisma.user.count({ where: { type: 'SELLER' } }),
+      prisma.user.count({ where: { type: 'ADMIN' } }),
+      prisma.store.count(),
+      prisma.store.count({ where: { isActive: true } }),
+      prisma.store.count({ where: { isActive: false, isVerified: false } }),
+      prisma.store.count({ where: { isActive: false, isVerified: true } }),
+      prisma.product.count(),
+      prisma.product.count({ where: { isActive: true } }),
+      prisma.product.count({ where: { isActive: false } }),
+      prisma.order.count(),
+      prisma.order.aggregate({
+        _sum: { totalAmount: true },
+        where: { status: 'COMPLETED' }
+      }).then(result => result._sum.totalAmount || 0),
+      prisma.subscription.count(),
+      prisma.subscription.count({ where: { isActive: true } }),
+      prisma.subscription.aggregate({
+        _sum: { 
+          plan: {
+            price: true
+          }
+        },
+        where: { isActive: true }
+      }).then(result => result._sum?.plan?.price || 0)
+    ]);
+
     res.json({
       success: true,
       data: {
-        users: { total: 1, buyers: 0, sellers: 0, admins: 1 },
-        stores: { total: 1, active: 1, pending: 0, suspended: 0 },
-        products: { total: 2, approved: 2, pending: 0 },
-        orders: { total: 0, revenue: 0 },
-        subscriptions: { total: 0, active: 0, revenue: 0 }
+        users: { 
+          total: totalUsers, 
+          buyers: buyers, 
+          sellers: sellers, 
+          admins: admins 
+        },
+        stores: { 
+          total: totalStores, 
+          active: activeStores, 
+          pending: pendingStores, 
+          suspended: suspendedStores 
+        },
+        products: { 
+          total: totalProducts, 
+          approved: approvedProducts, 
+          pending: pendingProducts 
+        },
+        orders: { 
+          total: totalOrders, 
+          revenue: totalRevenue 
+        },
+        subscriptions: { 
+          total: totalSubscriptions, 
+          active: activeSubscriptions, 
+          revenue: subscriptionRevenue 
+        }
       }
     });
   } catch (error) {

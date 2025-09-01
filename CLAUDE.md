@@ -118,14 +118,31 @@ API endpoints follow Next.js App Router pattern in `src/app/api/`:
 
 ## Environment Variables
 The application requires environment variables for:
+
+### 🔑 Essenciais (Obrigatórias)
 - `DATABASE_URL` - PostgreSQL/Supabase connection string
-- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
+- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL  
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
 - `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key
-- `JWT_SECRET` - JWT token signing secret
+- `JWT_SECRET` - JWT token signing secret (mínimo 32 chars)
+
+### 💳 Pagamentos (ASAAS)
 - `ASAAS_API_KEY` - ASAAS payment gateway API key
 - `ASAAS_BASE_URL` - ASAAS API base URL (prod/sandbox)
 - `ASAAS_WEBHOOK_TOKEN` - Webhook validation token
+
+### 📧 Email (Opcional)
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`
+
+### ⚙️ Configuração no Vercel
+1. Vá em Project Settings > Environment Variables
+2. Adicione todas as variáveis do `.env.example`
+3. **IMPORTANTE**: Certifique-se que `DATABASE_URL` aponta para PostgreSQL válido
+4. **CRÍTICO**: JWT_SECRET deve ser uma string forte (use: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`)
+
+### 🔧 Teste Local vs Produção
+- Local: usa `.env` 
+- Vercel: usa Environment Variables do dashboard
 
 ## Quick Setup
 🚀 **SERVIDOR RODANDO EM: http://localhost:5174**
