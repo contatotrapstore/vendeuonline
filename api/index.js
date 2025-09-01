@@ -9,8 +9,24 @@ import { v4 as uuidv4 } from 'uuid';
 // Carregar variáveis de ambiente
 dotenv.config();
 
+// Debug - Verificar variáveis de ambiente críticas
+console.log('🔍 [DEBUG] Verificando variáveis de ambiente:');
+console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'DEFINIDA' : '❌ NÃO DEFINIDA');
+console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'DEFINIDA' : '❌ NÃO DEFINIDA');
+console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'DEFINIDA' : '❌ NÃO DEFINIDA');
+console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'DEFINIDA' : '❌ NÃO DEFINIDA');
+
 // Configurar Prisma
 const prisma = new PrismaClient();
+
+// Debug - Testar conexão com banco
+prisma.$connect()
+  .then(() => {
+    console.log('✅ [DEBUG] Conexão com banco de dados estabelecida com sucesso');
+  })
+  .catch((error) => {
+    console.error('❌ [DEBUG] Erro ao conectar com banco de dados:', error.message);
+  });
 
 // Configurações JWT
 const JWT_SECRET = process.env.JWT_SECRET || 'cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac';
@@ -717,6 +733,192 @@ app.get('/api/admin/stats', authenticate, async (req, res) => {
     });
   } catch (error) {
     console.error('Erro ao buscar estatísticas:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Admin Users API
+app.get('/api/admin/users', authenticate, async (req, res) => {
+  try {
+    if (req.user.type !== 'ADMIN') {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+
+    const { page = 1, limit = 20, search, type } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const where = {
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } }
+        ]
+      }),
+      ...(type && { type: type.toUpperCase() })
+    };
+
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          type: true,
+          city: true,
+          state: true,
+          isVerified: true,
+          isActive: true,
+          createdAt: true,
+          lastLogin: true
+        },
+        skip,
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.user.count({ where })
+    ]);
+    
+    res.json({
+      success: true,
+      users,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+        hasNext: skip + parseInt(limit) < total,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar usuários:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Admin Stores API
+app.get('/api/admin/stores', authenticate, async (req, res) => {
+  try {
+    if (req.user.type !== 'ADMIN') {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+
+    const { page = 1, limit = 20, search, status } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const where = {
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
+        ]
+      }),
+      ...(status && { 
+        isActive: status === 'active',
+        ...(status === 'pending' && { isVerified: false })
+      })
+    };
+
+    const [stores, total] = await Promise.all([
+      prisma.store.findMany({
+        where,
+        include: {
+          seller: {
+            include: {
+              user: {
+                select: { name: true, email: true, city: true, state: true }
+              }
+            }
+          },
+          _count: {
+            select: { products: true }
+          }
+        },
+        skip,
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.store.count({ where })
+    ]);
+    
+    res.json({
+      success: true,
+      stores,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+        hasNext: skip + parseInt(limit) < total,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar lojas:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// Admin Products API
+app.get('/api/admin/products', authenticate, async (req, res) => {
+  try {
+    if (req.user.type !== 'ADMIN') {
+      return res.status(403).json({ error: 'Acesso negado' });
+    }
+
+    const { page = 1, limit = 20, search, status } = req.query;
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const where = {
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: 'insensitive' } },
+          { description: { contains: search, mode: 'insensitive' } }
+        ]
+      }),
+      ...(status && { 
+        isActive: status === 'active'
+      })
+    };
+
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: {
+          images: true,
+          category: true,
+          seller: {
+            include: {
+              store: true,
+              user: {
+                select: { name: true, email: true, city: true, state: true }
+              }
+            }
+          }
+        },
+        skip,
+        take: parseInt(limit),
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.product.count({ where })
+    ]);
+    
+    res.json({
+      success: true,
+      products,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit)),
+        hasNext: skip + parseInt(limit) < total,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar produtos:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });

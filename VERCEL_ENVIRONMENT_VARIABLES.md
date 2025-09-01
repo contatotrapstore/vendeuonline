@@ -11,6 +11,7 @@ Vá em: **Project Settings > Environment Variables** e adicione TODAS essas vari
 **Name:** `DATABASE_URL`  
 **Value:** `postgresql://postgres.dycsfnbqgojhttnjbndp:eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw@db.dycsfnbqgojhttnjbndp.supabase.co:5432/postgres`
 
+### 🎯 **FRONTEND (VITE_) - Para o cliente**
 **Name:** `VITE_PUBLIC_SUPABASE_URL`  
 **Value:** `https://dycsfnbqgojhttnjbndp.supabase.co`
 
@@ -18,6 +19,16 @@ Vá em: **Project Settings > Environment Variables** e adicione TODAS essas vari
 **Value:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3NDg2NTYsImV4cCI6MjA2OTMyNDY1Nn0.eLO91-DAAWWP-5g3MG19s6lDtFhrfOu3qk-TTlbrtbQ`
 
 **Name:** `VITE_SUPABASE_SERVICE_ROLE_KEY`  
+**Value:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw`
+
+### 🔧 **BACKEND (SEM VITE_) - Para as APIs**
+**Name:** `SUPABASE_URL`  
+**Value:** `https://dycsfnbqgojhttnjbndp.supabase.co`
+
+**Name:** `SUPABASE_ANON_KEY`  
+**Value:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3NDg2NTYsImV4cCI6MjA2OTMyNDY1Nn0.eLO91-DAAWWP-5g3MG19s6lDtFhrfOu3qk-TTlbrtbQ`
+
+**Name:** `SUPABASE_SERVICE_ROLE_KEY`  
 **Value:** `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw`
 
 **Name:** `JWT_SECRET`  
@@ -129,6 +140,18 @@ Vá em: **Project Settings > Environment Variables** e adicione TODAS essas vari
 
 ---
 
-**Total de variáveis:** 18  
-**Essenciais:** 5  
+## 🚨 **IMPORTANTE - POR QUE DUPLICAR?**
+
+**Frontend (Vite)**: Usa variáveis com `VITE_*` - acessível no navegador  
+**Backend (Node.js)**: Usa variáveis sem `VITE_*` - acessível no servidor
+
+**⚡ ESSENCIAIS PARA CORREÇÃO:**
+- `SUPABASE_URL` (backend) + `VITE_PUBLIC_SUPABASE_URL` (frontend)
+- `SUPABASE_ANON_KEY` (backend) + `VITE_PUBLIC_SUPABASE_ANON_KEY` (frontend)  
+- `SUPABASE_SERVICE_ROLE_KEY` (backend) + `VITE_SUPABASE_SERVICE_ROLE_KEY` (frontend)
+
+---
+
+**Total de variáveis:** 21  
+**Essenciais:** 8 (duplicadas para frontend/backend)  
 **Recomendadas:** 13
