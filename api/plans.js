@@ -1,4 +1,36 @@
-import { PrismaClient } from '@prisma/client';
+import { safeQuery } from '../lib/prisma.js';
+
+// Dados mock para fallback
+const mockPlans = [
+  {
+    id: "plan_1",
+    name: "Gratuito",
+    slug: "gratuito",
+    description: "Para começar a vender",
+    price: 0,
+    billingPeriod: "monthly",
+    maxAds: 3,
+    maxPhotos: 1,
+    support: "email",
+    features: ["Até 3 anúncios", "1 foto por anúncio", "Suporte básico"],
+    isActive: true,
+    order: 1
+  },
+  {
+    id: "plan_2",
+    name: "Básico", 
+    slug: "basico",
+    description: "Ideal para vendedores iniciantes",
+    price: 29.90,
+    billingPeriod: "monthly",
+    maxAds: 10,
+    maxPhotos: 5,
+    support: "chat",
+    features: ["Até 10 anúncios", "Até 5 fotos", "Suporte prioritário"],
+    isActive: true,
+    order: 2
+  }
+];
 
 // Função serverless específica para planos
 export default async function handler(req, res) {
@@ -21,42 +53,50 @@ export default async function handler(req, res) {
     console.log('🔍 [PLANS] Iniciando busca de planos...');
     console.log('DATABASE_URL exists:', !!process.env.DATABASE_URL);
     
-    const prisma = new PrismaClient();
-    
-    console.log('🔍 [PLANS] Conectando ao banco...');
-    await prisma.$connect();
-    
-    console.log('🔍 [PLANS] Buscando planos ativos...');
-    const plans = await prisma.plan.findMany({
-      where: { isActive: true },
-      orderBy: { order: 'asc' }
+    // Tentar buscar do banco usando safeQuery
+    const result = await safeQuery(async (prisma) => {
+      console.log('🔍 [PLANS] Buscando planos ativos...');
+      const plans = await prisma.plan.findMany({
+        where: { isActive: true },
+        orderBy: { order: 'asc' }
+      });
+      
+      return plans.map(plan => ({
+        ...plan,
+        features: JSON.parse(plan.features || '[]')
+      }));
     });
-    
-    console.log(`🔍 [PLANS] Encontrados ${plans.length} planos`);
-    
-    const formattedPlans = plans.map(plan => ({
-      ...plan,
-      features: JSON.parse(plan.features || '[]')
-    }));
-    
-    await prisma.$disconnect();
-    
-    res.status(200).json({
-      success: true,
-      plans: formattedPlans,
-      total: plans.length
-    });
+
+    if (result.success) {
+      console.log(`✅ [PLANS] Encontrados ${result.data.length} planos do banco`);
+      res.status(200).json({
+        success: true,
+        plans: result.data,
+        total: result.data.length,
+        source: 'database'
+      });
+    } else {
+      // Fallback para dados mock
+      console.warn('⚠️ [PLANS] Banco falhou, usando dados mock:', result.error);
+      res.status(200).json({
+        success: true,
+        plans: mockPlans,
+        total: mockPlans.length,
+        source: 'mock',
+        warning: 'Usando dados de demonstração - banco indisponível'
+      });
+    }
     
   } catch (error) {
-    console.error('❌ [PLANS] Erro detalhado:', {
-      message: error.message,
-      code: error.code,
-      stack: error.stack
-    });
+    console.error('❌ [PLANS] Erro geral:', error);
     
-    res.status(500).json({ 
-      error: 'Erro interno do servidor',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    // Último recurso: retornar mock
+    res.status(200).json({
+      success: true,
+      plans: mockPlans,
+      total: mockPlans.length,
+      source: 'mock',
+      warning: 'Usando dados de demonstração - erro interno'
     });
   }
 }

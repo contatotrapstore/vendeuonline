@@ -10,6 +10,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/diagnostics",
+      "destination": "/api/diagnostics.js"
+    },
+    {
       "source": "/api/plans",
       "destination": "/api/plans.js"
     },
@@ -21,5 +25,6 @@
       "source": "/api/(.*)",
       "destination": "/api/index.js"
     }
-  ]
+  ],
+  "installCommand": "npm install && npx prisma generate"
 }
