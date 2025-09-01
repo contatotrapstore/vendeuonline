@@ -932,5 +932,10 @@ app.get('/api/profile/addresses', authenticate, (req, res) => {
   res.json({ addresses: [] });
 });
 
-// Export the Express API
-export default app;
+// Export para Vercel - função serverless
+export default function handler(req, res) {
+  return app(req, res);
+}
+
+// Também export o app para compatibilidade
+export { app };
