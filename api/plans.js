@@ -1,6 +1,6 @@
 import { safeQuery } from '../lib/prisma.js';
 
-// Dados mock para fallback
+// Dados mock para fallback - TODOS os 4 planos do projeto
 const mockPlans = [
   {
     id: "plan_1",
@@ -12,7 +12,12 @@ const mockPlans = [
     maxAds: 3,
     maxPhotos: 1,
     support: "email",
-    features: ["Até 3 anúncios", "1 foto por anúncio", "Suporte básico"],
+    features: [
+      "Até 3 anúncios",
+      "1 foto por anúncio", 
+      "Suporte básico por email",
+      "Perfil simples de vendedor"
+    ],
     isActive: true,
     order: 1
   },
@@ -21,14 +26,62 @@ const mockPlans = [
     name: "Básico", 
     slug: "basico",
     description: "Ideal para vendedores iniciantes",
-    price: 29.90,
+    price: 19.90,
     billingPeriod: "monthly",
     maxAds: 10,
     maxPhotos: 5,
     support: "chat",
-    features: ["Até 10 anúncios", "Até 5 fotos", "Suporte prioritário"],
+    features: [
+      "Até 10 anúncios",
+      "Até 5 fotos por anúncio",
+      "Suporte prioritário",
+      "Destaque nos resultados",
+      "Estatísticas básicas"
+    ],
     isActive: true,
     order: 2
+  },
+  {
+    id: "plan_3",
+    name: "Profissional", 
+    slug: "profissional",
+    description: "Para vendedores experientes",
+    price: 39.90,
+    billingPeriod: "monthly",
+    maxAds: 50,
+    maxPhotos: 10,
+    support: "whatsapp",
+    features: [
+      "Até 50 anúncios",
+      "Até 10 fotos por anúncio", 
+      "Suporte prioritário 24/7",
+      "Destaque premium",
+      "Estatísticas avançadas",
+      "Badge de verificado"
+    ],
+    isActive: true,
+    order: 3
+  },
+  {
+    id: "plan_4",
+    name: "Empresa",
+    slug: "empresa",
+    description: "Para grandes vendedores",
+    price: 79.90,
+    billingPeriod: "monthly",
+    maxAds: -1,
+    maxPhotos: -1,
+    support: "telefone",
+    features: [
+      "Anúncios ilimitados",
+      "Fotos ilimitadas",
+      "Suporte dedicado",
+      "Destaque máximo",
+      "Dashboard completo",
+      "API de integração"
+    ],
+    isActive: true,
+    order: 4
   }
 ];
 
