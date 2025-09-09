@@ -10,6 +10,14 @@
   },
   "rewrites": [
     {
+      "source": "/api/simple-test",
+      "destination": "/api/simple-test.js"
+    },
+    {
+      "source": "/api/test-register",
+      "destination": "/api/test-register.js"
+    },
+    {
       "source": "/api/diagnostics",
       "destination": "/api/diagnostics.js"
     },

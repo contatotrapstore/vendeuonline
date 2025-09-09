@@ -14,8 +14,9 @@
     "preview": "vite preview",
     "check": "tsc -b --noEmit",
     "postinstall": "prisma generate",
-    "seed": "node scripts/seed-plans.js",
-    "seed:plans": "node scripts/seed-plans.js"
+    "seed": "node prisma/seed.js",
+    "db:seed": "node prisma/seed.js",
+    "db:reset": "npx prisma migrate reset --force && npm run db:seed"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.0",

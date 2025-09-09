@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Store } from '@/types';
-import { apiRequest, get, post, put, del } from '@/lib/api-client';
+import { apiRequest, get as apiGet, post, put, del } from '@/lib/api-client';
 import { appCache } from '@/lib/cache';
 
 interface StoreFilters {
@@ -125,7 +125,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
         )
       });
       
-      const response = await get(`/stores?${queryParams}`);
+      const response = await apiGet(`/stores?${queryParams}`);
       
       // Armazenar no cache
       appCache.setStores(cacheParams, response, 5 * 60 * 1000); // 5 minutos para lojas
@@ -155,7 +155,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      const store = await get(`/stores/${id}`);
+      const store = await apiGet(`/stores/${id}`);
       
       set({ currentStore: store, loading: false });
       return store;
@@ -172,7 +172,7 @@ export const useStoreStore = create<StoreState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      const store = await get(`/stores/slug/${slug}`);
+      const store = await apiGet(`/stores/slug/${slug}`);
       
       set({ currentStore: store, loading: false });
       return store;

@@ -4,10 +4,10 @@ import { createClient } from '@supabase/supabase-js';
 
 const router = express.Router();
 
-// Configurar cliente Supabase
+// Configurar cliente Supabase  
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Schema de validação para query parameters
 const querySchema = z.object({
@@ -25,109 +25,64 @@ const querySchema = z.object({
 // GET /api/stores - Listar lojas
 router.get('/', async (req, res) => {
   try {
+    console.log('🔍 GET /api/stores - Buscando lojas no Supabase...');
     const query = querySchema.parse(req.query);
 
-    // Dados mock temporários enquanto configuramos Supabase
-    const mockStores = [
-      {
-        id: "store_1",
-        name: "TechStore",
-        slug: "techstore",
-        description: "Sua loja de tecnologia especializada em smartphones e acessórios",
-        logo: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=200",
-        banner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800",
-        address: "Rua da Tecnologia, 123",
-        city: "São Paulo",
-        state: "SP",
-        zipCode: "01234-567",
-        phone: "(11) 99999-9999",
-        email: "contato@techstore.com",
-        category: "Eletrônicos",
-        isActive: true,
-        isVerified: true,
-        rating: 4.8,
-        reviewCount: 127,
-        productCount: 25,
-        salesCount: 890,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: "store_2",
-        name: "Apple Store",
-        slug: "apple-store",
-        description: "Produtos Apple originais com garantia oficial",
-        logo: "https://images.unsplash.com/photo-1611186871348-b1ce696e52c9?w=200",
-        banner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800",
-        address: "Av. Paulista, 1000",
-        city: "São Paulo",
-        state: "SP",
-        zipCode: "01310-100",
-        phone: "(11) 88888-8888",
-        email: "contato@applestore.com",
-        category: "Eletrônicos",
-        isActive: true,
-        isVerified: true,
-        rating: 4.9,
-        reviewCount: 234,
-        productCount: 18,
-        salesCount: 1200,
-        createdAt: new Date().toISOString()
-      },
-      {
-        id: "store_3",
-        name: "ComputerShop",
-        slug: "computershop",
-        description: "Notebooks, desktops e acessórios para informática",
-        logo: "https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=200",
-        banner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800",
-        address: "Rua dos Computadores, 456",
-        city: "Rio de Janeiro",
-        state: "RJ",
-        zipCode: "20000-000",
-        phone: "(21) 77777-7777",
-        email: "contato@computershop.com",
-        category: "Informática",
-        isActive: true,
-        isVerified: true,
-        rating: 4.6,
-        reviewCount: 89,
-        productCount: 42,
-        salesCount: 567,
-        createdAt: new Date().toISOString()
-      }
-    ];
+    // Buscar lojas no Supabase
+    let supabaseQuery = supabase
+      .from('stores')
+      .select(`
+        *,
+        seller:sellers(*)
+      `)
+      .eq('isActive', true);
 
-    // Aplicar filtros simples
-    let filteredStores = [...mockStores];
-
+    // Aplicar filtros
     if (query.search) {
-      const searchTerm = query.search.toLowerCase();
-      filteredStores = filteredStores.filter(store => 
-        store.name.toLowerCase().includes(searchTerm) ||
-        store.description.toLowerCase().includes(searchTerm)
-      );
+      supabaseQuery = supabaseQuery.or(`name.ilike.%${query.search}%,description.ilike.%${query.search}%`);
     }
 
-    if (query.verified) {
-      filteredStores = filteredStores.filter(store => store.isVerified);
+    if (query.verified !== undefined) {
+      supabaseQuery = supabaseQuery.eq('isVerified', query.verified);
     }
 
     if (query.category && query.category !== 'Todos') {
-      filteredStores = filteredStores.filter(store => 
-        store.category.toLowerCase() === query.category.toLowerCase()
-      );
+      supabaseQuery = supabaseQuery.eq('category', query.category);
     }
 
-    // Paginação simples
-    const startIndex = (query.page - 1) * query.limit;
-    const paginatedStores = filteredStores.slice(startIndex, startIndex + query.limit);
+    if (query.city) {
+      supabaseQuery = supabaseQuery.eq('city', query.city);
+    }
+
+    if (query.state) {
+      supabaseQuery = supabaseQuery.eq('state', query.state);
+    }
+
+    // Aplicar ordenação
+    const orderColumn = query.sortBy === 'sales' ? 'salesCount' : query.sortBy;
+    supabaseQuery = supabaseQuery.order(orderColumn, { ascending: query.sortOrder === 'asc' });
+
+    // Aplicar paginação
+    const from = (query.page - 1) * query.limit;
+    const to = from + query.limit - 1;
     
-    const total = filteredStores.length;
+    const { data: stores, error, count } = await supabaseQuery
+      .range(from, to);
+
+    if (error) {
+      console.error('❌ Erro no Supabase:', error.message);
+      throw error;
+    }
+
+    console.log(`✅ Supabase: ${stores?.length || 0} lojas encontradas`);
+    
+    const total = count || 0;
     const totalPages = Math.ceil(total / query.limit);
 
     res.json({
       success: true,
-      stores: paginatedStores,
+      data: stores || [],
+      stores: stores || [], // Para compatibilidade
       pagination: {
         page: query.page,
         limit: query.limit,
@@ -139,10 +94,10 @@ router.get('/', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro ao buscar lojas:', error);
+    console.error('❌ Erro ao buscar lojas:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Erro interno do servidor',
+      message: 'Erro ao conectar com o banco de dados',
       error: error.message 
     });
   }
@@ -220,7 +175,8 @@ router.get('/:id/products', async (req, res) => {
 
     res.json({
       success: true,
-      products: products || [],
+      data: products || [],
+      products: products || [], // Para compatibilidade
       pagination: {
         page,
         limit,

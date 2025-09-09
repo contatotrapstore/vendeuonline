@@ -21,7 +21,7 @@ const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac';
 
 const app = express();
-const PORT = process.env.PORT || process.env.VITE_API_PORT || 3001;
+const PORT = process.env.PORT || process.env.VITE_API_PORT || 4002;
 
 // Middlewares
 app.use(cors());
@@ -2417,11 +2417,11 @@ app.delete('/api/admin/plans/:id', authenticateAdmin, auditMiddleware('DELETE', 
 // Função para iniciar servidor com fallback de porta
 const startServer = (port) => {
   port = parseInt(port);
-  if (port > 65535) port = 3001; // Reset para porta padrão se ultrapassar limite
+  if (port > 65535) port = 4002; // Reset para porta padrão se ultrapassar limite
   
   const server = app.listen(port, () => {
     console.log(`🚀 Servidor API rodando em http://localhost:${port}`);
-    console.log(`📱 Frontend disponível em http://localhost:${process.env.VITE_FRONTEND_PORT || 5173}`);
+    console.log(`📱 Frontend disponível em http://localhost:${process.env.VITE_FRONTEND_PORT || 4173}`);
     console.log(`🔗 Teste a API: http://localhost:${port}/api/health`);
     console.log(`🔑 Login teste: admin@test.com / 123456`);
   }).on('error', (err) => {

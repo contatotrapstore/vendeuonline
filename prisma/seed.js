@@ -41,7 +41,7 @@ async function main() {
       name: 'Básico',
       slug: 'basico',
       description: 'Para vendedores iniciantes com mais recursos',
-      price: 29.90,
+      price: 19.90,
       billingPeriod: 'monthly',
       maxAds: 25,
       maxPhotos: 5,
@@ -61,10 +61,10 @@ async function main() {
       order: 2
     },
     {
-      name: 'Premium',
-      slug: 'premium',
+      name: 'Profissional',
+      slug: 'profissional',
       description: 'Para vendedores sérios que querem crescer',
-      price: 59.90,
+      price: 39.90,
       billingPeriod: 'monthly',
       maxAds: 100,
       maxPhotos: 10,
@@ -86,10 +86,10 @@ async function main() {
       order: 3
     },
     {
-      name: 'Profissional',
-      slug: 'profissional',
+      name: 'Empresa',
+      slug: 'empresa',
       description: 'Para grandes vendedores e lojas estabelecidas',
-      price: 99.90,
+      price: 79.90,
       billingPeriod: 'monthly',
       maxAds: 500,
       maxPhotos: 15,
@@ -280,12 +280,15 @@ async function main() {
     console.log(`✅ Seller "${user.name}" criado com loja "${storeName}"`);
   }
 
-  // Admin de teste
+  // Admin real do sistema
+  const adminPassword = 'Admin123!@#';
+  const adminHashedPassword = await bcrypt.hash(adminPassword, 12);
+  
   const adminUser = await prisma.user.create({
     data: {
-      name: 'Admin Sistema',
+      name: 'Administrador do Sistema',
       email: 'admin@vendeuonline.com',
-      password: hashedPassword,
+      password: adminHashedPassword,
       phone: '(54) 99999-0000',
       type: 'ADMIN',
       city: 'Erechim',
@@ -306,10 +309,13 @@ async function main() {
 
   console.log('');
   console.log('📋 Usuários de teste criados:');
-  console.log('🔹 Buyers: joao@teste.com, maria@teste.com');
-  console.log('🔹 Sellers: pedro@teste.com, ana@teste.com');
-  console.log('🔹 Admin: admin@vendeuonline.com');
-  console.log('🔑 Senha para todos: 123456');
+  console.log('🔹 Buyers: joao@teste.com, maria@teste.com (senha: 123456)');
+  console.log('🔹 Sellers: pedro@teste.com, ana@teste.com (senha: 123456)');
+  console.log('🔹 Admin: admin@vendeuonline.com (senha: Admin123!@#)');
+  console.log('');
+  console.log('⚡ CREDENCIAIS DO ADMINISTRADOR:');
+  console.log(`📧 Email: admin@vendeuonline.com`);
+  console.log(`🔑 Senha: ${adminPassword}`);
   console.log('');
   console.log('✨ Seed concluído com sucesso!');
 }

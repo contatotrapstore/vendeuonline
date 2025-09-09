@@ -36,6 +36,9 @@ export const PLAN_LIMITS = {
 
 export type PlanType = keyof typeof PLAN_LIMITS;
 
+// Tipos de features disponíveis
+export type FeatureType = 'basic_stats' | 'email_support' | 'priority_support' | 'detailed_stats' | 'chat_support' | 'store_logo' | 'advanced_stats' | 'custom_store' | 'premium_stats' | 'dedicated_support' | 'priority_listing';
+
 // Interface para validação de limites
 export interface PlanValidation {
   valid: boolean;
@@ -187,7 +190,7 @@ export class PlanLimitValidator {
   }
 
   // Verificar se vendedor tem acesso a uma funcionalidade
-  static async hasFeatureAccess(sellerId: string, feature: string): Promise<boolean> {
+  static async hasFeatureAccess(sellerId: string, feature: FeatureType): Promise<boolean> {
     try {
       const seller = await prisma.seller.findUnique({
         where: { id: sellerId },
@@ -205,7 +208,7 @@ export class PlanLimitValidator {
       const planSlug = seller.plan.slug.toUpperCase() as PlanType;
       const planLimits = PLAN_LIMITS[planSlug];
       if (!planLimits) return false;
-      return planLimits.features.includes(feature);
+      return (planLimits.features as readonly FeatureType[]).includes(feature);
     } catch (error) {
       console.error('Erro ao verificar acesso à funcionalidade:', error);
       return false;

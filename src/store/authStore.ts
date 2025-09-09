@@ -1,7 +1,7 @@
 import React from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { apiRequest, post, get } from '@/lib/api-client';
+import { apiRequest, post, get as apiGet } from '@/lib/api-client';
 
 export interface User {
   id: string;
@@ -11,6 +11,7 @@ export interface User {
   city: string;
   state: string;
   userType: 'admin' | 'seller' | 'buyer';
+  type?: 'admin' | 'seller' | 'buyer';
   avatar?: string;
   isVerified: boolean;
   createdAt: string;
@@ -227,7 +228,7 @@ export const useAuthStore = create<AuthStore>()(persist(
       set({ isLoading: true, error: null });
       
       try {
-        const response = await get('/api/auth/me');
+        const response = await apiGet('/api/auth/me');
         
         set({
           user: response.user,

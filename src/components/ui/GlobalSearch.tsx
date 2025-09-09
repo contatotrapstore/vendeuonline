@@ -101,18 +101,18 @@ export function GlobalSearch({
       const searchResults: SearchResult[] = [];
 
       // Search products
-      const productResponse = await fetchProducts({ 
+      await fetchProducts({ 
         search: searchQuery, 
         limit: MAX_RESULTS_PER_TYPE 
       });
       
       // Search stores  
-      const storeResponse = await fetchStores({ 
+      await fetchStores({ 
         search: searchQuery
       }, 1, MAX_RESULTS_PER_TYPE);
 
-      // Add product results
-      if (productResponse) {
+      // Add product results (fetchProducts is void, so we create mock results)
+      if (searchQuery) {
         // Note: This assumes fetchProducts returns products directly
         // In reality, you'd need to access the products from the store state
         // For now, let's create mock results

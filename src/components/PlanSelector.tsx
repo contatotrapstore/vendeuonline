@@ -24,7 +24,7 @@ interface Plan {
   maxAds: number;
   maxPhotos: number;
   support: string;
-  features: string;
+  features: string | string[];
   isActive: boolean;
   order: number;
 }
@@ -240,7 +240,7 @@ export default function PlanSelector({
                   </div>
                 </div>
                 
-                {plan.features && plan.features.length > 0 && (
+                {plan.features && Array.isArray(plan.features) && plan.features.length > 0 && (
                   <div className="space-y-2">
                     {plan.features.map((feature: string, index: number) => (
                       <div key={index} className="flex items-center text-sm">
@@ -326,7 +326,7 @@ export default function PlanSelector({
                       </div>
                     </div>
                     
-                    {plan.features && plan.features.length > 0 && (
+                    {plan.features && Array.isArray(plan.features) && plan.features.length > 0 && (
                       <div className="space-y-2">
                         {plan.features.map((feature: string, index: number) => (
                           <div key={index} className="flex items-center text-sm">

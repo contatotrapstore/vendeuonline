@@ -3,11 +3,17 @@ import { z } from 'zod';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { createClient } from '@supabase/supabase-js';
 
 const router = express.Router();
 
 // Configurar Prisma
 const prisma = new PrismaClient();
+
+// Configurar cliente Supabase
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac';
@@ -53,122 +59,55 @@ const generateToken = (user) => {
   );
 };
 
-// Mock users for testing while Supabase connection is being resolved
-const mockUsers = [
-  {
-    id: "admin_1",
-    name: "Admin User",
-    email: "admin@test.com",
-    password: "$2a$10$rVQ3h.uOMRl4oD2zQKXXqOQWpL3lBfJ1/QT9wvJF8pHx9Gx7QIIK.", // hashed "123456"
-    type: "ADMIN",
-    isVerified: true,
-    city: "São Paulo",
-    state: "SP",
-    avatar: null,
-    phone: "(11) 99999-0000",
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "seller_1", 
-    name: "João Silva",
-    email: "joao@techstore.com",
-    password: "$2a$10$rVQ3h.uOMRl4oD2zQKXXqOQWpL3lBfJ1/QT9wvJF8pHx9Gx7QIIK.", // hashed "123456"
-    type: "SELLER",
-    isVerified: true,
-    city: "São Paulo", 
-    state: "SP",
-    avatar: null,
-    phone: "(11) 99999-1111",
-    createdAt: new Date().toISOString()
-  },
-  {
-    id: "buyer_1",
-    name: "Maria Santos",
-    email: "maria@email.com", 
-    password: "$2a$10$rVQ3h.uOMRl4oD2zQKXXqOQWpL3lBfJ1/QT9wvJF8pHx9Gx7QIIK.", // hashed "123456"
-    type: "BUYER",
-    isVerified: true,
-    city: "Rio de Janeiro",
-    state: "RJ", 
-    avatar: null,
-    phone: "(21) 88888-2222",
-    createdAt: new Date().toISOString()
-  }
-];
-
 // POST /api/auth/login - Login
 router.post('/login', async (req, res) => {
   try {
-    console.log('Login request:', req.body);
+    console.log('🔐 Login request:', req.body.email);
     
     const { email, password, userType } = loginSchema.parse(req.body);
 
-    // Admin padrão (manter para testes)
-    if (email === 'admin@test.com' && password === '123456') {
-      const adminUser = {
-        id: 'admin_1',
-        name: 'Administrador',
-        email: 'admin@test.com',
-        phone: '11999999999',
-        city: 'São Paulo',
-        state: 'SP',
-        type: 'ADMIN',
-        isVerified: true,
-        isActive: true,
-        avatar: null,
-        createdAt: new Date().toISOString()
-      };
+    // Buscar usuário no Supabase
+    console.log('📡 Buscando usuário no Supabase...');
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email.toLowerCase())
+      .single();
 
-      const token = generateToken(adminUser);
-      console.log('Login successful for admin user:', email);
-
-      return res.json({
-        success: true,
-        message: 'Login realizado com sucesso',
-        user: {
-          ...adminUser,
-          userType: 'admin',
-          admin: {
-            id: 'admin_1',
-            permissions: ['all']
-          }
-        },
-        token
+    if (userError || !user) {
+      console.log('❌ Usuário não encontrado:', email);
+      return res.status(401).json({ 
+        error: 'Email ou senha inválidos',
+        success: false 
       });
     }
 
-    // Buscar usuário nos dados mock (modo demonstração)
-    // TODO: Substituir por busca no banco quando conectividade for resolvida
-    let user = mockUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-
-    if (!user) {
-      console.log('User not found in mock data:', email);
-      return res.status(401).json({ error: 'Email ou senha inválidos' });
-    }
+    console.log('✅ Usuário encontrado no Supabase');
 
     // Verificar tipo de usuário se especificado
     if (userType && user.type.toLowerCase() !== userType.toLowerCase()) {
-      console.log('User type mismatch:', { expected: userType, actual: user.type });
-      return res.status(401).json({ error: 'Tipo de usuário incorreto' });
+      console.log('❌ Tipo de usuário incorreto:', { expected: userType, actual: user.type });
+      return res.status(401).json({ 
+        error: 'Tipo de usuário incorreto',
+        success: false 
+      });
     }
 
-    // Verificar senha (aceitar tanto hash quanto senha simples para demo)
-    let isValidPassword = false;
-    if (password === '123456') {
-      isValidPassword = true; // Para demonstração
-    } else {
-      isValidPassword = await comparePassword(password, user.password);
-    }
+    // Verificar senha
+    const isValidPassword = await comparePassword(password, user.password);
     
     if (!isValidPassword) {
-      console.log('Invalid password for user:', email);
-      return res.status(401).json({ error: 'Email ou senha inválidos' });
+      console.log('❌ Senha inválida para:', email);
+      return res.status(401).json({ 
+        error: 'Email ou senha inválidos',
+        success: false 
+      });
     }
 
     // Gerar token
     const token = generateToken(user);
 
-    console.log('Login successful for user:', user.email);
+    console.log('✅ Login realizado com sucesso:', user.email);
 
     // Construir resposta com dados específicos do tipo de usuário
     const userData = {
@@ -219,16 +158,20 @@ router.post('/login', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro no login:', error);
+    console.error('❌ Erro no login:', error);
     
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         error: 'Dados inválidos',
-        details: error.issues
+        details: error.issues,
+        success: false
       });
     }
 
-    res.status(500).json({ error: 'Erro interno do servidor' });
+    res.status(500).json({ 
+      error: 'Erro interno do servidor',
+      success: false 
+    });
   }
 });
 
@@ -239,28 +182,39 @@ router.post('/register', async (req, res) => {
     
     const { name, email, password, phone, city, state, userType } = registerSchema.parse(req.body);
 
-    // Por enquanto, aceitar registros normalmente (modo demonstração)
-    // TODO: Conectar com Supabase quando a conectividade for resolvida
+    // Verificar se o usuário já existe
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email.toLowerCase())
+      .single();
+
+    if (existingUser) {
+      return res.status(400).json({ error: 'Email já está em uso' });
+    }
     
     const hashedPassword = await hashPassword(password);
     
-    // Gerar ID único para o usuário
-    const userId = `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Simular criação do usuário (dados serão perdidos quando servidor reiniciar)
-    const newUser = {
-      id: userId,
-      name,
-      email: email.toLowerCase(), 
-      phone,
-      city,
-      state,
-      type: userType.toUpperCase(),
-      isVerified: false,
-      isActive: true,
-      avatar: null,
-      createdAt: new Date()
-    };
+    // Criar usuário no banco de dados
+    const { data: newUser, error: insertError } = await supabase
+      .from('users')
+      .insert([{
+        name,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        phone,
+        city,
+        state,
+        type: userType.toUpperCase(),
+        isVerified: false
+      }])
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error('Error creating user:', insertError);
+      return res.status(500).json({ error: 'Erro ao criar usuário' });
+    }
 
     const token = generateToken({
       id: newUser.id,
@@ -273,11 +227,11 @@ router.post('/register', async (req, res) => {
       isVerified: newUser.isVerified
     });
 
-    console.log('Demo user created successfully:', email);
+    console.log('User created successfully:', email);
 
     res.status(201).json({
       success: true,
-      message: 'Usuário criado com sucesso (modo demonstração)',
+      message: 'Usuário criado com sucesso',
       user: {
         id: newUser.id,
         name: newUser.name,

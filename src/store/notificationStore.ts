@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { get, put } from '@/lib/api-client';
+import { get as apiGet, put } from '@/lib/api-client';
 
 export interface Notification {
   id: string;
@@ -39,7 +39,7 @@ export const useNotificationStore = create<NotificationState>()(
         try {
           set({ isLoading: true, error: null });
           
-          const data = await get('/notifications');
+          const data = await apiGet('/notifications');
           const notifications = data.notifications || [];
           const unreadCount = notifications.filter((n: Notification) => !n.isRead).length;
           

@@ -52,6 +52,7 @@ build
 *.tmp
 *.temp
 nul
+NUL
 
 # OS generated files
 Thumbs.db
@@ -68,3 +69,12 @@ coverage/
 
 # Environment files
 .env.production
+
+# Deprecated directories
+.trae/
+.traegnore
+
+# Test files
+test-*.html
+test-*.js
+*-test.js

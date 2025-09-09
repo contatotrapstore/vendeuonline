@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { Product } from '@/types';
-import { apiRequest, get, post, put, del } from '@/lib/api-client';
+import { apiRequest, get as apiGet, post, put, del } from '@/lib/api-client';
 import { appCache } from '@/lib/cache';
 
 
@@ -156,7 +156,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
       if (params.sortBy) searchParams.append('sortBy', params.sortBy);
       if (params.sortOrder) searchParams.append('sortOrder', params.sortOrder);
       
-      const response = await get(`/products?${searchParams.toString()}`);
+      const response = await apiGet(`/products?${searchParams.toString()}`);
       
       // Armazenar no cache
       appCache.setProducts(params, response, 3 * 60 * 1000); // 3 minutos para produtos
@@ -200,7 +200,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
   fetchProductById: async (id) => {
     try {
       set({ loading: true, error: null });
-      const product = await get(`/products/${id}`);
+      const product = await apiGet(`/products/${id}`);
       set({ loading: false });
       return product;
     } catch (error) {
@@ -219,7 +219,8 @@ export const useProductStore = create<ProductStore>((set, get) => ({
       await post('/products', productData);
       
       // Recarregar produtos após criação
-      await get().fetchProducts();
+      const { fetchProducts } = get();
+      await fetchProducts();
       set({ loading: false });
     } catch (error) {
       set({ 
@@ -311,7 +312,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
   getProductsByStore: async (storeId) => {
     try {
-      const response = await get(`/products?storeId=${storeId}`);
+      const response = await apiGet(`/products?storeId=${storeId}`);
       return response.products;
     } catch (error) {
       console.error('Erro ao carregar produtos da loja:', error);
@@ -321,7 +322,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
   getFeaturedProducts: async () => {
     try {
-      const response = await get('/api/products?featured=true&limit=8');
+      const response = await apiGet('/api/products?featured=true&limit=8');
       return response.products;
     } catch (error) {
       console.error('Erro ao carregar produtos em destaque:', error);
@@ -331,7 +332,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
   getRelatedProducts: async (productId, limit = 4) => {
     try {
-      const response = await get(`/products/${productId}/related?limit=${limit}`);
+      const response = await apiGet(`/products/${productId}/related?limit=${limit}`);
       return response.products;
     } catch (error) {
       console.error('Erro ao carregar produtos relacionados:', error);

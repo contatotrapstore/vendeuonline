@@ -25,7 +25,7 @@ export default function AdminTestPage() {
                   <p><strong>Name:</strong> {user.name}</p>
                   <p><strong>Email:</strong> {user.email}</p>
                   <p><strong>User Type:</strong> {user.userType}</p>
-                  <p><strong>User Type (raw):</strong> {JSON.stringify(user.type)}</p>
+                  <p><strong>User Type (raw):</strong> {JSON.stringify(user.type || user.userType)}</p>
                 </>
               )}
             </div>

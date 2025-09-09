@@ -28,26 +28,23 @@ interface PricingPlansProps {
 
 const planIcons = {
   'gratuito': Crown,
-  'micro-empresa': Users,
-  'pequena-empresa': Building,
-  'empresa-simples': Building,
-  'empresa-plus': Zap
+  'basico': Users,
+  'profissional': Building,
+  'empresa': Zap
 };
 
 const planColors = {
   'gratuito': 'bg-gray-50 border-gray-200',
-  'micro-empresa': 'bg-blue-50 border-blue-200',
-  'pequena-empresa': 'bg-green-50 border-green-200',
-  'empresa-simples': 'bg-purple-50 border-purple-200',
-  'empresa-plus': 'bg-yellow-50 border-yellow-200'
+  'basico': 'bg-blue-50 border-blue-200',
+  'profissional': 'bg-green-50 border-green-200',
+  'empresa': 'bg-purple-50 border-purple-200'
 };
 
 const buttonColors = {
   'gratuito': 'bg-gray-600 hover:bg-gray-700 text-white',
-  'micro-empresa': 'bg-blue-600 hover:bg-blue-700 text-white',
-  'pequena-empresa': 'bg-green-600 hover:bg-green-700 text-white',
-  'empresa-simples': 'bg-purple-600 hover:bg-purple-700 text-white',
-  'empresa-plus': 'bg-yellow-600 hover:bg-yellow-700 text-white'
+  'basico': 'bg-blue-600 hover:bg-blue-700 text-white',
+  'profissional': 'bg-green-600 hover:bg-green-700 text-white',
+  'empresa': 'bg-purple-600 hover:bg-purple-700 text-white'
 };
 
 export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = true }: PricingPlansProps) {
@@ -66,7 +63,17 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
       const data = await response.json();
       
       if (data.success) {
-        setPlans(data.data);
+        // Mapear campos da API para o formato esperado pelo componente
+        const mappedPlans = (data.plans || data.data || []).map((plan: any) => ({
+          ...plan,
+          billingPeriod: 'MONTHLY',
+          maxPhotosPerAd: plan.maxPhotos || 1,
+          supportLevel: plan.support === 'email' ? 'EMAIL' : 
+                       plan.support === 'chat' ? 'CHAT' :
+                       plan.support === 'telefone' ? 'PHONE' :
+                       plan.support === 'whatsapp' ? 'PRIORITY' : 'EMAIL'
+        }));
+        setPlans(mappedPlans);
       } else {
         toast.error('Erro ao carregar planos');
       }
@@ -157,7 +164,7 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 max-w-7xl mx-auto px-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto px-4">
         {plans.map((plan) => {
           const IconComponent = planIcons[plan.slug as keyof typeof planIcons] || Crown;
           const isCurrentPlan = currentPlanId === plan.id;
@@ -166,7 +173,7 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
           return (
             <div
               key={plan.id}
-              className={`relative rounded-2xl border-2 p-6 transition-all duration-200 hover:shadow-lg ${
+              className={`relative rounded-2xl border-2 p-6 transition-all duration-200 hover:shadow-lg min-h-[500px] flex flex-col ${
                 planColors[plan.slug as keyof typeof planColors] || 'bg-gray-50 border-gray-200'
               }`}
             >
@@ -193,35 +200,24 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
               </div>
 
               {/* Features */}
-              <div className="space-y-3 mb-6">
-                <div className="flex items-center text-sm text-gray-700">
-                  <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span>{plan.maxAds} anúncios simultâneos</span>
-                </div>
-                <div className="flex items-center text-sm text-gray-700">
-                  <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Duração de 30 dias</span>
-                </div>
-                <div className="flex items-center text-sm text-gray-700">
-                  <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Até {plan.maxPhotosPerAd} fotos por anúncio</span>
-                </div>
-                <div className="flex items-center text-sm text-gray-700">
-                  <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Anúncio extra por R$ 14,90</span>
-                </div>
+              <div className="space-y-3 mb-6 flex-grow">
+                {plan.features?.map((feature: string, index: number) => (
+                  <div key={index} className="flex items-center text-sm text-gray-700">
+                    <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                    <span>{feature}</span>
+                  </div>
+                ))}
+                
+                {/* Features adicionais baseadas no plano */}
                 <div className="flex items-center text-sm text-gray-700">
                   <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                   <span>{getSupportText(plan.supportLevel)}</span>
                 </div>
-                <div className="flex items-center text-sm text-gray-700">
-                  <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                  <span>Verificação do perfil</span>
-                </div>
+                
                 {plan.slug !== 'gratuito' && (
                   <div className="flex items-center text-sm text-gray-700">
                     <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
-                    <span>Atendimento prioritário</span>
+                    <span>Duração de 30 dias</span>
                   </div>
                 )}
               </div>

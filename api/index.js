@@ -1,941 +1,446 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
+// Serverless function for Vercel
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 
-// Carregar variáveis de ambiente
-dotenv.config();
+// Import Prisma with error handling
+let prisma = null;
+let safeQuery = null;
+
+try {
+  const prismaModule = await import('../lib/prisma.js');
+  prisma = prismaModule.default;
+  safeQuery = prismaModule.safeQuery;
+  console.log('✅ [API] Prisma importado com sucesso');
+} catch (error) {
+  console.error('❌ [API] Erro ao importar Prisma:', error.message);
+}
 
 // Debug - Verificar variáveis de ambiente críticas
-console.log('🔍 [DEBUG] Verificando variáveis de ambiente:');
+console.log('🔍 [API] Verificando variáveis de ambiente:');
 console.log('DATABASE_URL:', process.env.DATABASE_URL ? 'DEFINIDA' : '❌ NÃO DEFINIDA');
 console.log('JWT_SECRET:', process.env.JWT_SECRET ? 'DEFINIDA' : '❌ NÃO DEFINIDA');
 console.log('SUPABASE_URL:', process.env.SUPABASE_URL ? 'DEFINIDA' : '❌ NÃO DEFINIDA');
 console.log('SUPABASE_ANON_KEY:', process.env.SUPABASE_ANON_KEY ? 'DEFINIDA' : '❌ NÃO DEFINIDA');
-
-// Configurar Prisma
-const prisma = new PrismaClient();
-
-// Debug - Testar conexão com banco
-prisma.$connect()
-  .then(() => {
-    console.log('✅ [DEBUG] Conexão com banco de dados estabelecida com sucesso');
-  })
-  .catch((error) => {
-    console.error('❌ [DEBUG] Erro ao conectar com banco de dados:', error.message);
-  });
+console.log('Node Version:', process.version);
+console.log('Platform:', process.platform);
 
 // Configurações JWT
 const JWT_SECRET = process.env.JWT_SECRET || 'cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac';
 
-const app = express();
+// MODO PRODUÇÃO: SEM DADOS MOCK - USAR APENAS BANCO DE DADOS
+// Se o Prisma não conectar, retorna erro 500
 
-// Middlewares
-app.use(cors());
-app.use(express.json());
-
-// Funções auxiliares
-const hashPassword = async (password) => {
-  return bcrypt.hash(password, 12);
-};
-
-const comparePassword = async (password, hash) => {
-  return bcrypt.compare(password, hash);
-};
-
-const generateToken = (payload) => {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
-};
-
-const verifyToken = (token) => {
+// Serverless function handler
+export default async function handler(req, res) {
   try {
-    return jwt.verify(token, JWT_SECRET);
-  } catch {
-    return null;
-  }
-};
-
-// Middleware de autenticação
-const authenticate = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Token de autorização requerido' });
-    }
-
-    const token = authHeader.substring(7);
-    const payload = verifyToken(token);
+    console.log(`🚀 [API] Request: ${req.method} ${req.url}`);
     
-    if (!payload) {
-      return res.status(401).json({ error: 'Token inválido' });
+    // CORS headers
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+    if (req.method === 'OPTIONS') {
+      return res.status(200).end();
     }
 
-    req.user = payload;
-    next();
-  } catch (error) {
-    res.status(401).json({ error: 'Token inválido' });
-  }
-};
+    // Route handling
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const pathname = url.pathname;
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'API funcionando!', timestamp: new Date().toISOString() });
-});
+    console.log(`📍 [API] Rota: ${pathname}`);
 
-// Conectar ao banco de dados via Prisma - não usar dados mock
-const mockProducts = [
-  {
-    id: "1",
-    name: "Smartphone Samsung Galaxy S24",
-    description: "Smartphone premium com câmera profissional e desempenho superior.",
-    price: 2499.99,
-    originalPrice: 2799.99,
-    category: "eletronicos",
-    images: [
-      { id: "1", url: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400", alt: "Samsung Galaxy S24", order: 0 }
-    ],
-    specifications: { marca: "Samsung", modelo: "Galaxy S24", cor: "Preto" },
-    isActive: true,
-    store: { id: "1", name: "TechStore", slug: "techstore" }
-  },
-  {
-    id: "2", 
-    name: "Notebook Dell Inspiron",
-    description: "Notebook para uso profissional com alta performance.",
-    price: 3299.99,
-    category: "eletronicos",
-    images: [
-      { id: "2", url: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400", alt: "Dell Inspiron", order: 0 }
-    ],
-    isActive: true,
-    store: { id: "1", name: "TechStore", slug: "techstore" }
-  }
-];
+    // Funções auxiliares
+    const hashPassword = async (password) => {
+      return bcrypt.hash(password, 12);
+    };
 
-const mockStores = [
-  {
-    id: "1",
-    name: "TechStore",
-    slug: "techstore", 
-    description: "Sua loja de tecnologia completa",
-    isActive: true,
-    seller: { user: { name: "João Silva" } }
-  }
-];
+    const comparePassword = async (password, hash) => {
+      return bcrypt.compare(password, hash);
+    };
 
-const mockPlans = [
-  {
-    id: "plan_1",
-    name: "Gratuito",
-    slug: "gratuito",
-    price: 0,
-    billingPeriod: "monthly",
-    maxAds: 3,
-    maxPhotos: 1,
-    priority: 1,
-    support: "email",
-    features: [
-      "Até 3 anúncios simultâneos",
-      "1 foto por produto",
-      "Suporte por email",
-      "Painel básico de vendas"
-    ],
-    isActive: true,
-    isFeatured: false,
-    order: 1
-  },
-  {
-    id: "plan_2", 
-    name: "Básico",
-    slug: "basico",
-    price: 29.90,
-    billingPeriod: "monthly",
-    maxAds: 10,
-    maxPhotos: 3,
-    priority: 2,
-    support: "email",
-    features: [
-      "Até 10 anúncios simultâneos",
-      "3 fotos por produto", 
-      "Suporte prioritário por email",
-      "Relatórios básicos de vendas",
-      "Integração com redes sociais"
-    ],
-    isActive: true,
-    isFeatured: false,
-    order: 2
-  }
-];
+    const generateToken = (payload) => {
+      return jwt.sign(payload, JWT_SECRET, { expiresIn: '7d' });
+    };
 
-// Auth routes
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    const { name, email, phone, password, userType, city, state } = req.body;
-
-    console.log('Registration request:', { name, email, phone, city, state, userType });
-
-    // Verificar se o usuário já existe
-    const existingUser = await prisma.user.findUnique({
-      where: { email }
-    });
-
-    if (existingUser) {
-      return res.status(409).json({ error: 'Este email já está cadastrado' });
-    }
-
-    const hashedPassword = await hashPassword(password);
-    
-    // Criar usuário no banco de dados
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email, 
-        phone,
-        password: hashedPassword,
-        city,
-        state,
-        type: userType.toUpperCase(),
-        isVerified: false,
-        isActive: true,
-        avatar: null
+    const verifyToken = (token) => {
+      try {
+        return jwt.verify(token, JWT_SECRET);
+      } catch {
+        return null;
       }
-    });
+    };
 
-    // Criar registro específico do tipo de usuário
-    if (userType === 'buyer') {
-      await prisma.buyer.create({
-        data: {
-          userId: user.id
-        }
+    const requireAuth = () => {
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new Error('Token de autorização requerido');
+      }
+
+      const token = authHeader.substring(7);
+      const payload = verifyToken(token);
+      
+      if (!payload) {
+        throw new Error('Token inválido');
+      }
+
+      return payload;
+    };
+
+    // Route: GET /api/health
+    if (req.method === 'GET' && pathname === '/api/health') {
+      return res.json({ 
+        status: 'OK', 
+        message: 'API funcionando!', 
+        timestamp: new Date().toISOString(),
+        prismaStatus: prisma ? 'CONECTADO' : 'NÃO CONECTADO'
       });
-    } else if (userType === 'seller') {
-      await prisma.seller.create({
-        data: {
-          userId: user.id
+    }
+
+    // Route: GET /api/plans - APENAS BANCO DE DADOS
+    if (req.method === 'GET' && pathname === '/api/plans') {
+      console.log('📋 [PLANS] Buscando planos no banco...');
+      
+      if (!prisma || !safeQuery) {
+        console.error('❌ [PLANS] Prisma não disponível');
+        return res.status(500).json({
+          success: false,
+          error: 'Banco de dados não disponível. Verifique variáveis de ambiente.'
+        });
+      }
+      
+      const result = await safeQuery(async () => {
+        return await prisma.plan.findMany({
+          where: { isActive: true },
+          orderBy: { order: 'asc' }
+        });
+      });
+      
+      if (!result.success) {
+        console.error('❌ [PLANS] Erro no banco:', result.error);
+        return res.status(500).json({
+          success: false,
+          error: 'Erro ao buscar planos no banco de dados',
+          details: result.error
+        });
+      }
+
+      console.log(`✅ [PLANS] ${result.data.length} planos encontrados`);
+      return res.json({
+        success: true,
+        plans: result.data
+      });
+    }
+
+    // Route: GET /api/products - APENAS BANCO DE DADOS
+    if (req.method === 'GET' && pathname === '/api/products') {
+      console.log('🛍️ [PRODUCTS] Buscando produtos no banco...');
+      
+      if (!prisma || !safeQuery) {
+        console.error('❌ [PRODUCTS] Prisma não disponível');
+        return res.status(500).json({
+          success: false,
+          error: 'Banco de dados não disponível. Verifique variáveis de ambiente.'
+        });
+      }
+      
+      const result = await safeQuery(async () => {
+        return await prisma.product.findMany({
+          where: { isActive: true },
+          include: {
+            images: { orderBy: { order: 'asc' } },
+            store: {
+              include: {
+                seller: { include: { user: true } }
+              }
+            }
+          },
+          orderBy: { createdAt: 'desc' }
+        });
+      });
+      
+      if (!result.success) {
+        console.error('❌ [PRODUCTS] Erro no banco:', result.error);
+        return res.status(500).json({
+          success: false,
+          error: 'Erro ao buscar produtos no banco de dados',
+          details: result.error
+        });
+      }
+
+      console.log(`✅ [PRODUCTS] ${result.data.length} produtos encontrados`);
+      return res.json({
+        success: true,
+        products: result.data
+      });
+    }
+
+    // Route: GET /api/stores - APENAS BANCO DE DADOS
+    if (req.method === 'GET' && pathname === '/api/stores') {
+      console.log('🏪 [STORES] Buscando lojas no banco...');
+      
+      if (!prisma || !safeQuery) {
+        console.error('❌ [STORES] Prisma não disponível');
+        return res.status(500).json({
+          success: false,
+          error: 'Banco de dados não disponível. Verifique variáveis de ambiente.'
+        });
+      }
+      
+      const result = await safeQuery(async () => {
+        return await prisma.store.findMany({
+          where: { isActive: true },
+          include: {
+            seller: { include: { user: true } }
+          }
+        });
+      });
+      
+      if (!result.success) {
+        console.error('❌ [STORES] Erro no banco:', result.error);
+        return res.status(500).json({
+          success: false,
+          error: 'Erro ao buscar lojas no banco de dados',
+          details: result.error
+        });
+      }
+
+      console.log(`✅ [STORES] ${result.data.length} lojas encontradas`);
+      return res.json({
+        success: true,
+        data: result.data,
+        stores: result.data, // Para compatibilidade
+        pagination: {
+          page: 1,
+          limit: result.data.length,
+          total: result.data.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false
         }
       });
     }
 
-    const token = generateToken({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      city: user.city,
-      state: user.state,
-      type: user.type,
-      isVerified: user.isVerified
-    });
+    // Route: POST /api/auth/register - APENAS BANCO DE DADOS
+    if (req.method === 'POST' && pathname === '/api/auth/register') {
+      console.log('👤 [REGISTER] Novo registro...');
+      
+      const { name, email, phone, password, userType, city, state } = req.body;
 
-    console.log('User created successfully in database:', email);
+      // Validação básica
+      if (!name || !email || !password) {
+        return res.status(400).json({ 
+          error: 'Campos obrigatórios: name, email, password' 
+        });
+      }
 
-    res.status(201).json({
-      message: 'Usuário criado com sucesso',
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone,
-        city: user.city,
-        state: user.state,
-        userType: userType,
-        isVerified: user.isVerified,
-        createdAt: user.createdAt.toISOString()
-      },
-      token
-    });
+      if (!prisma || !safeQuery) {
+        console.error('❌ [REGISTER] Prisma não disponível');
+        return res.status(500).json({
+          success: false,
+          error: 'Banco de dados não disponível. Verifique variáveis de ambiente.'
+        });
+      }
 
-  } catch (error) {
-    console.error('Erro no registro:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
+      // Verificar se usuário já existe
+      const existingResult = await safeQuery(async () => {
+        return await prisma.user.findUnique({ where: { email } });
+      });
+      
+      if (!existingResult.success) {
+        console.error('❌ [REGISTER] Erro ao verificar usuário:', existingResult.error);
+        return res.status(500).json({
+          success: false,
+          error: 'Erro ao verificar usuário no banco de dados',
+          details: existingResult.error
+        });
+      }
+      
+      if (existingResult.data) {
+        return res.status(400).json({ error: 'Email já cadastrado' });
+      }
 
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    const { email, password, userType } = req.body;
-    console.log('Login request:', { email, password: password ? '***' : 'missing', userType });
+      // Criar novo usuário
+      const hashedPassword = await hashPassword(password);
+      
+      const createResult = await safeQuery(async () => {
+        return await prisma.user.create({
+          data: {
+            id: uuidv4(),
+            name,
+            email,
+            phone,
+            password: hashedPassword,
+            type: userType || 'BUYER',
+            city,
+            state,
+            isVerified: false
+          }
+        });
+      });
+      
+      if (!createResult.success) {
+        console.error('❌ [REGISTER] Erro ao criar usuário:', createResult.error);
+        return res.status(500).json({
+          success: false,
+          error: 'Erro ao criar usuário no banco de dados',
+          details: createResult.error
+        });
+      }
 
-    // Admin padrão (manter para testes)
-    if (email === 'admin@test.com' && password === '123456') {
-      const adminUser = {
-        id: 'admin_1',
-        name: 'Administrador',
-        email: 'admin@test.com',
-        phone: '11999999999',
-        city: 'São Paulo',
-        state: 'SP',
-        type: 'ADMIN',
-        isVerified: true,
-        isActive: true,
-        avatar: null,
-        createdAt: new Date().toISOString()
-      };
+      // Gerar token
+      const token = generateToken({
+        id: createResult.data.id,
+        email: createResult.data.email,
+        name: createResult.data.name,
+        userType: createResult.data.type
+      });
 
-      const token = generateToken(adminUser);
-      console.log('Login successful for admin user:', email);
+      // Remover password da resposta
+      const { password: _, ...userWithoutPassword } = createResult.data;
 
-      return res.json({
-        message: 'Login realizado com sucesso',
-        user: {
-          ...adminUser,
-          userType: 'admin',
-          admin: { id: 'admin_1', permissions: ['all'] }
-        },
+      console.log('✅ [REGISTER] Usuário criado com sucesso:', userWithoutPassword.id);
+      return res.status(201).json({
+        success: true,
+        message: 'Usuário cadastrado com sucesso',
+        user: userWithoutPassword,
         token
       });
     }
 
-    // Buscar usuário no banco de dados
-    const user = await prisma.user.findUnique({
-      where: { email },
-      include: {
-        buyer: true,
-        seller: {
-          include: {
-            store: true
-          }
-        },
-        admin: true
+    // Route: POST /api/auth/login - APENAS BANCO DE DADOS
+    if (req.method === 'POST' && pathname === '/api/auth/login') {
+      console.log('🔐 [LOGIN] Tentativa de login...');
+      
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ error: 'Email e password são obrigatórios' });
       }
-    });
 
-    if (!user || !user.isActive) {
-      console.log('User not found or inactive:', email);
-      return res.status(401).json({ error: 'Email ou senha inválidos' });
-    }
-
-    // Verificar senha
-    const isValidPassword = await comparePassword(password, user.password);
-    if (!isValidPassword) {
-      console.log('Invalid password for user:', email);
-      return res.status(401).json({ error: 'Email ou senha inválidos' });
-    }
-
-    // Verificar tipo de usuário se especificado
-    if (userType && user.type.toLowerCase() !== userType.toLowerCase()) {
-      console.log('User type mismatch:', { expected: userType, actual: user.type });
-      return res.status(401).json({ error: 'Tipo de usuário incorreto' });
-    }
-
-    // Atualizar último login
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLogin: new Date() }
-    });
-
-    const token = generateToken({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      city: user.city,
-      state: user.state,
-      type: user.type,
-      isVerified: user.isVerified
-    });
-
-    console.log('Login successful for user:', email);
-
-    // Construir resposta com dados específicos do tipo de usuário
-    const userData = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      city: user.city,
-      state: user.state,
-      userType: user.type.toLowerCase(),
-      isVerified: user.isVerified,
-      avatar: user.avatar,
-      createdAt: user.createdAt.toISOString()
-    };
-
-    if (user.type === 'BUYER' && user.buyer) {
-      userData.buyer = {
-        id: user.buyer.id,
-        wishlistCount: 0, // TODO: calcular do banco
-        orderCount: 0 // TODO: calcular do banco
-      };
-    }
-
-    if (user.type === 'SELLER' && user.seller) {
-      userData.seller = {
-        id: user.seller.id,
-        storeName: user.seller.store?.name || `${user.name} Store`,
-        rating: user.seller.rating,
-        totalSales: user.seller.totalSales,
-        plan: 'gratuito', // TODO: buscar plano atual
-        isVerified: user.seller.isVerified
-      };
-    }
-
-    if (user.type === 'ADMIN' && user.admin) {
-      userData.admin = {
-        id: user.admin.id,
-        permissions: JSON.parse(user.admin.permissions)
-      };
-    }
-
-    return res.json({
-      message: 'Login realizado com sucesso',
-      user: userData,
-      token
-    });
-
-  } catch (error) {
-    console.error('Erro no login:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
-
-app.get('/api/auth/me', authenticate, async (req, res) => {
-  try {
-    console.log('Profile request for user:', req.user);
-    
-    // Buscar dados atualizados do usuário no banco
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      include: {
-        buyer: true,
-        seller: {
-          include: {
-            store: true
-          }
-        },
-        admin: true
+      if (!prisma || !safeQuery) {
+        console.error('❌ [LOGIN] Prisma não disponível');
+        return res.status(500).json({
+          success: false,
+          error: 'Banco de dados não disponível. Verifique variáveis de ambiente.'
+        });
       }
-    });
 
-    if (!user || !user.isActive) {
-      return res.status(401).json({ error: 'Usuário não encontrado' });
-    }
-
-    // Construir dados do usuário para resposta
-    const userData = {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      city: user.city,
-      state: user.state,
-      userType: user.type.toLowerCase(),
-      isVerified: user.isVerified,
-      avatar: user.avatar,
-      createdAt: user.createdAt.toISOString()
-    };
-
-    if (user.type === 'BUYER' && user.buyer) {
-      userData.buyer = {
-        id: user.buyer.id,
-        wishlistCount: 0, // TODO: calcular do banco
-        orderCount: 0 // TODO: calcular do banco
-      };
-    }
-
-    if (user.type === 'SELLER' && user.seller) {
-      userData.seller = {
-        id: user.seller.id,
-        storeName: user.seller.store?.name || `${user.name} Store`,
-        rating: user.seller.rating,
-        totalSales: user.seller.totalSales,
-        plan: 'gratuito', // TODO: buscar plano atual
-        isVerified: user.seller.isVerified
-      };
-    }
-
-    if (user.type === 'ADMIN' && user.admin) {
-      userData.admin = {
-        id: user.admin.id,
-        permissions: JSON.parse(user.admin.permissions)
-      };
-    }
-    
-    res.json({
-      user: userData
-    });
-  } catch (error) {
-    console.error('Erro ao buscar perfil:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
-
-// Products API
-app.get('/api/products', async (req, res) => {
-  try {
-    const { page = 1, limit = 50, search, category, seller } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-    const where = {
-      isActive: true,
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } }
-        ]
-      }),
-      ...(category && { categoryId: category }),
-      ...(seller && { sellerId: seller })
-    };
-
-    const [products, total] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        include: {
-          images: true,
-          category: true,
-          seller: {
-            include: {
-              store: true,
-              user: {
-                select: { name: true, city: true, state: true }
-              }
-            }
-          }
-        },
-        skip,
-        take: parseInt(limit),
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.product.count({ where })
-    ]);
-    
-    res.json({
-      success: true,
-      products,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        totalPages: Math.ceil(total / parseInt(limit)),
-        hasNext: skip + parseInt(limit) < total,
-        hasPrev: parseInt(page) > 1
+      // Buscar usuário no banco
+      const result = await safeQuery(async () => {
+        return await prisma.user.findUnique({ 
+          where: { email }
+        });
+      });
+      
+      if (!result.success) {
+        console.error('❌ [LOGIN] Erro no banco:', result.error);
+        return res.status(500).json({
+          success: false,
+          error: 'Erro ao buscar usuário no banco de dados',
+          details: result.error
+        });
       }
-    });
-  } catch (error) {
-    console.error('Erro ao buscar produtos:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
-
-// Stores API
-app.get('/api/stores', async (req, res) => {
-  try {
-    const { page = 1, limit = 50, search } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-    const where = {
-      isActive: true,
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } }
-        ]
-      })
-    };
-
-    const [stores, total] = await Promise.all([
-      prisma.store.findMany({
-        where,
-        include: {
-          seller: {
-            include: {
-              user: {
-                select: { name: true, city: true, state: true }
-              }
-            }
-          },
-          _count: {
-            select: { products: true }
-          }
-        },
-        skip,
-        take: parseInt(limit),
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.store.count({ where })
-    ]);
-    
-    res.json({
-      success: true,
-      stores,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        totalPages: Math.ceil(total / parseInt(limit)),
-        hasNext: skip + parseInt(limit) < total,
-        hasPrev: parseInt(page) > 1
+      
+      if (!result.data) {
+        return res.status(401).json({ error: 'Credenciais inválidas' });
       }
-    });
-  } catch (error) {
-    console.error('Erro ao buscar lojas:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
 
-// Plans API
-app.get('/api/plans', async (req, res) => {
-  try {
-    const plans = await prisma.plan.findMany({
-      where: { isActive: true },
-      orderBy: { order: 'asc' }
-    });
-    
-    res.json({
-      success: true,
-      plans: plans.map(plan => ({
-        ...plan,
-        features: JSON.parse(plan.features || '[]')
-      })),
-      total: plans.length
-    });
-  } catch (error) {
-    console.error('Erro ao buscar planos:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
-
-// Orders API
-app.get('/api/orders', authenticate, async (req, res) => {
-  try {
-    res.json({
-      success: true,
-      orders: [],
-      pagination: {
-        page: 1,
-        limit: 50,
-        total: 0,
-        totalPages: 0,
-        hasNext: false,
-        hasPrev: false
+      // Verificar password
+      const isValid = await comparePassword(password, result.data.password);
+      if (!isValid) {
+        return res.status(401).json({ error: 'Credenciais inválidas' });
       }
-    });
-  } catch (error) {
-    console.error('Erro ao buscar pedidos:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
 
-// Wishlist APIs
-app.get('/api/wishlist', authenticate, async (req, res) => {
-  try {
-    res.json({ 
-      success: true,
-      data: [],
-      total: 0
-    });
-  } catch (error) {
-    console.error('Erro ao buscar wishlist:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
+      // Gerar token
+      const token = generateToken({
+        id: result.data.id,
+        email: result.data.email,
+        name: result.data.name,
+        userType: result.data.type
+      });
 
-app.get('/api/buyer/wishlist', authenticate, async (req, res) => {
-  try {
-    res.json({ 
-      success: true,
-      data: [],
-      total: 0
-    });
-  } catch (error) {
-    console.error('Erro ao buscar wishlist do buyer:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
+      // Remover password da resposta
+      const { password: _, ...userWithoutPassword } = result.data;
 
-// Admin stats
-app.get('/api/admin/stats', authenticate, async (req, res) => {
-  try {
-    if (req.user.type !== 'ADMIN') {
-      return res.status(403).json({ error: 'Acesso negado' });
+      console.log('✅ [LOGIN] Login realizado com sucesso:', userWithoutPassword.id);
+      return res.json({
+        success: true,
+        message: 'Login realizado com sucesso',
+        user: userWithoutPassword,
+        token
+      });
     }
 
-    const [
-      totalUsers,
-      buyers,
-      sellers,
-      admins,
-      totalStores,
-      activeStores,
-      pendingStores,
-      suspendedStores,
-      totalProducts,
-      approvedProducts,
-      pendingProducts,
-      totalOrders,
-      totalRevenue,
-      totalSubscriptions,
-      activeSubscriptions,
-      subscriptionRevenue
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.user.count({ where: { type: 'BUYER' } }),
-      prisma.user.count({ where: { type: 'SELLER' } }),
-      prisma.user.count({ where: { type: 'ADMIN' } }),
-      prisma.store.count(),
-      prisma.store.count({ where: { isActive: true } }),
-      prisma.store.count({ where: { isActive: false, isVerified: false } }),
-      prisma.store.count({ where: { isActive: false, isVerified: true } }),
-      prisma.product.count(),
-      prisma.product.count({ where: { isActive: true } }),
-      prisma.product.count({ where: { isActive: false } }),
-      prisma.order.count(),
-      prisma.order.aggregate({
-        _sum: { totalAmount: true },
-        where: { status: 'COMPLETED' }
-      }).then(result => result._sum.totalAmount || 0),
-      prisma.subscription.count(),
-      prisma.subscription.count({ where: { isActive: true } }),
-      prisma.subscription.aggregate({
-        _sum: { 
-          plan: {
-            price: true
-          }
-        },
-        where: { isActive: true }
-      }).then(result => result._sum?.plan?.price || 0)
-    ]);
-
-    res.json({
-      success: true,
-      data: {
-        users: { 
-          total: totalUsers, 
-          buyers: buyers, 
-          sellers: sellers, 
-          admins: admins 
-        },
-        stores: { 
-          total: totalStores, 
-          active: activeStores, 
-          pending: pendingStores, 
-          suspended: suspendedStores 
-        },
-        products: { 
-          total: totalProducts, 
-          approved: approvedProducts, 
-          pending: pendingProducts 
-        },
-        orders: { 
-          total: totalOrders, 
-          revenue: totalRevenue 
-        },
-        subscriptions: { 
-          total: totalSubscriptions, 
-          active: activeSubscriptions, 
-          revenue: subscriptionRevenue 
+    // Route: GET /api/admin/stats - APENAS BANCO DE DADOS (requires auth)
+    if (req.method === 'GET' && pathname === '/api/admin/stats') {
+      console.log('📊 [ADMIN] Buscando estatísticas...');
+      
+      try {
+        const user = requireAuth();
+        if (user.userType !== 'ADMIN') {
+          return res.status(403).json({ error: 'Acesso negado' });
         }
-      }
-    });
-  } catch (error) {
-    console.error('Erro ao buscar estatísticas:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
 
-// Admin Users API
-app.get('/api/admin/users', authenticate, async (req, res) => {
-  try {
-    if (req.user.type !== 'ADMIN') {
-      return res.status(403).json({ error: 'Acesso negado' });
+        if (!prisma || !safeQuery) {
+          console.error('❌ [ADMIN] Prisma não disponível');
+          return res.status(500).json({
+            success: false,
+            error: 'Banco de dados não disponível. Verifique variáveis de ambiente.'
+          });
+        }
+
+        // Buscar stats reais do banco
+        const [usersResult, productsResult, storesResult, ordersResult] = await Promise.all([
+          safeQuery(async () => await prisma.user.count()),
+          safeQuery(async () => await prisma.product.count({ where: { isActive: true } })),
+          safeQuery(async () => await prisma.store.count({ where: { isActive: true } })),
+          safeQuery(async () => await prisma.order.count())
+        ]);
+
+        // Verificar se todas as queries foram bem-sucedidas
+        if (!usersResult.success || !productsResult.success || !storesResult.success || !ordersResult.success) {
+          console.error('❌ [ADMIN] Erro ao buscar estatísticas');
+          return res.status(500).json({
+            success: false,
+            error: 'Erro ao buscar estatísticas no banco de dados'
+          });
+        }
+
+        const stats = {
+          totalUsers: usersResult.data,
+          totalProducts: productsResult.data,
+          totalStores: storesResult.data,
+          totalOrders: ordersResult.data
+        };
+
+        console.log('✅ [ADMIN] Estatísticas carregadas:', stats);
+        return res.json({
+          success: true,
+          data: stats
+        });
+
+      } catch (error) {
+        console.error('❌ [ADMIN STATS] Erro:', error.message);
+        return res.status(401).json({ error: error.message });
+      }
     }
 
-    const { page = 1, limit = 20, search, type } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-    const where = {
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } }
-        ]
-      }),
-      ...(type && { type: type.toUpperCase() })
-    };
-
-    const [users, total] = await Promise.all([
-      prisma.user.findMany({
-        where,
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-          type: true,
-          city: true,
-          state: true,
-          isVerified: true,
-          isActive: true,
-          createdAt: true,
-          lastLogin: true
-        },
-        skip,
-        take: parseInt(limit),
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.user.count({ where })
-    ]);
-    
-    res.json({
-      success: true,
-      users,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        totalPages: Math.ceil(total / parseInt(limit)),
-        hasNext: skip + parseInt(limit) < total,
-        hasPrev: parseInt(page) > 1
-      }
+    // Route not found
+    return res.status(404).json({ 
+      error: 'Rota não encontrada',
+      method: req.method,
+      pathname: pathname
     });
+
   } catch (error) {
-    console.error('Erro ao buscar usuários:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
-
-// Admin Stores API
-app.get('/api/admin/stores', authenticate, async (req, res) => {
-  try {
-    if (req.user.type !== 'ADMIN') {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
-
-    const { page = 1, limit = 20, search, status } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-    const where = {
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } }
-        ]
-      }),
-      ...(status && { 
-        isActive: status === 'active',
-        ...(status === 'pending' && { isVerified: false })
-      })
-    };
-
-    const [stores, total] = await Promise.all([
-      prisma.store.findMany({
-        where,
-        include: {
-          seller: {
-            include: {
-              user: {
-                select: { name: true, email: true, city: true, state: true }
-              }
-            }
-          },
-          _count: {
-            select: { products: true }
-          }
-        },
-        skip,
-        take: parseInt(limit),
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.store.count({ where })
-    ]);
-    
-    res.json({
-      success: true,
-      stores,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        totalPages: Math.ceil(total / parseInt(limit)),
-        hasNext: skip + parseInt(limit) < total,
-        hasPrev: parseInt(page) > 1
-      }
+    console.error('💥 [API] Erro geral:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString()
     });
-  } catch (error) {
-    console.error('Erro ao buscar lojas:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
   }
-});
-
-// Admin Products API
-app.get('/api/admin/products', authenticate, async (req, res) => {
-  try {
-    if (req.user.type !== 'ADMIN') {
-      return res.status(403).json({ error: 'Acesso negado' });
-    }
-
-    const { page = 1, limit = 20, search, status } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
-    
-    const where = {
-      ...(search && {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } }
-        ]
-      }),
-      ...(status && { 
-        isActive: status === 'active'
-      })
-    };
-
-    const [products, total] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        include: {
-          images: true,
-          category: true,
-          seller: {
-            include: {
-              store: true,
-              user: {
-                select: { name: true, email: true, city: true, state: true }
-              }
-            }
-          }
-        },
-        skip,
-        take: parseInt(limit),
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.product.count({ where })
-    ]);
-    
-    res.json({
-      success: true,
-      products,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        totalPages: Math.ceil(total / parseInt(limit)),
-        hasNext: skip + parseInt(limit) < total,
-        hasPrev: parseInt(page) > 1
-      }
-    });
-  } catch (error) {
-    console.error('Erro ao buscar produtos:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
-
-// Profile and addresses
-app.get('/api/profile', authenticate, (req, res) => {
-  res.json({ user: req.user });
-});
-
-app.get('/api/profile/addresses', authenticate, (req, res) => {
-  res.json({ addresses: [] });
-});
-
-// Export para Vercel - função serverless
-export default function handler(req, res) {
-  return app(req, res);
 }
-
-// Também export o app para compatibilidade
-export { app };

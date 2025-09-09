@@ -1,176 +1,194 @@
-# 🛒 Marketplace Vendeu Online
+# 🛒 VENDEU ONLINE - Marketplace Multi-Vendor
 
-Um marketplace completo desenvolvido com React + TypeScript + Vite, permitindo que múltiplos vendedores cadastrem e vendam seus produtos em uma plataforma unificada.
+> **Plataforma completa de e-commerce** desenvolvida para o mercado brasileiro, conectando vendedores e compradores em um marketplace moderno e eficiente.
 
-## 🚀 Funcionalidades Principais
+## ✨ **DESTAQUES**
 
-- 🔐 **Autenticação completa** (Login/Cadastro para Compradores, Vendedores e Admins)
-- 🛍️ **Sistema de produtos** (CRUD completo, categorias, filtros)
-- 🏪 **Gestão de lojas** (Perfis de vendedores, configurações)
-- 🛒 **Carrinho de compras** (Adicionar, remover, calcular totais)
-- 📦 **Sistema de pedidos** (Estados, histórico, tracking)
-- 💳 **Sistema de planos** (Gratuito, Micro-Empresa, Pequena Empresa, Empresa Simples, Empresa Plus)
-- 📱 **Design responsivo** (Mobile-first)
-- 🔍 **Busca e filtros** avançados
-- 👑 **Painel administrativo** completo
+🎯 **Multi-vendor** - Múltiplos vendedores em uma plataforma  
+💳 **Pagamentos brasileiros** - PIX, Boleto, Cartão via ASAAS  
+📱 **PWA** - Instalável como app nativo  
+🔒 **Seguro** - JWT + validações rigorosas  
+⚡ **Rápido** - Vite + React 18 + TypeScript  
 
-## 🛠️ Tecnologias
+## 🚀 **FUNCIONALIDADES**
 
+### 👥 **Multi-perfil de Usuários**
+- **Compradores:** Navegar, comprar, acompanhar pedidos
+- **Vendedores:** Gerenciar loja, produtos, vendas e planos
+- **Admins:** Moderar conteúdo, analytics, configurações
+
+### 🛍️ **E-commerce Completo**
+- 🛒 Carrinho de compras inteligente
+- ❤️ Lista de desejos (wishlist)
+- ⭐ Sistema de avaliações
+- 📦 Rastreamento de pedidos
+- 🔍 Busca avançada com filtros
+
+### 💰 **Sistema de Monetização**
+- 📋 **5 planos de assinatura** (Gratuito → R$ 299,90/mês)
+- 💳 **Pagamentos ASAAS** (PIX, Boleto, Cartão)
+- 📊 **Analytics** de vendas e performance
+
+## 🏗️ **ARQUITETURA**
+
+### **Stack Principal**
 - **Frontend:** React 18 + TypeScript + Vite
-- **Styling:** Tailwind CSS
-- **Roteamento:** Next.js App Router
-- **Estado:** Zustand
-- **Formulários:** React Hook Form + Zod
-- **Banco de Dados:** Prisma + Supabase
-- **Build:** Vite
+- **Backend:** Node.js + Express + Prisma ORM  
+- **Database:** PostgreSQL (Supabase)
+- **Pagamentos:** ASAAS (gateway brasileiro)
+- **Storage:** Supabase Storage
 - **Deploy:** Vercel
 
-## 🔧 Desenvolvimento Local
+### **Tecnologias de UI/UX**
+- **Styling:** Tailwind CSS + Radix UI
+- **State:** Zustand com persistência
+- **Forms:** React Hook Form + Zod
+- **PWA:** Vite PWA plugin
 
-### **Pré-requisitos**
-- Node.js 18+ 
-- npm ou pnpm
+## ⚡ **INÍCIO RÁPIDO**
 
-### **Instalação**
-
+### **1. Desenvolvimento Local**
 ```bash
-# Clonar repositório
-git clone <repository-url>
-cd vendeu-online
-
 # Instalar dependências
 npm install
 
-# Copiar arquivo de ambiente
+# Configurar ambiente
 cp .env.example .env
+# Editar .env com credenciais do Supabase
 
-# Configurar variáveis no .env
-# Edite o arquivo .env com suas credenciais
+# Preparar banco de dados
+npx prisma db push
+npm run db:seed
 
-# Iniciar servidor de desenvolvimento
+# Rodar aplicação
 npm run dev
 ```
 
-### **Scripts Disponíveis**
+**🌐 URLs:** Frontend: `http://localhost:4173` | API: `http://localhost:4002`
+
+### **2. Deploy Produção**
+```bash
+# 1. Configure variáveis no Vercel (veja /docs/DEPLOY_GUIDE.md)
+# 2. Push para GitHub
+git add . && git commit -m "deploy" && git push
+```
+
+## 📋 **PLANOS DE ASSINATURA**
+
+| Plano | Preço | Produtos | Imagens | Recursos |
+|-------|-------|----------|---------|----------|
+| **Gratuito** | R$ 0 | 10 | 3 | Básico |
+| **Básico** | R$ 29,90 | 50 | 5 | + Dashboard |
+| **Profissional** | R$ 59,90 | 200 | 8 | + Analytics |
+| **Empresa** | R$ 149,90 | 1000 | 10 | + Suporte priority |
+| **Empresa Plus** | R$ 299,90 | ∞ | 15 | + API access |
+
+## 📁 **ESTRUTURA ORGANIZADA**
+
+```
+vendeuonline-main/
+├── 📚 docs/               # Documentação completa
+│   ├── DEPLOY_GUIDE.md   # Guia de deploy
+│   ├── DEVELOPMENT.md    # Setup de desenvolvimento  
+│   └── API_REFERENCE.md  # Referência da API
+├── 🏗️ src/               # Código fonte
+│   ├── app/             # Páginas (Next.js App Router)
+│   ├── components/      # Componentes React
+│   ├── store/          # Estado global (Zustand)
+│   ├── lib/            # Utilitários e configs
+│   └── types/          # TypeScript types
+├── 🗄️ prisma/           # Schema e migrations
+├── 🔧 scripts/          # Scripts de automação
+├── ⚙️ server/           # Backend Express
+└── 📦 api/             # APIs serverless (Vercel)
+```
+
+## 🎮 **COMANDOS ESSENCIAIS**
 
 ```bash
-npm run dev      # Servidor de desenvolvimento
-npm run build    # Build de produção
-npm run preview  # Preview do build
-npm run check    # Verificação TypeScript
-npm run lint     # Linting do código
+# Desenvolvimento
+npm run dev          # Rodar app completo
+npm run dev:client   # Apenas frontend
+npm run api          # Apenas backend
+
+# Banco de dados  
+npx prisma studio    # Interface visual
+npx prisma db push   # Aplicar schema
+npm run db:seed      # Popular dados
+
+# Deploy
+npm run build        # Build produção
+npm run preview      # Preview build
+npm run lint         # Verificar código
 ```
 
-## 📁 Estrutura do Projeto
+## 🚀 **DEPLOY PRODUÇÃO**
 
-```
-src/
-├── app/                 # Páginas da aplicação (Next.js App Router)
-│   ├── (auth)/         # Páginas de autenticação
-│   ├── admin/          # Painel administrativo
-│   ├── buyer/          # Dashboard do comprador
-│   ├── seller/         # Dashboard do vendedor
-│   ├── api/            # API Routes
-│   └── ...
-├── components/         # Componentes reutilizáveis
-│   ├── ui/            # Componentes de UI
-│   └── ...
-├── store/             # Estado global (Zustand)
-├── hooks/             # Custom hooks
-├── lib/               # Utilitários e configurações
-├── types/             # Definições TypeScript
-└── utils/             # Funções utilitárias
-```
-
-## 💳 Sistema de Planos
-
-### **Planos Disponíveis**
-
-1. **Gratuito** - Para usuários iniciantes
-   - 1 anúncio simultâneo
-   - Duração de 30 dias
-   - Suporte por email
-
-2. **Micro-Empresa** - R$ 24,90/mês
-   - 2 anúncios simultâneos
-   - Duração de 30 dias
-   - Até 6 fotos por anúncio
-
-3. **Pequena Empresa** - R$ 49,90/mês
-   - 5 anúncios simultâneos
-   - Duração de 30 dias
-   - Até 10 fotos por anúncio
-
-4. **Empresa Simples** - R$ 99,90/mês
-   - 10 anúncios simultâneos
-   - Duração de 30 dias
-   - Até 15 fotos por anúncio
-
-5. **Empresa Plus** - R$ 149,90/mês
-   - 20 anúncios simultâneos
-   - Duração de 30 dias
-   - Até 20 fotos por anúncio
-
-## 🔐 Tipos de Usuário
-
-### **👤 Comprador**
-- Navegar produtos e lojas
-- Adicionar ao carrinho
-- Finalizar compras
-- Acompanhar pedidos
-
-### **🏪 Vendedor**
-- Gerenciar loja
-- CRUD de produtos
-- Acompanhar vendas
-- Processar pedidos
-- Gerenciar planos de assinatura
-
-### **👑 Administrador**
-- Gerenciar usuários
-- Moderar conteúdo
-- Configurar planos
-- Analytics globais
-
-## 🚀 Deploy
-
-### **Deploy Rápido no Vercel**
-
+### **Quick Deploy**
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fseu-usuario%2Fvendeu-online&env=DATABASE_URL,JWT_SECRET,NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY&project-name=vendeu-online&repository-name=vendeu-online)
 
-### **Configuração Manual**
+### **Deploy Manual (Recomendado)**
 
-1. **Fork este repositório**
-2. **Conecte ao Vercel**
-3. **Configure as variáveis de ambiente**:
+**1. Configurar Supabase:**
+- Criar projeto em [supabase.com](https://supabase.com)
+- Copiar credenciais (URL, anon key, service key)
 
-```env
-# Obrigatórias
-DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[REF].supabase.co:5432/postgres
-JWT_SECRET=cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac
-NEXT_PUBLIC_SUPABASE_URL=https://[PROJECT-REF].supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...
+**2. Configurar Vercel:**
+- Conectar repositório GitHub ao Vercel
+- Adicionar variáveis de ambiente (ver `.env.example`)
 
-# Opcionais (Pagamentos)
-ASAAS_API_KEY=sua-chave-asaas
-MERCADOPAGO_ACCESS_TOKEN=seu-token-mercadopago
+**3. Deploy:**
+```bash
+git push  # Deploy automático via Vercel
 ```
 
-### **Configurações do Vercel**
-- **Framework**: Vite
-- **Build Command**: `npm run vercel-build`
-- **Output Directory**: `dist`
-- **Install Command**: `npm install`
-- **Node.js Version**: 18.x
+## 📚 **DOCUMENTAÇÃO**
 
-### **📖 Guia Completo**
-Para instruções detalhadas, consulte: **[DEPLOY_GUIDE.md](./DEPLOY_GUIDE.md)**
+| Documento | Descrição |
+|-----------|-----------|
+| 🚀 [`/docs/DEPLOY_GUIDE.md`](./docs/DEPLOY_GUIDE.md) | **Guia completo de deploy** |
+| 💻 [`/docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md) | Setup desenvolvimento local |
+| 📡 [`/docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) | Referência completa da API |
+| ⚙️ [`/docs/COMMANDS.md`](./docs/COMMANDS.md) | Comandos úteis do projeto |
 
-### **URLs Pós-Deploy**
-- **Frontend**: `https://seu-app.vercel.app`
-- **API Health**: `https://seu-app.vercel.app/api/health`
-- **Admin**: `https://seu-app.vercel.app/admin` (admin@test.com / 123456)
+## 🧪 **CREDENCIAIS DE TESTE**
 
-## 📄 Licença
+Após executar `npm run db:seed`:
 
-Este projeto é propriedade privada. Todos os direitos reservados.
+| Tipo | Email | Senha |
+|------|-------|-------|
+| Admin | `admin@vendeuonline.com` | `Admin123!@#` |
+| Seller | `seller@vendeuonline.com` | `Seller123!@#` |
+| Buyer | `buyer@vendeuonline.com` | `Buyer123!@#` |
+
+## 🌐 **ENDPOINTS IMPORTANTES**
+
+- **Frontend:** `https://seu-projeto.vercel.app`
+- **Health Check:** `/api/health`
+- **API Diagnostics:** `/api/diagnostics`
+- **Planos:** `/api/plans`
+- **Admin Dashboard:** `/admin`
+
+## 🏆 **STATUS ATUAL**
+
+✅ **Funcional e Pronto:**
+- Sistema completo de autenticação
+- CRUD de produtos e lojas
+- Carrinho e wishlist
+- Sistema de pagamentos ASAAS
+- PWA configurado
+- Deploy automatizado
+
+📋 **Próximos Passos:**
+- Implementar chat entre usuários
+- Sistema de cupons de desconto
+- Analytics avançados
+- Mobile app (React Native)
+
+## 📄 **LICENÇA**
+
+Este projeto possui **direitos autorais reservados**. Consulte o proprietário para uso comercial.
+
+---
+
+**⭐ Developed with ❤️ for Brazilian e-commerce**

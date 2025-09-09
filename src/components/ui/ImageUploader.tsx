@@ -45,12 +45,12 @@ export default function ImageUploader({
       };
 
       return {
-        url: result.data.url,
-        publicId: result.data.publicId,
-        width: result.data.width,
-        height: result.data.height,
-        format: result.data.format,
-        size: result.data.size,
+        url: result.url,
+        publicId: result.publicId,
+        width: 800, // Default width
+        height: 600, // Default height
+        format: 'jpeg', // Default format
+        size: file.size,
         file,
       };
     } catch (error) {

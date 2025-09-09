@@ -476,7 +476,7 @@ export default function AdminProductsPage() {
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-gray-900 truncate max-w-xs">{product.name}</div>
-                          <div className="text-sm text-gray-500 truncate max-w-xs">{product.category}</div>
+                          <div className="text-sm text-gray-500 truncate max-w-xs">{product.categoryId}</div>
                         </div>
                       </div>
                     </td>
