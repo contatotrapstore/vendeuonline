@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Check, Crown, Users, Building, Zap } from 'lucide-react';
-import { useAuthStore } from '@/store/authStore';
-import { toast } from 'sonner';
+import { useState, useEffect } from "react";
+import { Check, Crown, Users, Building, Zap } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
+import { toast } from "sonner";
 
 interface Plan {
   id: string;
@@ -11,10 +11,10 @@ interface Plan {
   slug: string;
   description: string;
   price: number;
-  billingPeriod: 'MONTHLY' | 'YEARLY' | 'LIFETIME';
+  billingPeriod: "MONTHLY" | "YEARLY" | "LIFETIME";
   maxAds: number;
   maxPhotosPerAd: number;
-  supportLevel: 'EMAIL' | 'CHAT' | 'PHONE' | 'PRIORITY';
+  supportLevel: "EMAIL" | "CHAT" | "PHONE" | "PRIORITY";
   features: string[];
   isActive: boolean;
   order: number;
@@ -27,24 +27,24 @@ interface PricingPlansProps {
 }
 
 const planIcons = {
-  'gratuito': Crown,
-  'basico': Users,
-  'profissional': Building,
-  'empresa': Zap
+  gratuito: Crown,
+  basico: Users,
+  profissional: Building,
+  empresa: Zap,
 };
 
 const planColors = {
-  'gratuito': 'bg-gray-50 border-gray-200',
-  'basico': 'bg-blue-50 border-blue-200',
-  'profissional': 'bg-green-50 border-green-200',
-  'empresa': 'bg-purple-50 border-purple-200'
+  gratuito: "bg-gray-50 border-gray-200",
+  basico: "bg-blue-50 border-blue-200",
+  profissional: "bg-green-50 border-green-200",
+  empresa: "bg-purple-50 border-purple-200",
 };
 
 const buttonColors = {
-  'gratuito': 'bg-gray-600 hover:bg-gray-700 text-white',
-  'basico': 'bg-blue-600 hover:bg-blue-700 text-white',
-  'profissional': 'bg-green-600 hover:bg-green-700 text-white',
-  'empresa': 'bg-purple-600 hover:bg-purple-700 text-white'
+  gratuito: "bg-gray-600 hover:bg-gray-700 text-white",
+  basico: "bg-blue-600 hover:bg-blue-700 text-white",
+  profissional: "bg-green-600 hover:bg-green-700 text-white",
+  empresa: "bg-purple-600 hover:bg-purple-700 text-white",
 };
 
 export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = true }: PricingPlansProps) {
@@ -59,27 +59,33 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
 
   const fetchPlans = async () => {
     try {
-      const response = await fetch('/api/plans');
+      const response = await fetch("/api/plans");
       const data = await response.json();
-      
+
       if (data.success) {
         // Mapear campos da API para o formato esperado pelo componente
         const mappedPlans = (data.plans || data.data || []).map((plan: any) => ({
           ...plan,
-          billingPeriod: 'MONTHLY',
+          billingPeriod: "MONTHLY",
           maxPhotosPerAd: plan.maxPhotos || 1,
-          supportLevel: plan.support === 'email' ? 'EMAIL' : 
-                       plan.support === 'chat' ? 'CHAT' :
-                       plan.support === 'telefone' ? 'PHONE' :
-                       plan.support === 'whatsapp' ? 'PRIORITY' : 'EMAIL'
+          supportLevel:
+            plan.support === "email"
+              ? "EMAIL"
+              : plan.support === "chat"
+                ? "CHAT"
+                : plan.support === "telefone"
+                  ? "PHONE"
+                  : plan.support === "whatsapp"
+                    ? "PRIORITY"
+                    : "EMAIL",
         }));
         setPlans(mappedPlans);
       } else {
-        toast.error('Erro ao carregar planos');
+        toast.error("Erro ao carregar planos");
       }
     } catch (error) {
-      console.error('Erro ao buscar planos:', error);
-      toast.error('Erro ao carregar planos');
+      console.error("Erro ao buscar planos:", error);
+      toast.error("Erro ao carregar planos");
     } finally {
       setLoading(false);
     }
@@ -87,7 +93,7 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
 
   const handleSelectPlan = async (planId: string) => {
     if (!user) {
-      toast.error('Faça login para assinar um plano');
+      toast.error("Faça login para assinar um plano");
       return;
     }
 
@@ -99,13 +105,13 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
     setSubscribing(planId);
 
     try {
-      const response = await fetch('/api/subscriptions', {
-        method: 'POST',
+      const response = await fetch("/api/subscriptions", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-        body: JSON.stringify({ planId })
+        body: JSON.stringify({ planId }),
       });
 
       const data = await response.json();
@@ -114,32 +120,36 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
         toast.success(data.message);
         // Recarregar dados do usuário se necessário
       } else {
-        toast.error(data.error || 'Erro ao assinar plano');
+        toast.error(data.error || "Erro ao assinar plano");
       }
     } catch (error) {
-      console.error('Erro ao assinar plano:', error);
-      toast.error('Erro ao assinar plano');
+      console.error("Erro ao assinar plano:", error);
+      toast.error("Erro ao assinar plano");
     } finally {
       setSubscribing(null);
     }
   };
 
   const formatPrice = (price: number, billingPeriod: string) => {
-    if (price === 0) return 'Grátis';
-    
-    const suffix = billingPeriod === 'MONTHLY' ? '/mês' : 
-                   billingPeriod === 'YEARLY' ? '/ano' : '';
-    
-    return `R$ ${price.toFixed(2).replace('.', ',')}${suffix}`;
+    if (price === 0) return "Grátis";
+
+    const suffix = billingPeriod === "MONTHLY" ? "/mês" : billingPeriod === "YEARLY" ? "/ano" : "";
+
+    return `R$ ${price.toFixed(2).replace(".", ",")}${suffix}`;
   };
 
   const getSupportText = (level: string) => {
     switch (level) {
-      case 'EMAIL': return 'Suporte por email';
-      case 'CHAT': return 'Suporte por chat';
-      case 'PHONE': return 'Suporte por telefone';
-      case 'PRIORITY': return 'Suporte prioritário';
-      default: return 'Suporte básico';
+      case "EMAIL":
+        return "Suporte por email";
+      case "CHAT":
+        return "Suporte por chat";
+      case "PHONE":
+        return "Suporte por telefone";
+      case "PRIORITY":
+        return "Suporte prioritário";
+      default:
+        return "Suporte básico";
     }
   };
 
@@ -155,9 +165,7 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
     <div className="py-12">
       {showTitle && (
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Escolha o Plano Ideal para Seu Negócio
-          </h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">Escolha o Plano Ideal para Seu Negócio</h2>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Planos flexíveis para atender desde pequenos empreendedores até grandes empresas
           </p>
@@ -169,12 +177,12 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
           const IconComponent = planIcons[plan.slug as keyof typeof planIcons] || Crown;
           const isCurrentPlan = currentPlanId === plan.id;
           const isSubscribing = subscribing === plan.id;
-          
+
           return (
             <div
               key={plan.id}
               className={`relative rounded-2xl border-2 p-6 transition-all duration-200 hover:shadow-lg min-h-[500px] flex flex-col ${
-                planColors[plan.slug as keyof typeof planColors] || 'bg-gray-50 border-gray-200'
+                planColors[plan.slug as keyof typeof planColors] || "bg-gray-50 border-gray-200"
               }`}
             >
               {/* Ícone do plano */}
@@ -184,19 +192,13 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
 
               {/* Nome e descrição */}
               <div className="text-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                  {plan.name}
-                </h3>
-                <p className="text-sm text-gray-600">
-                  {plan.description}
-                </p>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">{plan.name}</h3>
+                <p className="text-sm text-gray-600">{plan.description}</p>
               </div>
 
               {/* Preço */}
               <div className="text-center mb-6">
-                <div className="text-2xl font-bold text-gray-900">
-                  {formatPrice(plan.price, plan.billingPeriod)}
-                </div>
+                <div className="text-2xl font-bold text-gray-900">{formatPrice(plan.price, plan.billingPeriod)}</div>
               </div>
 
               {/* Features */}
@@ -207,14 +209,14 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
                     <span>{feature}</span>
                   </div>
                 ))}
-                
+
                 {/* Features adicionais baseadas no plano */}
                 <div className="flex items-center text-sm text-gray-700">
                   <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                   <span>{getSupportText(plan.supportLevel)}</span>
                 </div>
-                
-                {plan.slug !== 'gratuito' && (
+
+                {plan.slug !== "gratuito" && (
                   <div className="flex items-center text-sm text-gray-700">
                     <Check className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
                     <span>Duração de 30 dias</span>
@@ -228,27 +230,23 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
                 disabled={isCurrentPlan || isSubscribing}
                 className={`w-full py-3 px-4 rounded-lg font-medium transition-colors duration-200 ${
                   isCurrentPlan
-                    ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
+                    ? "bg-gray-100 text-gray-500 cursor-not-allowed"
                     : isSubscribing
-                    ? 'bg-gray-400 text-white cursor-not-allowed'
-                    : buttonColors[plan.slug as keyof typeof buttonColors] || 'bg-gray-600 hover:bg-gray-700 text-white'
+                      ? "bg-gray-400 text-white cursor-not-allowed"
+                      : buttonColors[plan.slug as keyof typeof buttonColors] ||
+                        "bg-gray-600 hover:bg-gray-700 text-white"
                 }`}
               >
                 {isCurrentPlan
-                  ? 'Plano Atual'
+                  ? "Plano Atual"
                   : isSubscribing
-                  ? 'Processando...'
-                  : plan.price === 0
-                  ? 'Começar Grátis'
-                  : 'Fazer Upgrade'
-                }
+                    ? "Processando..."
+                    : plan.price === 0
+                      ? "Começar Grátis"
+                      : "Fazer Upgrade"}
               </button>
 
-              {plan.price > 0 && (
-                <p className="text-xs text-gray-500 text-center mt-2">
-                  30 dias grátis
-                </p>
-              )}
+              {plan.price > 0 && <p className="text-xs text-gray-500 text-center mt-2">30 dias grátis</p>}
             </div>
           );
         })}

@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { 
+import { useState, useEffect } from "react";
+import {
   Save,
   RefreshCw,
   AlertTriangle,
@@ -12,9 +12,9 @@ import {
   Star,
   Shield,
   Settings,
-  Loader2
-} from 'lucide-react';
-import { toast } from 'sonner';
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
 
 interface Plan {
   id: string;
@@ -49,88 +49,98 @@ export default function AdminPlansPage() {
     try {
       setLoading(true);
       setError(null);
-      
-      const token = localStorage.getItem('auth-token');
+
+      const token = localStorage.getItem("auth-token");
       if (!token) {
-        throw new Error('Token não encontrado');
+        throw new Error("Token não encontrado");
       }
 
-      const response = await fetch('/api/admin/plans', {
+      const response = await fetch("/api/admin/plans", {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
 
       if (!response.ok) {
-        throw new Error('Erro ao buscar planos');
+        throw new Error("Erro ao buscar planos");
       }
 
       const data = await response.json();
-      console.log('Plans data received:', data);
-      
+      console.log("Plans data received:", data);
+
       // Garantir que features seja sempre array
-      const processedPlans = (data.plans || []).map((plan: any) => ({
+      const processedPlans = (data.data || []).map((plan: any) => ({
         ...plan,
-        features: Array.isArray(plan.features) ? plan.features : JSON.parse(plan.features || '[]')
+        features: Array.isArray(plan.features) ? plan.features : JSON.parse(plan.features || "[]"),
       }));
-      
+
       setPlans(processedPlans);
     } catch (error: any) {
       setError(error.message);
-      toast.error('Erro ao carregar planos');
+      toast.error("Erro ao carregar planos");
     } finally {
       setLoading(false);
     }
   };
 
   const updatePlan = (planId: string, field: string, value: any) => {
-    setPlans(prev => prev.map(plan => 
-      plan.id === planId ? { ...plan, [field]: value } : plan
-    ));
+    setPlans((prev) => prev.map((plan) => (plan.id === planId ? { ...plan, [field]: value } : plan)));
   };
 
   const updateFeature = (planId: string, index: number, value: string) => {
-    setPlans(prev => prev.map(plan => 
-      plan.id === planId ? {
-        ...plan,
-        features: plan.features.map((feature, i) => i === index ? value : feature)
-      } : plan
-    ));
+    setPlans((prev) =>
+      prev.map((plan) =>
+        plan.id === planId
+          ? {
+              ...plan,
+              features: plan.features.map((feature, i) => (i === index ? value : feature)),
+            }
+          : plan
+      )
+    );
   };
 
   const addFeature = (planId: string) => {
-    setPlans(prev => prev.map(plan => 
-      plan.id === planId ? {
-        ...plan,
-        features: [...plan.features, 'Nova funcionalidade']
-      } : plan
-    ));
+    setPlans((prev) =>
+      prev.map((plan) =>
+        plan.id === planId
+          ? {
+              ...plan,
+              features: [...plan.features, "Nova funcionalidade"],
+            }
+          : plan
+      )
+    );
   };
 
   const removeFeature = (planId: string, index: number) => {
-    setPlans(prev => prev.map(plan => 
-      plan.id === planId ? {
-        ...plan,
-        features: plan.features.filter((_, i) => i !== index)
-      } : plan
-    ));
+    setPlans((prev) =>
+      prev.map((plan) =>
+        plan.id === planId
+          ? {
+              ...plan,
+              features: plan.features.filter((_, i) => i !== index),
+            }
+          : plan
+      )
+    );
   };
 
   const savePlan = async (plan: Plan) => {
     try {
       setSaving(true);
-      
-      const token = localStorage.getItem('auth-token');
+
+      const token = localStorage.getItem("auth-token");
       if (!token) {
-        throw new Error('Token não encontrado');
+        throw new Error("Token não encontrado");
       }
 
       const response = await fetch(`/api/admin/plans/${plan.id}`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           name: plan.name,
@@ -144,13 +154,13 @@ export default function AdminPlansPage() {
           maxCategories: Number(plan.maxCategories),
           prioritySupport: plan.prioritySupport,
           support: plan.support,
-          features: plan.features.filter(f => f.trim() !== ''),
-          isActive: plan.isActive
-        })
+          features: plan.features.filter((f) => f.trim() !== ""),
+          isActive: plan.isActive,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Erro ao salvar plano');
+        throw new Error("Erro ao salvar plano");
       }
 
       toast.success(`Plano ${plan.name} salvo com sucesso!`);
@@ -164,17 +174,17 @@ export default function AdminPlansPage() {
   const saveAllPlans = async () => {
     try {
       setSaving(true);
-      
+
       for (const plan of plans) {
         await savePlan(plan);
         // Pequena pausa entre as salvadas
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
       }
-      
-      toast.success('Todos os planos foram salvos com sucesso!');
+
+      toast.success("Todos os planos foram salvos com sucesso!");
       await fetchPlans(); // Recarregar para garantir dados atualizados
     } catch (error: any) {
-      toast.error('Erro ao salvar alguns planos');
+      toast.error("Erro ao salvar alguns planos");
     } finally {
       setSaving(false);
     }
@@ -205,28 +215,24 @@ export default function AdminPlansPage() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Configuração de Planos</h1>
               <p className="text-gray-600">Configure preços, limites e funcionalidades dos planos de assinatura</p>
             </div>
-            
+
             <div className="flex space-x-3">
               <button
                 onClick={fetchPlans}
                 disabled={loading || saving}
                 className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
               >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                 <span>Atualizar</span>
               </button>
-              
+
               <button
                 onClick={saveAllPlans}
                 disabled={saving}
                 className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                {saving ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Save className="h-4 w-4" />
-                )}
-                <span>{saving ? 'Salvando...' : 'Salvar Todos'}</span>
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                <span>{saving ? "Salvando..." : "Salvar Todos"}</span>
               </button>
             </div>
           </div>
@@ -241,10 +247,7 @@ export default function AdminPlansPage() {
                 <h3 className="text-red-800 font-medium">Erro ao carregar planos</h3>
                 <p className="text-red-600 text-sm mt-1">{error}</p>
               </div>
-              <button
-                onClick={fetchPlans}
-                className="ml-auto text-red-600 hover:text-red-800"
-              >
+              <button onClick={fetchPlans} className="ml-auto text-red-600 hover:text-red-800">
                 <RefreshCw className="h-5 w-5" />
               </button>
             </div>
@@ -256,7 +259,9 @@ export default function AdminPlansPage() {
           {plans.map((plan) => (
             <div key={plan.id} className="bg-white rounded-lg border shadow-sm overflow-hidden">
               {/* Plan Header */}
-              <div className={`p-6 border-b ${plan.name.toLowerCase() === 'empresa plus' ? 'bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200' : 'bg-gray-50'}`}>
+              <div
+                className={`p-6 border-b ${plan.name.toLowerCase() === "empresa plus" ? "bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200" : "bg-gray-50"}`}
+              >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-3">
                     <Settings className="h-6 w-6 text-blue-600" />
@@ -264,18 +269,18 @@ export default function AdminPlansPage() {
                       <input
                         type="text"
                         value={plan.name}
-                        onChange={(e) => updatePlan(plan.id, 'name', e.target.value)}
+                        onChange={(e) => updatePlan(plan.id, "name", e.target.value)}
                         className="text-xl font-bold bg-transparent border-none p-0 focus:ring-0 focus:outline-none"
                       />
                       <p className="text-sm text-gray-500">Plano de assinatura</p>
                     </div>
                   </div>
-                  
+
                   <label className="flex items-center space-x-2">
                     <input
                       type="checkbox"
                       checked={plan.isActive}
-                      onChange={(e) => updatePlan(plan.id, 'isActive', e.target.checked)}
+                      onChange={(e) => updatePlan(plan.id, "isActive", e.target.checked)}
                       className="rounded"
                     />
                     <span className="text-sm font-medium">Ativo</span>
@@ -287,28 +292,24 @@ export default function AdminPlansPage() {
                 {/* Basic Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Preço (R$)
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Preço (R$)</label>
                     <div className="relative">
                       <DollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                       <input
                         type="number"
                         step="0.01"
                         value={plan.price}
-                        onChange={(e) => updatePlan(plan.id, 'price', e.target.value)}
+                        onChange={(e) => updatePlan(plan.id, "price", e.target.value)}
                         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Período de Cobrança
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Período de Cobrança</label>
                     <select
                       value={plan.billingPeriod}
-                      onChange={(e) => updatePlan(plan.id, 'billingPeriod', e.target.value)}
+                      onChange={(e) => updatePlan(plan.id, "billingPeriod", e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="monthly">Mensal</option>
@@ -319,12 +320,10 @@ export default function AdminPlansPage() {
 
                 {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Descrição
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
                   <textarea
                     value={plan.description}
-                    onChange={(e) => updatePlan(plan.id, 'description', e.target.value)}
+                    onChange={(e) => updatePlan(plan.id, "description", e.target.value)}
                     rows={2}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
@@ -333,39 +332,39 @@ export default function AdminPlansPage() {
                 {/* Limits */}
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Max Anúncios
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Max Anúncios</label>
                     <input
                       type="number"
-                      value={plan.maxAds === -1 ? '' : plan.maxAds}
-                      onChange={(e) => updatePlan(plan.id, 'maxAds', e.target.value === '' ? -1 : Number(e.target.value))}
+                      value={plan.maxAds === -1 ? "" : plan.maxAds}
+                      onChange={(e) =>
+                        updatePlan(plan.id, "maxAds", e.target.value === "" ? -1 : Number(e.target.value))
+                      }
                       placeholder="Ilimitado"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Max Produtos
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Max Produtos</label>
                     <input
                       type="number"
-                      value={plan.maxProducts === -1 ? '' : plan.maxProducts}
-                      onChange={(e) => updatePlan(plan.id, 'maxProducts', e.target.value === '' ? -1 : Number(e.target.value))}
+                      value={plan.maxProducts === -1 ? "" : plan.maxProducts}
+                      onChange={(e) =>
+                        updatePlan(plan.id, "maxProducts", e.target.value === "" ? -1 : Number(e.target.value))
+                      }
                       placeholder="Ilimitado"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Max Fotos
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Max Fotos</label>
                     <input
                       type="number"
-                      value={plan.maxPhotos === -1 ? '' : plan.maxPhotos}
-                      onChange={(e) => updatePlan(plan.id, 'maxPhotos', e.target.value === '' ? -1 : Number(e.target.value))}
+                      value={plan.maxPhotos === -1 ? "" : plan.maxPhotos}
+                      onChange={(e) =>
+                        updatePlan(plan.id, "maxPhotos", e.target.value === "" ? -1 : Number(e.target.value))
+                      }
                       placeholder="Ilimitado"
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
@@ -375,12 +374,10 @@ export default function AdminPlansPage() {
                 {/* Support */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Tipo de Suporte
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Suporte</label>
                     <select
                       value={plan.support}
-                      onChange={(e) => updatePlan(plan.id, 'support', e.target.value)}
+                      onChange={(e) => updatePlan(plan.id, "support", e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
                       <option value="Nenhum">Nenhum</option>
@@ -396,7 +393,7 @@ export default function AdminPlansPage() {
                       <input
                         type="checkbox"
                         checked={plan.prioritySupport}
-                        onChange={(e) => updatePlan(plan.id, 'prioritySupport', e.target.checked)}
+                        onChange={(e) => updatePlan(plan.id, "prioritySupport", e.target.checked)}
                         className="rounded"
                       />
                       <Star className="h-4 w-4 text-yellow-500" />
@@ -407,9 +404,7 @@ export default function AdminPlansPage() {
 
                 {/* Features */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Funcionalidades
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Funcionalidades</label>
                   <div className="space-y-2">
                     {plan.features.map((feature, index) => (
                       <div key={index} className="flex items-center space-x-2">
@@ -444,12 +439,8 @@ export default function AdminPlansPage() {
                     disabled={saving}
                     className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
                   >
-                    {saving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                    <span>{saving ? 'Salvando...' : 'Salvar Plano'}</span>
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                    <span>{saving ? "Salvando..." : "Salvar Plano"}</span>
                   </button>
                 </div>
               </div>
@@ -467,18 +458,14 @@ export default function AdminPlansPage() {
                 <p className="text-sm text-gray-500">As alterações afetam imediatamente novas assinaturas</p>
               </div>
             </div>
-            
+
             <button
               onClick={saveAllPlans}
               disabled={saving}
               className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
             >
-              {saving ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : (
-                <Save className="h-5 w-5" />
-              )}
-              <span>{saving ? 'Salvando Todos...' : 'Salvar Todas as Alterações'}</span>
+              {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+              <span>{saving ? "Salvando Todos..." : "Salvar Todas as Alterações"}</span>
             </button>
           </div>
         </div>

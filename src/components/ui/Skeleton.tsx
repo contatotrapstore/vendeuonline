@@ -1,43 +1,43 @@
-import React from 'react';
+import React from "react";
 
 interface SkeletonProps {
   className?: string;
-  variant?: 'text' | 'circular' | 'rectangular' | 'rounded';
+  variant?: "text" | "circular" | "rectangular" | "rounded";
   width?: string | number;
   height?: string | number;
   lines?: number;
-  animation?: 'pulse' | 'wave' | 'none';
+  animation?: "pulse" | "wave" | "none";
 }
 
 const Skeleton: React.FC<SkeletonProps> = ({
-  className = '',
-  variant = 'rectangular',
+  className = "",
+  variant = "rectangular",
   width,
   height,
   lines = 1,
-  animation = 'pulse',
+  animation = "pulse",
 }) => {
-  const baseClasses = 'bg-gray-200';
-  
+  const baseClasses = "bg-gray-200";
+
   const animationClasses = {
-    pulse: 'animate-pulse',
-    wave: 'animate-pulse', // Pode ser customizado para uma animação de onda
-    none: '',
+    pulse: "animate-pulse",
+    wave: "animate-pulse", // Pode ser customizado para uma animação de onda
+    none: "",
   };
 
   const variantClasses = {
-    text: 'h-4 rounded',
-    circular: 'rounded-full',
-    rectangular: 'rounded-none',
-    rounded: 'rounded-md',
+    text: "h-4 rounded",
+    circular: "rounded-full",
+    rectangular: "rounded-none",
+    rounded: "rounded-md",
   };
 
   const style: React.CSSProperties = {};
-  if (width) style.width = typeof width === 'number' ? `${width}px` : width;
-  if (height) style.height = typeof height === 'number' ? `${height}px` : height;
+  if (width) style.width = typeof width === "number" ? `${width}px` : width;
+  if (height) style.height = typeof height === "number" ? `${height}px` : height;
 
   // Para múltiplas linhas de texto
-  if (variant === 'text' && lines > 1) {
+  if (variant === "text" && lines > 1) {
     return (
       <div className={`space-y-2 ${className}`}>
         {Array.from({ length: lines }).map((_, index) => (
@@ -46,7 +46,7 @@ const Skeleton: React.FC<SkeletonProps> = ({
             className={`${baseClasses} ${variantClasses[variant]} ${animationClasses[animation]}`}
             style={{
               ...style,
-              width: index === lines - 1 ? '75%' : '100%', // Última linha menor
+              width: index === lines - 1 ? "75%" : "100%", // Última linha menor
             }}
           />
         ))}
@@ -67,11 +67,11 @@ export default Skeleton;
 // Componentes pré-configurados para casos comuns
 
 // Skeleton para avatar
-export const AvatarSkeleton: React.FC<{ size?: 'sm' | 'md' | 'lg' }> = ({ size = 'md' }) => {
+export const AvatarSkeleton: React.FC<{ size?: "sm" | "md" | "lg" }> = ({ size = "md" }) => {
   const sizeClasses = {
-    sm: 'w-8 h-8',
-    md: 'w-12 h-12',
-    lg: 'w-16 h-16',
+    sm: "w-8 h-8",
+    md: "w-12 h-12",
+    lg: "w-16 h-16",
   };
 
   return <Skeleton variant="circular" className={sizeClasses[size]} />;
@@ -83,13 +83,13 @@ export const ProductCardSkeleton: React.FC = () => {
     <div className="bg-white rounded-lg shadow-md p-4 space-y-4">
       {/* Imagem */}
       <Skeleton variant="rounded" className="w-full h-48" />
-      
+
       {/* Título */}
       <Skeleton variant="text" lines={2} />
-      
+
       {/* Preço */}
       <Skeleton variant="text" width="40%" />
-      
+
       {/* Botão */}
       <Skeleton variant="rounded" className="w-full h-10" />
     </div>
@@ -152,7 +152,7 @@ export const TableSkeleton: React.FC<TableSkeletonProps> = ({ rows = 5, columns 
           <Skeleton key={`header-${index}`} variant="text" height={20} />
         ))}
       </div>
-      
+
       {/* Rows */}
       {Array.from({ length: rows }).map((_, rowIndex) => (
         <div key={`row-${rowIndex}`} className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>

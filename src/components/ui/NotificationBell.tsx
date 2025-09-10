@@ -1,24 +1,18 @@
-import { useState, useEffect } from 'react';
-import { Bell, X } from 'lucide-react';
-import { useNotificationStore, type Notification } from '@/store/notificationStore';
-import { useAuthStore } from '@/store/authStore';
+import { useState, useEffect } from "react";
+import { Bell, X } from "lucide-react";
+import { useNotificationStore, type Notification } from "@/store/notificationStore";
+import { useAuthStore } from "@/store/authStore";
 
 const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuthStore();
-  const {
-    notifications,
-    unreadCount,
-    isLoading,
-    fetchNotifications,
-    markAsRead,
-    markAllAsRead
-  } = useNotificationStore();
+  const { notifications, unreadCount, isLoading, fetchNotifications, markAsRead, markAllAsRead } =
+    useNotificationStore();
 
   useEffect(() => {
     if (user) {
       fetchNotifications();
-      
+
       // Buscar notificações a cada 30 segundos
       const interval = setInterval(fetchNotifications, 30000);
       return () => clearInterval(interval);
@@ -32,37 +26,49 @@ const NotificationBell = () => {
     setIsOpen(false);
   };
 
-  const getNotificationIcon = (type: Notification['type']) => {
+  const getNotificationIcon = (type: Notification["type"]) => {
     switch (type) {
-      case 'success':
-        return '✅';
-      case 'warning':
-        return '⚠️';
-      case 'error':
-        return '❌';
-      case 'promotion':
-        return '🏷️';
-      case 'security':
-        return '🔒';
+      case "SUCCESS":
+        return "✅";
+      case "WARNING":
+        return "⚠️";
+      case "ERROR":
+        return "❌";
+      case "PROMOTION":
+        return "🏷️";
+      case "SECURITY":
+        return "🔒";
+      case "ORDER":
+        return "📦";
+      case "PAYMENT":
+        return "💳";
+      case "SYSTEM":
+        return "⚙️";
       default:
-        return 'ℹ️';
+        return "ℹ️";
     }
   };
 
-  const getNotificationColor = (type: Notification['type']) => {
+  const getNotificationColor = (type: Notification["type"]) => {
     switch (type) {
-      case 'success':
-        return 'text-green-600 bg-green-50';
-      case 'warning':
-        return 'text-yellow-600 bg-yellow-50';
-      case 'error':
-        return 'text-red-600 bg-red-50';
-      case 'promotion':
-        return 'text-purple-600 bg-purple-50';
-      case 'security':
-        return 'text-blue-600 bg-blue-50';
+      case "SUCCESS":
+        return "text-green-600 bg-green-50";
+      case "WARNING":
+        return "text-yellow-600 bg-yellow-50";
+      case "ERROR":
+        return "text-red-600 bg-red-50";
+      case "PROMOTION":
+        return "text-purple-600 bg-purple-50";
+      case "SECURITY":
+        return "text-blue-600 bg-blue-50";
+      case "ORDER":
+        return "text-indigo-600 bg-indigo-50";
+      case "PAYMENT":
+        return "text-emerald-600 bg-emerald-50";
+      case "SYSTEM":
+        return "text-slate-600 bg-slate-50";
       default:
-        return 'text-gray-600 bg-gray-50';
+        return "text-gray-600 bg-gray-50";
     }
   };
 
@@ -70,13 +76,13 @@ const NotificationBell = () => {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+
     if (diffInHours < 1) {
-      return 'Agora há pouco';
+      return "Agora há pouco";
     } else if (diffInHours < 24) {
       return `${diffInHours}h atrás`;
     } else {
-      return date.toLocaleDateString('pt-BR');
+      return date.toLocaleDateString("pt-BR");
     }
   };
 
@@ -92,7 +98,7 @@ const NotificationBell = () => {
         <Bell className="h-6 w-6" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-            {unreadCount > 9 ? '9+' : unreadCount}
+            {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
       </button>
@@ -101,11 +107,8 @@ const NotificationBell = () => {
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div 
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-          />
-          
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+
           {/* Dropdown Content */}
           <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
             {/* Header */}
@@ -120,10 +123,7 @@ const NotificationBell = () => {
                     Marcar todas como lidas
                   </button>
                 )}
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
+                <button onClick={() => setIsOpen(false)} className="text-gray-400 hover:text-gray-600">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -143,30 +143,30 @@ const NotificationBell = () => {
                       key={notification.id}
                       onClick={() => handleNotificationClick(notification)}
                       className={`p-4 cursor-pointer transition-colors ${
-                        notification.isRead 
-                          ? 'hover:bg-gray-50' 
-                          : 'bg-blue-50 hover:bg-blue-100'
+                        notification.isRead ? "hover:bg-gray-50" : "bg-blue-50 hover:bg-blue-100"
                       }`}
                     >
                       <div className="flex items-start space-x-3">
-                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm ${getNotificationColor(notification.type)}`}>
+                        <div
+                          className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm ${getNotificationColor(notification.type)}`}
+                        >
                           {getNotificationIcon(notification.type)}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between">
-                            <p className={`text-sm font-medium ${notification.isRead ? 'text-gray-900' : 'text-gray-900'}`}>
+                            <p
+                              className={`text-sm font-medium ${notification.isRead ? "text-gray-900" : "text-gray-900"}`}
+                            >
                               {notification.title}
                             </p>
                             {!notification.isRead && (
                               <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
                             )}
                           </div>
-                          <p className={`text-sm mt-1 ${notification.isRead ? 'text-gray-500' : 'text-gray-700'}`}>
+                          <p className={`text-sm mt-1 ${notification.isRead ? "text-gray-500" : "text-gray-700"}`}>
                             {notification.message}
                           </p>
-                          <p className="text-xs text-gray-400 mt-2">
-                            {formatDate(notification.createdAt)}
-                          </p>
+                          <p className="text-xs text-gray-400 mt-2">{formatDate(notification.createdAt)}</p>
                         </div>
                       </div>
                     </div>
@@ -183,10 +183,10 @@ const NotificationBell = () => {
             {/* Footer */}
             {notifications.length > 0 && (
               <div className="p-3 border-t border-gray-100 bg-gray-50 rounded-b-lg">
-                <button 
+                <button
                   onClick={() => {
                     setIsOpen(false);
-                    window.location.href = '/buyer/notifications';
+                    window.location.href = "/buyer/notifications";
                   }}
                   className="w-full text-center text-sm text-blue-600 hover:text-blue-700 transition-colors"
                 >

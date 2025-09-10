@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ImageOff } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import { ImageOff } from "lucide-react";
 
 interface OptimizedImageProps {
   src: string;
@@ -21,7 +21,7 @@ interface OptimizedImageProps {
 const OptimizedImage: React.FC<OptimizedImageProps> = ({
   src,
   alt,
-  className = '',
+  className = "",
   width,
   height,
   placeholder,
@@ -54,7 +54,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
         });
       },
       {
-        rootMargin: '50px', // Carregar 50px antes de entrar na viewport
+        rootMargin: "50px", // Carregar 50px antes de entrar na viewport
         threshold: 0.1,
       }
     );
@@ -71,15 +71,15 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
   // Gerar URL otimizada (simulação - em produção usaria um serviço como Cloudinary)
   const getOptimizedUrl = (originalSrc: string) => {
     // Se for uma URL externa ou já otimizada, retorna como está
-    if (originalSrc.startsWith('http') || originalSrc.includes('cloudinary') || originalSrc.includes('unsplash')) {
+    if (originalSrc.startsWith("http") || originalSrc.includes("cloudinary") || originalSrc.includes("unsplash")) {
       return originalSrc;
     }
 
     // Para imagens locais, adiciona parâmetros de otimização
     const params = new URLSearchParams();
-    if (width) params.append('w', width.toString());
-    if (height) params.append('h', height.toString());
-    if (quality) params.append('q', quality.toString());
+    if (width) params.append("w", width.toString());
+    if (height) params.append("h", height.toString());
+    if (quality) params.append("q", quality.toString());
 
     const queryString = params.toString();
     return queryString ? `${originalSrc}?${queryString}` : originalSrc;
@@ -87,21 +87,18 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
 
   // Gerar srcSet para diferentes densidades de tela
   const generateSrcSet = (originalSrc: string) => {
-    if (!width || originalSrc.startsWith('http')) return undefined;
+    if (!width || originalSrc.startsWith("http")) return undefined;
 
     const srcSet = [];
     const densities = [1, 1.5, 2, 3];
 
     densities.forEach((density) => {
       const scaledWidth = Math.round(width * density);
-      const url = getOptimizedUrl(originalSrc).replace(
-        /w=\d+/,
-        `w=${scaledWidth}`
-      );
+      const url = getOptimizedUrl(originalSrc).replace(/w=\d+/, `w=${scaledWidth}`);
       srcSet.push(`${url} ${density}x`);
     });
 
-    return srcSet.join(', ');
+    return srcSet.join(", ");
   };
 
   const handleLoad = () => {
@@ -124,7 +121,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
         <img
           src={placeholder}
           alt=""
-          className={`${className} filter blur-sm transition-opacity duration-300 ${isLoaded ? 'opacity-0' : 'opacity-100'}`}
+          className={`${className} filter blur-sm transition-opacity duration-300 ${isLoaded ? "opacity-0" : "opacity-100"}`}
           style={{ width, height }}
         />
       );
@@ -132,7 +129,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
 
     return (
       <div
-        className={`${className} bg-gray-200 animate-pulse flex items-center justify-center transition-opacity duration-300 ${isLoaded ? 'opacity-0' : 'opacity-100'}`}
+        className={`${className} bg-gray-200 animate-pulse flex items-center justify-center transition-opacity duration-300 ${isLoaded ? "opacity-0" : "opacity-100"}`}
         style={{ width, height }}
       >
         <ImageOff className="w-8 h-8 text-gray-400" />
@@ -143,14 +140,7 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
   // Fallback em caso de erro
   const renderFallback = () => {
     if (fallback) {
-      return (
-        <img
-          src={fallback}
-          alt={alt}
-          className={className}
-          style={{ width, height }}
-        />
-      );
+      return <img src={fallback} alt={alt} className={className} style={{ width, height }} />;
     }
 
     return (
@@ -182,9 +172,9 @@ const OptimizedImage: React.FC<OptimizedImageProps> = ({
           srcSet={srcSet}
           sizes={sizes}
           alt={alt}
-          className={`${className} transition-opacity duration-300 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}
+          className={`${className} transition-opacity duration-300 ${isLoaded ? "opacity-100" : "opacity-0"}`}
           style={{ width, height }}
-          loading={lazy && !priority ? 'lazy' : 'eager'}
+          loading={lazy && !priority ? "lazy" : "eager"}
           decoding="async"
           onLoad={handleLoad}
           onError={handleError}
@@ -201,32 +191,26 @@ export default OptimizedImage;
 interface AvatarImageProps {
   src?: string;
   alt: string;
-  size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl';
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   fallbackText?: string;
   className?: string;
 }
 
-export const AvatarImage: React.FC<AvatarImageProps> = ({
-  src,
-  alt,
-  size = 'md',
-  fallbackText,
-  className = '',
-}) => {
+export const AvatarImage: React.FC<AvatarImageProps> = ({ src, alt, size = "md", fallbackText, className = "" }) => {
   const sizeClasses = {
-    xs: 'w-6 h-6',
-    sm: 'w-8 h-8',
-    md: 'w-12 h-12',
-    lg: 'w-16 h-16',
-    xl: 'w-24 h-24',
+    xs: "w-6 h-6",
+    sm: "w-8 h-8",
+    md: "w-12 h-12",
+    lg: "w-16 h-16",
+    xl: "w-24 h-24",
   };
 
   const textSizes = {
-    xs: 'text-xs',
-    sm: 'text-sm',
-    md: 'text-base',
-    lg: 'text-lg',
-    xl: 'text-2xl',
+    xs: "text-xs",
+    sm: "text-sm",
+    md: "text-base",
+    lg: "text-lg",
+    xl: "text-2xl",
   };
 
   const fallback = (
@@ -257,24 +241,24 @@ interface ProductImageProps {
   src: string;
   alt: string;
   className?: string;
-  aspectRatio?: 'square' | '4/3' | '16/9' | '3/4';
+  aspectRatio?: "square" | "4/3" | "16/9" | "3/4";
   showZoom?: boolean;
 }
 
 export const ProductImage: React.FC<ProductImageProps> = ({
   src,
   alt,
-  className = '',
-  aspectRatio = 'square',
+  className = "",
+  aspectRatio = "square",
   showZoom = false,
 }) => {
   const [isZoomed, setIsZoomed] = useState(false);
 
   const aspectClasses = {
-    square: 'aspect-square',
-    '4/3': 'aspect-[4/3]',
-    '16/9': 'aspect-video',
-    '3/4': 'aspect-[3/4]',
+    square: "aspect-square",
+    "4/3": "aspect-[4/3]",
+    "16/9": "aspect-video",
+    "3/4": "aspect-[3/4]",
   };
 
   const handleZoom = () => {
@@ -289,14 +273,14 @@ export const ProductImage: React.FC<ProductImageProps> = ({
         src={src}
         alt={alt}
         className={`w-full h-full object-cover transition-transform duration-300 ${
-          showZoom ? 'cursor-zoom-in hover:scale-105' : ''
-        } ${isZoomed ? 'scale-150' : ''}`}
+          showZoom ? "cursor-zoom-in hover:scale-105" : ""
+        } ${isZoomed ? "scale-150" : ""}`}
         onClick={handleZoom}
         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
       />
-      
+
       {showZoom && isZoomed && (
-        <div 
+        <div
           className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center cursor-zoom-out"
           onClick={() => setIsZoomed(false)}
         >

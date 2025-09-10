@@ -3,6 +3,7 @@
 ## 🛠️ Desenvolvimento Local
 
 ### Setup Inicial
+
 ```bash
 # Instalar dependências
 npm install
@@ -16,6 +17,7 @@ npm run dev
 ```
 
 ### Scripts Principais
+
 ```bash
 npm run dev           # Servidor completo (API + Frontend)
 npm run dev:client    # Apenas frontend (Vite)
@@ -29,6 +31,7 @@ npm run check        # Type checking
 ## 🗄️ Banco de Dados (Prisma)
 
 ### Desenvolvimento
+
 ```bash
 npx prisma db push          # Sincronizar schema sem migrations
 npx prisma studio           # Interface visual do banco
@@ -37,6 +40,7 @@ npx prisma db seed          # Popular banco com dados iniciais
 ```
 
 ### Produção
+
 ```bash
 npx prisma migrate deploy   # Aplicar migrations em produção
 npx prisma migrate reset    # Resetar banco (CUIDADO!)
@@ -45,6 +49,7 @@ npx prisma migrate reset    # Resetar banco (CUIDADO!)
 ## 🚀 Deploy e Vercel
 
 ### Deploy Manual
+
 ```bash
 # Instalar CLI do Vercel
 npm install -g vercel
@@ -60,6 +65,7 @@ vercel --prod
 ```
 
 ### Comandos Vercel
+
 ```bash
 vercel env ls               # Listar variáveis de ambiente
 vercel env add JWT_SECRET   # Adicionar variável
@@ -71,6 +77,7 @@ vercel --help               # Ajuda completa
 ## 🔧 Troubleshooting
 
 ### Limpar Cache
+
 ```bash
 # Limpar node_modules
 rm -rf node_modules package-lock.json
@@ -84,6 +91,7 @@ vercel --prod --force
 ```
 
 ### Verificar Conexões
+
 ```bash
 # Testar API local
 curl http://localhost:3001/api/health
@@ -96,6 +104,7 @@ npx prisma studio
 ```
 
 ### Debug Common Issues
+
 ```bash
 # TypeScript errors
 npm run check
@@ -110,6 +119,7 @@ echo "SELECT current_database();" | psql $DATABASE_URL
 ## 📊 Monitoramento
 
 ### Performance
+
 ```bash
 # Analisar bundle
 npm run build -- --analyze
@@ -122,6 +132,7 @@ npx @web/dev-server --node-resolve
 ```
 
 ### Logs
+
 ```bash
 # Logs do Vercel
 vercel logs seu-projeto --limit=100
@@ -136,6 +147,7 @@ vercel logs seu-projeto --since=1h
 ## 🔐 Segurança
 
 ### Variáveis de Ambiente
+
 ```bash
 # Verificar variáveis locais
 echo $JWT_SECRET
@@ -148,6 +160,7 @@ vercel env add DATABASE_URL production
 ```
 
 ### Testes de Segurança
+
 ```bash
 # Verificar dependências vulneráveis
 npm audit
@@ -162,6 +175,7 @@ curl -I https://seu-app.vercel.app
 ## 🧪 Testes
 
 ### Setup de Testes (Futuro)
+
 ```bash
 # Jest + Testing Library
 npm install --save-dev jest @testing-library/react @testing-library/jest-dom
@@ -174,6 +188,7 @@ npm install --save-dev @playwright/test
 ```
 
 ### Comandos de Teste
+
 ```bash
 npm test              # Rodar testes unitários
 npm run test:e2e      # Testes end-to-end
@@ -183,6 +198,7 @@ npm run test:coverage # Coverage report
 ## 🔄 Git e CI/CD
 
 ### Git Flow
+
 ```bash
 git checkout -b feature/nova-funcionalidade
 git add .
@@ -194,17 +210,19 @@ gh pr create --title "Nova funcionalidade" --body "Descrição"
 ```
 
 ### Hooks Úteis
+
 ```bash
 # Pre-commit hook
 npm run lint && npm run check
 
-# Pre-push hook  
+# Pre-push hook
 npm run build && npm test
 ```
 
 ## 📦 Produção
 
 ### Health Checks
+
 ```bash
 # API funcionando?
 curl https://seu-app.vercel.app/api/health
@@ -217,6 +235,7 @@ curl https://seu-app.vercel.app/api/admin/stats
 ```
 
 ### Backup
+
 ```bash
 # Backup do banco (se necessário)
 pg_dump $DATABASE_URL > backup-$(date +%Y%m%d).sql
@@ -228,6 +247,7 @@ psql $DATABASE_URL < backup-20231130.sql
 ## 🎯 Otimização
 
 ### Bundle Size
+
 ```bash
 # Analisar tamanho
 npm run build -- --analyze
@@ -240,6 +260,7 @@ gzip -k dist/assets/*.js
 ```
 
 ### Performance
+
 ```bash
 # Minificar imagens
 npx imagemin src/assets/* --out-dir=src/assets/optimized
@@ -253,6 +274,7 @@ npx postcss src/styles/*.css --use autoprefixer -d dist/css
 ## 🆘 Comandos de Emergência
 
 ### Site Fora do Ar
+
 ```bash
 # 1. Verificar status
 vercel logs seu-projeto --since=10m
@@ -265,6 +287,7 @@ vercel --prod --force
 ```
 
 ### Banco Corrompido
+
 ```bash
 # 1. Backup atual
 pg_dump $DATABASE_URL > emergency-backup.sql
@@ -277,6 +300,7 @@ npx prisma db push
 ```
 
 ### Performance Critical
+
 ```bash
 # 1. Verificar bundle
 npm run build -- --analyze

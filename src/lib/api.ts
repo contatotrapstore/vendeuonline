@@ -8,20 +8,20 @@ export interface ApiResponse<T = any> {
 }
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string
+  ) {
     super(message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
   }
 }
 
-export async function apiRequest<T = any>(
-  url: string,
-  options: RequestInit = {}
-): Promise<ApiResponse<T>> {
+export async function apiRequest<T = any>(url: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
   try {
     const response = await fetch(url, {
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...options.headers,
       },
       ...options,
@@ -30,7 +30,7 @@ export async function apiRequest<T = any>(
     const data = await response.json();
 
     if (!response.ok) {
-      throw new ApiError(response.status, data.message || 'Request failed');
+      throw new ApiError(response.status, data.message || "Request failed");
     }
 
     return {
@@ -47,45 +47,36 @@ export async function apiRequest<T = any>(
 
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
+      error: error instanceof Error ? error.message : "Unknown error occurred",
     };
   }
 }
 
 export async function get<T = any>(url: string): Promise<ApiResponse<T>> {
-  return apiRequest<T>(url, { method: 'GET' });
+  return apiRequest<T>(url, { method: "GET" });
 }
 
-export async function post<T = any>(
-  url: string,
-  data?: any
-): Promise<ApiResponse<T>> {
+export async function post<T = any>(url: string, data?: any): Promise<ApiResponse<T>> {
   return apiRequest<T>(url, {
-    method: 'POST',
+    method: "POST",
     body: data ? JSON.stringify(data) : undefined,
   });
 }
 
-export async function put<T = any>(
-  url: string,
-  data?: any
-): Promise<ApiResponse<T>> {
+export async function put<T = any>(url: string, data?: any): Promise<ApiResponse<T>> {
   return apiRequest<T>(url, {
-    method: 'PUT',
+    method: "PUT",
     body: data ? JSON.stringify(data) : undefined,
   });
 }
 
 export async function del<T = any>(url: string): Promise<ApiResponse<T>> {
-  return apiRequest<T>(url, { method: 'DELETE' });
+  return apiRequest<T>(url, { method: "DELETE" });
 }
 
-export async function patch<T = any>(
-  url: string,
-  data?: any
-): Promise<ApiResponse<T>> {
+export async function patch<T = any>(url: string, data?: any): Promise<ApiResponse<T>> {
   return apiRequest<T>(url, {
-    method: 'PATCH',
+    method: "PATCH",
     body: data ? JSON.stringify(data) : undefined,
   });
 }

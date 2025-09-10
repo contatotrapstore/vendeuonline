@@ -1,12 +1,12 @@
-import { MercadoPagoConfig, Payment, Preference } from 'mercadopago';
+import { MercadoPagoConfig, Payment, Preference } from "mercadopago";
 
 // Configuração do Mercado Pago
 const client = new MercadoPagoConfig({
   accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN!,
   options: {
     timeout: 5000,
-    idempotencyKey: 'abc'
-  }
+    idempotencyKey: "abc",
+  },
 });
 
 export const payment = new Payment(client);
@@ -61,7 +61,7 @@ export interface PreferenceData {
     failure?: string;
     pending?: string;
   };
-  auto_return?: 'approved' | 'all';
+  auto_return?: "approved" | "all";
   payment_methods?: {
     excluded_payment_methods?: Array<{ id: string }>;
     excluded_payment_types?: Array<{ id: string }>;
@@ -77,11 +77,11 @@ export interface PreferenceData {
 export const createPayment = async (paymentData: PaymentData) => {
   try {
     const response = await payment.create({
-      body: paymentData
+      body: paymentData,
     });
     return response;
   } catch (error) {
-    console.error('Erro ao criar pagamento:', error);
+    console.error("Erro ao criar pagamento:", error);
     throw error;
   }
 };
@@ -89,11 +89,11 @@ export const createPayment = async (paymentData: PaymentData) => {
 export const createPreference = async (preferenceData: PreferenceData) => {
   try {
     const response = await preference.create({
-      body: preferenceData
+      body: preferenceData,
     });
     return response;
   } catch (error) {
-    console.error('Erro ao criar preferência:', error);
+    console.error("Erro ao criar preferência:", error);
     throw error;
   }
 };
@@ -103,7 +103,7 @@ export const getPayment = async (paymentId: string) => {
     const response = await payment.get({ id: paymentId });
     return response;
   } catch (error) {
-    console.error('Erro ao buscar pagamento:', error);
+    console.error("Erro ao buscar pagamento:", error);
     throw error;
   }
 };
@@ -112,7 +112,7 @@ export const createPixPayment = async ({
   amount,
   description,
   payerEmail,
-  externalReference
+  externalReference,
 }: {
   amount: number;
   description: string;
@@ -122,12 +122,12 @@ export const createPixPayment = async ({
   const paymentData: PaymentData = {
     transaction_amount: amount,
     description,
-    payment_method_id: 'pix',
+    payment_method_id: "pix",
     payer: {
-      email: payerEmail
+      email: payerEmail,
     },
     external_reference: externalReference,
-    notification_url: `${process.env.NEXTAUTH_URL}/api/payments/webhook`
+    notification_url: `${process.env.NEXTAUTH_URL}/api/payments/webhook`,
   };
 
   return createPayment(paymentData);

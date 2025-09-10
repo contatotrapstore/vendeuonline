@@ -1,25 +1,25 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { 
-  Search, 
-  Filter, 
-  Calendar, 
-  DollarSign, 
-  User, 
-  Package, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
+import { useState, useEffect } from "react";
+import {
+  Search,
+  Filter,
+  Calendar,
+  DollarSign,
+  User,
+  Package,
+  CheckCircle,
+  XCircle,
+  Clock,
   AlertTriangle,
   RefreshCw,
   ChevronLeft,
   ChevronRight,
-  Loader2
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { useSubscriptionStore, Subscription } from '@/store/subscriptionStore';
-import { usePlanStore } from '@/store/planStore';
+  Loader2,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useSubscriptionStore, Subscription } from "@/store/subscriptionStore";
+import { usePlanStore } from "@/store/planStore";
 
 export default function AdminSubscriptionsPage() {
   const {
@@ -33,9 +33,9 @@ export default function AdminSubscriptionsPage() {
     cancelSubscription,
     renewSubscription,
     setFilters,
-    clearError
+    clearError,
   } = useSubscriptionStore();
-  
+
   const { plans, fetchPlans } = usePlanStore();
 
   // Carregar dados ao montar o componente
@@ -44,22 +44,22 @@ export default function AdminSubscriptionsPage() {
     fetchPlans();
   }, [fetchSubscriptions, fetchPlans]);
 
-  const handleStatusChange = async (subscriptionId: string, newStatus: Subscription['status']) => {
+  const handleStatusChange = async (subscriptionId: string, newStatus: Subscription["status"]) => {
     try {
       await updateSubscriptionStatus(subscriptionId, newStatus);
-      toast.success('Status da assinatura atualizado');
+      toast.success("Status da assinatura atualizado");
     } catch (error) {
-      toast.error('Erro ao atualizar status');
+      toast.error("Erro ao atualizar status");
     }
   };
 
   const handleCancel = async (subscriptionId: string) => {
-    if (confirm('Tem certeza que deseja cancelar esta assinatura?')) {
+    if (confirm("Tem certeza que deseja cancelar esta assinatura?")) {
       try {
         await cancelSubscription(subscriptionId);
-        toast.success('Assinatura cancelada');
+        toast.success("Assinatura cancelada");
       } catch (error) {
-        toast.error('Erro ao cancelar assinatura');
+        toast.error("Erro ao cancelar assinatura");
       }
     }
   };
@@ -67,27 +67,27 @@ export default function AdminSubscriptionsPage() {
   const handleRenew = async (subscriptionId: string) => {
     try {
       await renewSubscription(subscriptionId);
-      toast.success('Assinatura renovada');
+      toast.success("Assinatura renovada");
     } catch (error) {
-      toast.error('Erro ao renovar assinatura');
+      toast.error("Erro ao renovar assinatura");
     }
   };
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      ACTIVE: 'bg-green-100 text-green-800',
-      CANCELLED: 'bg-red-100 text-red-800',
-      EXPIRED: 'bg-gray-100 text-gray-800',
-      PENDING: 'bg-yellow-100 text-yellow-800'
+      ACTIVE: "bg-green-100 text-green-800",
+      CANCELLED: "bg-red-100 text-red-800",
+      EXPIRED: "bg-gray-100 text-gray-800",
+      PENDING: "bg-yellow-100 text-yellow-800",
     };
-    
+
     const labels = {
-      ACTIVE: 'Ativa',
-      CANCELLED: 'Cancelada',
-      EXPIRED: 'Expirada',
-      PENDING: 'Pendente'
+      ACTIVE: "Ativa",
+      CANCELLED: "Cancelada",
+      EXPIRED: "Expirada",
+      PENDING: "Pendente",
     };
-    
+
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status as keyof typeof styles]}`}>
         {labels[status as keyof typeof labels] || status}
@@ -97,17 +97,17 @@ export default function AdminSubscriptionsPage() {
 
   const getPaymentStatusBadge = (status: string) => {
     const styles = {
-      PAID: 'bg-green-100 text-green-800',
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      FAILED: 'bg-red-100 text-red-800'
+      PAID: "bg-green-100 text-green-800",
+      PENDING: "bg-yellow-100 text-yellow-800",
+      FAILED: "bg-red-100 text-red-800",
     };
-    
+
     const labels = {
-      PAID: 'Pago',
-      PENDING: 'Pendente',
-      FAILED: 'Falhou'
+      PAID: "Pago",
+      PENDING: "Pendente",
+      FAILED: "Falhou",
     };
-    
+
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status as keyof typeof styles]}`}>
         {labels[status as keyof typeof labels] || status}
@@ -123,8 +123,8 @@ export default function AdminSubscriptionsPage() {
 
   // Calcular estatísticas
   const totalRevenue = subscriptions.reduce((sum, sub) => sum + sub.amount, 0);
-  const activeCount = subscriptions.filter(sub => sub.status === 'ACTIVE').length;
-  const expiredCount = subscriptions.filter(sub => sub.status === 'EXPIRED').length;
+  const activeCount = subscriptions.filter((sub) => sub.status === "ACTIVE").length;
+  const expiredCount = subscriptions.filter((sub) => sub.status === "EXPIRED").length;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -144,7 +144,7 @@ export default function AdminSubscriptionsPage() {
               disabled={loading}
               className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               <span>Atualizar</span>
             </button>
           </div>
@@ -163,7 +163,7 @@ export default function AdminSubscriptionsPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
@@ -175,7 +175,7 @@ export default function AdminSubscriptionsPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
               <div className="p-2 bg-red-100 rounded-lg">
@@ -187,7 +187,7 @@ export default function AdminSubscriptionsPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 rounded-lg">
@@ -196,7 +196,7 @@ export default function AdminSubscriptionsPage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Receita Total</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  R$ {totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R$ {totalRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </p>
               </div>
             </div>
@@ -332,82 +332,78 @@ export default function AdminSubscriptionsPage() {
                     </td>
                   </tr>
                 )}
-                {!loading && subscriptions.map((subscription) => (
-                  <tr key={subscription.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                            <User className="h-5 w-5 text-blue-600" />
+                {!loading &&
+                  subscriptions.map((subscription) => (
+                    <tr key={subscription.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                              <User className="h-5 w-5 text-blue-600" />
+                            </div>
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{subscription.user?.name || "N/A"}</div>
+                            <div className="text-sm text-gray-500">{subscription.user?.email || "N/A"}</div>
                           </div>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
-                            {subscription.user?.name || 'N/A'}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {subscription.user?.email || 'N/A'}
-                          </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{subscription.plan?.name || "N/A"}</div>
+                        <div className="text-sm text-gray-500">
+                          R$ {subscription.plan?.price?.toFixed(2) || "0,00"} /{" "}
+                          {subscription.plan?.billingPeriod === "MONTHLY" ? "mês" : "ano"}
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {subscription.plan?.name || 'N/A'}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        R$ {subscription.plan?.price?.toFixed(2) || '0,00'} / {subscription.plan?.billingPeriod === 'MONTHLY' ? 'mês' : 'ano'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(subscription.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getPaymentStatusBadge(subscription.paymentStatus)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      R$ {subscription.amount.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div>
-                        <div>Início: {new Date(subscription.startDate).toLocaleDateString('pt-BR')}</div>
-                        <div>Fim: {new Date(subscription.endDate).toLocaleDateString('pt-BR')}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        {subscription.status === 'ACTIVE' && (
-                          <button
-                            onClick={() => handleCancel(subscription.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Cancelar"
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(subscription.status)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getPaymentStatusBadge(subscription.paymentStatus)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        R$ {subscription.amount.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div>
+                          <div>Início: {new Date(subscription.startDate).toLocaleDateString("pt-BR")}</div>
+                          <div>Fim: {new Date(subscription.endDate).toLocaleDateString("pt-BR")}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          {subscription.status === "ACTIVE" && (
+                            <button
+                              onClick={() => handleCancel(subscription.id)}
+                              className="text-red-600 hover:text-red-900"
+                              title="Cancelar"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          )}
+                          {subscription.status === "EXPIRED" && (
+                            <button
+                              onClick={() => handleRenew(subscription.id)}
+                              className="text-green-600 hover:text-green-900"
+                              title="Renovar"
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </button>
+                          )}
+                          <select
+                            value={subscription.status}
+                            onChange={(e) =>
+                              handleStatusChange(subscription.id, e.target.value as Subscription["status"])
+                            }
+                            className="text-xs border border-gray-300 rounded px-2 py-1"
                           >
-                            <XCircle className="h-4 w-4" />
-                          </button>
-                        )}
-                        {subscription.status === 'EXPIRED' && (
-                          <button
-                            onClick={() => handleRenew(subscription.id)}
-                            className="text-green-600 hover:text-green-900"
-                            title="Renovar"
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                          </button>
-                        )}
-                        <select
-                          value={subscription.status}
-                          onChange={(e) => handleStatusChange(subscription.id, e.target.value as Subscription['status'])}
-                          className="text-xs border border-gray-300 rounded px-2 py-1"
-                        >
-                          <option value="ACTIVE">Ativa</option>
-                          <option value="CANCELLED">Cancelada</option>
-                          <option value="EXPIRED">Expirada</option>
-                          <option value="PENDING">Pendente</option>
-                        </select>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                            <option value="ACTIVE">Ativa</option>
+                            <option value="CANCELLED">Cancelada</option>
+                            <option value="EXPIRED">Expirada</option>
+                            <option value="PENDING">Pendente</option>
+                          </select>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -434,16 +430,12 @@ export default function AdminSubscriptionsPage() {
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-700">
-                    Mostrando{' '}
-                    <span className="font-medium">
-                      {((pagination.currentPage - 1) * pagination.pageSize) + 1}
-                    </span>{' '}
-                    até{' '}
+                    Mostrando{" "}
+                    <span className="font-medium">{(pagination.currentPage - 1) * pagination.pageSize + 1}</span> até{" "}
                     <span className="font-medium">
                       {Math.min(pagination.currentPage * pagination.pageSize, pagination.totalCount)}
-                    </span>{' '}
-                    de{' '}
-                    <span className="font-medium">{pagination.totalCount}</span> resultados
+                    </span>{" "}
+                    de <span className="font-medium">{pagination.totalCount}</span> resultados
                   </p>
                 </div>
                 <div>
@@ -455,7 +447,7 @@ export default function AdminSubscriptionsPage() {
                     >
                       <ChevronLeft className="h-5 w-5" />
                     </button>
-                    
+
                     {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                       const page = i + 1;
                       return (
@@ -464,15 +456,15 @@ export default function AdminSubscriptionsPage() {
                           onClick={() => handlePageChange(page)}
                           className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                             page === pagination.currentPage
-                              ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                              ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                              : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                           }`}
                         >
                           {page}
                         </button>
                       );
                     })}
-                    
+
                     <button
                       onClick={() => handlePageChange(pagination.currentPage + 1)}
                       disabled={pagination.currentPage >= pagination.totalPages}

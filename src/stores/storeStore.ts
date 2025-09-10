@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { Store } from '@/types';
-import { apiRequest, get as apiGet, post, put, del } from '@/lib/api-client';
-import { appCache } from '@/lib/cache';
+import { create } from "zustand";
+import { Store } from "@/types";
+import { apiRequest, get as apiGet, post, put, del } from "@/lib/api-client";
+import { appCache } from "@/lib/cache";
 
 interface StoreFilters {
   search?: string;
@@ -49,7 +49,7 @@ interface StoreState {
   error: string | null;
   filters: StoreFilters;
   pagination: StorePagination;
-  
+
   // API functions
   fetchStores: (filters?: StoreFilters, page?: number, limit?: number) => Promise<void>;
   fetchStoreById: (id: string) => Promise<Store | null>;
@@ -57,13 +57,13 @@ interface StoreState {
   createStore: (data: CreateStoreData) => Promise<Store>;
   updateStore: (id: string, data: Partial<CreateStoreData>) => Promise<Store>;
   deleteStore: (id: string) => Promise<void>;
-  
+
   // Local state management
   setCurrentStore: (store: Store | null) => void;
   setFilters: (filters: Partial<StoreFilters>) => void;
   resetFilters: () => void;
   clearError: () => void;
-  
+
   // Convenience methods
   getStoresByCategory: (category: string) => Store[];
   getVerifiedStores: () => Store[];
@@ -71,12 +71,12 @@ interface StoreState {
 }
 
 const defaultFilters: StoreFilters = {
-  search: '',
-  category: '',
-  city: '',
+  search: "",
+  category: "",
+  city: "",
   isVerified: undefined,
   isActive: undefined,
-  plan: ''
+  plan: "",
 };
 
 export const useStoreStore = create<StoreState>((set, get) => ({
@@ -91,13 +91,13 @@ export const useStoreStore = create<StoreState>((set, get) => ({
     total: 0,
     totalPages: 0,
     hasNext: false,
-    hasPrev: false
+    hasPrev: false,
   },
 
   fetchStores: async (filters = {}, page = 1, limit = 10) => {
     try {
       set({ loading: true, error: null });
-      
+
       // Verificar cache primeiro
       const cacheParams = { ...filters, page, limit };
       const cachedData = appCache.getStores(cacheParams);
@@ -110,26 +110,24 @@ export const useStoreStore = create<StoreState>((set, get) => ({
             total: (cachedData.data || cachedData.stores || []).length,
             totalPages: 1,
             hasNext: false,
-            hasPrev: false
+            hasPrev: false,
           },
-          loading: false
+          loading: false,
         });
         return;
       }
-      
+
       const queryParams = new URLSearchParams({
         page: page.toString(),
         limit: limit.toString(),
-        ...Object.fromEntries(
-          Object.entries(filters).filter(([_, value]) => value !== undefined && value !== '')
-        )
+        ...Object.fromEntries(Object.entries(filters).filter(([_, value]) => value !== undefined && value !== "")),
       });
-      
-      const response = await apiGet(`/stores?${queryParams}`);
-      
+
+      const response = await apiGet(`/api/stores?${queryParams}`);
+
       // Armazenar no cache
       appCache.setStores(cacheParams, response, 5 * 60 * 1000); // 5 minutos para lojas
-      
+
       set({
         stores: response.data || response.stores || [],
         pagination: {
@@ -138,14 +136,14 @@ export const useStoreStore = create<StoreState>((set, get) => ({
           total: response.pagination?.total || 0,
           totalPages: response.pagination?.totalPages || 0,
           hasNext: response.pagination?.hasNext || false,
-          hasPrev: response.pagination?.hasPrev || false
+          hasPrev: response.pagination?.hasPrev || false,
         },
-        loading: false
+        loading: false,
       });
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : 'Erro ao carregar lojas',
-        loading: false
+        error: error instanceof Error ? error.message : "Erro ao carregar lojas",
+        loading: false,
       });
       throw error;
     }
@@ -154,15 +152,15 @@ export const useStoreStore = create<StoreState>((set, get) => ({
   fetchStoreById: async (id: string) => {
     try {
       set({ loading: true, error: null });
-      
-      const store = await apiGet(`/stores/${id}`);
-      
+
+      const store = await apiGet(`/api/stores/${id}`);
+
       set({ currentStore: store, loading: false });
       return store;
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : 'Erro ao carregar loja',
-        loading: false
+        error: error instanceof Error ? error.message : "Erro ao carregar loja",
+        loading: false,
       });
       throw error;
     }
@@ -171,15 +169,15 @@ export const useStoreStore = create<StoreState>((set, get) => ({
   fetchStoreBySlug: async (slug: string) => {
     try {
       set({ loading: true, error: null });
-      
-      const store = await apiGet(`/stores/slug/${slug}`);
-      
+
+      const store = await apiGet(`/api/stores/slug/${slug}`);
+
       set({ currentStore: store, loading: false });
       return store;
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : 'Erro ao carregar loja',
-        loading: false
+        error: error instanceof Error ? error.message : "Erro ao carregar loja",
+        loading: false,
       });
       throw error;
     }
@@ -188,19 +186,19 @@ export const useStoreStore = create<StoreState>((set, get) => ({
   createStore: async (data: CreateStoreData) => {
     try {
       set({ loading: true, error: null });
-      
-      const newStore = await post('/stores', data);
-      
-      set(state => ({
+
+      const newStore = await post("/api/stores", data);
+
+      set((state) => ({
         stores: [...state.stores, newStore],
-        loading: false
+        loading: false,
       }));
-      
+
       return newStore;
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : 'Erro ao criar loja',
-        loading: false
+        error: error instanceof Error ? error.message : "Erro ao criar loja",
+        loading: false,
       });
       throw error;
     }
@@ -209,22 +207,20 @@ export const useStoreStore = create<StoreState>((set, get) => ({
   updateStore: async (id: string, data: Partial<CreateStoreData>) => {
     try {
       set({ loading: true, error: null });
-      
-      const updatedStore = await put(`/stores/${id}`, data);
-      
-      set(state => ({
-        stores: state.stores.map(store => 
-          store.id === id ? updatedStore : store
-        ),
+
+      const updatedStore = await put(`/api/stores/${id}`, data);
+
+      set((state) => ({
+        stores: state.stores.map((store) => (store.id === id ? updatedStore : store)),
         currentStore: state.currentStore?.id === id ? updatedStore : state.currentStore,
-        loading: false
+        loading: false,
       }));
-      
+
       return updatedStore;
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : 'Erro ao atualizar loja',
-        loading: false
+        error: error instanceof Error ? error.message : "Erro ao atualizar loja",
+        loading: false,
       });
       throw error;
     }
@@ -233,18 +229,18 @@ export const useStoreStore = create<StoreState>((set, get) => ({
   deleteStore: async (id: string) => {
     try {
       set({ loading: true, error: null });
-      
-      await del(`/stores/${id}`);
-      
-      set(state => ({
-        stores: state.stores.filter(store => store.id !== id),
+
+      await del(`/api/stores/${id}`);
+
+      set((state) => ({
+        stores: state.stores.filter((store) => store.id !== id),
         currentStore: state.currentStore?.id === id ? null : state.currentStore,
-        loading: false
+        loading: false,
       }));
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : 'Erro ao deletar loja',
-        loading: false
+        error: error instanceof Error ? error.message : "Erro ao deletar loja",
+        loading: false,
       });
       throw error;
     }
@@ -270,14 +266,16 @@ export const useStoreStore = create<StoreState>((set, get) => ({
   },
 
   getStoresByCategory: (category: string) => {
-    return get().stores.filter(store => store.category === category);
+    return get().stores.filter((store) => store.category === category);
   },
 
   getVerifiedStores: () => {
-    return get().stores.filter(store => store.isVerified);
+    return get().stores.filter((store) => store.isVerified);
   },
 
   getFeaturedStores: () => {
-    return get().stores.filter(store => store.isVerified && store.rating >= 4.5).slice(0, 6);
-  }
+    return get()
+      .stores.filter((store) => store.isVerified && store.rating >= 4.5)
+      .slice(0, 6);
+  },
 }));

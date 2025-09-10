@@ -1,44 +1,57 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Star, MapPin, Phone, Mail, MessageCircle, Package, Users, Calendar, Shield, Filter, Grid, List, Heart, Loader2, AlertCircle } from 'lucide-react';
-import { useStoreStore } from '@/stores/storeStore';
-import { useProductStore } from '@/store/productStore';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import {
+  Star,
+  MapPin,
+  Phone,
+  Mail,
+  MessageCircle,
+  Package,
+  Users,
+  Calendar,
+  Shield,
+  Filter,
+  Grid,
+  List,
+  Heart,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
+import { useStoreStore } from "@/stores/storeStore";
+import { useProductStore } from "@/store/productStore";
+import { Link, useParams } from "react-router-dom";
 
-
-
-
-
-
-
-export default function StorePage({ params }: { params: { id: string } }) {
-  const [activeTab, setActiveTab] = useState('products');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [sortBy, setSortBy] = useState('popular');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+export default function StorePage() {
+  const params = useParams<{ id: string }>();
+  const [activeTab, setActiveTab] = useState("products");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [sortBy, setSortBy] = useState("popular");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [storeProducts, setStoreProducts] = useState<any[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
 
   // Store hooks
-  const { 
-    currentStore, 
-    loading: storeLoading, 
-    error: storeError, 
+  const {
+    currentStore,
+    loading: storeLoading,
+    error: storeError,
     fetchStoreById,
-    clearError: clearStoreError 
+    clearError: clearStoreError,
   } = useStoreStore();
-  
+
   const { getProductsByStore } = useProductStore();
 
   // Carregar dados da loja e produtos
   useEffect(() => {
+    if (!params.id) return;
+    
     const loadStoreData = async () => {
       try {
-        await fetchStoreById(params.id);
+        await fetchStoreById(params.id!);
       } catch (error) {
-        console.error('Erro ao carregar loja:', error);
+        console.error("Erro ao carregar loja:", error);
       }
     };
 
@@ -46,10 +59,10 @@ export default function StorePage({ params }: { params: { id: string } }) {
       try {
         setProductsLoading(true);
         setProductsError(null);
-        const products = await getProductsByStore(params.id);
+        const products = await getProductsByStore(params.id!);
         setStoreProducts(products);
       } catch (error) {
-        setProductsError(error instanceof Error ? error.message : 'Erro ao carregar produtos');
+        setProductsError(error instanceof Error ? error.message : "Erro ao carregar produtos");
       } finally {
         setProductsLoading(false);
       }
@@ -61,16 +74,16 @@ export default function StorePage({ params }: { params: { id: string } }) {
 
   // Filtrar e ordenar produtos
   const filteredProducts = storeProducts
-    .filter(product => categoryFilter === 'all' || product.category?.name === categoryFilter)
+    .filter((product) => categoryFilter === "all" || product.category?.name === categoryFilter)
     .sort((a, b) => {
       switch (sortBy) {
-        case 'price-low':
+        case "price-low":
           return a.price - b.price;
-        case 'price-high':
+        case "price-high":
           return b.price - a.price;
-        case 'rating':
+        case "rating":
           return (b.averageRating || 0) - (a.averageRating || 0);
-        case 'name':
+        case "name":
           return a.name.localeCompare(b.name);
         default:
           return (b.reviewCount || 0) - (a.reviewCount || 0);
@@ -79,11 +92,16 @@ export default function StorePage({ params }: { params: { id: string } }) {
 
   const getPlanBadgeColor = (plan: string) => {
     switch (plan) {
-      case 'Básico': return 'bg-gray-100 text-gray-700';
-      case 'Profissional': return 'bg-blue-100 text-blue-700';
-      case 'Premium': return 'bg-purple-100 text-purple-700';
-      case 'Empresarial': return 'bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case "Básico":
+        return "bg-gray-100 text-gray-700";
+      case "Profissional":
+        return "bg-blue-100 text-blue-700";
+      case "Premium":
+        return "bg-purple-100 text-purple-700";
+      case "Empresarial":
+        return "bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700";
+      default:
+        return "bg-gray-100 text-gray-700";
     }
   };
 
@@ -105,7 +123,7 @@ export default function StorePage({ params }: { params: { id: string } }) {
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Erro ao carregar loja</h2>
-          <p className="text-gray-600 mb-4">{storeError || 'Loja não encontrada'}</p>
+          <p className="text-gray-600 mb-4">{storeError || "Loja não encontrada"}</p>
           <button
             onClick={() => {
               clearStoreError();
@@ -126,27 +144,26 @@ export default function StorePage({ params }: { params: { id: string } }) {
       <div className="relative">
         <div className="h-64 bg-gradient-to-br from-blue-600 to-purple-600">
           {currentStore.banner && (
-            <img
-              src={currentStore.banner}
-              alt={currentStore.name}
-              className="w-full h-full object-cover opacity-30"
-            />
+            <img src={currentStore.banner} alt={currentStore.name} className="w-full h-full object-cover opacity-30" />
           )}
         </div>
-        
+
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-        
+
         <div className="absolute bottom-0 left-0 right-0 p-8">
           <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row items-start md:items-end space-y-4 md:space-y-0 md:space-x-6">
               <div className="w-24 h-24 bg-white rounded-2xl p-2 shadow-lg">
                 <img
-                  src={currentStore.logo || 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=store_logo_placeholder&image_size=square'}
+                  src={
+                    currentStore.logo ||
+                    "https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=store_logo_placeholder&image_size=square"
+                  }
                   alt={currentStore.name}
                   className="w-full h-full object-cover rounded-xl"
                 />
               </div>
-              
+
               <div className="flex-1 text-white">
                 <div className="flex items-center space-x-3 mb-2">
                   <h1 className="text-3xl md:text-4xl font-bold">{currentStore.name}</h1>
@@ -155,17 +172,19 @@ export default function StorePage({ params }: { params: { id: string } }) {
                       <Shield className="h-5 w-5 text-white" />
                     </div>
                   )}
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    getPlanBadgeColor(currentStore.plan || 'Básico')
-                  }`}>
-                    {currentStore.plan || 'Básico'}
+                  <span
+                    className={`px-3 py-1 rounded-full text-sm font-medium ${getPlanBadgeColor(
+                      currentStore.plan || "Básico"
+                    )}`}
+                  >
+                    {currentStore.plan || "Básico"}
                   </span>
                 </div>
-                
+
                 <div className="flex flex-wrap items-center gap-4 text-sm">
                   <div className="flex items-center space-x-1">
                     <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                    <span className="font-medium">{currentStore.rating?.toFixed(1) || '0.0'}</span>
+                    <span className="font-medium">{currentStore.rating?.toFixed(1) || "0.0"}</span>
                     <span className="text-gray-300">({currentStore.reviewCount || 0} avaliações)</span>
                   </div>
                   <div className="flex items-center space-x-1">
@@ -174,7 +193,9 @@ export default function StorePage({ params }: { params: { id: string } }) {
                   </div>
                   <div className="flex items-center space-x-1">
                     <MapPin className="h-4 w-4" />
-                    <span>{currentStore.city}, {currentStore.state}</span>
+                    <span>
+                      {currentStore.city}, {currentStore.state}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -190,13 +211,15 @@ export default function StorePage({ params }: { params: { id: string } }) {
             <div className="lg:col-span-1">
               <div className="bg-white rounded-2xl shadow-lg p-6 sticky top-8">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Informações da Loja</h3>
-                
+
                 <div className="space-y-4">
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Descrição</h4>
-                    <p className="text-gray-600 text-sm">{currentStore.description || 'Nenhuma descrição disponível.'}</p>
+                    <p className="text-gray-600 text-sm">
+                      {currentStore.description || "Nenhuma descrição disponível."}
+                    </p>
                   </div>
-                  
+
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Contato</h4>
                     <div className="space-y-2 text-sm">
@@ -214,22 +237,24 @@ export default function StorePage({ params }: { params: { id: string } }) {
                       )}
                       <div className="flex items-center space-x-2">
                         <MapPin className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-600">{currentStore.address || `${currentStore.city}, ${currentStore.state}`}</span>
+                        <span className="text-gray-600">
+                          {currentStore.address || `${currentStore.city}, ${currentStore.state}`}
+                        </span>
                       </div>
                     </div>
                   </div>
-                  
+
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Membro desde</h4>
                     <p className="text-gray-600 text-sm">
-                      {new Date(currentStore.createdAt).toLocaleDateString('pt-BR', {
-                        month: 'long',
-                        year: 'numeric'
+                      {new Date(currentStore.createdAt).toLocaleDateString("pt-BR", {
+                        month: "long",
+                        year: "numeric",
                       })}
                     </p>
                   </div>
                 </div>
-                
+
                 {/* Contact Buttons */}
                 <div className="mt-6 space-y-3">
                   {currentStore.socialMedia?.whatsapp && (
@@ -243,7 +268,7 @@ export default function StorePage({ params }: { params: { id: string } }) {
                       <span>WhatsApp</span>
                     </a>
                   )}
-                  
+
                   {currentStore.email && (
                     <a
                       href={`mailto:${currentStore.email}`}
@@ -264,18 +289,18 @@ export default function StorePage({ params }: { params: { id: string } }) {
                 <div className="border-b border-gray-200">
                   <nav className="flex space-x-8 px-6">
                     {[
-                      { id: 'products', name: 'Produtos', count: currentStore.productCount || storeProducts.length },
-                      { id: 'about', name: 'Sobre' },
-                      { id: 'reviews', name: 'Avaliações', count: currentStore.reviewCount || 0 },
-                      { id: 'policies', name: 'Políticas' }
-                    ].map(tab => (
+                      { id: "products", name: "Produtos", count: currentStore.productCount || storeProducts.length },
+                      { id: "about", name: "Sobre" },
+                      { id: "reviews", name: "Avaliações", count: currentStore.reviewCount || 0 },
+                      { id: "policies", name: "Políticas" },
+                    ].map((tab) => (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
                         className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                           activeTab === tab.id
-                            ? 'border-blue-500 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            ? "border-blue-500 text-blue-600"
+                            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                         }`}
                       >
                         {tab.name}
@@ -291,7 +316,7 @@ export default function StorePage({ params }: { params: { id: string } }) {
 
                 <div className="p-6">
                   {/* Products Tab */}
-                  {activeTab === 'products' && (
+                  {activeTab === "products" && (
                     <div>
                       {/* Filters */}
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 mb-6">
@@ -309,25 +334,21 @@ export default function StorePage({ params }: { params: { id: string } }) {
                             <option value="name">Nome A-Z</option>
                           </select>
                         </div>
-                        
+
                         <div className="flex items-center space-x-2">
                           <button
-                            onClick={() => setViewMode('grid')}
+                            onClick={() => setViewMode("grid")}
                             className={`p-2 rounded-lg transition-colors ${
-                              viewMode === 'grid' 
-                                ? 'bg-blue-100 text-blue-600' 
-                                : 'text-gray-400 hover:text-gray-600'
+                              viewMode === "grid" ? "bg-blue-100 text-blue-600" : "text-gray-400 hover:text-gray-600"
                             }`}
                             disabled={productsLoading}
                           >
                             <Grid className="h-5 w-5" />
                           </button>
                           <button
-                            onClick={() => setViewMode('list')}
+                            onClick={() => setViewMode("list")}
                             className={`p-2 rounded-lg transition-colors ${
-                              viewMode === 'list' 
-                                ? 'bg-blue-100 text-blue-600' 
-                                : 'text-gray-400 hover:text-gray-600'
+                              viewMode === "list" ? "bg-blue-100 text-blue-600" : "text-gray-400 hover:text-gray-600"
                             }`}
                             disabled={productsLoading}
                           >
@@ -361,7 +382,9 @@ export default function StorePage({ params }: { params: { id: string } }) {
                                   const products = await getProductsByStore(params.id);
                                   setStoreProducts(products);
                                 } catch (error) {
-                                  setProductsError(error instanceof Error ? error.message : 'Erro ao carregar produtos');
+                                  setProductsError(
+                                    error instanceof Error ? error.message : "Erro ao carregar produtos"
+                                  );
                                 } finally {
                                   setProductsLoading(false);
                                 }
@@ -377,38 +400,45 @@ export default function StorePage({ params }: { params: { id: string } }) {
                       {/* Products Grid */}
                       {!productsLoading && !productsError && (
                         <>
-                          <div className={viewMode === 'grid' 
-                            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
-                            : 'space-y-4'
-                          }>
+                          <div
+                            className={
+                              viewMode === "grid"
+                                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                                : "space-y-4"
+                            }
+                          >
                             {filteredProducts.map((product) => (
                               <Link key={product.id} to={`/products/${product.id}`}>
-                                <div className={`bg-gray-50 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer ${
-                                  viewMode === 'list' ? 'flex' : ''
-                                }`}>
-                                  <div className={viewMode === 'list' ? 'w-32 flex-shrink-0' : ''}>
+                                <div
+                                  className={`bg-gray-50 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer ${
+                                    viewMode === "list" ? "flex" : ""
+                                  }`}
+                                >
+                                  <div className={viewMode === "list" ? "w-32 flex-shrink-0" : ""}>
                                     <img
-                                      src={product.images?.[0] || product.image || 'https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=product_placeholder&image_size=square'}
+                                      src={
+                                        product.images?.[0] ||
+                                        product.image ||
+                                        "https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=product_placeholder&image_size=square"
+                                      }
                                       alt={product.name}
-                                      className={`w-full object-cover ${
-                                        viewMode === 'list' ? 'h-full' : 'h-48'
-                                      }`}
+                                      className={`w-full object-cover ${viewMode === "list" ? "h-full" : "h-48"}`}
                                     />
                                   </div>
-                                  
+
                                   <div className="p-4 flex-1">
-                                    <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-                                      {product.name}
-                                    </h4>
-                                    
+                                    <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.name}</h4>
+
                                     <div className="flex items-center space-x-2 mb-2">
                                       <div className="flex items-center space-x-1">
                                         <Star className="h-4 w-4 text-yellow-400 fill-current" />
-                                        <span className="text-sm font-medium">{product.averageRating?.toFixed(1) || '0.0'}</span>
+                                        <span className="text-sm font-medium">
+                                          {product.averageRating?.toFixed(1) || "0.0"}
+                                        </span>
                                         <span className="text-sm text-gray-500">({product.reviewCount || 0})</span>
                                       </div>
                                     </div>
-                                    
+
                                     <div className="flex items-center justify-between">
                                       <div>
                                         <div className="flex items-center space-x-2">
@@ -421,13 +451,13 @@ export default function StorePage({ params }: { params: { id: string } }) {
                                             </span>
                                           )}
                                         </div>
-                                        <span className={`text-xs ${
-                                          product.stock > 0 ? 'text-green-600' : 'text-red-600'
-                                        }`}>
-                                          {product.stock > 0 ? `${product.stock} em estoque` : 'Fora de estoque'}
+                                        <span
+                                          className={`text-xs ${product.stock > 0 ? "text-green-600" : "text-red-600"}`}
+                                        >
+                                          {product.stock > 0 ? `${product.stock} em estoque` : "Fora de estoque"}
                                         </span>
                                       </div>
-                                      
+
                                       <button className="p-2 text-gray-400 hover:text-red-500 transition-colors">
                                         <Heart className="h-5 w-5" />
                                       </button>
@@ -455,15 +485,15 @@ export default function StorePage({ params }: { params: { id: string } }) {
                   )}
 
                   {/* About Tab */}
-                  {activeTab === 'about' && (
+                  {activeTab === "about" && (
                     <div className="space-y-6">
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">Sobre a Loja</h3>
                         <p className="text-gray-700 leading-relaxed">
-                          {currentStore.description || 'Nenhuma descrição disponível para esta loja.'}
+                          {currentStore.description || "Nenhuma descrição disponível para esta loja."}
                         </p>
                       </div>
-                      
+
                       <div>
                         <h4 className="font-semibold text-gray-900 mb-3">Informações da Loja</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -473,33 +503,31 @@ export default function StorePage({ params }: { params: { id: string } }) {
                               <div>
                                 <p className="font-medium text-gray-900">Localização</p>
                                 <p className="text-gray-600">
-                                  {currentStore.city && currentStore.state 
+                                  {currentStore.city && currentStore.state
                                     ? `${currentStore.city}, ${currentStore.state}`
-                                    : 'Localização não informada'
-                                  }
+                                    : "Localização não informada"}
                                 </p>
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="bg-gray-50 p-4 rounded-lg">
                             <div className="flex items-center space-x-3">
                               <Calendar className="h-5 w-5 text-gray-500" />
                               <div>
                                 <p className="font-medium text-gray-900">Membro desde</p>
                                 <p className="text-gray-600">
-                                  {currentStore.createdAt 
-                                    ? new Date(currentStore.createdAt).toLocaleDateString('pt-BR', {
-                                        year: 'numeric',
-                                        month: 'long'
+                                  {currentStore.createdAt
+                                    ? new Date(currentStore.createdAt).toLocaleDateString("pt-BR", {
+                                        year: "numeric",
+                                        month: "long",
                                       })
-                                    : 'Data não disponível'
-                                  }
+                                    : "Data não disponível"}
                                 </p>
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="bg-gray-50 p-4 rounded-lg">
                             <div className="flex items-center space-x-3">
                               <Package className="h-5 w-5 text-gray-500" />
@@ -511,14 +539,15 @@ export default function StorePage({ params }: { params: { id: string } }) {
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="bg-gray-50 p-4 rounded-lg">
                             <div className="flex items-center space-x-3">
                               <Star className="h-5 w-5 text-gray-500" />
                               <div>
                                 <p className="font-medium text-gray-900">Avaliação</p>
                                 <p className="text-gray-600">
-                                  {currentStore.rating?.toFixed(1) || '0.0'} ({currentStore.reviewCount || 0} avaliações)
+                                  {currentStore.rating?.toFixed(1) || "0.0"} ({currentStore.reviewCount || 0}{" "}
+                                  avaliações)
                                 </p>
                               </div>
                             </div>
@@ -529,7 +558,7 @@ export default function StorePage({ params }: { params: { id: string } }) {
                   )}
 
                   {/* Reviews Tab */}
-                  {activeTab === 'reviews' && (
+                  {activeTab === "reviews" && (
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900 mb-4">Avaliações dos Clientes</h3>
                       <p className="text-gray-600">Seção de avaliações em desenvolvimento...</p>
@@ -537,7 +566,7 @@ export default function StorePage({ params }: { params: { id: string } }) {
                   )}
 
                   {/* Policies Tab */}
-                  {activeTab === 'policies' && (
+                  {activeTab === "policies" && (
                     <div className="space-y-6">
                       <div>
                         <h4 className="font-semibold text-gray-900 mb-2">Política de Devolução</h4>
@@ -545,14 +574,14 @@ export default function StorePage({ params }: { params: { id: string } }) {
                           Política de devolução não informada. Entre em contato com a loja para mais informações.
                         </p>
                       </div>
-                      
+
                       <div>
                         <h4 className="font-semibold text-gray-900 mb-2">Garantia</h4>
                         <p className="text-gray-700">
                           Informações de garantia não disponíveis. Entre em contato com a loja para mais detalhes.
                         </p>
                       </div>
-                      
+
                       <div>
                         <h4 className="font-semibold text-gray-900 mb-2">Entrega</h4>
                         <p className="text-gray-700">

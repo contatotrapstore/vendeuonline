@@ -1,56 +1,57 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Eye, Package, AlertCircle } from 'lucide-react';
-import { useProductStore } from '@/store/productStore';
-import { Product } from '@/types';
-import { useAuthStore } from '@/store/authStore';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { Plus, Search, Filter, Edit, Trash2, Eye, Package, AlertCircle } from "lucide-react";
+import { useProductStore } from "@/store/productStore";
+import { Product } from "@/types";
+import { useAuthStore } from "@/store/authStore";
+import { Link } from "react-router-dom";
 
 const statusOptions = [
-  { value: 'all', label: 'Todos os Status' },
-  { value: 'active', label: 'Ativo' },
-  { value: 'inactive', label: 'Inativo' },
-  { value: 'draft', label: 'Rascunho' }
+  { value: "all", label: "Todos os Status" },
+  { value: "active", label: "Ativo" },
+  { value: "inactive", label: "Inativo" },
+  { value: "draft", label: "Rascunho" },
 ];
 
 const categoryOptions = [
-  'Eletrônicos',
-  'Informática',
-  'Moda e Beleza',
-  'Casa e Jardim',
-  'Esportes',
-  'Livros',
-  'Automotivo'
+  "Eletrônicos",
+  "Informática",
+  "Moda e Beleza",
+  "Casa e Jardim",
+  "Esportes",
+  "Livros",
+  "Automotivo",
 ];
 
 export default function SellerProductsPage() {
   const { user } = useAuthStore();
   const { products, updateProduct, deleteProduct } = useProductStore();
-  
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all');
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [showDeleteModal, setShowDeleteModal] = useState<string | null>(null);
-  
+
   const productsPerPage = 10;
 
   // Filter products by current seller
-  const sellerProducts = products.filter(product => {
+  const sellerProducts = products.filter((product) => {
     // In a real app, this would filter by seller ID
     // For now, we'll show all products for demo purposes
     return true;
   });
 
   // Apply filters
-  const filteredProducts = sellerProducts.filter(product => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.description.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? product.isActive : !product.isActive);
-    const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
-    
+  const filteredProducts = sellerProducts.filter((product) => {
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.description.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const matchesStatus = statusFilter === "all" || (statusFilter === "active" ? product.isActive : !product.isActive);
+    const matchesCategory = categoryFilter === "all" || product.category === categoryFilter;
+
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
@@ -60,21 +61,21 @@ export default function SellerProductsPage() {
   const currentProducts = filteredProducts.slice(startIndex, startIndex + productsPerPage);
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(price);
   };
 
   const getStatusBadge = (status: string) => {
     const statusConfig = {
-      active: { label: 'Ativo', className: 'bg-green-100 text-green-800' },
-      inactive: { label: 'Inativo', className: 'bg-red-100 text-red-800' },
-      draft: { label: 'Rascunho', className: 'bg-yellow-100 text-yellow-800' }
+      active: { label: "Ativo", className: "bg-green-100 text-green-800" },
+      inactive: { label: "Inativo", className: "bg-red-100 text-red-800" },
+      draft: { label: "Rascunho", className: "bg-yellow-100 text-yellow-800" },
     };
-    
+
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.draft;
-    
+
     return (
       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${config.className}`}>
         {config.label}
@@ -83,7 +84,7 @@ export default function SellerProductsPage() {
   };
 
   const handleStatusChange = (productId: string, newStatus: string) => {
-    updateProduct(productId, { isActive: newStatus === 'active' });
+    updateProduct(productId, { isActive: newStatus === "active" });
   };
 
   const handleDeleteProduct = (productId: string) => {
@@ -93,11 +94,11 @@ export default function SellerProductsPage() {
 
   const getStockStatus = (stock: number) => {
     if (stock === 0) {
-      return { label: 'Sem estoque', className: 'text-red-600' };
+      return { label: "Sem estoque", className: "text-red-600" };
     } else if (stock <= 5) {
-      return { label: 'Estoque baixo', className: 'text-yellow-600' };
+      return { label: "Estoque baixo", className: "text-yellow-600" };
     }
-    return { label: 'Em estoque', className: 'text-green-600' };
+    return { label: "Em estoque", className: "text-green-600" };
   };
 
   return (
@@ -107,11 +108,9 @@ export default function SellerProductsPage() {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Meus Produtos</h1>
-            <p className="text-gray-600 mt-2">
-              Gerencie seu catálogo de produtos
-            </p>
+            <p className="text-gray-600 mt-2">Gerencie seu catálogo de produtos</p>
           </div>
-          
+
           <Link to="/seller/products/new">
             <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium">
               <Plus className="h-5 w-5" />
@@ -131,39 +130,35 @@ export default function SellerProductsPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="flex items-center">
               <Eye className="h-8 w-8 text-green-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Produtos Ativos</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {sellerProducts.filter(p => p.isActive).length}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">{sellerProducts.filter((p) => p.isActive).length}</p>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="flex items-center">
               <AlertCircle className="h-8 w-8 text-yellow-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Estoque Baixo</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {sellerProducts.filter(p => p.stock <= 5 && p.stock > 0).length}
+                  {sellerProducts.filter((p) => p.stock <= 5 && p.stock > 0).length}
                 </p>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white rounded-lg shadow-sm border p-6">
             <div className="flex items-center">
               <Trash2 className="h-8 w-8 text-red-600" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Sem Estoque</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {sellerProducts.filter(p => p.stock === 0).length}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">{sellerProducts.filter((p) => p.stock === 0).length}</p>
               </div>
             </div>
           </div>
@@ -193,8 +188,10 @@ export default function SellerProductsPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                {statusOptions.map(option => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                {statusOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -207,8 +204,10 @@ export default function SellerProductsPage() {
                 className="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">Todas as Categorias</option>
-                {categoryOptions.map(category => (
-                  <option key={category} value={category}>{category}</option>
+                {categoryOptions.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
                 ))}
               </select>
             </div>
@@ -246,35 +245,33 @@ export default function SellerProductsPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {currentProducts.map((product) => {
                       const stockStatus = getStockStatus(product.stock);
-                      
+
                       return (
                         <tr key={product.id} className="hover:bg-gray-50">
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
                               <div className="flex-shrink-0 h-16 w-16">
                                 <img
-                                  src={product.images[0]?.url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzMkMzMC42Mjc0IDMyIDM2IDI2LjYyNzQgMzYgMjBDMzYgMTMuMzcyNiAzMC42Mjc0IDggMjQgOEMxNy4zNzI2IDggMTIgMTMuMzcyNiAxMiAyMEMxMiAyNi42Mjc0IDE3LjM3MjYgMzIgMjQgMzJaIiBmaWxsPSIjOUI5QjlCIi8+CjxwYXRoIGQ9Ik04IDU2TDIwIDQ0TDI4IDUyTDQ0IDM2TDU2IDQ4VjU2SDhaIiBmaWxsPSIjOUI5QjlCIi8+Cjwvc3ZnPgo='}
+                                  src={
+                                    product.images[0]?.url ||
+                                    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzMkMzMC42Mjc0IDMyIDM2IDI2LjYyNzQgMzYgMjBDMzYgMTMuMzcyNiAzMC42Mjc0IDggMjQgOEMxNy4zNzI2IDggMTIgMTMuMzcyNiAxMiAyMEMxMiAyNi42Mjc0IDE3LjM3MjYgMzIgMjQgMzJaIiBmaWxsPSIjOUI5QjlCIi8+CjxwYXRoIGQ9Ik04IDU2TDIwIDQ0TDI4IDUyTDQ0IDM2TDU2IDQ4VjU2SDhaIiBmaWxsPSIjOUI5QjlCIi8+Cjwvc3ZnPgo="
+                                  }
                                   alt={product.name}
                                   className="h-10 w-10 rounded-lg object-cover"
                                   onError={(e) => {
                                     const target = e.target as HTMLImageElement;
-                                    target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzMkMzMC42Mjc0IDMyIDM2IDI2LjYyNzQgMzYgMjBDMzYgMTMuMzcyNiAzMC42Mjc0IDggMjQgOEMxNy4zNzI2IDggMTIgMTMuMzcyNiAxMiAyMEMxMiAyNi42Mjc0IDE3LjM3MjYgMzIgMjQgMzJaIiBmaWxsPSIjOUI5QjlCIi8+CjxwYXRoIGQ9Ik04IDU2TDIwIDQ0TDI4IDUyTDQ0IDM2TDU2IDQ4VjU2SDhaIiBmaWxsPSIjOUI5QjlCIi8+Cjwvc3ZnPgo=';
+                                    target.src =
+                                      "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNCAzMkMzMC42Mjc0IDMyIDM2IDI2LjYyNzQgMzYgMjBDMzYgMTMuMzcyNiAzMC42Mjc0IDggMjQgOEMxNy4zNzI2IDggMTIgMTMuMzcyNiAxMiAyMEMxMiAyNi42Mjc0IDE3LjM3MjYgMzIgMjQgMzJaIiBmaWxsPSIjOUI5QjlCIi8+CjxwYXRoIGQ9Ik04IDU2TDIwIDQ0TDI4IDUyTDQ0IDM2TDU2IDQ4VjU2SDhaIiBmaWxsPSIjOUI5QjlCIi8+Cjwvc3ZnPgo=";
                                   }}
                                 />
                               </div>
                               <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900 line-clamp-2">
-                                  {product.name}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  ID: {product.id}
-                                </div>
+                                <div className="text-sm font-medium text-gray-900 line-clamp-2">{product.name}</div>
+                                <div className="text-sm text-gray-500">ID: {product.id}</div>
                               </div>
                             </div>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {product.category}
-                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{product.category}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <div>
                               <div className="font-medium">{formatPrice(product.price)}</div>
@@ -288,14 +285,12 @@ export default function SellerProductsPage() {
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
                             <div>
                               <div className="font-medium">{product.stock} unidades</div>
-                              <div className={`text-xs ${stockStatus.className}`}>
-                                {stockStatus.label}
-                              </div>
+                              <div className={`text-xs ${stockStatus.className}`}>{stockStatus.label}</div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <select
-                              value={product.isActive ? 'active' : 'inactive'}
+                              value={product.isActive ? "active" : "inactive"}
                               onChange={(e) => handleStatusChange(product.id, e.target.value)}
                               className="text-sm border border-gray-300 rounded-md px-2 py-1 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
@@ -353,10 +348,10 @@ export default function SellerProductsPage() {
                     <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                       <div>
                         <p className="text-sm text-gray-700">
-                          Mostrando <span className="font-medium">{startIndex + 1}</span> até{' '}
+                          Mostrando <span className="font-medium">{startIndex + 1}</span> até{" "}
                           <span className="font-medium">
                             {Math.min(startIndex + productsPerPage, filteredProducts.length)}
-                          </span>{' '}
+                          </span>{" "}
                           de <span className="font-medium">{filteredProducts.length}</span> produtos
                         </p>
                       </div>
@@ -377,8 +372,8 @@ export default function SellerProductsPage() {
                                 onClick={() => setCurrentPage(page)}
                                 className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                                   currentPage === page
-                                    ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                                    : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                                    ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                                    : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                                 }`}
                               >
                                 {page}
@@ -404,9 +399,9 @@ export default function SellerProductsPage() {
               <Package className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">Nenhum produto encontrado</h3>
               <p className="mt-1 text-sm text-gray-500">
-                {searchTerm || statusFilter !== 'all' || categoryFilter !== 'all'
-                  ? 'Tente ajustar os filtros de busca.'
-                  : 'Comece adicionando seu primeiro produto.'}
+                {searchTerm || statusFilter !== "all" || categoryFilter !== "all"
+                  ? "Tente ajustar os filtros de busca."
+                  : "Comece adicionando seu primeiro produto."}
               </p>
               <div className="mt-6">
                 <Link to="/seller/products/new">

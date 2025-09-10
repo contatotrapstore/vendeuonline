@@ -1,9 +1,9 @@
-import express from 'express';
+import express from "express";
 
 const router = express.Router();
 
-router.get('/', (req, res) => {
-  res.json({ wishlist: [], message: 'Wishlist endpoint - implementar' });
+router.get("/", (req, res) => {
+  res.json({ wishlist: [], message: "Wishlist endpoint - implementar" });
 });
 
 export default router;

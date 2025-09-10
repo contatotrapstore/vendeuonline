@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { apiRequest } from '@/lib/api';
+import { create } from "zustand";
+import { apiRequest } from "@/lib/api";
 
 export interface ViewHistoryItem {
   id: string;
@@ -17,8 +17,6 @@ export interface ViewHistoryItem {
   viewCount: number;
   lastViewDuration: number; // em segundos
 }
-
-
 
 interface HistoryState {
   items: ViewHistoryItem[];
@@ -42,28 +40,28 @@ export const useHistoryStore = create<HistoryState & HistoryActions>((set, get) 
   fetchHistory: async () => {
     set({ loading: true, error: null });
     try {
-      const response = await apiRequest('/api/buyer/history');
+      const response = await apiRequest("/api/buyer/history");
       set({ items: response.data || [], loading: false });
     } catch (error: any) {
-      console.error('Erro ao buscar histórico:', error);
-      set({ 
-        items: [], 
-        loading: false, 
-        error: 'Erro ao carregar histórico' 
+      console.error("Erro ao buscar histórico:", error);
+      set({
+        items: [],
+        loading: false,
+        error: "Erro ao carregar histórico",
       });
     }
   },
 
   addToHistory: async (productId: string, duration: number) => {
     try {
-      await apiRequest('/api/buyer/history', {
-        method: 'POST',
-        body: JSON.stringify({ productId, duration })
+      await apiRequest("/api/buyer/history", {
+        method: "POST",
+        body: JSON.stringify({ productId, duration }),
       });
       // Recarregar histórico após adicionar
       get().fetchHistory();
     } catch (error: any) {
-      console.error('Erro ao adicionar ao histórico:', error);
+      console.error("Erro ao adicionar ao histórico:", error);
     }
   },
 
@@ -71,17 +69,17 @@ export const useHistoryStore = create<HistoryState & HistoryActions>((set, get) 
     set({ loading: true, error: null });
     try {
       await apiRequest(`/api/buyer/history/${itemId}`, {
-        method: 'DELETE'
+        method: "DELETE",
       });
-      set({ 
-        items: get().items.filter(item => item.id !== itemId),
-        loading: false 
+      set({
+        items: get().items.filter((item) => item.id !== itemId),
+        loading: false,
       });
     } catch (error: any) {
-      console.error('Erro ao remover do histórico:', error);
-      set({ 
-        error: 'Erro ao remover do histórico',
-        loading: false 
+      console.error("Erro ao remover do histórico:", error);
+      set({
+        error: "Erro ao remover do histórico",
+        loading: false,
       });
     }
   },
@@ -89,18 +87,18 @@ export const useHistoryStore = create<HistoryState & HistoryActions>((set, get) 
   clearHistory: async () => {
     set({ loading: true, error: null });
     try {
-      await apiRequest('/api/buyer/history', {
-        method: 'DELETE'
+      await apiRequest("/api/buyer/history", {
+        method: "DELETE",
       });
       set({ items: [], loading: false });
     } catch (error: any) {
-      console.error('Erro ao limpar histórico:', error);
-      set({ 
-        error: 'Erro ao limpar histórico',
-        loading: false 
+      console.error("Erro ao limpar histórico:", error);
+      set({
+        error: "Erro ao limpar histórico",
+        loading: false,
       });
     }
   },
 
-  clearError: () => set({ error: null })
+  clearError: () => set({ error: null }),
 }));

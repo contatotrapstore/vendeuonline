@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { 
-  Search, 
-  Filter, 
-  Store, 
-  User, 
-  Package, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
+import { useState, useEffect } from "react";
+import {
+  Search,
+  Filter,
+  Store,
+  User,
+  Package,
+  CheckCircle,
+  XCircle,
+  Clock,
   AlertTriangle,
   RefreshCw,
   ChevronLeft,
@@ -17,10 +17,10 @@ import {
   Loader2,
   Eye,
   Ban,
-  Play
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { useStoreManagementStore, StoreInfo } from '@/store/storeManagementStore';
+  Play,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useStoreManagementStore, StoreInfo } from "@/store/storeManagementStore";
 
 export default function AdminStoresPage() {
   const {
@@ -35,7 +35,7 @@ export default function AdminStoresPage() {
     suspendStore,
     activateStore,
     setFilters,
-    clearError
+    clearError,
   } = useStoreManagementStore();
 
   // Carregar dados ao montar o componente
@@ -44,66 +44,67 @@ export default function AdminStoresPage() {
   }, [fetchStores]);
 
   const handleApprove = async (storeId: string) => {
-    if (confirm('Tem certeza que deseja aprovar esta loja?')) {
+    if (confirm("Tem certeza que deseja aprovar esta loja?")) {
       try {
         await approveStore(storeId);
-        toast.success('Loja aprovada com sucesso');
+        toast.success("Loja aprovada com sucesso");
       } catch (error) {
-        toast.error('Erro ao aprovar loja');
+        toast.error("Erro ao aprovar loja");
       }
     }
   };
 
   const handleReject = async (storeId: string) => {
-    const reason = prompt('Motivo da rejeição (opcional):');
-    if (reason !== null) { // Usuário não cancelou
+    const reason = prompt("Motivo da rejeição (opcional):");
+    if (reason !== null) {
+      // Usuário não cancelou
       try {
         await rejectStore(storeId, reason || undefined);
-        toast.success('Loja rejeitada');
+        toast.success("Loja rejeitada");
       } catch (error) {
-        toast.error('Erro ao rejeitar loja');
+        toast.error("Erro ao rejeitar loja");
       }
     }
   };
 
   const handleSuspend = async (storeId: string) => {
-    const reason = prompt('Motivo da suspensão:');
+    const reason = prompt("Motivo da suspensão:");
     if (reason) {
       try {
         await suspendStore(storeId, reason);
-        toast.success('Loja suspensa');
+        toast.success("Loja suspensa");
       } catch (error) {
-        toast.error('Erro ao suspender loja');
+        toast.error("Erro ao suspender loja");
       }
     }
   };
 
   const handleActivate = async (storeId: string) => {
-    if (confirm('Tem certeza que deseja ativar esta loja?')) {
+    if (confirm("Tem certeza que deseja ativar esta loja?")) {
       try {
         await activateStore(storeId);
-        toast.success('Loja ativada');
+        toast.success("Loja ativada");
       } catch (error) {
-        toast.error('Erro ao ativar loja');
+        toast.error("Erro ao ativar loja");
       }
     }
   };
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      ACTIVE: 'bg-green-100 text-green-800',
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      SUSPENDED: 'bg-red-100 text-red-800',
-      REJECTED: 'bg-gray-100 text-gray-800'
+      ACTIVE: "bg-green-100 text-green-800",
+      PENDING: "bg-yellow-100 text-yellow-800",
+      SUSPENDED: "bg-red-100 text-red-800",
+      REJECTED: "bg-gray-100 text-gray-800",
     };
-    
+
     const labels = {
-      ACTIVE: 'Ativa',
-      PENDING: 'Pendente',
-      SUSPENDED: 'Suspensa',
-      REJECTED: 'Rejeitada'
+      ACTIVE: "Ativa",
+      PENDING: "Pendente",
+      SUSPENDED: "Suspensa",
+      REJECTED: "Rejeitada",
     };
-    
+
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status as keyof typeof styles]}`}>
         {labels[status as keyof typeof labels] || status}
@@ -118,9 +119,9 @@ export default function AdminStoresPage() {
   };
 
   // Calcular estatísticas
-  const activeCount = stores.filter(store => store.status === 'ACTIVE').length;
-  const pendingCount = stores.filter(store => store.status === 'PENDING').length;
-  const suspendedCount = stores.filter(store => store.status === 'SUSPENDED').length;
+  const activeCount = stores.filter((store) => store.status === "ACTIVE").length;
+  const pendingCount = stores.filter((store) => store.status === "PENDING").length;
+  const suspendedCount = stores.filter((store) => store.status === "SUSPENDED").length;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -140,7 +141,7 @@ export default function AdminStoresPage() {
               disabled={loading}
               className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               <span>Atualizar</span>
             </button>
           </div>
@@ -159,7 +160,7 @@ export default function AdminStoresPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
@@ -171,7 +172,7 @@ export default function AdminStoresPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 rounded-lg">
@@ -183,7 +184,7 @@ export default function AdminStoresPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
               <div className="p-2 bg-red-100 rounded-lg">
@@ -310,91 +311,87 @@ export default function AdminStoresPage() {
                     </td>
                   </tr>
                 )}
-                {!loading && stores.map((store) => (
-                  <tr key={store.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          {store.logo ? (
-                            <img className="h-10 w-10 rounded-lg object-cover" src={store.logo} alt={store.name} />
-                          ) : (
-                            <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
-                              <Store className="h-5 w-5 text-gray-400" />
+                {!loading &&
+                  stores.map((store) => (
+                    <tr key={store.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            {store.logo ? (
+                              <img className="h-10 w-10 rounded-lg object-cover" src={store.logo} alt={store.name} />
+                            ) : (
+                              <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                                <Store className="h-5 w-5 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{store.name}</div>
+                            <div className="text-sm text-gray-500 truncate max-w-xs">
+                              {store.description || "Sem descrição"}
                             </div>
-                          )}
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{store.name}</div>
-                          <div className="text-sm text-gray-500 truncate max-w-xs">
-                            {store.description || 'Sem descrição'}
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{store.user?.name || 'N/A'}</div>
-                      <div className="text-sm text-gray-500">{store.user?.email || 'N/A'}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(store.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div className="flex items-center">
-                        <Package className="h-4 w-4 text-gray-400 mr-1" />
-                        {store._count?.products || 0}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(store.createdAt).toLocaleDateString('pt-BR')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        {store.status === 'PENDING' && (
-                          <>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{store.user?.name || "N/A"}</div>
+                        <div className="text-sm text-gray-500">{store.user?.email || "N/A"}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(store.status)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div className="flex items-center">
+                          <Package className="h-4 w-4 text-gray-400 mr-1" />
+                          {store._count?.products || 0}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(store.createdAt).toLocaleDateString("pt-BR")}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          {store.status === "PENDING" && (
+                            <>
+                              <button
+                                onClick={() => handleApprove(store.id)}
+                                className="text-green-600 hover:text-green-900"
+                                title="Aprovar"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </button>
+                              <button
+                                onClick={() => handleReject(store.id)}
+                                className="text-red-600 hover:text-red-900"
+                                title="Rejeitar"
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
+                          {store.status === "ACTIVE" && (
                             <button
-                              onClick={() => handleApprove(store.id)}
-                              className="text-green-600 hover:text-green-900"
-                              title="Aprovar"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </button>
-                            <button
-                              onClick={() => handleReject(store.id)}
+                              onClick={() => handleSuspend(store.id)}
                               className="text-red-600 hover:text-red-900"
-                              title="Rejeitar"
+                              title="Suspender"
                             >
-                              <XCircle className="h-4 w-4" />
+                              <Ban className="h-4 w-4" />
                             </button>
-                          </>
-                        )}
-                        {store.status === 'ACTIVE' && (
-                          <button
-                            onClick={() => handleSuspend(store.id)}
-                            className="text-red-600 hover:text-red-900"
-                            title="Suspender"
-                          >
-                            <Ban className="h-4 w-4" />
+                          )}
+                          {store.status === "SUSPENDED" && (
+                            <button
+                              onClick={() => handleActivate(store.id)}
+                              className="text-green-600 hover:text-green-900"
+                              title="Ativar"
+                            >
+                              <Play className="h-4 w-4" />
+                            </button>
+                          )}
+                          <button className="text-blue-600 hover:text-blue-900" title="Ver detalhes">
+                            <Eye className="h-4 w-4" />
                           </button>
-                        )}
-                        {store.status === 'SUSPENDED' && (
-                          <button
-                            onClick={() => handleActivate(store.id)}
-                            className="text-green-600 hover:text-green-900"
-                            title="Ativar"
-                          >
-                            <Play className="h-4 w-4" />
-                          </button>
-                        )}
-                        <button
-                          className="text-blue-600 hover:text-blue-900"
-                          title="Ver detalhes"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -421,16 +418,12 @@ export default function AdminStoresPage() {
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-700">
-                    Mostrando{' '}
-                    <span className="font-medium">
-                      {((pagination.currentPage - 1) * pagination.pageSize) + 1}
-                    </span>{' '}
-                    até{' '}
+                    Mostrando{" "}
+                    <span className="font-medium">{(pagination.currentPage - 1) * pagination.pageSize + 1}</span> até{" "}
                     <span className="font-medium">
                       {Math.min(pagination.currentPage * pagination.pageSize, pagination.totalCount)}
-                    </span>{' '}
-                    de{' '}
-                    <span className="font-medium">{pagination.totalCount}</span> resultados
+                    </span>{" "}
+                    de <span className="font-medium">{pagination.totalCount}</span> resultados
                   </p>
                 </div>
                 <div>
@@ -442,7 +435,7 @@ export default function AdminStoresPage() {
                     >
                       <ChevronLeft className="h-5 w-5" />
                     </button>
-                    
+
                     {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                       const page = i + 1;
                       return (
@@ -451,15 +444,15 @@ export default function AdminStoresPage() {
                           onClick={() => handlePageChange(page)}
                           className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                             page === pagination.currentPage
-                              ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                              ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                              : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                           }`}
                         >
                           {page}
                         </button>
                       );
                     })}
-                    
+
                     <button
                       onClick={() => handlePageChange(pagination.currentPage + 1)}
                       disabled={pagination.currentPage >= pagination.totalPages}

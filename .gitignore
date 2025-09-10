@@ -78,3 +78,47 @@ coverage/
 test-*.html
 test-*.js
 *-test.js
+
+# Test and Report directories
+playwright-report/
+test-results/
+testsprite_tests/tmp/
+coverage/
+*.lcov
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Performance profiling
+*.cpuprofile
+*.heapprofile
+*.heapsnapshot
+
+# Security scanning
+.snyk
+security-audit.json
+
+# IDE specific
+*.swp
+*.swo
+*~
+
+# Package manager
+.pnpm-debug.log*
+.yarn-integrity
+.yarnrc.yml
+
+# Build cache
+.turbo
+.eslintcache
+
+# Runtime
+*.pid
+*.seed
+*.tgz
+
+# Deployment
+.serverless/
+.aws-sam/

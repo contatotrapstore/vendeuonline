@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Star, MapPin, Clock, MessageCircle, Shield, Package, Users } from 'lucide-react';
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Star, MapPin, Clock, MessageCircle, Shield, Package, Users } from "lucide-react";
 
 interface Store {
   id: string;
@@ -35,11 +35,7 @@ export function StoreInfo({ store, className = "" }: StoreInfoProps) {
         {[...Array(5)].map((_, i) => (
           <Star
             key={i}
-            className={`h-4 w-4 ${
-              i < Math.floor(rating)
-                ? 'text-yellow-400 fill-current'
-                : 'text-gray-300'
-            }`}
+            className={`h-4 w-4 ${i < Math.floor(rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
           />
         ))}
         <span className="ml-2 text-sm text-gray-600">
@@ -52,7 +48,7 @@ export function StoreInfo({ store, className = "" }: StoreInfoProps) {
   const handleContactStore = () => {
     const message = `Olá! Gostaria de saber mais sobre os produtos da loja ${store.name}.`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
+    window.open(whatsappUrl, "_blank");
   };
 
   return (
@@ -61,13 +57,13 @@ export function StoreInfo({ store, className = "" }: StoreInfoProps) {
         <div className="flex items-start justify-between mb-6">
           <h2 className="text-xl font-bold text-gray-900">Informações da Loja</h2>
           <Link
-            to={`/loja/${store.name.toLowerCase().replace(/\s+/g, '-')}`}
+            to={`/loja/${store.name.toLowerCase().replace(/\s+/g, "-")}`}
             className="text-blue-600 hover:text-blue-700 text-sm font-medium"
           >
             Ver loja completa
           </Link>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Store Basic Info */}
           <div className="space-y-4">
@@ -83,7 +79,7 @@ export function StoreInfo({ store, className = "" }: StoreInfoProps) {
                   src={store.logo}
                   alt={`Logo da ${store.name}`}
                   className={`w-full h-full object-cover rounded-lg transition-opacity ${
-                    imageLoaded ? 'opacity-100' : 'opacity-0'
+                    imageLoaded ? "opacity-100" : "opacity-0"
                   }`}
                   onLoad={() => setImageLoaded(true)}
                 />
@@ -93,7 +89,7 @@ export function StoreInfo({ store, className = "" }: StoreInfoProps) {
                   </div>
                 )}
               </div>
-              
+
               {/* Store Details */}
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-1">
@@ -104,16 +100,16 @@ export function StoreInfo({ store, className = "" }: StoreInfoProps) {
                     </span>
                   )}
                 </div>
-                
+
                 <div className="flex items-center gap-1 text-sm text-gray-600 mb-2">
                   <MapPin className="h-3 w-3" />
                   <span>{store.location}</span>
                 </div>
-                
+
                 {renderStars(store.rating)}
               </div>
             </div>
-            
+
             {/* Store Stats */}
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gray-50 rounded-lg p-3">
@@ -123,7 +119,7 @@ export function StoreInfo({ store, className = "" }: StoreInfoProps) {
                 </div>
                 <p className="text-lg font-bold text-gray-900">{store.products.toLocaleString()}</p>
               </div>
-              
+
               <div className="bg-gray-50 rounded-lg p-3">
                 <div className="flex items-center gap-2 mb-1">
                   <Users className="h-4 w-4 text-gray-600" />
@@ -133,7 +129,7 @@ export function StoreInfo({ store, className = "" }: StoreInfoProps) {
               </div>
             </div>
           </div>
-          
+
           {/* Store Performance */}
           <div className="space-y-4">
             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -144,33 +140,33 @@ export function StoreInfo({ store, className = "" }: StoreInfoProps) {
               <p className="text-2xl font-bold text-green-900 mb-1">{store.responseTime}</p>
               <p className="text-sm text-green-700">Responde rapidamente às mensagens</p>
             </div>
-            
+
             <div className="space-y-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Qualidade dos produtos</span>
                 <div className="flex items-center gap-1">
                   <div className="w-20 bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '92%' }}></div>
+                    <div className="bg-green-500 h-2 rounded-full" style={{ width: "92%" }}></div>
                   </div>
                   <span className="font-medium text-gray-900">92%</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Pontualidade na entrega</span>
                 <div className="flex items-center gap-1">
                   <div className="w-20 bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '88%' }}></div>
+                    <div className="bg-green-500 h-2 rounded-full" style={{ width: "88%" }}></div>
                   </div>
                   <span className="font-medium text-gray-900">88%</span>
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600">Atendimento ao cliente</span>
                 <div className="flex items-center gap-1">
                   <div className="w-20 bg-gray-200 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '95%' }}></div>
+                    <div className="bg-green-500 h-2 rounded-full" style={{ width: "95%" }}></div>
                   </div>
                   <span className="font-medium text-gray-900">95%</span>
                 </div>
@@ -178,11 +174,11 @@ export function StoreInfo({ store, className = "" }: StoreInfoProps) {
             </div>
           </div>
         </div>
-        
+
         {/* Action Buttons */}
         <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
           <Link
-            to={`/loja/${store.name.toLowerCase().replace(/\s+/g, '-')}`}
+            to={`/loja/${store.name.toLowerCase().replace(/\s+/g, "-")}`}
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors text-center"
           >
             Visitar Loja
@@ -195,7 +191,7 @@ export function StoreInfo({ store, className = "" }: StoreInfoProps) {
             Contatar
           </button>
         </div>
-        
+
         {/* Trust Indicators */}
         <div className="mt-6 pt-6 border-t border-gray-200">
           <h4 className="font-medium text-gray-900 mb-3">Garantias da Loja</h4>

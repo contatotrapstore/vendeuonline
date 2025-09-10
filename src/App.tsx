@@ -4,6 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import ErrorBoundary from "@/components/ui/ErrorBoundary";
 import { usePageTracking } from "@/hooks/useAnalytics";
+import TrackingScripts from "@/components/TrackingScripts";
 
 // Lazy loading das páginas principais
 const HomePage = lazy(() => import("@/app/page"));
@@ -22,6 +23,10 @@ const RegisterPage = lazy(() => import("@/app/(auth)/register/page"));
 const CartPage = lazy(() => import("@/app/cart/page"));
 const CheckoutPage = lazy(() => import("@/app/checkout/page"));
 
+// Dynamic pages
+const ProductPage = lazy(() => import("@/app/produto/[id]/page"));
+const StorePage = lazy(() => import("@/app/stores/[id]/page"));
+
 // Admin Pages
 const AdminDashboard = lazy(() => import("@/app/admin/page"));
 const AdminUsers = lazy(() => import("@/app/admin/users/page"));
@@ -32,6 +37,7 @@ const AdminStores = lazy(() => import("@/app/admin/stores/page"));
 const AdminProducts = lazy(() => import("@/app/admin/products/page"));
 const AdminPlans = lazy(() => import("@/app/admin/plans/page"));
 const AdminTest = lazy(() => import("@/app/admin/test/page"));
+const AdminTracking = lazy(() => import("@/app/admin/tracking/page"));
 const DebugAdmin = lazy(() => import("@/app/debug-admin"));
 
 // Seller Pages
@@ -64,7 +70,8 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <ErrorBoundary showDetails={import.meta.env.MODE === 'development'}>
+      <ErrorBoundary showDetails={import.meta.env.MODE === "development"}>
+        <TrackingScripts />
         <Navbar />
         <main className="flex-1">
           <Suspense fallback={<LoadingSpinner />}>
@@ -72,24 +79,26 @@ function AppContent() {
               {/* Public Routes */}
               <Route path="/" element={<HomePage />} />
               <Route path="/products" element={<ProductsPage />} />
+              <Route path="/produto/:id" element={<ProductPage />} />
               <Route path="/stores" element={<StoresPage />} />
+              <Route path="/stores/:id" element={<StorePage />} />
               <Route path="/pricing" element={<PricingPage />} />
               <Route path="/about" element={<AboutPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/faq" element={<FAQPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
               <Route path="/terms" element={<TermsPage />} />
-              
+
               {/* Auth Routes */}
               <Route path="/auth/login" element={<LoginPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/auth/register" element={<RegisterPage />} />
               <Route path="/register" element={<RegisterPage />} />
-              
+
               {/* Shopping Routes */}
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
-              
+
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -101,10 +110,11 @@ function AppContent() {
               <Route path="/admin/products" element={<AdminProducts />} />
               <Route path="/admin/plans" element={<AdminPlans />} />
               <Route path="/admin/test" element={<AdminTest />} />
-              
+              <Route path="/admin/tracking" element={<AdminTracking />} />
+
               {/* Debug Routes */}
               <Route path="/debug-admin" element={<DebugAdmin />} />
-              
+
               {/* Seller Routes */}
               <Route path="/seller" element={<SellerDashboard />} />
               <Route path="/seller/dashboard" element={<SellerDashboard />} />
@@ -112,7 +122,7 @@ function AppContent() {
               <Route path="/seller/orders" element={<SellerOrders />} />
               <Route path="/seller/store" element={<SellerStore />} />
               <Route path="/seller/analytics" element={<SellerAnalytics />} />
-              
+
               {/* Buyer Routes */}
               <Route path="/buyer" element={<BuyerDashboard />} />
               <Route path="/buyer/dashboard" element={<BuyerDashboard />} />
@@ -126,17 +136,23 @@ function AppContent() {
               <Route path="/buyer/settings" element={<BuyerSettings />} />
               <Route path="/settings" element={<BuyerSettings />} />
               <Route path="/buyer/notifications" element={<BuyerNotifications />} />
-              
+
               {/* 404 Route */}
-              <Route path="*" element={
-                <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-                  <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
-                  <p className="text-gray-600 mb-8">Página não encontrada</p>
-                  <a href="/" className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-                    Voltar ao Início
-                  </a>
-                </div>
-              } />
+              <Route
+                path="*"
+                element={
+                  <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
+                    <h1 className="text-4xl font-bold text-gray-900 mb-4">404</h1>
+                    <p className="text-gray-600 mb-8">Página não encontrada</p>
+                    <a
+                      href="/"
+                      className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Voltar ao Início
+                    </a>
+                  </div>
+                }
+              />
             </Routes>
           </Suspense>
         </main>

@@ -1,9 +1,7 @@
-import { create } from 'zustand'
-import { Product } from '@/types';
-import { apiRequest, get as apiGet, post, put, del } from '@/lib/api-client';
-import { appCache } from '@/lib/cache';
-
-
+import { create } from "zustand";
+import { Product } from "@/types";
+import { apiRequest, get as apiGet, post, put, del } from "@/lib/api-client";
+import { appCache } from "@/lib/cache";
 
 export interface ProductFilters {
   search: string;
@@ -15,7 +13,7 @@ export interface ProductFilters {
   freeShippingOnly: boolean;
   minRating: number;
   location: string;
-  sortBy: 'relevance' | 'price_asc' | 'price_desc' | 'rating' | 'newest' | 'popular';
+  sortBy: "relevance" | "price_asc" | "price_desc" | "rating" | "newest" | "popular";
 }
 
 interface ProductStore {
@@ -33,7 +31,7 @@ interface ProductStore {
     hasNext: boolean;
     hasPrev: boolean;
   };
-  
+
   // Actions
   fetchProducts: (params?: {
     page?: number;
@@ -43,7 +41,7 @@ interface ProductStore {
     minPrice?: number;
     maxPrice?: number;
     sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
+    sortOrder?: "asc" | "desc";
   }) => Promise<void>;
   fetchProductById: (id: string) => Promise<Product | null>;
   createProduct: (product: {
@@ -52,31 +50,34 @@ interface ProductStore {
     price: number;
     categoryId: string;
     brand: string;
-    condition: 'new' | 'used' | 'refurbished';
+    condition: "new" | "used" | "refurbished";
     stock: number;
     minStock: number;
     weight?: number;
-    dimensions?: { length: number; width: number; height: number; unit: 'cm' | 'm' };
+    dimensions?: { length: number; width: number; height: number; unit: "cm" | "m" };
     isFeatured?: boolean;
     images: { id: string; url: string; alt: string; isMain: boolean; order: number }[];
     specifications: { name: string; value: string }[];
   }) => Promise<void>;
-  updateProduct: (id: string, updates: Partial<{
-    name: string;
-    description: string;
-    price: number;
-    categoryId: string;
-    brand: string;
-    condition: 'new' | 'used' | 'refurbished';
-    stock: number;
-    minStock: number;
-    weight?: number;
-    dimensions?: { length: number; width: number; height: number; unit: 'cm' | 'm' };
-    isFeatured?: boolean;
-    isActive?: boolean;
-    images: { id: string; url: string; alt: string; isMain: boolean; order: number }[];
-    specifications: { name: string; value: string }[];
-  }>) => Promise<void>;
+  updateProduct: (
+    id: string,
+    updates: Partial<{
+      name: string;
+      description: string;
+      price: number;
+      categoryId: string;
+      brand: string;
+      condition: "new" | "used" | "refurbished";
+      stock: number;
+      minStock: number;
+      weight?: number;
+      dimensions?: { length: number; width: number; height: number; unit: "cm" | "m" };
+      isFeatured?: boolean;
+      isActive?: boolean;
+      images: { id: string; url: string; alt: string; isMain: boolean; order: number }[];
+      specifications: { name: string; value: string }[];
+    }>
+  ) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   setFilters: (filters: Partial<ProductFilters>) => void;
   resetFilters: () => void;
@@ -101,16 +102,16 @@ const initialPagination = {
 
 // Filtros padrão
 const defaultFilters: ProductFilters = {
-  search: '',
-  category: '',
+  search: "",
+  category: "",
   minPrice: 0,
   maxPrice: 0,
   brands: [],
   conditions: [],
   freeShippingOnly: false,
   minRating: 0,
-  location: '',
-  sortBy: 'relevance'
+  location: "",
+  sortBy: "relevance",
 };
 
 export const useProductStore = create<ProductStore>((set, get) => ({
@@ -125,11 +126,11 @@ export const useProductStore = create<ProductStore>((set, get) => ({
   fetchProducts: async (params = {}) => {
     try {
       set({ loading: true, error: null });
-      
+
       // Verificar cache primeiro
       const cachedData = appCache.getProducts(params);
       if (cachedData) {
-        set({ 
+        set({
           products: cachedData.products || [],
           filteredProducts: cachedData.products || [],
           isEmpty: !cachedData.products || cachedData.products.length === 0,
@@ -139,29 +140,29 @@ export const useProductStore = create<ProductStore>((set, get) => ({
             total: cachedData.products?.length || 0,
             totalPages: Math.ceil((cachedData.products?.length || 0) / (params.limit || 20)),
             hasNext: false,
-            hasPrev: false
+            hasPrev: false,
           },
-          loading: false 
+          loading: false,
         });
         return;
       }
-      
+
       const searchParams = new URLSearchParams();
-      if (params.page) searchParams.append('page', params.page.toString());
-      if (params.limit) searchParams.append('limit', params.limit.toString());
-      if (params.search) searchParams.append('search', params.search);
-      if (params.category) searchParams.append('category', params.category);
-      if (params.minPrice) searchParams.append('minPrice', params.minPrice.toString());
-      if (params.maxPrice) searchParams.append('maxPrice', params.maxPrice.toString());
-      if (params.sortBy) searchParams.append('sortBy', params.sortBy);
-      if (params.sortOrder) searchParams.append('sortOrder', params.sortOrder);
-      
-      const response = await apiGet(`/products?${searchParams.toString()}`);
-      
+      if (params.page) searchParams.append("page", params.page.toString());
+      if (params.limit) searchParams.append("limit", params.limit.toString());
+      if (params.search) searchParams.append("search", params.search);
+      if (params.category) searchParams.append("category", params.category);
+      if (params.minPrice) searchParams.append("minPrice", params.minPrice.toString());
+      if (params.maxPrice) searchParams.append("maxPrice", params.maxPrice.toString());
+      if (params.sortBy) searchParams.append("sortBy", params.sortBy);
+      if (params.sortOrder) searchParams.append("sortOrder", params.sortOrder);
+
+      const response = await apiGet(`/api/products?${searchParams.toString()}`);
+
       // Armazenar no cache
       appCache.setProducts(params, response, 3 * 60 * 1000); // 3 minutos para produtos
-      
-      set({ 
+
+      set({
         products: response.products || [],
         filteredProducts: response.products || [],
         isEmpty: !response.products || response.products.length === 0,
@@ -173,97 +174,95 @@ export const useProductStore = create<ProductStore>((set, get) => ({
           hasNext: response.pagination?.hasNext || false,
           hasPrev: response.pagination?.hasPrev || false,
         },
-        loading: false 
+        loading: false,
       });
     } catch (error) {
       // Se for erro 404 ou similar, tratar como lista vazia em vez de erro
-      const errorMessage = error instanceof Error ? error.message : 'Erro ao carregar produtos';
-      const isNotFoundError = errorMessage.includes('404') || errorMessage.includes('não encontrado');
-      
+      const errorMessage = error instanceof Error ? error.message : "Erro ao carregar produtos";
+      const isNotFoundError = errorMessage.includes("404") || errorMessage.includes("não encontrado");
+
       if (isNotFoundError) {
-        set({ 
+        set({
           products: [],
           filteredProducts: [],
           isEmpty: true,
           loading: false,
-          error: null
+          error: null,
         });
       } else {
-        set({ 
+        set({
           error: errorMessage,
-          loading: false 
+          loading: false,
         });
       }
     }
   },
-  
+
   fetchProductById: async (id) => {
     try {
       set({ loading: true, error: null });
-      const product = await apiGet(`/products/${id}`);
+      const product = await apiGet(`/api/products/${id}`);
       set({ loading: false });
       return product;
     } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Erro ao carregar produto',
-        loading: false 
+      set({
+        error: error instanceof Error ? error.message : "Erro ao carregar produto",
+        loading: false,
       });
       return null;
     }
   },
-  
+
   createProduct: async (productData) => {
     try {
       set({ loading: true, error: null });
-      
-      await post('/products', productData);
-      
+
+      await post("/api/products", productData);
+
       // Recarregar produtos após criação
       const { fetchProducts } = get();
       await fetchProducts();
       set({ loading: false });
     } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Erro ao criar produto',
-        loading: false 
+      set({
+        error: error instanceof Error ? error.message : "Erro ao criar produto",
+        loading: false,
       });
       throw error;
     }
   },
-  
+
   updateProduct: async (id, updates) => {
     try {
       set({ loading: true, error: null });
-      
-      await put(`/products/${id}`, updates);
-      
+
+      await put(`/api/products/${id}`, updates);
+
       // Atualizar produto na lista local
-      const products = get().products.map(product => 
-        product.id === id ? { ...product, ...updates } : product
-      );
+      const products = get().products.map((product) => (product.id === id ? { ...product, ...updates } : product));
       set({ products, filteredProducts: products, loading: false });
     } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Erro ao atualizar produto',
-        loading: false 
+      set({
+        error: error instanceof Error ? error.message : "Erro ao atualizar produto",
+        loading: false,
       });
       throw error;
     }
   },
-  
+
   deleteProduct: async (id) => {
     try {
       set({ loading: true, error: null });
-      
-      await del(`/products/${id}`);
-      
+
+      await del(`/api/products/${id}`);
+
       // Remover produto da lista local
-      const products = get().products.filter(product => product.id !== id);
+      const products = get().products.filter((product) => product.id !== id);
       set({ products, filteredProducts: products, loading: false });
     } catch (error) {
-      set({ 
-        error: error instanceof Error ? error.message : 'Erro ao deletar produto',
-        loading: false 
+      set({
+        error: error instanceof Error ? error.message : "Erro ao deletar produto",
+        loading: false,
       });
       throw error;
     }
@@ -271,7 +270,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
 
   setFilters: (newFilters) => {
     set((state) => ({
-      filters: { ...state.filters, ...newFilters }
+      filters: { ...state.filters, ...newFilters },
     }));
     // Com APIs reais, os filtros são aplicados no servidor
     // Podemos chamar fetchProducts com os novos filtros
@@ -282,7 +281,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
       category: updatedFilters.category,
       minPrice: updatedFilters.minPrice > 0 ? updatedFilters.minPrice : undefined,
       maxPrice: updatedFilters.maxPrice > 0 ? updatedFilters.maxPrice : undefined,
-      sortBy: updatedFilters.sortBy !== 'relevance' ? updatedFilters.sortBy : undefined,
+      sortBy: updatedFilters.sortBy !== "relevance" ? updatedFilters.sortBy : undefined,
     });
   },
 
@@ -300,45 +299,45 @@ export const useProductStore = create<ProductStore>((set, get) => ({
       category: filters.category,
       minPrice: filters.minPrice > 0 ? filters.minPrice : undefined,
       maxPrice: filters.maxPrice > 0 ? filters.maxPrice : undefined,
-      sortBy: filters.sortBy !== 'relevance' ? filters.sortBy : undefined,
+      sortBy: filters.sortBy !== "relevance" ? filters.sortBy : undefined,
     });
   },
 
   setLoading: (loading) => set({ loading }),
-  
+
   setError: (error) => set({ error }),
-  
+
   clearError: () => set({ error: null }),
 
   getProductsByStore: async (storeId) => {
     try {
-      const response = await apiGet(`/products?storeId=${storeId}`);
+      const response = await apiGet(`/api/products?storeId=${storeId}`);
       return response.products;
     } catch (error) {
-      console.error('Erro ao carregar produtos da loja:', error);
+      console.error("Erro ao carregar produtos da loja:", error);
       return [];
     }
   },
 
   getFeaturedProducts: async () => {
     try {
-      const response = await apiGet('/api/products?featured=true&limit=8');
+      const response = await apiGet("/api/products?featured=true&limit=8");
       return response.products;
     } catch (error) {
-      console.error('Erro ao carregar produtos em destaque:', error);
+      console.error("Erro ao carregar produtos em destaque:", error);
       return [];
     }
   },
 
   getRelatedProducts: async (productId, limit = 4) => {
     try {
-      const response = await apiGet(`/products/${productId}/related?limit=${limit}`);
+      const response = await apiGet(`/api/products/${productId}/related?limit=${limit}`);
       return response.products;
     } catch (error) {
-      console.error('Erro ao carregar produtos relacionados:', error);
+      console.error("Erro ao carregar produtos relacionados:", error);
       return [];
     }
-  }
+  },
 }));
 
 export default useProductStore;

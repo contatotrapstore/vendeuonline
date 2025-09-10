@@ -37,20 +37,23 @@ class Cache {
 
   private generateKey(prefix: string, params?: Record<string, any>): string {
     if (!params) return prefix;
-    
+
     const sortedParams = Object.keys(params)
       .sort()
-      .reduce((result, key) => {
-        result[key] = params[key];
-        return result;
-      }, {} as Record<string, any>);
-    
+      .reduce(
+        (result, key) => {
+          result[key] = params[key];
+          return result;
+        },
+        {} as Record<string, any>
+      );
+
     return `${prefix}:${JSON.stringify(sortedParams)}`;
   }
 
   private loadFromLocalStorage(): void {
     try {
-      const stored = localStorage.getItem('app-cache');
+      const stored = localStorage.getItem("app-cache");
       if (stored) {
         const data = JSON.parse(stored);
         Object.entries(data).forEach(([key, entry]) => {
@@ -61,7 +64,7 @@ class Cache {
         });
       }
     } catch (error) {
-      console.warn('Failed to load cache from localStorage:', error);
+      console.warn("Failed to load cache from localStorage:", error);
     }
   }
 
@@ -73,9 +76,9 @@ class Cache {
       this.cache.forEach((entry, key) => {
         data[key] = entry;
       });
-      localStorage.setItem('app-cache', JSON.stringify(data));
+      localStorage.setItem("app-cache", JSON.stringify(data));
     } catch (error) {
-      console.warn('Failed to save cache to localStorage:', error);
+      console.warn("Failed to save cache to localStorage:", error);
     }
   }
 
@@ -99,7 +102,7 @@ class Cache {
   private evictOldest(): void {
     if (this.cache.size === 0) return;
 
-    let oldestKey = '';
+    let oldestKey = "";
     let oldestTime = Date.now();
 
     this.cache.forEach((entry, key) => {
@@ -125,7 +128,7 @@ class Cache {
       data,
       timestamp: now,
       expiresAt: now + (ttl || this.defaultTTL),
-      key
+      key,
     };
 
     this.cache.set(key, entry);
@@ -134,7 +137,7 @@ class Cache {
 
   get<T>(key: string): T | null {
     const entry = this.cache.get(key);
-    
+
     if (!entry) {
       return null;
     }
@@ -177,59 +180,59 @@ class Cache {
 
   // Métodos específicos para produtos
   setProducts(params: Record<string, any>, data: any, ttl?: number): void {
-    const key = this.generateKey('products', params);
+    const key = this.generateKey("products", params);
     this.set(key, data, ttl);
   }
 
   getProducts(params: Record<string, any>): any | null {
-    const key = this.generateKey('products', params);
+    const key = this.generateKey("products", params);
     return this.get(key);
   }
 
   // Métodos específicos para lojas
   setStores(params: Record<string, any>, data: any, ttl?: number): void {
-    const key = this.generateKey('stores', params);
+    const key = this.generateKey("stores", params);
     this.set(key, data, ttl);
   }
 
   getStores(params: Record<string, any>): any | null {
-    const key = this.generateKey('stores', params);
+    const key = this.generateKey("stores", params);
     return this.get(key);
   }
 
   // Métodos específicos para planos
   setPlans(data: any, ttl?: number): void {
-    this.set('plans', data, ttl || 10 * 60 * 1000); // Planos podem ficar em cache por mais tempo
+    this.set("plans", data, ttl || 10 * 60 * 1000); // Planos podem ficar em cache por mais tempo
   }
 
   getPlans(): any | null {
-    return this.get('plans');
+    return this.get("plans");
   }
 
   // Invalidar cache relacionado a um produto específico
   invalidateProduct(productId: string): void {
     const keysToDelete: string[] = [];
-    
+
     this.cache.forEach((entry, key) => {
-      if (key.includes('products') || key.includes(`product:${productId}`)) {
+      if (key.includes("products") || key.includes(`product:${productId}`)) {
         keysToDelete.push(key);
       }
     });
 
-    keysToDelete.forEach(key => this.delete(key));
+    keysToDelete.forEach((key) => this.delete(key));
   }
 
   // Invalidar cache relacionado a uma loja específica
   invalidateStore(storeId: string): void {
     const keysToDelete: string[] = [];
-    
+
     this.cache.forEach((entry, key) => {
-      if (key.includes('stores') || key.includes(`store:${storeId}`)) {
+      if (key.includes("stores") || key.includes(`store:${storeId}`)) {
         keysToDelete.push(key);
       }
     });
 
-    keysToDelete.forEach(key => this.delete(key));
+    keysToDelete.forEach((key) => this.delete(key));
   }
 
   // Estatísticas do cache
@@ -243,7 +246,7 @@ class Cache {
     let oldest: CacheEntry<any> | null = null;
     let newest: CacheEntry<any> | null = null;
 
-    this.cache.forEach(entry => {
+    this.cache.forEach((entry) => {
       if (!oldest || entry.timestamp < oldest.timestamp) {
         oldest = entry;
       }
@@ -257,7 +260,7 @@ class Cache {
       maxSize: this.maxSize,
       hitRate: 0, // TODO: Implementar tracking de hit rate
       oldestEntry: oldest?.key || null,
-      newestEntry: newest?.key || null
+      newestEntry: newest?.key || null,
     };
   }
 }
@@ -266,7 +269,7 @@ class Cache {
 export const appCache = new Cache({
   ttl: 5 * 60 * 1000, // 5 minutos para a maioria dos dados
   maxSize: 200, // Aumentar um pouco o limite
-  persistToLocalStorage: true
+  persistToLocalStorage: true,
 });
 
 // Hook para usar o cache em componentes React
@@ -274,7 +277,7 @@ export const useCache = () => {
   return {
     cache: appCache,
     getStats: () => appCache.getStats(),
-    clearCache: () => appCache.clear()
+    clearCache: () => appCache.clear(),
   };
 };
 

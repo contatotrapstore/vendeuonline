@@ -17,7 +17,7 @@ export const mockStores = [
     banner: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=200&fit=crop",
     socialMedia: {
       instagram: "@techstore",
-      facebook: "techstore"
+      facebook: "techstore",
     },
     isActive: true,
     isVerified: true,
@@ -37,9 +37,9 @@ export const mockStores = [
         email: "joao@techstore.com",
         phone: "(11) 99999-1111",
         city: "São Paulo",
-        state: "SP"
-      }
-    }
+        state: "SP",
+      },
+    },
   },
   {
     id: "store_2",
@@ -58,7 +58,7 @@ export const mockStores = [
     banner: "https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=800&h=200&fit=crop",
     socialMedia: {
       instagram: "@modabella",
-      facebook: "modabella"
+      facebook: "modabella",
     },
     isActive: true,
     isVerified: true,
@@ -78,9 +78,9 @@ export const mockStores = [
         email: "maria@modabella.com",
         phone: "(21) 88888-2222",
         city: "Rio de Janeiro",
-        state: "RJ"
-      }
-    }
+        state: "RJ",
+      },
+    },
   },
   {
     id: "store_3",
@@ -99,7 +99,7 @@ export const mockStores = [
     banner: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&h=200&fit=crop",
     socialMedia: {
       instagram: "@casaestilo",
-      facebook: "casaestilo"
+      facebook: "casaestilo",
     },
     isActive: true,
     isVerified: false,
@@ -119,9 +119,9 @@ export const mockStores = [
         email: "pedro@casaestilo.com",
         phone: "(31) 77777-3333",
         city: "Belo Horizonte",
-        state: "MG"
-      }
-    }
+        state: "MG",
+      },
+    },
   },
   {
     id: "store_4",
@@ -140,7 +140,7 @@ export const mockStores = [
     banner: "https://images.unsplash.com/photo-1553440569-bcc63803a83d?w=800&h=200&fit=crop",
     socialMedia: {
       instagram: "@autopecas",
-      facebook: "autopecas"
+      facebook: "autopecas",
     },
     isActive: true,
     isVerified: true,
@@ -160,9 +160,9 @@ export const mockStores = [
         email: "carlos@autopecas.com",
         phone: "(41) 66666-4444",
         city: "Curitiba",
-        state: "PR"
-      }
-    }
+        state: "PR",
+      },
+    },
   },
   {
     id: "store_5",
@@ -181,7 +181,7 @@ export const mockStores = [
     banner: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&h=200&fit=crop",
     socialMedia: {
       instagram: "@fitsport",
-      facebook: "fitsport"
+      facebook: "fitsport",
     },
     isActive: true,
     isVerified: true,
@@ -201,10 +201,10 @@ export const mockStores = [
         email: "ana@fitsport.com",
         phone: "(51) 55555-5555",
         city: "Porto Alegre",
-        state: "RS"
-      }
-    }
-  }
+        state: "RS",
+      },
+    },
+  },
 ];
 
 export const mockUsers = [
@@ -219,11 +219,11 @@ export const mockUsers = [
     type: "SELLER",
     isVerified: true,
     isActive: true,
-    createdAt: "2024-01-15T10:00:00Z"
+    createdAt: "2024-01-15T10:00:00Z",
   },
   {
     id: "user_2",
-    name: "Maria Santos", 
+    name: "Maria Santos",
     email: "maria@modabella.com",
     password: "$2a$12$LQv3c1yqBWVHxkd0LQ4YNu3PEFf4L1Z8.9JK4ELF5TKvq8JrBN2uC", // 123456
     phone: "(21) 88888-2222",
@@ -232,7 +232,7 @@ export const mockUsers = [
     type: "SELLER",
     isVerified: true,
     isActive: true,
-    createdAt: "2024-01-10T08:00:00Z"
+    createdAt: "2024-01-10T08:00:00Z",
   },
   {
     id: "admin_1",
@@ -245,7 +245,7 @@ export const mockUsers = [
     type: "ADMIN",
     isVerified: true,
     isActive: true,
-    createdAt: "2024-01-01T00:00:00Z"
+    createdAt: "2024-01-01T00:00:00Z",
   },
   {
     id: "buyer_1",
@@ -254,10 +254,10 @@ export const mockUsers = [
     password: "$2a$12$LQv3c1yqBWVHxkd0LQ4YNu3PEFf4L1Z8.9JK4ELF5TKvq8JrBN2uC", // 123456
     phone: "(11) 88888-1111",
     city: "São Paulo",
-    state: "SP", 
+    state: "SP",
     type: "BUYER",
     isVerified: true,
     isActive: true,
-    createdAt: "2024-01-05T12:00:00Z"
-  }
+    createdAt: "2024-01-05T12:00:00Z",
+  },
 ];

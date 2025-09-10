@@ -1,6 +1,6 @@
-import React from 'react';
-import { ChevronRight, Home } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import React from "react";
+import { ChevronRight, Home } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 interface BreadcrumbItem {
   label: string;
@@ -22,9 +22,9 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
   items = [],
   separator = <ChevronRight className="w-4 h-4 text-gray-400" />,
   showHome = true,
-  homeLabel = 'Início',
-  homeHref = '/',
-  className = '',
+  homeLabel = "Início",
+  homeHref = "/",
+  className = "",
   maxItems,
 }) => {
   // Se não há items fornecidos, gera automaticamente baseado na URL
@@ -32,11 +32,11 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
   const autoItems = React.useMemo(() => {
     if (items.length > 0) return items;
 
-    const pathSegments = location.pathname.split('/').filter(Boolean);
+    const pathSegments = location.pathname.split("/").filter(Boolean);
     const breadcrumbItems: BreadcrumbItem[] = [];
 
     pathSegments.forEach((segment, index) => {
-      const href = '/' + pathSegments.slice(0, index + 1).join('/');
+      const href = "/" + pathSegments.slice(0, index + 1).join("/");
       const label = formatSegmentLabel(segment);
       breadcrumbItems.push({ label, href });
     });
@@ -47,58 +47,56 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
   // Função para formatar labels dos segmentos da URL
   function formatSegmentLabel(segment: string): string {
     const labelMap: Record<string, string> = {
-      'products': 'Produtos',
-      'stores': 'Lojas',
-      'categories': 'Categorias',
-      'orders': 'Pedidos',
-      'profile': 'Perfil',
-      'admin': 'Administração',
-      'seller': 'Vendedor',
-      'dashboard': 'Dashboard',
-      'settings': 'Configurações',
-      'analytics': 'Analytics',
-      'users': 'Usuários',
-      'banners': 'Banners',
-      'plans': 'Planos',
-      'cart': 'Carrinho',
-      'checkout': 'Finalizar Compra',
-      'login': 'Login',
-      'register': 'Cadastro',
-      'about': 'Sobre',
-      'contact': 'Contato',
-      'privacy': 'Privacidade',
-      'terms': 'Termos',
-      'pricing': 'Preços',
+      products: "Produtos",
+      stores: "Lojas",
+      categories: "Categorias",
+      orders: "Pedidos",
+      profile: "Perfil",
+      admin: "Administração",
+      seller: "Vendedor",
+      dashboard: "Dashboard",
+      settings: "Configurações",
+      analytics: "Analytics",
+      users: "Usuários",
+      banners: "Banners",
+      plans: "Planos",
+      cart: "Carrinho",
+      checkout: "Finalizar Compra",
+      login: "Login",
+      register: "Cadastro",
+      about: "Sobre",
+      contact: "Contato",
+      privacy: "Privacidade",
+      terms: "Termos",
+      pricing: "Preços",
     };
 
     return labelMap[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
   }
 
   // Combina home com items
-  const allItems = showHome 
+  const allItems = showHome
     ? [{ label: homeLabel, href: homeHref, icon: <Home className="w-4 h-4" /> }, ...autoItems]
     : autoItems;
 
   // Aplica limite de items se especificado
-  const displayItems = maxItems && allItems.length > maxItems
-    ? [
-        ...allItems.slice(0, 1), // Primeiro item (home)
-        { label: '...', href: undefined }, // Ellipsis
-        ...allItems.slice(-(maxItems - 2)) // Últimos items
-      ]
-    : allItems;
+  const displayItems =
+    maxItems && allItems.length > maxItems
+      ? [
+          ...allItems.slice(0, 1), // Primeiro item (home)
+          { label: "...", href: undefined }, // Ellipsis
+          ...allItems.slice(-(maxItems - 2)), // Últimos items
+        ]
+      : allItems;
 
   if (displayItems.length === 0) return null;
 
   return (
-    <nav 
-      aria-label="Breadcrumb" 
-      className={`flex items-center space-x-1 text-sm ${className}`}
-    >
+    <nav aria-label="Breadcrumb" className={`flex items-center space-x-1 text-sm ${className}`}>
       <ol className="flex items-center space-x-1">
         {displayItems.map((item, index) => {
           const isLast = index === displayItems.length - 1;
-          const isEllipsis = item.label === '...';
+          const isEllipsis = item.label === "...";
 
           return (
             <li key={index} className="flex items-center">
@@ -107,14 +105,11 @@ const Breadcrumbs: React.FC<BreadcrumbsProps> = ({
                   {separator}
                 </span>
               )}
-              
+
               {isEllipsis ? (
                 <span className="text-gray-500 px-2">...</span>
               ) : isLast || !item.href ? (
-                <span 
-                  className="flex items-center space-x-1 text-gray-900 font-medium"
-                  aria-current="page"
-                >
+                <span className="flex items-center space-x-1 text-gray-900 font-medium" aria-current="page">
                   {item.icon}
                   <span>{item.label}</span>
                 </span>
@@ -142,11 +137,11 @@ export const useBreadcrumbs = () => {
   const [items, setItems] = React.useState<BreadcrumbItem[]>([]);
 
   const addItem = (item: BreadcrumbItem) => {
-    setItems(prev => [...prev, item]);
+    setItems((prev) => [...prev, item]);
   };
 
   const removeItem = (index: number) => {
-    setItems(prev => prev.filter((_, i) => i !== index));
+    setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
   const clearItems = () => {
@@ -173,14 +168,10 @@ interface PageBreadcrumbsProps {
   className?: string;
 }
 
-export const PageBreadcrumbs: React.FC<PageBreadcrumbsProps> = ({
-  title,
-  parentPages = [],
-  className = '',
-}) => {
+export const PageBreadcrumbs: React.FC<PageBreadcrumbsProps> = ({ title, parentPages = [], className = "" }) => {
   const items: BreadcrumbItem[] = [
-    ...parentPages.map(page => ({ label: page.label, href: page.href })),
-    { label: title }
+    ...parentPages.map((page) => ({ label: page.label, href: page.href })),
+    { label: title },
   ];
 
   return (
@@ -194,19 +185,19 @@ export const PageBreadcrumbs: React.FC<PageBreadcrumbsProps> = ({
 // Componente para breadcrumbs em cards/seções
 interface SectionBreadcrumbsProps {
   items: BreadcrumbItem[];
-  variant?: 'default' | 'compact' | 'minimal';
+  variant?: "default" | "compact" | "minimal";
   className?: string;
 }
 
 export const SectionBreadcrumbs: React.FC<SectionBreadcrumbsProps> = ({
   items,
-  variant = 'default',
-  className = '',
+  variant = "default",
+  className = "",
 }) => {
   const variantClasses = {
-    default: 'text-sm',
-    compact: 'text-xs',
-    minimal: 'text-xs text-gray-400',
+    default: "text-sm",
+    compact: "text-xs",
+    minimal: "text-xs text-gray-400",
   };
 
   const separatorVariants = {
@@ -236,14 +227,14 @@ export const ProductBreadcrumbs: React.FC<{
   if (category) {
     items.push({
       label: category,
-      href: `/products?category=${encodeURIComponent(category)}`
+      href: `/products?category=${encodeURIComponent(category)}`,
     });
   }
 
   if (subcategory) {
     items.push({
       label: subcategory,
-      href: `/products?category=${encodeURIComponent(category || '')}&subcategory=${encodeURIComponent(subcategory)}`
+      href: `/products?category=${encodeURIComponent(category || "")}&subcategory=${encodeURIComponent(subcategory)}`,
     });
   }
 
@@ -258,14 +249,12 @@ export const StoreBreadcrumbs: React.FC<{
   storeName?: string;
   section?: string;
 }> = ({ storeName, section }) => {
-  const items: BreadcrumbItem[] = [
-    { label: 'Lojas', href: '/stores' }
-  ];
+  const items: BreadcrumbItem[] = [{ label: "Lojas", href: "/stores" }];
 
   if (storeName) {
     items.push({
       label: storeName,
-      href: `/store/${encodeURIComponent(storeName)}`
+      href: `/store/${encodeURIComponent(storeName)}`,
     });
   }
 

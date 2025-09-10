@@ -1,0 +1,542 @@
+[
+  {
+    "id": "TC001",
+    "title": "User Registration Success",
+    "description": "Verify new user registration with valid inputs creates a user and returns a valid JWT token.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send POST request to /auth/register with valid name, email, password, phone, city, state, and userType."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response success is true and user object and JWT token are returned."
+      },
+      {
+        "type": "assertion",
+        "description": "Confirm that the user is stored in the database with hashed password and correct userType."
+      }
+    ]
+  },
+  {
+    "id": "TC002",
+    "title": "User Registration Validation Failures",
+    "description": "Ensure registration fails when required fields are missing or invalid email format is provided.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send POST request to /auth/register with missing email."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response indicates failure with validation error for missing email."
+      },
+      {
+        "type": "action",
+        "description": "Send POST request with invalid email format."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response indicates failure with invalid email format error."
+      }
+    ]
+  },
+  {
+    "id": "TC003",
+    "title": "User Login Success with Correct Credentials",
+    "description": "Verify that a registered user can successfully log in with correct credentials and receive a valid JWT token.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send POST request to /auth/login with valid registered email and password."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify success response with user object and valid JWT token with 7 days expiry."
+      }
+    ]
+  },
+  {
+    "id": "TC004",
+    "title": "User Login Failure with Incorrect Credentials",
+    "description": "Verify login fails with appropriate error message if email or password is incorrect.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send POST request to /auth/login with correct email but wrong password."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response indicates login failure with appropriate error message."
+      },
+      {
+        "type": "action",
+        "description": "Send POST request to /auth/login with unregistered email."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response indicates login failure with user not found message."
+      }
+    ]
+  },
+  {
+    "id": "TC005",
+    "title": "JWT Token Expiration Enforcement",
+    "description": "Verify that JWT tokens expire after 7 days and expired tokens are rejected for protected routes.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Obtain a valid JWT token for a user."
+      },
+      {
+        "type": "action",
+        "description": "Simulate token usage after 7 days expiration time."
+      },
+      {
+        "type": "action",
+        "description": "Access a protected endpoint (e.g. /users/profile) with expired token."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify access is denied with unauthorized or token expired error."
+      }
+    ]
+  },
+  {
+    "id": "TC006",
+    "title": "Create Product with Valid Data (Seller Role)",
+    "description": "Validate that a seller can create a product with all required fields and optional images and specifications.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Authenticate as seller and send POST request to /products with valid product name, description, price, stock, and categoryId."
+      },
+      {
+        "type": "action",
+        "description": "Include optional image URLs array and specifications array in request body."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response returns success and product is created with 'PENDING' approval status."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify product is stored with correct details and linked to seller and store."
+      }
+    ]
+  },
+  {
+    "id": "TC007",
+    "title": "Product Creation Validation Errors",
+    "description": "Validate that product creation fails when required fields are missing or invalid values are provided.",
+    "category": "error handling",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Authenticate as seller and send POST request to /products with missing price."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response includes validation error for missing price."
+      },
+      {
+        "type": "action",
+        "description": "Send POST request with negative stock value."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response rejects request with validation error for invalid stock."
+      }
+    ]
+  },
+  {
+    "id": "TC008",
+    "title": "Admin Product Approval Workflow",
+    "description": "Check that admin can approve or reject a product, and product visibility updates accordingly.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Authenticate as admin and send PATCH request to /admin/products/:id/approval with approvalStatus=APPROVED."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify product approvalStatus is updated to APPROVED and product becomes visible in public listings."
+      },
+      {
+        "type": "action",
+        "description": "Send PATCH request with approvalStatus=REJECTED and provide rejectionReason."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify product is marked as REJECTED and not visible publicly."
+      }
+    ]
+  },
+  {
+    "id": "TC009",
+    "title": "SKU Uniqueness and Stock Management",
+    "description": "Verify product SKU uniqueness enforcement and stock quantity boundaries.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Create a product with a specific SKU."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to create another product with the same SKU for the same seller."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify the second creation fails due to SKU uniqueness constraint."
+      },
+      {
+        "type": "action",
+        "description": "Set product stock to zero, add to cart, and attempt to place order."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify order placement fails due to out-of-stock product."
+      }
+    ]
+  },
+  {
+    "id": "TC010",
+    "title": "Shopping Cart Management and Persistence",
+    "description": "Verify buyers can add, update, and remove products from shopping cart with persistence across sessions.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Authenticate as buyer and add products to cart."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify cart retains added products and quantities."
+      },
+      {
+        "type": "action",
+        "description": "Update quantities and remove an item."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify cart reflects changes accurately."
+      },
+      {
+        "type": "action",
+        "description": "Log out and back in, or refresh page."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify cart contents persist between sessions."
+      }
+    ]
+  },
+  {
+    "id": "TC011",
+    "title": "Checkout Process with Payment Methods",
+    "description": "Verify end-to-end checkout using each supported payment method: CREDIT_CARD, DEBIT_CARD, PIX, BOLETO, WHATSAPP.",
+    "category": "integration",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Add products to cart, proceed to checkout."
+      },
+      {
+        "type": "action",
+        "description": "Enter valid shipping and billing addresses."
+      },
+      {
+        "type": "action",
+        "description": "Select payment method CREDIT_CARD, submit payment."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify payment succeeds and order status updates to PENDING or PROCESSING."
+      },
+      {
+        "type": "action",
+        "description": "Repeat checkout with each payment method PIX, BOLETO, DEBIT_CARD, and WHATSAPP."
+      },
+      {
+        "type": "assertion",
+        "description": "Validate payment integration and order creation for all methods."
+      }
+    ]
+  },
+  {
+    "id": "TC012",
+    "title": "Subscription Plan Limits Enforcement",
+    "description": "Validate that seller subscription plans enforce limits on max products, images, and ads, and support plan upgrades/downgrades.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Authenticate as seller with a subscription plan."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to create products exceeding maxProducts limit."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify creation is blocked with an appropriate limit exceeded error."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to upload images exceeding maxPhotos limit."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify image upload is blocked accordingly."
+      },
+      {
+        "type": "action",
+        "description": "Perform subscription upgrade and downgrade via API."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify limits adjust dynamically and billing processes correctly."
+      }
+    ]
+  },
+  {
+    "id": "TC013",
+    "title": "Seller Store Creation and Verification",
+    "description": "Verify sellers can create stores with branding data and admins can verify or suspend stores.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Authenticate as seller and create store with name, description, logo, banner, email, phone, city, state."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify store is created with isVerified = false by default."
+      },
+      {
+        "type": "action",
+        "description": "Authenticate as admin and approve the store via /admin/stores/:id endpoint."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify store is marked as verified and visible in public listings."
+      },
+      {
+        "type": "action",
+        "description": "Admin suspends store."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify store is marked inactive and hidden from buyers."
+      }
+    ]
+  },
+  {
+    "id": "TC014",
+    "title": "Review and Rating System with Purchase Verification",
+    "description": "Verify that buyers can leave reviews and ratings only for products they purchased, and moderation is enforced.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Authenticate as buyer who purchased a product."
+      },
+      {
+        "type": "action",
+        "description": "Submit review and rating for the product."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify review is accepted and linked to purchase."
+      },
+      {
+        "type": "action",
+        "description": "Attempt to submit review for a product not purchased."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify review is rejected or blocked."
+      },
+      {
+        "type": "action",
+        "description": "Admin moderates review: approves or rejects with reason."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify review visibility updates accordingly."
+      }
+    ]
+  },
+  {
+    "id": "TC015",
+    "title": "Admin Audit Logging Captures All Admin Actions",
+    "description": "Validate audit logs record all admin actions with correct metadata including IP, user agent, action type, resource, and success.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Perform admin actions like creating user, deleting store, approving product."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify audit logs record each action with accurate metadata."
+      },
+      {
+        "type": "action",
+        "description": "Query /admin/audit-logs with filters by action, resource, and success."
+      },
+      {
+        "type": "assertion",
+        "description": "Validate audit log filtering and pagination work as expected."
+      }
+    ]
+  },
+  {
+    "id": "TC016",
+    "title": "CSRF Protection on State-Changing Operations",
+    "description": "Verify that CSRF tokens are required and validated on POST, PUT, PATCH, DELETE API endpoints.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send a POST request to /users/profile without CSRF token."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify request is rejected with CSRF validation error."
+      },
+      {
+        "type": "action",
+        "description": "Obtain valid CSRF token from /csrf-token endpoint."
+      },
+      {
+        "type": "action",
+        "description": "Send same POST request with valid CSRF token."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify request succeeds and updates user profile."
+      }
+    ]
+  },
+  {
+    "id": "TC017",
+    "title": "Rate Limiting for Authentication and Upload Endpoints",
+    "description": "Verify rate limits are enforced on login and avatar upload endpoints to prevent abuse.",
+    "category": "security",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send multiple rapid consecutive POST requests to /auth/login with invalid credentials exceeding rate limit threshold."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify API responds with status 429 Too Many Requests after threshold."
+      },
+      {
+        "type": "action",
+        "description": "Send rapid POST requests to /users/avatar upload endpoint exceeding limit."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify rate limiting error is returned."
+      }
+    ]
+  },
+  {
+    "id": "TC018",
+    "title": "Product Browsing and Filtering by Category and Search",
+    "description": "Validate that buyers can browse active categories and search products with filtering and pagination.",
+    "category": "functional",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send GET request to /categories to retrieve active categories."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response contains categories with correct fields."
+      },
+      {
+        "type": "action",
+        "description": "Send GET request to /products with category filter and search query parameters."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify products returned match filter and search criteria and pagination metadata is present."
+      }
+    ]
+  },
+  {
+    "id": "TC019",
+    "title": "PWA Offline Functionality",
+    "description": "Verify that after initial page load, the PWA supports offline browsing of previously loaded data including product pages and cart.",
+    "category": "functional",
+    "priority": "Medium",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Load product listing and detail pages online."
+      },
+      {
+        "type": "action",
+        "description": "Simulate offline mode by disconnecting from network."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify that cached product pages and cart data are accessible offline without errors."
+      }
+    ]
+  },
+  {
+    "id": "TC020",
+    "title": "Security Headers and CORS Configuration",
+    "description": "Verify that all API responses include security headers from Helmet and enforce CORS policy limiting origins.",
+    "category": "security",
+    "priority": "High",
+    "steps": [
+      {
+        "type": "action",
+        "description": "Send a request to any API endpoint."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify response headers include content-security-policy, x-frame-options, x-content-type-options, and others set by Helmet."
+      },
+      {
+        "type": "action",
+        "description": "Send cross-origin request from an unallowed origin."
+      },
+      {
+        "type": "assertion",
+        "description": "Verify CORS headers reject the request as configured."
+      }
+    ]
+  }
+]

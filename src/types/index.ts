@@ -4,7 +4,7 @@ export interface User {
   name: string;
   email: string;
   phone: string;
-  type: 'buyer' | 'seller' | 'admin';
+  type: "buyer" | "seller" | "admin";
   city: string;
   state: string;
   avatar?: string;
@@ -19,7 +19,7 @@ export interface User {
 }
 
 // Tipos de planos para vendedores
-export type SellerPlan = 'basico' | 'profissional' | 'premium' | 'empresarial';
+export type SellerPlan = "basico" | "profissional" | "premium" | "empresarial";
 
 // Interface para informações do plano
 export interface PlanInfo {
@@ -34,14 +34,14 @@ export interface PlanInfo {
 }
 
 export interface Buyer extends User {
-  type: 'buyer';
+  type: "buyer";
   wishlist: string[]; // IDs dos produtos
   addresses: Address[];
   orderHistory: string[]; // IDs dos pedidos
 }
 
 export interface Seller extends User {
-  type: 'seller';
+  type: "seller";
   storeName: string;
   storeDescription: string;
   storeSlug: string;
@@ -57,7 +57,7 @@ export interface Seller extends User {
 }
 
 export interface Admin extends User {
-  type: 'admin';
+  type: "admin";
   permissions: string[];
   lastLogin: string;
 }
@@ -86,7 +86,7 @@ export interface Product {
   description: string;
   price: number;
   comparePrice?: number; // Preço "de" para mostrar desconto
-  category: string;
+  category: string | { id: string; name: string; slug: string };
   subcategory?: string;
   images: ProductImage[];
   specifications: ProductSpecification[];
@@ -126,7 +126,7 @@ export interface ProductDimensions {
   length: number;
   width: number;
   height: number;
-  unit: 'cm' | 'm';
+  unit: "cm" | "m";
 }
 
 // Tipos de categoria
@@ -212,7 +212,7 @@ export interface StoreTheme {
   primaryColor: string;
   secondaryColor: string;
   fontFamily: string;
-  layout: 'grid' | 'list' | 'masonry';
+  layout: "grid" | "list" | "masonry";
 }
 
 // Tipos de pedido
@@ -249,28 +249,11 @@ export interface OrderItem {
   specifications?: ProductSpecification[];
 }
 
-export type OrderStatus = 
-  | 'pending'
-  | 'confirmed'
-  | 'processing'
-  | 'shipped'
-  | 'delivered'
-  | 'cancelled'
-  | 'refunded';
+export type OrderStatus = "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "cancelled" | "refunded";
 
-export type PaymentMethod = 
-  | 'credit_card'
-  | 'debit_card'
-  | 'pix'
-  | 'boleto'
-  | 'whatsapp';
+export type PaymentMethod = "credit_card" | "debit_card" | "pix" | "boleto" | "whatsapp";
 
-export type PaymentStatus = 
-  | 'pending'
-  | 'processing'
-  | 'paid'
-  | 'failed'
-  | 'refunded';
+export type PaymentStatus = "pending" | "processing" | "paid" | "failed" | "refunded";
 
 // Tipos de avaliação
 export interface Review {
@@ -302,19 +285,19 @@ export interface Notification {
   createdAt: string;
 }
 
-export type NotificationType = 
-  | 'order_created'
-  | 'order_updated'
-  | 'payment_received'
-  | 'product_sold'
-  | 'review_received'
-  | 'stock_low'
-  | 'promotion_started'
-  | 'system_update';
+export type NotificationType =
+  | "order_created"
+  | "order_updated"
+  | "payment_received"
+  | "product_sold"
+  | "review_received"
+  | "stock_low"
+  | "promotion_started"
+  | "system_update";
 
 // Tipos de analytics
 export interface Analytics {
-  period: 'day' | 'week' | 'month' | 'year';
+  period: "day" | "week" | "month" | "year";
   startDate: string;
   endDate: string;
   metrics: AnalyticsMetrics;
@@ -369,7 +352,7 @@ export interface ProductFilters {
   rating?: number;
   inStock?: boolean;
   featured?: boolean;
-  sortBy?: 'price_asc' | 'price_desc' | 'name_asc' | 'name_desc' | 'rating' | 'newest' | 'popular';
+  sortBy?: "price_asc" | "price_desc" | "name_asc" | "name_desc" | "rating" | "newest" | "popular";
   page?: number;
   limit?: number;
   search?: string;
@@ -381,8 +364,8 @@ export interface StoreFilters {
   state?: string;
   rating?: number;
   verified?: boolean;
-  plan?: 'basic' | 'premium' | 'enterprise';
-  sortBy?: 'name_asc' | 'name_desc' | 'rating' | 'newest' | 'popular';
+  plan?: "basic" | "premium" | "enterprise";
+  sortBy?: "name_asc" | "name_desc" | "rating" | "newest" | "popular";
   page?: number;
   limit?: number;
   search?: string;
@@ -412,7 +395,7 @@ export interface PaginatedResponse<T> {
 export interface LoginForm {
   email: string;
   password: string;
-  userType: 'buyer' | 'seller' | 'admin';
+  userType: "buyer" | "seller" | "admin";
 }
 
 export interface RegisterBuyerForm {
@@ -502,4 +485,4 @@ export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
 export type DeepPartial<T> = {
   [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
-}
+};

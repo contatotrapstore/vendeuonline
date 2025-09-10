@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useAuthStore } from '@/store/authStore';
-import { 
-  Store, 
-  Mail, 
-  Phone, 
-  MapPin, 
+import { useState, useEffect } from "react";
+import { useAuthStore } from "@/store/authStore";
+import {
+  Store,
+  Mail,
+  Phone,
+  MapPin,
   Calendar,
   Camera,
   Save,
@@ -17,8 +17,8 @@ import {
   Facebook,
   Instagram,
   Upload,
-  Image as ImageIcon
-} from 'lucide-react';
+  Image as ImageIcon,
+} from "lucide-react";
 
 interface StoreProfile {
   id: string;
@@ -79,13 +79,13 @@ interface StoreProfile {
 }
 
 const daysOfWeek = [
-  { key: 'monday', label: 'Segunda-feira' },
-  { key: 'tuesday', label: 'Terça-feira' },
-  { key: 'wednesday', label: 'Quarta-feira' },
-  { key: 'thursday', label: 'Quinta-feira' },
-  { key: 'friday', label: 'Sexta-feira' },
-  { key: 'saturday', label: 'Sábado' },
-  { key: 'sunday', label: 'Domingo' },
+  { key: "monday", label: "Segunda-feira" },
+  { key: "tuesday", label: "Terça-feira" },
+  { key: "wednesday", label: "Quarta-feira" },
+  { key: "thursday", label: "Quinta-feira" },
+  { key: "friday", label: "Sexta-feira" },
+  { key: "saturday", label: "Sábado" },
+  { key: "sunday", label: "Domingo" },
 ];
 
 export default function SellerProfile() {
@@ -94,12 +94,12 @@ export default function SellerProfile() {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('basic');
+  const [activeTab, setActiveTab] = useState("basic");
 
   useEffect(() => {
     // Verificar autenticação e tipo de usuário
-    if (!user || user.userType !== 'seller') {
-      window.location.href = '/';
+    if (!user || user.userType !== "seller") {
+      window.location.href = "/";
       return;
     }
 
@@ -109,10 +109,10 @@ export default function SellerProfile() {
   const loadStoreProfile = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/stores/profile', {
+      const response = await fetch("/api/stores/profile", {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
       });
 
@@ -120,10 +120,10 @@ export default function SellerProfile() {
         const data = await response.json();
         setProfile(data.profile);
       } else {
-        console.error('Error loading store profile');
+        console.error("Error loading store profile");
       }
     } catch (error) {
-      console.error('Error loading store profile:', error);
+      console.error("Error loading store profile:", error);
     } finally {
       setIsLoading(false);
     }
@@ -131,14 +131,14 @@ export default function SellerProfile() {
 
   const handleSaveProfile = async () => {
     if (!profile) return;
-    
+
     try {
       setIsSaving(true);
-      const response = await fetch('/api/stores/profile', {
-        method: 'PUT',
+      const response = await fetch("/api/stores/profile", {
+        method: "PUT",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(profile),
       });
@@ -147,45 +147,49 @@ export default function SellerProfile() {
         setIsEditing(false);
       }
     } catch (error) {
-      console.error('Error saving store profile:', error);
+      console.error("Error saving store profile:", error);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleImageUpload = async (type: 'logo' | 'banner', event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (type: "logo" | "banner", event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     try {
       const formData = new FormData();
-      formData.append('image', file);
-      formData.append('type', type);
+      formData.append("image", file);
+      formData.append("type", type);
 
-      const response = await fetch('/api/stores/upload', {
-        method: 'POST',
+      const response = await fetch("/api/stores/upload", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: formData,
       });
 
       if (response.ok) {
         const data = await response.json();
-        setProfile(prev => prev ? {
-          ...prev,
-          images: {
-            ...prev.images,
-            [type]: data.imageUrl
-          }
-        } : null);
+        setProfile((prev) =>
+          prev
+            ? {
+                ...prev,
+                images: {
+                  ...prev.images,
+                  [type]: data.imageUrl,
+                },
+              }
+            : null
+        );
       }
     } catch (error) {
-      console.error('Error uploading image:', error);
+      console.error("Error uploading image:", error);
     }
   };
 
-  if (!user || user.userType !== 'seller') {
+  if (!user || user.userType !== "seller") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -202,11 +206,11 @@ export default function SellerProfile() {
   }
 
   const tabs = [
-    { id: 'basic', label: 'Informações Básicas' },
-    { id: 'contact', label: 'Contato' },
-    { id: 'hours', label: 'Horário de Funcionamento' },
-    { id: 'policies', label: 'Políticas' },
-    { id: 'images', label: 'Imagens' },
+    { id: "basic", label: "Informações Básicas" },
+    { id: "contact", label: "Contato" },
+    { id: "hours", label: "Horário de Funcionamento" },
+    { id: "policies", label: "Políticas" },
+    { id: "images", label: "Imagens" },
   ];
 
   return (
@@ -221,7 +225,7 @@ export default function SellerProfile() {
             </div>
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => window.location.href = `/loja/${profile?.slug || 'minha-loja'}`}
+                onClick={() => (window.location.href = `/loja/${profile?.slug || "minha-loja"}`)}
                 className="flex items-center space-x-2 text-blue-600 hover:text-blue-700"
               >
                 <Globe className="h-4 w-4" />
@@ -249,7 +253,7 @@ export default function SellerProfile() {
                     className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                   >
                     <Save className="h-4 w-4" />
-                    <span>{isSaving ? 'Salvando...' : 'Salvar'}</span>
+                    <span>{isSaving ? "Salvando..." : "Salvar"}</span>
                   </button>
                 </div>
               )}
@@ -273,12 +277,12 @@ export default function SellerProfile() {
                   </div>
                   <span className="font-medium">{profile?.stats.rating || 0}/5.0</span>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Avaliações</span>
                   <span className="font-medium">{profile?.stats.reviewCount || 0}</span>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Vendas</span>
                   <span className="font-medium">{profile?.stats.totalSales || 0}</span>
@@ -290,7 +294,7 @@ export default function SellerProfile() {
                     <span className="text-sm text-gray-600">Desde</span>
                   </div>
                   <span className="font-medium text-sm">
-                    {profile?.stats.memberSince ? new Date(profile.stats.memberSince).getFullYear() : '-'}
+                    {profile?.stats.memberSince ? new Date(profile.stats.memberSince).getFullYear() : "-"}
                   </span>
                 </div>
               </div>
@@ -304,8 +308,8 @@ export default function SellerProfile() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full text-left p-3 rounded-lg transition-colors ${
                     activeTab === tab.id
-                      ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-700'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? "bg-blue-50 text-blue-700 border-l-4 border-blue-700"
+                      : "text-gray-600 hover:bg-gray-50"
                   }`}
                 >
                   {tab.label}
@@ -318,10 +322,10 @@ export default function SellerProfile() {
           <div className="lg:col-span-3">
             <div className="bg-white rounded-lg shadow p-6">
               {/* Basic Information Tab */}
-              {activeTab === 'basic' && (
+              {activeTab === "basic" && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-6">Informações Básicas</h3>
-                  
+
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
@@ -332,8 +336,8 @@ export default function SellerProfile() {
                         {isEditing ? (
                           <input
                             type="text"
-                            value={profile?.name || ''}
-                            onChange={(e) => setProfile(prev => prev ? { ...prev, name: e.target.value } : null)}
+                            value={profile?.name || ""}
+                            onChange={(e) => setProfile((prev) => (prev ? { ...prev, name: e.target.value } : null))}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         ) : (
@@ -342,13 +346,13 @@ export default function SellerProfile() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Categoria
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
                         {isEditing ? (
                           <select
-                            value={profile?.category || ''}
-                            onChange={(e) => setProfile(prev => prev ? { ...prev, category: e.target.value } : null)}
+                            value={profile?.category || ""}
+                            onChange={(e) =>
+                              setProfile((prev) => (prev ? { ...prev, category: e.target.value } : null))
+                            }
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           >
                             <option value="">Selecione uma categoria</option>
@@ -366,14 +370,14 @@ export default function SellerProfile() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Descrição da Loja
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Descrição da Loja</label>
                       {isEditing ? (
                         <textarea
                           rows={4}
-                          value={profile?.description || ''}
-                          onChange={(e) => setProfile(prev => prev ? { ...prev, description: e.target.value } : null)}
+                          value={profile?.description || ""}
+                          onChange={(e) =>
+                            setProfile((prev) => (prev ? { ...prev, description: e.target.value } : null))
+                          }
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="Descreva sua loja e produtos..."
                         />
@@ -390,11 +394,17 @@ export default function SellerProfile() {
                           {isEditing ? (
                             <input
                               type="text"
-                              value={profile?.address.street || ''}
-                              onChange={(e) => setProfile(prev => prev ? { 
-                                ...prev, 
-                                address: { ...prev.address, street: e.target.value }
-                              } : null)}
+                              value={profile?.address.street || ""}
+                              onChange={(e) =>
+                                setProfile((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        address: { ...prev.address, street: e.target.value },
+                                      }
+                                    : null
+                                )
+                              }
                               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                           ) : (
@@ -407,11 +417,17 @@ export default function SellerProfile() {
                           {isEditing ? (
                             <input
                               type="text"
-                              value={profile?.address.number || ''}
-                              onChange={(e) => setProfile(prev => prev ? { 
-                                ...prev, 
-                                address: { ...prev.address, number: e.target.value }
-                              } : null)}
+                              value={profile?.address.number || ""}
+                              onChange={(e) =>
+                                setProfile((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        address: { ...prev.address, number: e.target.value },
+                                      }
+                                    : null
+                                )
+                              }
                               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                           ) : (
@@ -424,11 +440,17 @@ export default function SellerProfile() {
                           {isEditing ? (
                             <input
                               type="text"
-                              value={profile?.address.city || ''}
-                              onChange={(e) => setProfile(prev => prev ? { 
-                                ...prev, 
-                                address: { ...prev.address, city: e.target.value }
-                              } : null)}
+                              value={profile?.address.city || ""}
+                              onChange={(e) =>
+                                setProfile((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        address: { ...prev.address, city: e.target.value },
+                                      }
+                                    : null
+                                )
+                              }
                               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                           ) : (
@@ -441,11 +463,17 @@ export default function SellerProfile() {
                           {isEditing ? (
                             <input
                               type="text"
-                              value={profile?.address.state || ''}
-                              onChange={(e) => setProfile(prev => prev ? { 
-                                ...prev, 
-                                address: { ...prev.address, state: e.target.value }
-                              } : null)}
+                              value={profile?.address.state || ""}
+                              onChange={(e) =>
+                                setProfile((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        address: { ...prev.address, state: e.target.value },
+                                      }
+                                    : null
+                                )
+                              }
                               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             />
                           ) : (
@@ -459,10 +487,10 @@ export default function SellerProfile() {
               )}
 
               {/* Contact Tab */}
-              {activeTab === 'contact' && (
+              {activeTab === "contact" && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-6">Informações de Contato</h3>
-                  
+
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
@@ -473,11 +501,17 @@ export default function SellerProfile() {
                         {isEditing ? (
                           <input
                             type="tel"
-                            value={profile?.contact.phone || ''}
-                            onChange={(e) => setProfile(prev => prev ? { 
-                              ...prev, 
-                              contact: { ...prev.contact, phone: e.target.value }
-                            } : null)}
+                            value={profile?.contact.phone || ""}
+                            onChange={(e) =>
+                              setProfile((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      contact: { ...prev.contact, phone: e.target.value },
+                                    }
+                                  : null
+                              )
+                            }
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         ) : (
@@ -493,11 +527,17 @@ export default function SellerProfile() {
                         {isEditing ? (
                           <input
                             type="email"
-                            value={profile?.contact.email || ''}
-                            onChange={(e) => setProfile(prev => prev ? { 
-                              ...prev, 
-                              contact: { ...prev.contact, email: e.target.value }
-                            } : null)}
+                            value={profile?.contact.email || ""}
+                            onChange={(e) =>
+                              setProfile((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      contact: { ...prev.contact, email: e.target.value },
+                                    }
+                                  : null
+                              )
+                            }
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         ) : (
@@ -506,21 +546,25 @@ export default function SellerProfile() {
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          WhatsApp
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">WhatsApp</label>
                         {isEditing ? (
                           <input
                             type="tel"
-                            value={profile?.contact.whatsapp || ''}
-                            onChange={(e) => setProfile(prev => prev ? { 
-                              ...prev, 
-                              contact: { ...prev.contact, whatsapp: e.target.value }
-                            } : null)}
+                            value={profile?.contact.whatsapp || ""}
+                            onChange={(e) =>
+                              setProfile((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      contact: { ...prev.contact, whatsapp: e.target.value },
+                                    }
+                                  : null
+                              )
+                            }
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         ) : (
-                          <p className="p-3 bg-gray-50 rounded-lg">{profile?.contact.whatsapp || '-'}</p>
+                          <p className="p-3 bg-gray-50 rounded-lg">{profile?.contact.whatsapp || "-"}</p>
                         )}
                       </div>
 
@@ -532,15 +576,21 @@ export default function SellerProfile() {
                         {isEditing ? (
                           <input
                             type="url"
-                            value={profile?.contact.website || ''}
-                            onChange={(e) => setProfile(prev => prev ? { 
-                              ...prev, 
-                              contact: { ...prev.contact, website: e.target.value }
-                            } : null)}
+                            value={profile?.contact.website || ""}
+                            onChange={(e) =>
+                              setProfile((prev) =>
+                                prev
+                                  ? {
+                                      ...prev,
+                                      contact: { ...prev.contact, website: e.target.value },
+                                    }
+                                  : null
+                              )
+                            }
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           />
                         ) : (
-                          <p className="p-3 bg-gray-50 rounded-lg">{profile?.contact.website || '-'}</p>
+                          <p className="p-3 bg-gray-50 rounded-lg">{profile?.contact.website || "-"}</p>
                         )}
                       </div>
                     </div>
@@ -556,16 +606,22 @@ export default function SellerProfile() {
                           {isEditing ? (
                             <input
                               type="url"
-                              value={profile?.social.facebook || ''}
-                              onChange={(e) => setProfile(prev => prev ? { 
-                                ...prev, 
-                                social: { ...prev.social, facebook: e.target.value }
-                              } : null)}
+                              value={profile?.social.facebook || ""}
+                              onChange={(e) =>
+                                setProfile((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        social: { ...prev.social, facebook: e.target.value },
+                                      }
+                                    : null
+                                )
+                              }
                               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               placeholder="https://facebook.com/sua-loja"
                             />
                           ) : (
-                            <p className="p-2 bg-gray-50 rounded text-sm">{profile?.social.facebook || '-'}</p>
+                            <p className="p-2 bg-gray-50 rounded text-sm">{profile?.social.facebook || "-"}</p>
                           )}
                         </div>
 
@@ -577,16 +633,22 @@ export default function SellerProfile() {
                           {isEditing ? (
                             <input
                               type="url"
-                              value={profile?.social.instagram || ''}
-                              onChange={(e) => setProfile(prev => prev ? { 
-                                ...prev, 
-                                social: { ...prev.social, instagram: e.target.value }
-                              } : null)}
+                              value={profile?.social.instagram || ""}
+                              onChange={(e) =>
+                                setProfile((prev) =>
+                                  prev
+                                    ? {
+                                        ...prev,
+                                        social: { ...prev.social, instagram: e.target.value },
+                                      }
+                                    : null
+                                )
+                              }
                               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               placeholder="https://instagram.com/sua-loja"
                             />
                           ) : (
-                            <p className="p-2 bg-gray-50 rounded text-sm">{profile?.social.instagram || '-'}</p>
+                            <p className="p-2 bg-gray-50 rounded text-sm">{profile?.social.instagram || "-"}</p>
                           )}
                         </div>
                       </div>
@@ -596,82 +658,110 @@ export default function SellerProfile() {
               )}
 
               {/* Business Hours Tab */}
-              {activeTab === 'hours' && (
+              {activeTab === "hours" && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-6">Horário de Funcionamento</h3>
-                  
+
                   <div className="space-y-4">
                     {daysOfWeek.map((day) => (
-                      <div key={day.key} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div
+                        key={day.key}
+                        className="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
+                      >
                         <div className="flex items-center space-x-3">
                           <Clock className="h-4 w-4 text-gray-400" />
                           <span className="font-medium text-gray-900 w-24">{day.label}</span>
                         </div>
-                        
+
                         <div className="flex items-center space-x-4">
                           {isEditing && (
                             <label className="flex items-center space-x-2">
                               <input
                                 type="checkbox"
-                                checked={profile?.businessHours[day.key as keyof typeof profile.businessHours]?.closed || false}
-                                onChange={(e) => setProfile(prev => prev ? {
-                                  ...prev,
-                                  businessHours: {
-                                    ...prev.businessHours,
-                                    [day.key]: {
-                                      ...prev.businessHours[day.key as keyof typeof prev.businessHours],
-                                      closed: e.target.checked
-                                    }
-                                  }
-                                } : null)}
+                                checked={
+                                  profile?.businessHours[day.key as keyof typeof profile.businessHours]?.closed || false
+                                }
+                                onChange={(e) =>
+                                  setProfile((prev) =>
+                                    prev
+                                      ? {
+                                          ...prev,
+                                          businessHours: {
+                                            ...prev.businessHours,
+                                            [day.key]: {
+                                              ...prev.businessHours[day.key as keyof typeof prev.businessHours],
+                                              closed: e.target.checked,
+                                            },
+                                          },
+                                        }
+                                      : null
+                                  )
+                                }
                                 className="rounded border-gray-300 text-red-600 focus:ring-red-500"
                               />
                               <span className="text-sm text-red-600">Fechado</span>
                             </label>
                           )}
-                          
-                          {!(profile?.businessHours[day.key as keyof typeof profile.businessHours]?.closed) && (
+
+                          {!profile?.businessHours[day.key as keyof typeof profile.businessHours]?.closed && (
                             <div className="flex items-center space-x-2">
                               {isEditing ? (
                                 <>
                                   <input
                                     type="time"
-                                    value={profile?.businessHours[day.key as keyof typeof profile.businessHours]?.open || '09:00'}
-                                    onChange={(e) => setProfile(prev => prev ? {
-                                      ...prev,
-                                      businessHours: {
-                                        ...prev.businessHours,
-                                        [day.key]: {
-                                          ...prev.businessHours[day.key as keyof typeof prev.businessHours],
-                                          open: e.target.value
-                                        }
-                                      }
-                                    } : null)}
+                                    value={
+                                      profile?.businessHours[day.key as keyof typeof profile.businessHours]?.open ||
+                                      "09:00"
+                                    }
+                                    onChange={(e) =>
+                                      setProfile((prev) =>
+                                        prev
+                                          ? {
+                                              ...prev,
+                                              businessHours: {
+                                                ...prev.businessHours,
+                                                [day.key]: {
+                                                  ...prev.businessHours[day.key as keyof typeof prev.businessHours],
+                                                  open: e.target.value,
+                                                },
+                                              },
+                                            }
+                                          : null
+                                      )
+                                    }
                                     className="p-1 border border-gray-300 rounded text-sm"
                                   />
                                   <span className="text-gray-500">às</span>
                                   <input
                                     type="time"
-                                    value={profile?.businessHours[day.key as keyof typeof profile.businessHours]?.close || '18:00'}
-                                    onChange={(e) => setProfile(prev => prev ? {
-                                      ...prev,
-                                      businessHours: {
-                                        ...prev.businessHours,
-                                        [day.key]: {
-                                          ...prev.businessHours[day.key as keyof typeof prev.businessHours],
-                                          close: e.target.value
-                                        }
-                                      }
-                                    } : null)}
+                                    value={
+                                      profile?.businessHours[day.key as keyof typeof profile.businessHours]?.close ||
+                                      "18:00"
+                                    }
+                                    onChange={(e) =>
+                                      setProfile((prev) =>
+                                        prev
+                                          ? {
+                                              ...prev,
+                                              businessHours: {
+                                                ...prev.businessHours,
+                                                [day.key]: {
+                                                  ...prev.businessHours[day.key as keyof typeof prev.businessHours],
+                                                  close: e.target.value,
+                                                },
+                                              },
+                                            }
+                                          : null
+                                      )
+                                    }
                                     className="p-1 border border-gray-300 rounded text-sm"
                                   />
                                 </>
                               ) : (
                                 <span className="text-sm text-gray-600">
-                                  {profile?.businessHours[day.key as keyof typeof profile.businessHours]?.closed 
-                                    ? 'Fechado' 
-                                    : `${profile?.businessHours[day.key as keyof typeof profile.businessHours]?.open || '09:00'} às ${profile?.businessHours[day.key as keyof typeof profile.businessHours]?.close || '18:00'}`
-                                  }
+                                  {profile?.businessHours[day.key as keyof typeof profile.businessHours]?.closed
+                                    ? "Fechado"
+                                    : `${profile?.businessHours[day.key as keyof typeof profile.businessHours]?.open || "09:00"} às ${profile?.businessHours[day.key as keyof typeof profile.businessHours]?.close || "18:00"}`}
                                 </span>
                               )}
                             </div>
@@ -684,10 +774,10 @@ export default function SellerProfile() {
               )}
 
               {/* Policies Tab */}
-              {activeTab === 'policies' && (
+              {activeTab === "policies" && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-6">Políticas da Loja</h3>
-                  
+
                   <div className="space-y-6">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -696,56 +786,76 @@ export default function SellerProfile() {
                       {isEditing ? (
                         <textarea
                           rows={4}
-                          value={profile?.policies.returnPolicy || ''}
-                          onChange={(e) => setProfile(prev => prev ? { 
-                            ...prev, 
-                            policies: { ...prev.policies, returnPolicy: e.target.value }
-                          } : null)}
+                          value={profile?.policies.returnPolicy || ""}
+                          onChange={(e) =>
+                            setProfile((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    policies: { ...prev.policies, returnPolicy: e.target.value },
+                                  }
+                                : null
+                            )
+                          }
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="Descreva sua política de troca e devolução..."
                         />
                       ) : (
-                        <p className="p-3 bg-gray-50 rounded-lg min-h-[100px]">{profile?.policies.returnPolicy || 'Não definida'}</p>
+                        <p className="p-3 bg-gray-50 rounded-lg min-h-[100px]">
+                          {profile?.policies.returnPolicy || "Não definida"}
+                        </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Política de Envio
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Política de Envio</label>
                       {isEditing ? (
                         <textarea
                           rows={4}
-                          value={profile?.policies.shippingPolicy || ''}
-                          onChange={(e) => setProfile(prev => prev ? { 
-                            ...prev, 
-                            policies: { ...prev.policies, shippingPolicy: e.target.value }
-                          } : null)}
+                          value={profile?.policies.shippingPolicy || ""}
+                          onChange={(e) =>
+                            setProfile((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    policies: { ...prev.policies, shippingPolicy: e.target.value },
+                                  }
+                                : null
+                            )
+                          }
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="Descreva sua política de envio..."
                         />
                       ) : (
-                        <p className="p-3 bg-gray-50 rounded-lg min-h-[100px]">{profile?.policies.shippingPolicy || 'Não definida'}</p>
+                        <p className="p-3 bg-gray-50 rounded-lg min-h-[100px]">
+                          {profile?.policies.shippingPolicy || "Não definida"}
+                        </p>
                       )}
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Termos de Serviço
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Termos de Serviço</label>
                       {isEditing ? (
                         <textarea
                           rows={4}
-                          value={profile?.policies.termsOfService || ''}
-                          onChange={(e) => setProfile(prev => prev ? { 
-                            ...prev, 
-                            policies: { ...prev.policies, termsOfService: e.target.value }
-                          } : null)}
+                          value={profile?.policies.termsOfService || ""}
+                          onChange={(e) =>
+                            setProfile((prev) =>
+                              prev
+                                ? {
+                                    ...prev,
+                                    policies: { ...prev.policies, termsOfService: e.target.value },
+                                  }
+                                : null
+                            )
+                          }
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                           placeholder="Descreva seus termos de serviço..."
                         />
                       ) : (
-                        <p className="p-3 bg-gray-50 rounded-lg min-h-[100px]">{profile?.policies.termsOfService || 'Não definidos'}</p>
+                        <p className="p-3 bg-gray-50 rounded-lg min-h-[100px]">
+                          {profile?.policies.termsOfService || "Não definidos"}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -753,10 +863,10 @@ export default function SellerProfile() {
               )}
 
               {/* Images Tab */}
-              {activeTab === 'images' && (
+              {activeTab === "images" && (
                 <div>
                   <h3 className="text-lg font-medium text-gray-900 mb-6">Imagens da Loja</h3>
-                  
+
                   <div className="space-y-8">
                     {/* Logo */}
                     <div>
@@ -764,11 +874,7 @@ export default function SellerProfile() {
                       <div className="flex items-center space-x-6">
                         <div className="w-24 h-24 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                           {profile?.images.logo ? (
-                            <img 
-                              src={profile.images.logo} 
-                              alt="Logo"
-                              className="w-full h-full object-contain"
-                            />
+                            <img src={profile.images.logo} alt="Logo" className="w-full h-full object-contain" />
                           ) : (
                             <Store className="h-10 w-10 text-gray-400" />
                           )}
@@ -781,7 +887,7 @@ export default function SellerProfile() {
                               <input
                                 type="file"
                                 accept="image/*"
-                                onChange={(e) => handleImageUpload('logo', e)}
+                                onChange={(e) => handleImageUpload("logo", e)}
                                 className="hidden"
                               />
                             </label>
@@ -797,11 +903,7 @@ export default function SellerProfile() {
                       <div className="space-y-4">
                         <div className="w-full h-48 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                           {profile?.images.banner ? (
-                            <img 
-                              src={profile.images.banner} 
-                              alt="Banner"
-                              className="w-full h-full object-cover"
-                            />
+                            <img src={profile.images.banner} alt="Banner" className="w-full h-full object-cover" />
                           ) : (
                             <ImageIcon className="h-16 w-16 text-gray-400" />
                           )}
@@ -814,7 +916,7 @@ export default function SellerProfile() {
                               <input
                                 type="file"
                                 accept="image/*"
-                                onChange={(e) => handleImageUpload('banner', e)}
+                                onChange={(e) => handleImageUpload("banner", e)}
                                 className="hidden"
                               />
                             </label>

@@ -1,33 +1,23 @@
-'use client';
+"use client";
 
-import { useState, useEffect, Suspense } from 'react';
-import { Search, Filter, Grid, List, SlidersHorizontal, Loader2, AlertCircle } from 'lucide-react';
-import { ProductCard } from '@/components/ui/ProductCard';
-import { ProductFilters } from '@/components/ui/ProductFilters';
-import { useProductStore } from '@/store/productStore';
-import { useCart } from '@/store/cartStore';
-import { useWishlistStore } from '@/store/wishlistStore';
-import { EmptySearch, EmptyProducts } from '@/components/ui/feedback/EmptyState';
+import { useState, useEffect, Suspense } from "react";
+import { Search, Filter, Grid, List, SlidersHorizontal, Loader2, AlertCircle } from "lucide-react";
+import { ProductCard } from "@/components/ui/ProductCard";
+import { ProductFilters } from "@/components/ui/ProductFilters";
+import { useProductStore } from "@/store/productStore";
+import { useCart } from "@/store/cartStore";
+import { useWishlistStore } from "@/store/wishlistStore";
+import { EmptySearch, EmptyProducts } from "@/components/ui/feedback/EmptyState";
 
-const categories = [
-  'Todos',
-  'Eletrônicos',
-  'Imóveis',
-  'Veículos',
-  'Roupas',
-  'Comida',
-  'Serviços',
-  'Emprego',
-  'Móveis'
-];
+const categories = ["Todos", "Eletrônicos", "Imóveis", "Veículos", "Roupas", "Comida", "Serviços", "Emprego", "Móveis"];
 
 const sortOptions = [
-  { value: 'relevance', label: 'Mais Relevantes' },
-  { value: 'price_asc', label: 'Menor Preço' },
-  { value: 'price_desc', label: 'Maior Preço' },
-  { value: 'rating', label: 'Melhor Avaliação' },
-  { value: 'newest', label: 'Mais Recentes' },
-  { value: 'popular', label: 'Mais Populares' }
+  { value: "relevance", label: "Mais Relevantes" },
+  { value: "price_asc", label: "Menor Preço" },
+  { value: "price_desc", label: "Maior Preço" },
+  { value: "rating", label: "Melhor Avaliação" },
+  { value: "newest", label: "Mais Recentes" },
+  { value: "popular", label: "Mais Populares" },
 ];
 
 export default function ProductsPage() {
@@ -42,10 +32,10 @@ export default function ProductsPage() {
     fetchProducts,
     setFilters,
     resetFilters,
-    clearError
+    clearError,
   } = useProductStore();
 
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -65,10 +55,10 @@ export default function ProductsPage() {
       page: 1,
       limit: 12,
       search: filters.search || undefined,
-      category: filters.category !== 'Todos' ? filters.category : undefined,
+      category: filters.category !== "Todos" ? filters.category : undefined,
       minPrice: filters.minPrice > 0 ? filters.minPrice : undefined,
       maxPrice: filters.maxPrice > 0 ? filters.maxPrice : undefined,
-      sortBy: filters.sortBy !== 'relevance' ? filters.sortBy : undefined
+      sortBy: filters.sortBy !== "relevance" ? filters.sortBy : undefined,
     };
     fetchProducts(params);
   }, [filters, fetchProducts]);
@@ -76,7 +66,7 @@ export default function ProductsPage() {
   // Usar paginação da API
   const currentProducts = products;
   const totalPages = pagination.totalPages;
-  
+
   // Carregar nova página
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -84,17 +74,21 @@ export default function ProductsPage() {
       page,
       limit: 12,
       search: filters.search || undefined,
-      category: filters.category !== 'Todos' ? filters.category : undefined,
+      category: filters.category !== "Todos" ? filters.category : undefined,
       minPrice: filters.minPrice > 0 ? filters.minPrice : undefined,
       maxPrice: filters.maxPrice > 0 ? filters.maxPrice : undefined,
-      sortBy: filters.sortBy !== 'relevance' ? filters.sortBy : undefined
+      sortBy: filters.sortBy !== "relevance" ? filters.sortBy : undefined,
     };
     fetchProducts(params);
   };
 
   // Get unique brands and conditions from all products
-  const availableBrands = Array.from(new Set(products.map(p => p.specifications?.find(spec => spec.name === 'Marca')?.value).filter(Boolean))).sort();
-  const availableConditions = Array.from(new Set(products.map(p => p.specifications?.find(spec => spec.name === 'Condição')?.value).filter(Boolean))).sort();
+  const availableBrands = Array.from(
+    new Set(products.map((p) => p.specifications?.find((spec) => spec.name === "Marca")?.value).filter(Boolean))
+  ).sort();
+  const availableConditions = Array.from(
+    new Set(products.map((p) => p.specifications?.find((spec) => spec.name === "Condição")?.value).filter(Boolean))
+  ).sort();
 
   const handleSearch = (searchTerm: string) => {
     setFilters({ search: searchTerm });
@@ -145,8 +139,10 @@ export default function ProductsPage() {
                 onChange={(e) => handleCategoryChange(e.target.value)}
                 className="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
+                {categories.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
                 ))}
               </select>
             </div>
@@ -158,8 +154,10 @@ export default function ProductsPage() {
                 onChange={(e) => handleSortChange(e.target.value)}
                 className="w-full py-3 px-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                {sortOptions.map(option => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
+                {sortOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
                 ))}
               </select>
             </div>
@@ -168,7 +166,9 @@ export default function ProductsPage() {
             <button
               onClick={() => setShowFilters(!showFilters)}
               className={`flex items-center gap-2 px-4 py-3 border rounded-lg transition-colors ${
-                showFilters ? 'bg-blue-50 border-blue-300 text-blue-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                showFilters
+                  ? "bg-blue-50 border-blue-300 text-blue-700"
+                  : "border-gray-300 text-gray-700 hover:bg-gray-50"
               }`}
             >
               <SlidersHorizontal className="h-5 w-5" />
@@ -178,17 +178,15 @@ export default function ProductsPage() {
             {/* View Mode */}
             <div className="flex border border-gray-300 rounded-lg overflow-hidden">
               <button
-                onClick={() => setViewMode('grid')}
-                className={`p-3 ${
-                  viewMode === 'grid' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
-                }`}
+                onClick={() => setViewMode("grid")}
+                className={`p-3 ${viewMode === "grid" ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-50"}`}
               >
                 <Grid className="h-5 w-5" />
               </button>
               <button
-                onClick={() => setViewMode('list')}
+                onClick={() => setViewMode("list")}
                 className={`p-3 border-l border-gray-300 ${
-                  viewMode === 'list' ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'
+                  viewMode === "list" ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-50"
                 }`}
               >
                 <List className="h-5 w-5" />
@@ -201,15 +199,17 @@ export default function ProductsPage() {
           {/* Sidebar Filters */}
           {showFilters && (
             <div className="w-80 flex-shrink-0">
-              <Suspense fallback={
-                <div className="bg-white rounded-lg p-6 shadow-sm border">
-                  <div className="animate-pulse space-y-4">
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                    <div className="h-8 bg-gray-200 rounded"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+              <Suspense
+                fallback={
+                  <div className="bg-white rounded-lg p-6 shadow-sm border">
+                    <div className="animate-pulse space-y-4">
+                      <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                      <div className="h-8 bg-gray-200 rounded"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                    </div>
                   </div>
-                </div>
-              }>
+                }
+              >
                 <ProductFilters
                   priceRange={[filters.minPrice, filters.maxPrice]}
                   onPriceRangeChange={(range) => setFilters({ minPrice: range[0], maxPrice: range[1] })}
@@ -233,17 +233,19 @@ export default function ProductsPage() {
             {/* Results Info */}
             <div className="flex justify-between items-center mb-6">
               <p className="text-gray-600">
-                {loading ? 'Carregando...' : `Mostrando ${((pagination.page - 1) * pagination.limit) + 1}-${Math.min(pagination.page * pagination.limit, pagination.total)} de ${pagination.total} produtos`}
+                {loading
+                  ? "Carregando..."
+                  : `Mostrando ${(pagination.page - 1) * pagination.limit + 1}-${Math.min(pagination.page * pagination.limit, pagination.total)} de ${pagination.total} produtos`}
               </p>
-              
+
               {/* Quick clear filters if any active */}
-              {(filters.search || 
-                filters.category !== 'Todos' || 
-                filters.minPrice > 0 || 
-                filters.maxPrice > 0 || 
-                filters.brands.length > 0 || 
-                filters.conditions.length > 0 || 
-                filters.freeShippingOnly || 
+              {(filters.search ||
+                filters.category !== "Todos" ||
+                filters.minPrice > 0 ||
+                filters.maxPrice > 0 ||
+                filters.brands.length > 0 ||
+                filters.conditions.length > 0 ||
+                filters.freeShippingOnly ||
                 filters.minRating > 0) && (
                 <button
                   onClick={handleClearFilters}
@@ -287,21 +289,27 @@ export default function ProductsPage() {
 
             {/* Products */}
             {!loading && !error && currentProducts.length > 0 ? (
-              <div className={viewMode === 'grid' 
-                ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
-                : 'space-y-4'
-              }>
-                {currentProducts.map(product => (
-                  <Suspense key={product.id} fallback={
-                    <div className="bg-white rounded-lg shadow-sm border animate-pulse">
-                      <div className="aspect-square bg-gray-200 rounded-t-lg"></div>
-                      <div className="p-4 space-y-3">
-                        <div className="h-4 bg-gray-200 rounded"></div>
-                        <div className="h-4 bg-gray-200 rounded w-2/3"></div>
-                        <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+              <div
+                className={
+                  viewMode === "grid"
+                    ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                    : "space-y-4"
+                }
+              >
+                {currentProducts.map((product) => (
+                  <Suspense
+                    key={product.id}
+                    fallback={
+                      <div className="bg-white rounded-lg shadow-sm border animate-pulse">
+                        <div className="aspect-square bg-gray-200 rounded-t-lg"></div>
+                        <div className="p-4 space-y-3">
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                          <div className="h-6 bg-gray-200 rounded w-1/2"></div>
+                        </div>
                       </div>
-                    </div>
-                  }>
+                    }
+                  >
                     <ProductCard
                       product={product}
                       viewMode={viewMode}
@@ -310,15 +318,15 @@ export default function ProductsPage() {
                           id: product.id,
                           name: product.name,
                           price: product.price,
-                          image: product.images?.[0]?.url || '/placeholder-product.png',
-                          store: product.store?.name || 'Loja',
-                          maxQuantity: product.stock
+                          image: product.images?.[0]?.url || "/placeholder-product.png",
+                          store: product.store?.name || "Loja",
+                          maxQuantity: product.stock,
                         });
                         openCart();
                       }}
                       onToggleWishlist={(product) => {
                         if (isInWishlist(product.id)) {
-                          const wishlistItem = wishlistItems.find(item => item.productId === product.id);
+                          const wishlistItem = wishlistItems.find((item) => item.productId === product.id);
                           if (wishlistItem) {
                             removeFromWishlist(wishlistItem.id);
                           }
@@ -330,15 +338,15 @@ export default function ProductsPage() {
                   </Suspense>
                 ))}
               </div>
-            ) : !loading && !error && isEmpty && (
-              filters.search ? (
-                <EmptySearch 
-                  searchTerm={filters.search}
-                  onClearSearch={handleClearFilters}
-                />
+            ) : (
+              !loading &&
+              !error &&
+              isEmpty &&
+              (filters.search ? (
+                <EmptySearch searchTerm={filters.search} onClearSearch={handleClearFilters} />
               ) : (
                 <EmptyProducts />
-              )
+              ))
             )}
 
             {/* Pagination */}
@@ -352,7 +360,7 @@ export default function ProductsPage() {
                   >
                     Anterior
                   </button>
-                  
+
                   {/* Page numbers */}
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                     let page;
@@ -365,7 +373,7 @@ export default function ProductsPage() {
                     } else {
                       page = pagination.page - 2 + i;
                     }
-                    
+
                     return (
                       <button
                         key={page}
@@ -373,15 +381,15 @@ export default function ProductsPage() {
                         disabled={loading}
                         className={`px-3 py-2 border rounded-lg transition-colors ${
                           pagination.page === page
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : 'border-gray-300 hover:bg-gray-50'
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "border-gray-300 hover:bg-gray-50"
                         }`}
                       >
                         {page}
                       </button>
                     );
                   })}
-                  
+
                   <button
                     onClick={() => handlePageChange(Math.min(totalPages, pagination.page + 1))}
                     disabled={!pagination.hasNext || loading}

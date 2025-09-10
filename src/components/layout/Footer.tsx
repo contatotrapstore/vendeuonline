@@ -1,12 +1,25 @@
-'use client';
+"use client";
 
-import { Store, Mail, Phone, MapPin, Facebook, Instagram, Twitter, Youtube, Heart, Shield, Truck, CreditCard } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { APP_CONFIG } from '@/config/app';
+import {
+  Store,
+  Mail,
+  Phone,
+  MapPin,
+  Facebook,
+  Instagram,
+  Twitter,
+  Youtube,
+  Heart,
+  Shield,
+  Truck,
+  CreditCard,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import { APP_CONFIG } from "@/config/app";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
-  
+
   return (
     <footer className="bg-gray-900 text-white">
       {/* Main Footer Content */}
@@ -24,20 +37,32 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-gray-300 text-sm leading-relaxed">
-              A plataforma que conecta compradores e vendedores em Erechim e região. 
-              Encontre produtos locais com segurança e praticidade.
+              A plataforma que conecta compradores e vendedores em Erechim e região. Encontre produtos locais com
+              segurança e praticidade.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors">
+              <a
+                href="#"
+                className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-600 transition-colors"
+              >
                 <Facebook className="h-4 w-4" />
               </a>
-              <a href="#" className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors">
+              <a
+                href="#"
+                className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-pink-600 transition-colors"
+              >
                 <Instagram className="h-4 w-4" />
               </a>
-              <a href="#" className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-400 transition-colors">
+              <a
+                href="#"
+                className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-blue-400 transition-colors"
+              >
                 <Twitter className="h-4 w-4" />
               </a>
-              <a href="#" className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors">
+              <a
+                href="#"
+                className="w-8 h-8 bg-gray-800 rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
+              >
                 <Youtube className="h-4 w-4" />
               </a>
             </div>
@@ -123,24 +148,18 @@ export default function Footer() {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <MapPin className="h-4 w-4 text-blue-400 flex-shrink-0" />
-                <span className="text-gray-300 text-sm">
-                  Erechim, Rio Grande do Sul
-                </span>
+                <span className="text-gray-300 text-sm">Erechim, Rio Grande do Sul</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="h-4 w-4 text-blue-400 flex-shrink-0" />
-                <span className="text-gray-300 text-sm">
-                  (54) 9999-9999
-                </span>
+                <span className="text-gray-300 text-sm">(54) 9999-9999</span>
               </div>
               <div className="flex items-center space-x-3">
                 <Mail className="h-4 w-4 text-blue-400 flex-shrink-0" />
-                <span className="text-gray-300 text-sm">
-                  contato@vendeuonline.com.br
-                </span>
+                <span className="text-gray-300 text-sm">contato@vendeuonline.com.br</span>
               </div>
             </div>
-            
+
             {/* Trust Badges */}
             <div className="pt-4">
               <h5 className="text-sm font-medium text-white mb-3">Segurança e Confiança</h5>

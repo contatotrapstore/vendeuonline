@@ -1,14 +1,15 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Separator } from '@/components/ui/separator';
-import { CreditCard, Smartphone, QrCode, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { CreditCard, Smartphone, QrCode, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useTracking } from "@/components/TrackingScripts";
 
 interface CheckoutItem {
   id: string;
@@ -44,33 +45,34 @@ interface PayerData {
 }
 
 export default function CheckoutForm({ items, onPaymentSuccess, onPaymentError }: CheckoutFormProps) {
-  const [paymentMethod, setPaymentMethod] = useState<'credit_card' | 'pix'>('pix');
+  const [paymentMethod, setPaymentMethod] = useState<"credit_card" | "pix">("pix");
   const [loading, setLoading] = useState(false);
   const [pixData, setPixData] = useState<any>(null);
+  const { trackPurchase } = useTracking();
   const [payerData, setPayerData] = useState<PayerData>({
-    email: '',
-    first_name: '',
-    last_name: ''
+    email: "",
+    first_name: "",
+    last_name: "",
   });
 
-  const totalAmount = items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+  const totalAmount = items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
 
   const handlePayerDataChange = (field: keyof PayerData, value: string) => {
-    setPayerData(prev => ({
+    setPayerData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const validateForm = () => {
     if (!payerData.email || !payerData.first_name || !payerData.last_name) {
-      toast.error('Preencha todos os campos obrigatórios');
+      toast.error("Preencha todos os campos obrigatórios");
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(payerData.email)) {
-      toast.error('Email inválido');
+      toast.error("Email inválido");
       return false;
     }
 
@@ -83,31 +85,31 @@ export default function CheckoutForm({ items, onPaymentSuccess, onPaymentError }
     setLoading(true);
     try {
       const externalReference = `order_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
+
       const paymentData = {
         items,
         payer: payerData,
         paymentMethod,
-        externalReference
+        externalReference,
       };
 
-      const response = await fetch('/api/payments/create', {
-        method: 'POST',
+      const response = await fetch("/api/payments/create", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(paymentData)
+        body: JSON.stringify(paymentData),
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao processar pagamento');
+        throw new Error(result.error || "Erro ao processar pagamento");
       }
 
-      if (paymentMethod === 'pix') {
+      if (paymentMethod === "pix") {
         setPixData(result.payment);
-        toast.success('PIX gerado com sucesso!');
+        toast.success("PIX gerado com sucesso!");
       } else {
         // Redirecionar para o Mercado Pago
         if (result.preference?.init_point) {
@@ -115,11 +117,25 @@ export default function CheckoutForm({ items, onPaymentSuccess, onPaymentError }
         }
       }
 
-      onPaymentSuccess?.(result);
+      // Track conversion event
+      const totalValue = items.reduce((sum, item) => sum + item.unit_price * item.quantity, 0);
+      const transactionId = result.payment?.id || result.preference?.id || `order_${Date.now()}`;
 
+      trackPurchase(
+        transactionId,
+        totalValue,
+        items.map((item) => ({
+          id: item.id,
+          name: item.title,
+          price: item.unit_price,
+          quantity: item.quantity,
+        }))
+      );
+
+      onPaymentSuccess?.(result);
     } catch (error) {
-      console.error('Erro no pagamento:', error);
-      toast.error(error instanceof Error ? error.message : 'Erro ao processar pagamento');
+      console.error("Erro no pagamento:", error);
+      toast.error(error instanceof Error ? error.message : "Erro ao processar pagamento");
       onPaymentError?.(error);
     } finally {
       setLoading(false);
@@ -129,7 +145,7 @@ export default function CheckoutForm({ items, onPaymentSuccess, onPaymentError }
   const copyPixCode = () => {
     if (pixData?.qr_code) {
       navigator.clipboard.writeText(pixData.qr_code);
-      toast.success('Código PIX copiado!');
+      toast.success("Código PIX copiado!");
     }
   };
 
@@ -144,35 +160,25 @@ export default function CheckoutForm({ items, onPaymentSuccess, onPaymentError }
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-4">
-              Escaneie o QR Code ou copie o código PIX
-            </p>
-            
+            <p className="text-sm text-muted-foreground mb-4">Escaneie o QR Code ou copie o código PIX</p>
+
             {pixData.qr_code_base64 && (
               <div className="mb-4">
-                <img 
+                <img
                   src={`data:image/png;base64,${pixData.qr_code_base64}`}
                   alt="QR Code PIX"
                   className="mx-auto border rounded"
                 />
               </div>
             )}
-            
-            <Button 
-              onClick={copyPixCode}
-              variant="outline" 
-              className="w-full mb-4"
-            >
+
+            <Button onClick={copyPixCode} variant="outline" className="w-full mb-4">
               Copiar código PIX
             </Button>
-            
-            <div className="text-lg font-semibold">
-              Total: R$ {totalAmount.toFixed(2)}
-            </div>
-            
-            <p className="text-xs text-muted-foreground mt-2">
-              ID do Pagamento: {pixData.id}
-            </p>
+
+            <div className="text-lg font-semibold">Total: R$ {totalAmount.toFixed(2)}</div>
+
+            <p className="text-xs text-muted-foreground mt-2">ID do Pagamento: {pixData.id}</p>
           </div>
         </CardContent>
       </Card>
@@ -191,7 +197,9 @@ export default function CheckoutForm({ items, onPaymentSuccess, onPaymentError }
           <div className="space-y-2">
             {items.map((item) => (
               <div key={item.id} className="flex justify-between text-sm">
-                <span>{item.title} x{item.quantity}</span>
+                <span>
+                  {item.title} x{item.quantity}
+                </span>
                 <span>R$ {(item.unit_price * item.quantity).toFixed(2)}</span>
               </div>
             ))}
@@ -213,7 +221,7 @@ export default function CheckoutForm({ items, onPaymentSuccess, onPaymentError }
                 id="email"
                 type="email"
                 value={payerData.email}
-                onChange={(e) => handlePayerDataChange('email', e.target.value)}
+                onChange={(e) => handlePayerDataChange("email", e.target.value)}
                 placeholder="seu@email.com"
                 required
               />
@@ -224,7 +232,7 @@ export default function CheckoutForm({ items, onPaymentSuccess, onPaymentError }
                 <Input
                   id="firstName"
                   value={payerData.first_name}
-                  onChange={(e) => handlePayerDataChange('first_name', e.target.value)}
+                  onChange={(e) => handlePayerDataChange("first_name", e.target.value)}
                   placeholder="João"
                   required
                 />
@@ -234,7 +242,7 @@ export default function CheckoutForm({ items, onPaymentSuccess, onPaymentError }
                 <Input
                   id="lastName"
                   value={payerData.last_name}
-                  onChange={(e) => handlePayerDataChange('last_name', e.target.value)}
+                  onChange={(e) => handlePayerDataChange("last_name", e.target.value)}
                   placeholder="Silva"
                   required
                 />
@@ -246,7 +254,7 @@ export default function CheckoutForm({ items, onPaymentSuccess, onPaymentError }
         {/* Método de pagamento */}
         <div>
           <h3 className="font-medium mb-3">Método de Pagamento</h3>
-          <RadioGroup value={paymentMethod} onValueChange={(value: 'credit_card' | 'pix') => setPaymentMethod(value)}>
+          <RadioGroup value={paymentMethod} onValueChange={(value: "credit_card" | "pix") => setPaymentMethod(value)}>
             <div className="flex items-center space-x-2">
               <RadioGroupItem value="pix" id="pix" />
               <Label htmlFor="pix" className="flex items-center gap-2 cursor-pointer">
@@ -264,11 +272,7 @@ export default function CheckoutForm({ items, onPaymentSuccess, onPaymentError }
           </RadioGroup>
         </div>
 
-        <Button 
-          onClick={handlePayment} 
-          disabled={loading}
-          className="w-full"
-        >
+        <Button onClick={handlePayment} disabled={loading} className="w-full">
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

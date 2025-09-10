@@ -12,7 +12,7 @@ export class ApiResponse {
     return new Response(JSON.stringify(data), {
       ...init,
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
         ...init?.headers,
       },
     });

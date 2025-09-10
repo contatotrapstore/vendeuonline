@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState } from "react";
 
 // Hook para debounce
 export const useDebounce = <T>(value: T, delay: number): T => {
@@ -18,10 +18,7 @@ export const useDebounce = <T>(value: T, delay: number): T => {
 };
 
 // Hook para throttle
-export const useThrottle = <T extends (...args: any[]) => any>(
-  callback: T,
-  delay: number
-): T => {
+export const useThrottle = <T extends (...args: any[]) => any>(callback: T, delay: number): T => {
   const lastRun = useRef(Date.now());
 
   return useCallback(
@@ -36,7 +33,7 @@ export const useThrottle = <T extends (...args: any[]) => any>(
 };
 
 // Hook para lazy loading de componentes
-export const useLazyLoad = (threshold = 0.1, rootMargin = '0px') => {
+export const useLazyLoad = (threshold = 0.1, rootMargin = "0px") => {
   const [isVisible, setIsVisible] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
   const elementRef = useRef<HTMLElement>(null);
@@ -73,29 +70,29 @@ export const usePerformanceMonitor = () => {
 
   const measureRenderTime = useCallback((componentName: string) => {
     const startTime = performance.now();
-    
+
     return () => {
       const endTime = performance.now();
       const renderTime = endTime - startTime;
-      
-      setMetrics(prev => ({
+
+      setMetrics((prev) => ({
         ...prev,
-        renderTime
+        renderTime,
       }));
-      
+
       // Log para desenvolvimento
-      if (import.meta.env.MODE === 'development') {
+      if (import.meta.env.MODE === "development") {
         console.log(`${componentName} render time: ${renderTime.toFixed(2)}ms`);
       }
     };
   }, []);
 
   const measureMemoryUsage = useCallback(() => {
-    if ('memory' in performance) {
+    if ("memory" in performance) {
       const memory = (performance as any).memory;
-      setMetrics(prev => ({
+      setMetrics((prev) => ({
         ...prev,
-        memoryUsage: memory.usedJSHeapSize / 1024 / 1024 // MB
+        memoryUsage: memory.usedJSHeapSize / 1024 / 1024, // MB
       }));
     }
   }, []);
@@ -103,11 +100,11 @@ export const usePerformanceMonitor = () => {
   useEffect(() => {
     // Medir tempo de carregamento inicial
     const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
-    setMetrics(prev => ({ ...prev, loadTime }));
+    setMetrics((prev) => ({ ...prev, loadTime }));
 
     // Medir uso de memória periodicamente
     const interval = setInterval(measureMemoryUsage, 5000);
-    
+
     return () => clearInterval(interval);
   }, [measureMemoryUsage]);
 
@@ -115,7 +112,8 @@ export const usePerformanceMonitor = () => {
 };
 
 // Hook para cache de dados
-export const useCache = <T>(key: string, ttl = 5 * 60 * 1000) => { // 5 minutos padrão
+export const useCache = <T>(key: string, ttl = 5 * 60 * 1000) => {
+  // 5 minutos padrão
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,42 +137,48 @@ export const useCache = <T>(key: string, ttl = 5 * 60 * 1000) => { // 5 minutos 
     }
   }, [key, ttl]);
 
-  const setCachedData = useCallback((newData: T) => {
-    try {
-      const cacheEntry = {
-        data: newData,
-        timestamp: Date.now()
-      };
-      localStorage.setItem(`cache_${key}`, JSON.stringify(cacheEntry));
-      setData(newData);
-    } catch (error) {
-      console.warn('Erro ao salvar no cache:', error);
-    }
-  }, [key]);
+  const setCachedData = useCallback(
+    (newData: T) => {
+      try {
+        const cacheEntry = {
+          data: newData,
+          timestamp: Date.now(),
+        };
+        localStorage.setItem(`cache_${key}`, JSON.stringify(cacheEntry));
+        setData(newData);
+      } catch (error) {
+        console.warn("Erro ao salvar no cache:", error);
+      }
+    },
+    [key]
+  );
 
-  const fetchData = useCallback(async (fetcher: () => Promise<T>) => {
-    // Verificar cache primeiro
-    const cached = getCachedData();
-    if (cached) {
-      setData(cached);
-      return cached;
-    }
+  const fetchData = useCallback(
+    async (fetcher: () => Promise<T>) => {
+      // Verificar cache primeiro
+      const cached = getCachedData();
+      if (cached) {
+        setData(cached);
+        return cached;
+      }
 
-    setIsLoading(true);
-    setError(null);
+      setIsLoading(true);
+      setError(null);
 
-    try {
-      const result = await fetcher();
-      setCachedData(result);
-      return result;
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Erro desconhecido';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [getCachedData, setCachedData]);
+      try {
+        const result = await fetcher();
+        setCachedData(result);
+        return result;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
+        setError(errorMessage);
+        throw err;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [getCachedData, setCachedData]
+  );
 
   const clearCache = useCallback(() => {
     localStorage.removeItem(`cache_${key}`);
@@ -195,15 +199,12 @@ export const useCache = <T>(key: string, ttl = 5 * 60 * 1000) => { // 5 minutos 
     error,
     fetchData,
     setCachedData,
-    clearCache
+    clearCache,
   };
 };
 
 // Hook para otimizar re-renders
-export const useOptimizedCallback = <T extends (...args: any[]) => any>(
-  callback: T,
-  deps: React.DependencyList
-): T => {
+export const useOptimizedCallback = <T extends (...args: any[]) => any>(callback: T, deps: React.DependencyList): T => {
   const callbackRef = useRef(callback);
   const depsRef = useRef(deps);
 
@@ -217,20 +218,13 @@ export const useOptimizedCallback = <T extends (...args: any[]) => any>(
 };
 
 // Hook para virtual scrolling (lista grande)
-export const useVirtualScroll = <T>(
-  items: T[],
-  itemHeight: number,
-  containerHeight: number
-) => {
+export const useVirtualScroll = <T>(items: T[], itemHeight: number, containerHeight: number) => {
   const [scrollTop, setScrollTop] = useState(0);
   const [visibleRange, setVisibleRange] = useState({ start: 0, end: 0 });
 
   useEffect(() => {
     const startIndex = Math.floor(scrollTop / itemHeight);
-    const endIndex = Math.min(
-      startIndex + Math.ceil(containerHeight / itemHeight) + 1,
-      items.length
-    );
+    const endIndex = Math.min(startIndex + Math.ceil(containerHeight / itemHeight) + 1, items.length);
 
     setVisibleRange({ start: startIndex, end: endIndex });
   }, [scrollTop, itemHeight, containerHeight, items.length]);
@@ -248,7 +242,7 @@ export const useVirtualScroll = <T>(
     totalHeight,
     offsetY,
     handleScroll,
-    visibleRange
+    visibleRange,
   };
 };
 
@@ -261,7 +255,7 @@ export const useImagePreload = (urls: string[]) => {
     if (urls.length === 0) return;
 
     setIsLoading(true);
-    const promises = urls.map(url => {
+    const promises = urls.map((url) => {
       return new Promise<string>((resolve, reject) => {
         const img = new Image();
         img.onload = () => resolve(url);
@@ -273,12 +267,12 @@ export const useImagePreload = (urls: string[]) => {
     try {
       const loaded = await Promise.allSettled(promises);
       const successful = loaded
-        .filter(result => result.status === 'fulfilled')
-        .map(result => (result as PromiseFulfilledResult<string>).value);
-      
+        .filter((result) => result.status === "fulfilled")
+        .map((result) => (result as PromiseFulfilledResult<string>).value);
+
       setLoadedImages(new Set(successful));
     } catch (error) {
-      console.warn('Erro ao precarregar imagens:', error);
+      console.warn("Erro ao precarregar imagens:", error);
     } finally {
       setIsLoading(false);
     }
@@ -294,39 +288,39 @@ export const useImagePreload = (urls: string[]) => {
 // Hook para detectar conexão lenta
 export const useNetworkStatus = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [connectionType, setConnectionType] = useState<string>('unknown');
+  const [connectionType, setConnectionType] = useState<string>("unknown");
   const [isSlowConnection, setIsSlowConnection] = useState(false);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     // Detectar tipo de conexão
-    if ('connection' in navigator) {
+    if ("connection" in navigator) {
       const connection = (navigator as any).connection;
-      setConnectionType(connection.effectiveType || 'unknown');
-      setIsSlowConnection(['slow-2g', '2g'].includes(connection.effectiveType));
+      setConnectionType(connection.effectiveType || "unknown");
+      setIsSlowConnection(["slow-2g", "2g"].includes(connection.effectiveType));
 
       const handleConnectionChange = () => {
-        setConnectionType(connection.effectiveType || 'unknown');
-        setIsSlowConnection(['slow-2g', '2g'].includes(connection.effectiveType));
+        setConnectionType(connection.effectiveType || "unknown");
+        setIsSlowConnection(["slow-2g", "2g"].includes(connection.effectiveType));
       };
 
-      connection.addEventListener('change', handleConnectionChange);
+      connection.addEventListener("change", handleConnectionChange);
 
       return () => {
-        window.removeEventListener('online', handleOnline);
-        window.removeEventListener('offline', handleOffline);
-        connection.removeEventListener('change', handleConnectionChange);
+        window.removeEventListener("online", handleOnline);
+        window.removeEventListener("offline", handleOffline);
+        connection.removeEventListener("change", handleConnectionChange);
       };
     }
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
@@ -347,40 +341,42 @@ export const performanceUtils = {
     const start = performance.now();
     const result = await fn();
     const end = performance.now();
-    
-    if (label && import.meta.env.MODE === 'development') {
+
+    if (label && import.meta.env.MODE === "development") {
       console.log(`${label}: ${(end - start).toFixed(2)}ms`);
     }
-    
+
     return result;
   },
 
   // Agrupar múltiplas operações DOM
   batchDOMUpdates: (updates: (() => void)[]): void => {
     requestAnimationFrame(() => {
-      updates.forEach(update => update());
+      updates.forEach((update) => update());
     });
   },
 
   // Verificar se o dispositivo suporta WebP
   supportsWebP: (): Promise<boolean> => {
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       const webP = new Image();
       webP.onload = webP.onerror = () => {
         resolve(webP.height === 2);
       };
-      webP.src = 'data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA';
+      webP.src =
+        "data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACyAgCdASoCAAIALmk0mk0iIiIiIgBoSygABc6WWgAA/veff/0PP8bA//LwYAAA";
     });
   },
 
   // Limpar cache antigo
-  cleanupOldCache: (maxAge = 24 * 60 * 60 * 1000): void => { // 24 horas
+  cleanupOldCache: (maxAge = 24 * 60 * 60 * 1000): void => {
+    // 24 horas
     const now = Date.now();
     const keysToRemove: string[] = [];
 
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key?.startsWith('cache_')) {
+      if (key?.startsWith("cache_")) {
         try {
           const cached = localStorage.getItem(key);
           if (cached) {
@@ -395,6 +391,6 @@ export const performanceUtils = {
       }
     }
 
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-  }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+  },
 };

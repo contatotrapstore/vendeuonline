@@ -1,6 +1,6 @@
 interface WhatsAppMessage {
   to: string;
-  type: 'text' | 'template';
+  type: "text" | "template";
   text?: {
     body: string;
   };
@@ -30,19 +30,19 @@ class WhatsAppService {
   private phoneNumberId: string;
 
   constructor() {
-    this.baseUrl = 'https://graph.facebook.com/v18.0';
-    this.accessToken = process.env.WHATSAPP_ACCESS_TOKEN || '';
-    this.phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || '';
+    this.baseUrl = "https://graph.facebook.com/v18.0";
+    this.accessToken = process.env.WHATSAPP_ACCESS_TOKEN || "";
+    this.phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || "";
   }
 
   private async sendRequest(endpoint: string, data: any): Promise<WhatsAppResponse> {
     const response = await fetch(`${this.baseUrl}/${endpoint}`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${this.accessToken}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${this.accessToken}`,
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     });
 
     if (!response.ok) {
@@ -55,27 +55,30 @@ class WhatsAppService {
 
   async sendTextMessage(to: string, message: string): Promise<WhatsAppResponse> {
     const data = {
-      messaging_product: 'whatsapp',
-      to: to.replace(/\D/g, ''), // Remove caracteres não numéricos
-      type: 'text',
+      messaging_product: "whatsapp",
+      to: to.replace(/\D/g, ""), // Remove caracteres não numéricos
+      type: "text",
       text: {
-        body: message
-      }
+        body: message,
+      },
     };
 
     return this.sendRequest(`${this.phoneNumberId}/messages`, data);
   }
 
-  async sendOrderConfirmation(to: string, orderData: {
-    orderId: string;
-    customerName: string;
-    items: Array<{ name: string; quantity: number; price: number }>;
-    total: number;
-    paymentMethod: string;
-  }): Promise<WhatsAppResponse> {
+  async sendOrderConfirmation(
+    to: string,
+    orderData: {
+      orderId: string;
+      customerName: string;
+      items: Array<{ name: string; quantity: number; price: number }>;
+      total: number;
+      paymentMethod: string;
+    }
+  ): Promise<WhatsAppResponse> {
     const itemsList = orderData.items
-      .map(item => `• ${item.name} (${item.quantity}x) - R$ ${item.price.toFixed(2)}`)
-      .join('\n');
+      .map((item) => `• ${item.name} (${item.quantity}x) - R$ ${item.price.toFixed(2)}`)
+      .join("\n");
 
     const message = `🎉 *Pedido Confirmado!*
 
@@ -96,12 +99,15 @@ Obrigado por comprar conosco! 🛒`;
     return this.sendTextMessage(to, message);
   }
 
-  async sendPaymentConfirmation(to: string, paymentData: {
-    orderId: string;
-    customerName: string;
-    amount: number;
-    paymentMethod: string;
-  }): Promise<WhatsAppResponse> {
+  async sendPaymentConfirmation(
+    to: string,
+    paymentData: {
+      orderId: string;
+      customerName: string;
+      amount: number;
+      paymentMethod: string;
+    }
+  ): Promise<WhatsAppResponse> {
     const message = `✅ *Pagamento Confirmado!*
 
 Olá ${paymentData.customerName}!
@@ -118,13 +124,16 @@ Obrigado pela confiança! 🙏`;
     return this.sendTextMessage(to, message);
   }
 
-  async sendShippingUpdate(to: string, shippingData: {
-    orderId: string;
-    customerName: string;
-    trackingCode?: string;
-    carrier?: string;
-    estimatedDelivery?: string;
-  }): Promise<WhatsAppResponse> {
+  async sendShippingUpdate(
+    to: string,
+    shippingData: {
+      orderId: string;
+      customerName: string;
+      trackingCode?: string;
+      carrier?: string;
+      estimatedDelivery?: string;
+    }
+  ): Promise<WhatsAppResponse> {
     let message = `📦 *Pedido Enviado!*
 
 Olá ${shippingData.customerName}!
@@ -156,13 +165,16 @@ Qualquer dúvida, estamos aqui! 📱`;
     return this.sendTextMessage(to, message);
   }
 
-  async sendPixPaymentInstructions(to: string, pixData: {
-    customerName: string;
-    orderId: string;
-    amount: number;
-    qrCode: string;
-    expirationTime?: string;
-  }): Promise<WhatsAppResponse> {
+  async sendPixPaymentInstructions(
+    to: string,
+    pixData: {
+      customerName: string;
+      orderId: string;
+      amount: number;
+      qrCode: string;
+      expirationTime?: string;
+    }
+  ): Promise<WhatsAppResponse> {
     let message = `💳 *Pagamento PIX*
 
 Olá ${pixData.customerName}!
@@ -203,26 +215,26 @@ Dúvidas? Estamos aqui para ajudar! 🤝`;
   // Método para formatar número de telefone brasileiro
   formatBrazilianPhone(phone: string): string {
     // Remove todos os caracteres não numéricos
-    const cleaned = phone.replace(/\D/g, '');
-    
+    const cleaned = phone.replace(/\D/g, "");
+
     // Se não tem código do país, adiciona 55 (Brasil)
-    if (cleaned.length === 11 && cleaned.startsWith('0')) {
-      return '55' + cleaned.substring(1);
+    if (cleaned.length === 11 && cleaned.startsWith("0")) {
+      return "55" + cleaned.substring(1);
     }
-    
+
     if (cleaned.length === 11) {
-      return '55' + cleaned;
+      return "55" + cleaned;
     }
-    
+
     if (cleaned.length === 10) {
-      return '55' + cleaned;
+      return "55" + cleaned;
     }
-    
+
     // Se já tem código do país
-    if (cleaned.length === 13 && cleaned.startsWith('55')) {
+    if (cleaned.length === 13 && cleaned.startsWith("55")) {
       return cleaned;
     }
-    
+
     return cleaned;
   }
 }
@@ -231,19 +243,18 @@ Dúvidas? Estamos aqui para ajudar! 🤝`;
 export const whatsappService = new WhatsAppService();
 
 // Funções de conveniência
-export const sendOrderConfirmation = (to: string, orderData: any) => 
+export const sendOrderConfirmation = (to: string, orderData: any) =>
   whatsappService.sendOrderConfirmation(to, orderData);
 
-export const sendPaymentConfirmation = (to: string, paymentData: any) => 
+export const sendPaymentConfirmation = (to: string, paymentData: any) =>
   whatsappService.sendPaymentConfirmation(to, paymentData);
 
-export const sendShippingUpdate = (to: string, shippingData: any) => 
+export const sendShippingUpdate = (to: string, shippingData: any) =>
   whatsappService.sendShippingUpdate(to, shippingData);
 
-export const sendPixPaymentInstructions = (to: string, pixData: any) => 
+export const sendPixPaymentInstructions = (to: string, pixData: any) =>
   whatsappService.sendPixPaymentInstructions(to, pixData);
 
-export const sendCustomMessage = (to: string, message: string) => 
-  whatsappService.sendCustomMessage(to, message);
+export const sendCustomMessage = (to: string, message: string) => whatsappService.sendCustomMessage(to, message);
 
 export default whatsappService;

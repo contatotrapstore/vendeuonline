@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Slider } from '@/components/ui/slider';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Search, Filter, X, SlidersHorizontal } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Search, Filter, X, SlidersHorizontal } from "lucide-react";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 interface FilterOptions {
   categories: string[];
@@ -39,29 +39,29 @@ interface ProductFiltersProps {
 }
 
 const SORT_OPTIONS = [
-  { value: 'relevance', label: 'Mais Relevantes' },
-  { value: 'price_asc', label: 'Menor Preço' },
-  { value: 'price_desc', label: 'Maior Preço' },
-  { value: 'newest', label: 'Mais Recentes' },
-  { value: 'best_seller', label: 'Mais Vendidos' },
-  { value: 'rating', label: 'Melhor Avaliados' }
+  { value: "relevance", label: "Mais Relevantes" },
+  { value: "price_asc", label: "Menor Preço" },
+  { value: "price_desc", label: "Maior Preço" },
+  { value: "newest", label: "Mais Recentes" },
+  { value: "best_seller", label: "Mais Vendidos" },
+  { value: "rating", label: "Melhor Avaliados" },
 ];
 
-export default function ProductFilters({ 
-  options, 
-  onFiltersChange, 
+export default function ProductFilters({
+  options,
+  onFiltersChange,
   totalProducts = 0,
-  loading = false 
+  loading = false,
 }: ProductFiltersProps) {
   const [filters, setFilters] = useState<ActiveFilters>({
-    search: '',
+    search: "",
     categories: [],
     brands: [],
     conditions: [],
     priceRange: options.priceRange,
-    sortBy: 'relevance',
+    sortBy: "relevance",
     inStock: false,
-    freeShipping: false
+    freeShipping: false,
   });
 
   const [isOpen, setIsOpen] = useState(false);
@@ -71,53 +71,51 @@ export default function ProductFilters({
   }, [filters, onFiltersChange]);
 
   const updateFilter = (key: keyof ActiveFilters, value: any) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
-  const toggleArrayFilter = (key: 'categories' | 'brands' | 'conditions', value: string) => {
-    setFilters(prev => ({
+  const toggleArrayFilter = (key: "categories" | "brands" | "conditions", value: string) => {
+    setFilters((prev) => ({
       ...prev,
-      [key]: prev[key].includes(value)
-        ? prev[key].filter(item => item !== value)
-        : [...prev[key], value]
+      [key]: prev[key].includes(value) ? prev[key].filter((item) => item !== value) : [...prev[key], value],
     }));
   };
 
   const clearFilters = () => {
     setFilters({
-      search: '',
+      search: "",
       categories: [],
       brands: [],
       conditions: [],
       priceRange: options.priceRange,
-      sortBy: 'relevance',
+      sortBy: "relevance",
       inStock: false,
-      freeShipping: false
+      freeShipping: false,
     });
   };
 
   const removeFilter = (type: string, value?: string) => {
     switch (type) {
-      case 'search':
-        updateFilter('search', '');
+      case "search":
+        updateFilter("search", "");
         break;
-      case 'category':
-        if (value) toggleArrayFilter('categories', value);
+      case "category":
+        if (value) toggleArrayFilter("categories", value);
         break;
-      case 'brand':
-        if (value) toggleArrayFilter('brands', value);
+      case "brand":
+        if (value) toggleArrayFilter("brands", value);
         break;
-      case 'condition':
-        if (value) toggleArrayFilter('conditions', value);
+      case "condition":
+        if (value) toggleArrayFilter("conditions", value);
         break;
-      case 'inStock':
-        updateFilter('inStock', false);
+      case "inStock":
+        updateFilter("inStock", false);
         break;
-      case 'freeShipping':
-        updateFilter('freeShipping', false);
+      case "freeShipping":
+        updateFilter("freeShipping", false);
         break;
-      case 'priceRange':
-        updateFilter('priceRange', options.priceRange);
+      case "priceRange":
+        updateFilter("priceRange", options.priceRange);
         break;
     }
   };
@@ -145,7 +143,7 @@ export default function ProductFilters({
             id="search"
             placeholder="Digite o nome do produto..."
             value={filters.search}
-            onChange={(e) => updateFilter('search', e.target.value)}
+            onChange={(e) => updateFilter("search", e.target.value)}
             className="pl-10"
           />
         </div>
@@ -154,12 +152,12 @@ export default function ProductFilters({
       {/* Ordenação */}
       <div>
         <Label>Ordenar por</Label>
-        <Select value={filters.sortBy} onValueChange={(value) => updateFilter('sortBy', value)}>
+        <Select value={filters.sortBy} onValueChange={(value) => updateFilter("sortBy", value)}>
           <SelectTrigger className="mt-2">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {SORT_OPTIONS.map(option => (
+            {SORT_OPTIONS.map((option) => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
               </SelectItem>
@@ -176,7 +174,7 @@ export default function ProductFilters({
         <div className="mt-4 space-y-4">
           <Slider
             value={filters.priceRange}
-            onValueChange={(value) => updateFilter('priceRange', value as [number, number])}
+            onValueChange={(value) => updateFilter("priceRange", value as [number, number])}
             max={options.priceRange[1]}
             min={options.priceRange[0]}
             step={10}
@@ -196,17 +194,14 @@ export default function ProductFilters({
         <div>
           <Label>Categorias</Label>
           <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
-            {options.categories.map(category => (
+            {options.categories.map((category) => (
               <div key={category} className="flex items-center space-x-2">
                 <Checkbox
                   id={`category-${category}`}
                   checked={filters.categories.includes(category)}
-                  onCheckedChange={() => toggleArrayFilter('categories', category)}
+                  onCheckedChange={() => toggleArrayFilter("categories", category)}
                 />
-                <Label 
-                  htmlFor={`category-${category}`} 
-                  className="text-sm font-normal cursor-pointer"
-                >
+                <Label htmlFor={`category-${category}`} className="text-sm font-normal cursor-pointer">
                   {category}
                 </Label>
               </div>
@@ -220,17 +215,14 @@ export default function ProductFilters({
         <div>
           <Label>Marcas</Label>
           <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
-            {options.brands.map(brand => (
+            {options.brands.map((brand) => (
               <div key={brand} className="flex items-center space-x-2">
                 <Checkbox
                   id={`brand-${brand}`}
                   checked={filters.brands.includes(brand)}
-                  onCheckedChange={() => toggleArrayFilter('brands', brand)}
+                  onCheckedChange={() => toggleArrayFilter("brands", brand)}
                 />
-                <Label 
-                  htmlFor={`brand-${brand}`} 
-                  className="text-sm font-normal cursor-pointer"
-                >
+                <Label htmlFor={`brand-${brand}`} className="text-sm font-normal cursor-pointer">
                   {brand}
                 </Label>
               </div>
@@ -244,17 +236,14 @@ export default function ProductFilters({
         <div>
           <Label>Condição</Label>
           <div className="mt-3 space-y-2">
-            {options.conditions.map(condition => (
+            {options.conditions.map((condition) => (
               <div key={condition} className="flex items-center space-x-2">
                 <Checkbox
                   id={`condition-${condition}`}
                   checked={filters.conditions.includes(condition)}
-                  onCheckedChange={() => toggleArrayFilter('conditions', condition)}
+                  onCheckedChange={() => toggleArrayFilter("conditions", condition)}
                 />
-                <Label 
-                  htmlFor={`condition-${condition}`} 
-                  className="text-sm font-normal cursor-pointer"
-                >
+                <Label htmlFor={`condition-${condition}`} className="text-sm font-normal cursor-pointer">
                   {condition}
                 </Label>
               </div>
@@ -273,7 +262,7 @@ export default function ProductFilters({
             <Checkbox
               id="inStock"
               checked={filters.inStock}
-              onCheckedChange={(checked) => updateFilter('inStock', checked)}
+              onCheckedChange={(checked) => updateFilter("inStock", checked)}
             />
             <Label htmlFor="inStock" className="text-sm font-normal cursor-pointer">
               Apenas em estoque
@@ -283,7 +272,7 @@ export default function ProductFilters({
             <Checkbox
               id="freeShipping"
               checked={filters.freeShipping}
-              onCheckedChange={(checked) => updateFilter('freeShipping', checked)}
+              onCheckedChange={(checked) => updateFilter("freeShipping", checked)}
             />
             <Label htmlFor="freeShipping" className="text-sm font-normal cursor-pointer">
               Frete grátis
@@ -294,11 +283,7 @@ export default function ProductFilters({
 
       {/* Botão Limpar Filtros */}
       {getActiveFiltersCount() > 0 && (
-        <Button 
-          variant="outline" 
-          onClick={clearFilters}
-          className="w-full"
-        >
+        <Button variant="outline" onClick={clearFilters} className="w-full">
           Limpar Filtros
         </Button>
       )}
@@ -311,15 +296,15 @@ export default function ProductFilters({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">
-            {loading ? 'Carregando...' : `${totalProducts} produtos encontrados`}
+            {loading ? "Carregando..." : `${totalProducts} produtos encontrados`}
           </span>
           {getActiveFiltersCount() > 0 && (
             <Badge variant="secondary">
-              {getActiveFiltersCount()} filtro{getActiveFiltersCount() > 1 ? 's' : ''}
+              {getActiveFiltersCount()} filtro{getActiveFiltersCount() > 1 ? "s" : ""}
             </Badge>
           )}
         </div>
-        
+
         {/* Botão de filtros para mobile */}
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
           <SheetTrigger asChild>
@@ -345,64 +330,43 @@ export default function ProductFilters({
           {filters.search && (
             <Badge variant="secondary" className="gap-1">
               Busca: {filters.search}
-              <X 
-                className="h-3 w-3 cursor-pointer" 
-                onClick={() => removeFilter('search')}
-              />
+              <X className="h-3 w-3 cursor-pointer" onClick={() => removeFilter("search")} />
             </Badge>
           )}
-          {filters.categories.map(category => (
+          {filters.categories.map((category) => (
             <Badge key={category} variant="secondary" className="gap-1">
               {category}
-              <X 
-                className="h-3 w-3 cursor-pointer" 
-                onClick={() => removeFilter('category', category)}
-              />
+              <X className="h-3 w-3 cursor-pointer" onClick={() => removeFilter("category", category)} />
             </Badge>
           ))}
-          {filters.brands.map(brand => (
+          {filters.brands.map((brand) => (
             <Badge key={brand} variant="secondary" className="gap-1">
               {brand}
-              <X 
-                className="h-3 w-3 cursor-pointer" 
-                onClick={() => removeFilter('brand', brand)}
-              />
+              <X className="h-3 w-3 cursor-pointer" onClick={() => removeFilter("brand", brand)} />
             </Badge>
           ))}
-          {filters.conditions.map(condition => (
+          {filters.conditions.map((condition) => (
             <Badge key={condition} variant="secondary" className="gap-1">
               {condition}
-              <X 
-                className="h-3 w-3 cursor-pointer" 
-                onClick={() => removeFilter('condition', condition)}
-              />
+              <X className="h-3 w-3 cursor-pointer" onClick={() => removeFilter("condition", condition)} />
             </Badge>
           ))}
           {filters.inStock && (
             <Badge variant="secondary" className="gap-1">
               Em estoque
-              <X 
-                className="h-3 w-3 cursor-pointer" 
-                onClick={() => removeFilter('inStock')}
-              />
+              <X className="h-3 w-3 cursor-pointer" onClick={() => removeFilter("inStock")} />
             </Badge>
           )}
           {filters.freeShipping && (
             <Badge variant="secondary" className="gap-1">
               Frete grátis
-              <X 
-                className="h-3 w-3 cursor-pointer" 
-                onClick={() => removeFilter('freeShipping')}
-              />
+              <X className="h-3 w-3 cursor-pointer" onClick={() => removeFilter("freeShipping")} />
             </Badge>
           )}
           {(filters.priceRange[0] !== options.priceRange[0] || filters.priceRange[1] !== options.priceRange[1]) && (
             <Badge variant="secondary" className="gap-1">
               R$ {filters.priceRange[0]} - R$ {filters.priceRange[1]}
-              <X 
-                className="h-3 w-3 cursor-pointer" 
-                onClick={() => removeFilter('priceRange')}
-              />
+              <X className="h-3 w-3 cursor-pointer" onClick={() => removeFilter("priceRange")} />
             </Badge>
           )}
         </div>

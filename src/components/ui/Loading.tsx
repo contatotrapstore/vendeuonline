@@ -1,62 +1,68 @@
-import React from 'react';
-import { Loader2 } from 'lucide-react';
+import React from "react";
+import { Loader2 } from "lucide-react";
 
 interface LoadingProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  variant?: 'spinner' | 'dots' | 'pulse';
+  size?: "sm" | "md" | "lg" | "xl";
+  variant?: "spinner" | "dots" | "pulse";
   text?: string;
   fullScreen?: boolean;
   className?: string;
 }
 
 const Loading: React.FC<LoadingProps> = ({
-  size = 'md',
-  variant = 'spinner',
+  size = "md",
+  variant = "spinner",
   text,
   fullScreen = false,
-  className = '',
+  className = "",
 }) => {
   const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-6 h-6',
-    lg: 'w-8 h-8',
-    xl: 'w-12 h-12',
+    sm: "w-4 h-4",
+    md: "w-6 h-6",
+    lg: "w-8 h-8",
+    xl: "w-12 h-12",
   };
 
   const textSizeClasses = {
-    sm: 'text-sm',
-    md: 'text-base',
-    lg: 'text-lg',
-    xl: 'text-xl',
+    sm: "text-sm",
+    md: "text-base",
+    lg: "text-lg",
+    xl: "text-xl",
   };
 
   const renderSpinner = () => {
     switch (variant) {
-      case 'spinner':
+      case "spinner":
         return (
-          <Loader2 
-            className={`${sizeClasses[size]} animate-spin text-blue-600 ${className}`}
-            aria-label="Carregando"
-          />
+          <Loader2 className={`${sizeClasses[size]} animate-spin text-blue-600 ${className}`} aria-label="Carregando" />
         );
-      
-      case 'dots':
+
+      case "dots":
         return (
           <div className={`flex space-x-1 ${className}`} aria-label="Carregando">
-            <div className={`${sizeClasses[size]} bg-blue-600 rounded-full animate-bounce`} style={{ animationDelay: '0ms' }}></div>
-            <div className={`${sizeClasses[size]} bg-blue-600 rounded-full animate-bounce`} style={{ animationDelay: '150ms' }}></div>
-            <div className={`${sizeClasses[size]} bg-blue-600 rounded-full animate-bounce`} style={{ animationDelay: '300ms' }}></div>
+            <div
+              className={`${sizeClasses[size]} bg-blue-600 rounded-full animate-bounce`}
+              style={{ animationDelay: "0ms" }}
+            ></div>
+            <div
+              className={`${sizeClasses[size]} bg-blue-600 rounded-full animate-bounce`}
+              style={{ animationDelay: "150ms" }}
+            ></div>
+            <div
+              className={`${sizeClasses[size]} bg-blue-600 rounded-full animate-bounce`}
+              style={{ animationDelay: "300ms" }}
+            ></div>
           </div>
         );
-      
-      case 'pulse':
+
+      case "pulse":
         return (
-          <div 
+          <div
             className={`${sizeClasses[size]} bg-blue-600 rounded-full animate-pulse ${className}`}
             aria-label="Carregando"
           ></div>
         );
-      
+
       default:
         return null;
     }
@@ -65,11 +71,7 @@ const Loading: React.FC<LoadingProps> = ({
   const content = (
     <div className="flex flex-col items-center justify-center space-y-2">
       {renderSpinner()}
-      {text && (
-        <p className={`${textSizeClasses[size]} text-gray-600 font-medium`}>
-          {text}
-        </p>
-      )}
+      {text && <p className={`${textSizeClasses[size]} text-gray-600 font-medium`}>{text}</p>}
     </div>
   );
 
@@ -88,26 +90,18 @@ export default Loading;
 
 // Componente específico para botões
 interface ButtonLoadingProps {
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
   className?: string;
 }
 
-export const ButtonLoading: React.FC<ButtonLoadingProps> = ({
-  size = 'md',
-  className = '',
-}) => {
+export const ButtonLoading: React.FC<ButtonLoadingProps> = ({ size = "md", className = "" }) => {
   const sizeClasses = {
-    sm: 'w-3 h-3',
-    md: 'w-4 h-4',
-    lg: 'w-5 h-5',
+    sm: "w-3 h-3",
+    md: "w-4 h-4",
+    lg: "w-5 h-5",
   };
 
-  return (
-    <Loader2 
-      className={`${sizeClasses[size]} animate-spin ${className}`}
-      aria-label="Carregando"
-    />
-  );
+  return <Loader2 className={`${sizeClasses[size]} animate-spin ${className}`} aria-label="Carregando" />;
 };
 
 // Componente para overlay de loading em cards/containers
@@ -115,14 +109,14 @@ interface LoadingOverlayProps {
   isLoading: boolean;
   children: React.ReactNode;
   text?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
 }
 
 export const LoadingOverlay: React.FC<LoadingOverlayProps> = ({
   isLoading,
   children,
-  text = 'Carregando...',
-  size = 'md',
+  text = "Carregando...",
+  size = "md",
 }) => {
   return (
     <div className="relative">
@@ -159,10 +153,7 @@ interface PageLoadingProps {
   showLogo?: boolean;
 }
 
-export const PageLoading: React.FC<PageLoadingProps> = ({
-  text = 'Carregando página...',
-  showLogo = true,
-}) => {
+export const PageLoading: React.FC<PageLoadingProps> = ({ text = "Carregando página...", showLogo = true }) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
       {showLogo && (

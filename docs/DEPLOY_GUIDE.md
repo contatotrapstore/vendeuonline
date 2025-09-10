@@ -22,7 +22,7 @@
 1. Acesse [supabase.com](https://supabase.com) e crie um novo projeto
 2. Anote as credenciais geradas:
    - Project URL
-   - Anon key  
+   - Anon key
    - Service role key
    - Database password
 
@@ -100,6 +100,7 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ### **PASSO 2: Preparar o Banco de Dados**
 
 1. **Aplicar schema no Supabase:**
+
    ```bash
    npx prisma db push
    ```
@@ -112,6 +113,7 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 ### **PASSO 3: Deploy no Vercel**
 
 1. **Commit das mudanças:**
+
    ```bash
    git add .
    git commit -m "feat: projeto organizado e pronto para deploy"
@@ -140,7 +142,7 @@ Após executar o seed, use estas credenciais:
 ### **Checklist de Validação**
 
 - [ ] `/api/health` retorna status OK
-- [ ] `/api/plans` retorna 4 planos 
+- [ ] `/api/plans` retorna 4 planos
 - [ ] Login admin funciona
 - [ ] Dashboard carrega sem erros
 - [ ] Upload de imagens funciona
@@ -151,22 +153,27 @@ Após executar o seed, use estas credenciais:
 ## 🐞 **TROUBLESHOOTING**
 
 ### **❌ Erro: "Banco de dados não disponível"**
+
 - **Causa:** `DATABASE_URL` incorreta
 - **Solução:** Verificar formato PostgreSQL do Supabase
 
 ### **❌ Erro: "Prisma não disponível"**
+
 - **Causa:** Client Prisma não gerado no build
 - **Solução:** Verificar `vercel.json` tem `npx prisma generate`
 
 ### **❌ Erro: "Token inválido"**
+
 - **Causa:** `JWT_SECRET` não definido ou muito fraco
 - **Solução:** Gerar chave de 64+ caracteres
 
 ### **❌ Frontend não carrega dados**
+
 - **Causa:** Variáveis `VITE_*` não definidas
 - **Solução:** Confirmar variáveis com prefixo correto
 
 ### **❌ Erro 500 nas APIs**
+
 - **Causa:** Variáveis de ambiente faltando
 - **Solução:** Verificar todas as variáveis essenciais
 
@@ -181,7 +188,7 @@ Após seguir todos os passos:
 ✅ **4 planos de assinatura** - exibidos corretamente  
 ✅ **Upload de imagens** - via Supabase Storage  
 ✅ **Pagamentos ASAAS** - gateway brasileiro configurado  
-✅ **PWA configurado** - instalável como app  
+✅ **PWA configurado** - instalável como app
 
 ---
 

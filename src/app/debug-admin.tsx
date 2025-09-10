@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 export default function DebugAdminPage() {
   const [loginResult, setLoginResult] = useState(null);
@@ -8,23 +8,23 @@ export default function DebugAdminPage() {
 
   const testLogin = async () => {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email: 'admin@vendeuonline.com',
-          password: '123456',
-          userType: 'admin'
-        })
+          email: "admin@vendeuonline.com",
+          password: "123456",
+          userType: "admin",
+        }),
       });
 
       const data = await response.json();
       setLoginResult(data);
-      
+
       if (data.token) {
-        localStorage.setItem('auth-token', data.token);
+        localStorage.setItem("auth-token", data.token);
         checkStorage();
       }
     } catch (error) {
@@ -33,13 +33,13 @@ export default function DebugAdminPage() {
   };
 
   const checkStorage = () => {
-    const token = localStorage.getItem('auth-token');
-    const authStorage = localStorage.getItem('auth-storage');
-    
+    const token = localStorage.getItem("auth-token");
+    const authStorage = localStorage.getItem("auth-storage");
+
     setStorageData({
-      token: token ? token.substring(0, 50) + '...' : null,
+      token: token ? token.substring(0, 50) + "..." : null,
       authStorage: authStorage ? JSON.parse(authStorage) : null,
-      tokenPayload: token ? JSON.parse(atob(token.split('.')[1])) : null
+      tokenPayload: token ? JSON.parse(atob(token.split(".")[1])) : null,
     });
   };
 
@@ -51,25 +51,19 @@ export default function DebugAdminPage() {
     <div className="min-h-screen bg-gray-100 p-8">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold mb-8">Debug Admin Login</h1>
-        
+
         <div className="space-y-6">
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-bold mb-4">Actions</h2>
             <div className="space-x-4">
-              <button 
-                onClick={testLogin}
-                className="bg-blue-500 text-white px-4 py-2 rounded"
-              >
+              <button onClick={testLogin} className="bg-blue-500 text-white px-4 py-2 rounded">
                 Test Admin Login
               </button>
-              <button 
-                onClick={checkStorage}
-                className="bg-green-500 text-white px-4 py-2 rounded"
-              >
+              <button onClick={checkStorage} className="bg-green-500 text-white px-4 py-2 rounded">
                 Check Storage
               </button>
-              <button 
-                onClick={() => window.location.href = '/admin'}
+              <button
+                onClick={() => (window.location.href = "/admin")}
                 className="bg-purple-500 text-white px-4 py-2 rounded"
               >
                 Go to Admin

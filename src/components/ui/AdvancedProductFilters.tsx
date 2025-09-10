@@ -1,20 +1,20 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { 
-  Star, 
-  X, 
-  ChevronDown, 
-  ChevronUp, 
-  MapPin, 
-  Truck, 
+import { useState } from "react";
+import {
+  Star,
+  X,
+  ChevronDown,
+  ChevronUp,
+  MapPin,
+  Truck,
   Shield,
   Calendar,
   Tag,
   Package,
   Zap,
-  Filter
-} from 'lucide-react';
+  Filter,
+} from "lucide-react";
 
 export interface AdvancedFiltersState {
   priceRange: [number, number];
@@ -31,8 +31,8 @@ export interface AdvancedFiltersState {
   onSale: boolean;
   recentlyAdded: boolean; // Last 7 days
   sellersOnly: string[]; // Specific sellers
-  priceHistory: 'stable' | 'rising' | 'falling' | 'any';
-  availability: 'all' | 'in_stock' | 'pre_order' | 'back_order';
+  priceHistory: "stable" | "rising" | "falling" | "any";
+  availability: "all" | "in_stock" | "pre_order" | "back_order";
   ageRange: string; // For products with age restrictions
   size: string[];
   color: string[];
@@ -40,7 +40,7 @@ export interface AdvancedFiltersState {
   weight: [number, number]; // Min/max weight
   dimensions: {
     length: [number, number];
-    width: [number, number]; 
+    width: [number, number];
     height: [number, number];
   };
 }
@@ -62,39 +62,39 @@ interface AdvancedProductFiltersProps {
 }
 
 const CONDITIONS = [
-  { value: 'new', label: 'Novo', icon: '✨' },
-  { value: 'used', label: 'Usado', icon: '🔄' },
-  { value: 'refurbished', label: 'Recondicionado', icon: '🔧' },
-  { value: 'open_box', label: 'Caixa Aberta', icon: '📦' }
+  { value: "new", label: "Novo", icon: "✨" },
+  { value: "used", label: "Usado", icon: "🔄" },
+  { value: "refurbished", label: "Recondicionado", icon: "🔧" },
+  { value: "open_box", label: "Caixa Aberta", icon: "📦" },
 ];
 
 const PRICE_HISTORY_OPTIONS = [
-  { value: 'any', label: 'Qualquer' },
-  { value: 'falling', label: 'Preço Caindo' },
-  { value: 'stable', label: 'Preço Estável' },
-  { value: 'rising', label: 'Preço Subindo' }
+  { value: "any", label: "Qualquer" },
+  { value: "falling", label: "Preço Caindo" },
+  { value: "stable", label: "Preço Estável" },
+  { value: "rising", label: "Preço Subindo" },
 ];
 
 const AVAILABILITY_OPTIONS = [
-  { value: 'all', label: 'Todos' },
-  { value: 'in_stock', label: 'Em Estoque' },
-  { value: 'pre_order', label: 'Pré-Venda' },
-  { value: 'back_order', label: 'Sob Encomenda' }
+  { value: "all", label: "Todos" },
+  { value: "in_stock", label: "Em Estoque" },
+  { value: "pre_order", label: "Pré-Venda" },
+  { value: "back_order", label: "Sob Encomenda" },
 ];
 
 const QUICK_PRICE_RANGES = [
-  { label: 'Até R$ 50', range: [0, 50] as [number, number] },
-  { label: 'R$ 50 - R$ 100', range: [50, 100] as [number, number] },
-  { label: 'R$ 100 - R$ 500', range: [100, 500] as [number, number] },
-  { label: 'R$ 500 - R$ 1.000', range: [500, 1000] as [number, number] },
-  { label: 'R$ 1.000+', range: [1000, 10000] as [number, number] }
+  { label: "Até R$ 50", range: [0, 50] as [number, number] },
+  { label: "R$ 50 - R$ 100", range: [50, 100] as [number, number] },
+  { label: "R$ 100 - R$ 500", range: [100, 500] as [number, number] },
+  { label: "R$ 500 - R$ 1.000", range: [500, 1000] as [number, number] },
+  { label: "R$ 1.000+", range: [1000, 10000] as [number, number] },
 ];
 
-export function AdvancedProductFilters({ 
-  filters, 
-  onFiltersChange, 
+export function AdvancedProductFilters({
+  filters,
+  onFiltersChange,
   availableOptions,
-  className = '' 
+  className = "",
 }: AdvancedProductFiltersProps) {
   const [expandedSections, setExpandedSections] = useState({
     price: true,
@@ -106,31 +106,27 @@ export function AdvancedProductFilters({
     rating: true,
     features: false,
     specifications: false,
-    advanced: false
+    advanced: false,
   });
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-      minimumFractionDigits: 0
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 0,
     }).format(price);
   };
 
   const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections(prev => ({
+    setExpandedSections((prev) => ({
       ...prev,
-      [section]: !prev[section]
+      [section]: !prev[section],
     }));
   };
 
-  const handleArrayToggle = <T,>(
-    array: T[], 
-    item: T, 
-    callback: (newArray: T[]) => void
-  ) => {
+  const handleArrayToggle = <T,>(array: T[], item: T, callback: (newArray: T[]) => void) => {
     if (array.includes(item)) {
-      callback(array.filter(i => i !== item));
+      callback(array.filter((i) => i !== item));
     } else {
       callback([...array, item]);
     }
@@ -138,17 +134,15 @@ export function AdvancedProductFilters({
 
   const renderStars = (rating: number, interactive = false, onClick?: () => void) => {
     return (
-      <div 
-        className={`flex items-center gap-1 ${interactive ? 'cursor-pointer hover:scale-105 transition-transform' : ''}`}
+      <div
+        className={`flex items-center gap-1 ${interactive ? "cursor-pointer hover:scale-105 transition-transform" : ""}`}
         onClick={onClick}
       >
         {Array.from({ length: 5 }, (_, i) => (
           <Star
             key={i}
             className={`h-4 w-4 transition-colors ${
-              i < rating
-                ? 'text-yellow-400 fill-current'
-                : 'text-gray-300 hover:text-yellow-200'
+              i < rating ? "text-yellow-400 fill-current" : "text-gray-300 hover:text-yellow-200"
             }`}
           />
         ))}
@@ -173,8 +167,8 @@ export function AdvancedProductFilters({
       onSale: false,
       recentlyAdded: false,
       sellersOnly: [],
-      priceHistory: 'any',
-      availability: 'all',
+      priceHistory: "any",
+      availability: "all",
       size: [],
       color: [],
       material: [],
@@ -182,19 +176,19 @@ export function AdvancedProductFilters({
       dimensions: {
         length: [0, 1000],
         width: [0, 1000],
-        height: [0, 1000]
-      }
+        height: [0, 1000],
+      },
     });
   };
 
-  const hasActiveFilters = 
-    filters.priceRange[0] > 0 || 
-    filters.priceRange[1] < 10000 || 
-    filters.selectedBrands.length > 0 || 
-    filters.selectedConditions.length > 0 || 
+  const hasActiveFilters =
+    filters.priceRange[0] > 0 ||
+    filters.priceRange[1] < 10000 ||
+    filters.selectedBrands.length > 0 ||
+    filters.selectedConditions.length > 0 ||
     filters.selectedCategories.length > 0 ||
     filters.selectedLocations.length > 0 ||
-    filters.freeShippingOnly || 
+    filters.freeShippingOnly ||
     filters.fastDeliveryOnly ||
     filters.minRating > 0 ||
     filters.hasWarranty ||
@@ -203,8 +197,8 @@ export function AdvancedProductFilters({
     filters.onSale ||
     filters.recentlyAdded ||
     filters.sellersOnly.length > 0 ||
-    filters.priceHistory !== 'any' ||
-    filters.availability !== 'all' ||
+    filters.priceHistory !== "any" ||
+    filters.availability !== "all" ||
     filters.size.length > 0 ||
     filters.color.length > 0 ||
     filters.material.length > 0;
@@ -228,9 +222,9 @@ export function AdvancedProductFilters({
       filters.inStock ? 1 : 0,
       filters.onSale ? 1 : 0,
       filters.recentlyAdded ? 1 : 0,
-      filters.priceHistory !== 'any' ? 1 : 0,
-      filters.availability !== 'all' ? 1 : 0
-    ]
+      filters.priceHistory !== "any" ? 1 : 0,
+      filters.availability !== "all" ? 1 : 0,
+    ],
   ].reduce((sum, count) => sum + count, 0);
 
   return (
@@ -263,16 +257,15 @@ export function AdvancedProductFilters({
           <h4 className="font-medium text-gray-900 mb-3">Faixas de Preço Rápidas</h4>
           <div className="grid grid-cols-2 gap-2">
             {QUICK_PRICE_RANGES.map((range) => {
-              const isActive = filters.priceRange[0] === range.range[0] && 
-                               filters.priceRange[1] === range.range[1];
+              const isActive = filters.priceRange[0] === range.range[0] && filters.priceRange[1] === range.range[1];
               return (
                 <button
                   key={range.label}
                   onClick={() => onFiltersChange({ priceRange: range.range })}
                   className={`px-3 py-2 text-sm rounded-md border transition-colors ${
-                    isActive 
-                      ? 'bg-blue-50 border-blue-200 text-blue-700' 
-                      : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                    isActive
+                      ? "bg-blue-50 border-blue-200 text-blue-700"
+                      : "border-gray-300 text-gray-600 hover:border-gray-400"
                   }`}
                 >
                   {range.label}
@@ -284,10 +277,7 @@ export function AdvancedProductFilters({
 
         {/* Custom Price Range */}
         <div>
-          <button
-            onClick={() => toggleSection('price')}
-            className="flex items-center justify-between w-full text-left"
-          >
+          <button onClick={() => toggleSection("price")} className="flex items-center justify-between w-full text-left">
             <h4 className="font-medium text-gray-900">Faixa Personalizada</h4>
             {expandedSections.price ? (
               <ChevronUp className="h-4 w-4 text-gray-500" />
@@ -295,7 +285,7 @@ export function AdvancedProductFilters({
               <ChevronDown className="h-4 w-4 text-gray-500" />
             )}
           </button>
-          
+
           {expandedSections.price && (
             <div className="mt-4 space-y-4">
               <div className="flex items-center gap-3">
@@ -304,9 +294,11 @@ export function AdvancedProductFilters({
                   <input
                     type="number"
                     value={filters.priceRange[0]}
-                    onChange={(e) => onFiltersChange({ 
-                      priceRange: [Number(e.target.value), filters.priceRange[1]] 
-                    })}
+                    onChange={(e) =>
+                      onFiltersChange({
+                        priceRange: [Number(e.target.value), filters.priceRange[1]],
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="R$ 0"
                   />
@@ -317,9 +309,11 @@ export function AdvancedProductFilters({
                   <input
                     type="number"
                     value={filters.priceRange[1]}
-                    onChange={(e) => onFiltersChange({ 
-                      priceRange: [filters.priceRange[0], Number(e.target.value)] 
-                    })}
+                    onChange={(e) =>
+                      onFiltersChange({
+                        priceRange: [filters.priceRange[0], Number(e.target.value)],
+                      })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="R$ 10.000"
                   />
@@ -335,7 +329,7 @@ export function AdvancedProductFilters({
         {/* Categories */}
         <div>
           <button
-            onClick={() => toggleSection('categories')}
+            onClick={() => toggleSection("categories")}
             className="flex items-center justify-between w-full text-left"
           >
             <h4 className="font-medium text-gray-900">Categorias</h4>
@@ -352,19 +346,22 @@ export function AdvancedProductFilters({
               )}
             </div>
           </button>
-          
+
           {expandedSections.categories && (
             <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
               {availableOptions.categories.map((category) => (
-                <label key={category} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md cursor-pointer">
+                <label
+                  key={category}
+                  className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md cursor-pointer"
+                >
                   <input
                     type="checkbox"
                     checked={filters.selectedCategories.includes(category)}
-                    onChange={() => handleArrayToggle(
-                      filters.selectedCategories, 
-                      category, 
-                      (newCategories) => onFiltersChange({ selectedCategories: newCategories })
-                    )}
+                    onChange={() =>
+                      handleArrayToggle(filters.selectedCategories, category, (newCategories) =>
+                        onFiltersChange({ selectedCategories: newCategories })
+                      )
+                    }
                     className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="text-sm text-gray-700 flex-1">{category}</span>
@@ -377,7 +374,7 @@ export function AdvancedProductFilters({
         {/* Conditions */}
         <div>
           <button
-            onClick={() => toggleSection('conditions')}
+            onClick={() => toggleSection("conditions")}
             className="flex items-center justify-between w-full text-left"
           >
             <h4 className="font-medium text-gray-900">Condição</h4>
@@ -394,7 +391,7 @@ export function AdvancedProductFilters({
               )}
             </div>
           </button>
-          
+
           {expandedSections.conditions && (
             <div className="mt-4 grid grid-cols-2 gap-2">
               {CONDITIONS.map((condition) => {
@@ -402,15 +399,15 @@ export function AdvancedProductFilters({
                 return (
                   <button
                     key={condition.value}
-                    onClick={() => handleArrayToggle(
-                      filters.selectedConditions,
-                      condition.value,
-                      (newConditions) => onFiltersChange({ selectedConditions: newConditions })
-                    )}
+                    onClick={() =>
+                      handleArrayToggle(filters.selectedConditions, condition.value, (newConditions) =>
+                        onFiltersChange({ selectedConditions: newConditions })
+                      )
+                    }
                     className={`flex items-center gap-2 px-3 py-2 rounded-md border text-sm transition-colors ${
                       isSelected
-                        ? 'bg-green-50 border-green-200 text-green-700'
-                        : 'border-gray-300 text-gray-600 hover:border-gray-400'
+                        ? "bg-green-50 border-green-200 text-green-700"
+                        : "border-gray-300 text-gray-600 hover:border-gray-400"
                     }`}
                   >
                     <span>{condition.icon}</span>
@@ -425,7 +422,7 @@ export function AdvancedProductFilters({
         {/* Features & Benefits */}
         <div>
           <button
-            onClick={() => toggleSection('features')}
+            onClick={() => toggleSection("features")}
             className="flex items-center justify-between w-full text-left"
           >
             <h4 className="font-medium text-gray-900">Características</h4>
@@ -435,7 +432,7 @@ export function AdvancedProductFilters({
               <ChevronDown className="h-4 w-4 text-gray-500" />
             )}
           </button>
-          
+
           {expandedSections.features && (
             <div className="mt-4 space-y-3">
               <label className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md cursor-pointer">
@@ -510,7 +507,7 @@ export function AdvancedProductFilters({
         {/* Rating */}
         <div>
           <button
-            onClick={() => toggleSection('rating')}
+            onClick={() => toggleSection("rating")}
             className="flex items-center justify-between w-full text-left"
           >
             <h4 className="font-medium text-gray-900">Avaliação Mínima</h4>
@@ -520,7 +517,7 @@ export function AdvancedProductFilters({
               <ChevronDown className="h-4 w-4 text-gray-500" />
             )}
           </button>
-          
+
           {expandedSections.rating && (
             <div className="mt-4 space-y-2">
               {[5, 4, 3, 2, 1, 0].map((rating) => (
@@ -528,9 +525,7 @@ export function AdvancedProductFilters({
                   key={rating}
                   onClick={() => onFiltersChange({ minRating: rating })}
                   className={`p-2 rounded-md cursor-pointer transition-colors ${
-                    filters.minRating === rating
-                      ? 'bg-yellow-50 border border-yellow-200'
-                      : 'hover:bg-gray-50'
+                    filters.minRating === rating ? "bg-yellow-50 border border-yellow-200" : "hover:bg-gray-50"
                   }`}
                 >
                   {renderStars(rating, true)}
@@ -544,7 +539,7 @@ export function AdvancedProductFilters({
         {availableOptions.locations.length > 0 && (
           <div>
             <button
-              onClick={() => toggleSection('location')}
+              onClick={() => toggleSection("location")}
               className="flex items-center justify-between w-full text-left"
             >
               <div className="flex items-center gap-2">
@@ -564,19 +559,22 @@ export function AdvancedProductFilters({
                 )}
               </div>
             </button>
-            
+
             {expandedSections.location && (
               <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
                 {availableOptions.locations.map((location) => (
-                  <label key={location} className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md cursor-pointer">
+                  <label
+                    key={location}
+                    className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded-md cursor-pointer"
+                  >
                     <input
                       type="checkbox"
                       checked={filters.selectedLocations.includes(location)}
-                      onChange={() => handleArrayToggle(
-                        filters.selectedLocations, 
-                        location, 
-                        (newLocations) => onFiltersChange({ selectedLocations: newLocations })
-                      )}
+                      onChange={() =>
+                        handleArrayToggle(filters.selectedLocations, location, (newLocations) =>
+                          onFiltersChange({ selectedLocations: newLocations })
+                        )
+                      }
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <span className="text-sm text-gray-700 flex-1">{location}</span>
@@ -591,7 +589,7 @@ export function AdvancedProductFilters({
         {availableOptions.brands.length > 0 && (
           <div>
             <button
-              onClick={() => toggleSection('brands')}
+              onClick={() => toggleSection("brands")}
               className="flex items-center justify-between w-full text-left"
             >
               <h4 className="font-medium text-gray-900">Marcas</h4>
@@ -608,7 +606,7 @@ export function AdvancedProductFilters({
                 )}
               </div>
             </button>
-            
+
             {expandedSections.brands && (
               <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
                 {availableOptions.brands.map((brand) => (
@@ -616,11 +614,11 @@ export function AdvancedProductFilters({
                     <input
                       type="checkbox"
                       checked={filters.selectedBrands.includes(brand)}
-                      onChange={() => handleArrayToggle(
-                        filters.selectedBrands, 
-                        brand, 
-                        (newBrands) => onFiltersChange({ selectedBrands: newBrands })
-                      )}
+                      onChange={() =>
+                        handleArrayToggle(filters.selectedBrands, brand, (newBrands) =>
+                          onFiltersChange({ selectedBrands: newBrands })
+                        )
+                      }
                       className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <span className="text-sm text-gray-700 flex-1">{brand}</span>

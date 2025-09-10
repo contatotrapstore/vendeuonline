@@ -1,20 +1,8 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useAuthStore } from '@/store/authStore';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar,
-  Camera,
-  Save,
-  Edit3,
-  Package,
-  Heart,
-  ShoppingCart
-} from 'lucide-react';
+import { useState, useEffect } from "react";
+import { useAuthStore } from "@/store/authStore";
+import { User, Mail, Phone, MapPin, Calendar, Camera, Save, Edit3, Package, Heart, ShoppingCart } from "lucide-react";
 
 interface UserProfile {
   id: string;
@@ -55,8 +43,8 @@ export default function BuyerProfile() {
 
   useEffect(() => {
     // Verificar autenticação e tipo de usuário
-    if (!user || user.userType !== 'buyer') {
-      window.location.href = '/';
+    if (!user || user.userType !== "buyer") {
+      window.location.href = "/";
       return;
     }
 
@@ -66,42 +54,42 @@ export default function BuyerProfile() {
   const loadUserProfile = async () => {
     try {
       setIsLoading(true);
-      
+
       // Buscar perfil e estatísticas em paralelo
       const [profileResponse, statsResponse] = await Promise.all([
-        fetch('/api/users/profile', {
+        fetch("/api/users/profile", {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
         }),
-        fetch('/api/users/stats', {
+        fetch("/api/users/stats", {
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-        })
+        }),
       ]);
 
       if (profileResponse.ok) {
         const profileData = await profileResponse.json();
-        
+
         // Adicionar estatísticas reais se disponíveis
         if (statsResponse.ok) {
           const statsData = await statsResponse.json();
           profileData.profile.stats = {
             totalOrders: statsData.stats.totalOrders,
             favoriteProducts: statsData.stats.favoriteProducts,
-            totalSpent: statsData.stats.totalSpent
+            totalSpent: statsData.stats.totalSpent,
           };
         }
-        
+
         setProfile(profileData.profile);
       } else {
-        console.error('Error loading profile');
+        console.error("Error loading profile");
       }
     } catch (error) {
-      console.error('Error loading profile:', error);
+      console.error("Error loading profile:", error);
     } finally {
       setIsLoading(false);
     }
@@ -109,14 +97,14 @@ export default function BuyerProfile() {
 
   const handleSaveProfile = async () => {
     if (!profile) return;
-    
+
     try {
       setIsSaving(true);
-      const response = await fetch('/api/users/profile', {
-        method: 'PUT',
+      const response = await fetch("/api/users/profile", {
+        method: "PUT",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           name: profile.name,
@@ -129,15 +117,15 @@ export default function BuyerProfile() {
       if (response.ok) {
         setIsEditing(false);
         // Atualizar dados do usuário no store
-        // useAuthStore.getState().updateUser({ 
+        // useAuthStore.getState().updateUser({
         //   name: profile.name,
         //   phone: profile.phone,
         //   city: profile.city,
-        //   state: profile.state 
+        //   state: profile.state
         // });
       }
     } catch (error) {
-      console.error('Error saving profile:', error);
+      console.error("Error saving profile:", error);
     } finally {
       setIsSaving(false);
     }
@@ -149,29 +137,29 @@ export default function BuyerProfile() {
 
     try {
       const formData = new FormData();
-      formData.append('avatar', file);
-      
-      const response = await fetch('/api/users/avatar', {
-        method: 'POST',
+      formData.append("avatar", file);
+
+      const response = await fetch("/api/users/avatar", {
+        method: "POST",
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: formData,
       });
 
       if (response.ok) {
         const data = await response.json();
-        setProfile(prev => prev ? { ...prev, avatar: data.avatarUrl } : null);
+        setProfile((prev) => (prev ? { ...prev, avatar: data.avatarUrl } : null));
       } else {
         const errorData = await response.json();
-        console.error('Erro no upload:', errorData.error);
+        console.error("Erro no upload:", errorData.error);
       }
     } catch (error) {
-      console.error('Error uploading avatar:', error);
+      console.error("Error uploading avatar:", error);
     }
   };
 
-  if (!user || user.userType !== 'buyer') {
+  if (!user || user.userType !== "buyer") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -220,7 +208,7 @@ export default function BuyerProfile() {
                     className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                   >
                     <Save className="h-4 w-4" />
-                    <span>{isSaving ? 'Salvando...' : 'Salvar'}</span>
+                    <span>{isSaving ? "Salvando..." : "Salvar"}</span>
                   </button>
                 </div>
               )}
@@ -235,18 +223,14 @@ export default function BuyerProfile() {
           <div className="lg:col-span-2">
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-6">Informações Pessoais</h3>
-              
+
               <div className="space-y-6">
                 {/* Avatar */}
                 <div className="flex items-center space-x-6">
                   <div className="relative">
                     <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
                       {profile?.avatar ? (
-                        <img 
-                          src={profile.avatar} 
-                          alt="Avatar"
-                          className="w-full h-full object-cover"
-                        />
+                        <img src={profile.avatar} alt="Avatar" className="w-full h-full object-cover" />
                       ) : (
                         <User className="h-10 w-10 text-gray-400" />
                       )}
@@ -254,12 +238,7 @@ export default function BuyerProfile() {
                     {isEditing && (
                       <label className="absolute -bottom-1 -right-1 bg-blue-600 text-white rounded-full p-1 cursor-pointer hover:bg-blue-700">
                         <Camera className="h-3 w-3" />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleAvatarUpload}
-                          className="hidden"
-                        />
+                        <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
                       </label>
                     )}
                   </div>
@@ -279,8 +258,8 @@ export default function BuyerProfile() {
                     {isEditing ? (
                       <input
                         type="text"
-                        value={profile?.name || ''}
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, name: e.target.value } : null)}
+                        value={profile?.name || ""}
+                        onChange={(e) => setProfile((prev) => (prev ? { ...prev, name: e.target.value } : null))}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     ) : (
@@ -305,8 +284,8 @@ export default function BuyerProfile() {
                     {isEditing ? (
                       <input
                         type="tel"
-                        value={profile?.phone || ''}
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, phone: e.target.value } : null)}
+                        value={profile?.phone || ""}
+                        onChange={(e) => setProfile((prev) => (prev ? { ...prev, phone: e.target.value } : null))}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         placeholder="(00) 00000-0000"
                       />
@@ -323,8 +302,8 @@ export default function BuyerProfile() {
                     {isEditing ? (
                       <input
                         type="text"
-                        value={profile?.city || ''}
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, city: e.target.value } : null)}
+                        value={profile?.city || ""}
+                        onChange={(e) => setProfile((prev) => (prev ? { ...prev, city: e.target.value } : null))}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     ) : (
@@ -333,14 +312,12 @@ export default function BuyerProfile() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Estado
-                    </label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
                     {isEditing ? (
                       <input
                         type="text"
-                        value={profile?.state || ''}
-                        onChange={(e) => setProfile(prev => prev ? { ...prev, state: e.target.value } : null)}
+                        value={profile?.state || ""}
+                        onChange={(e) => setProfile((prev) => (prev ? { ...prev, state: e.target.value } : null))}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       />
                     ) : (
@@ -354,7 +331,7 @@ export default function BuyerProfile() {
                       Membro desde
                     </label>
                     <p className="p-3 bg-gray-50 rounded-lg">
-                      {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('pt-BR') : '-'}
+                      {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString("pt-BR") : "-"}
                     </p>
                   </div>
                 </div>
@@ -365,9 +342,7 @@ export default function BuyerProfile() {
             <div className="bg-white rounded-lg shadow p-6 mt-6">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-medium text-gray-900">Endereços Salvos</h3>
-                <button className="text-blue-600 hover:text-blue-700 font-medium">
-                  + Adicionar endereço
-                </button>
+                <button className="text-blue-600 hover:text-blue-700 font-medium">+ Adicionar endereço</button>
               </div>
 
               {profile?.addresses && profile.addresses.length > 0 ? (
@@ -377,9 +352,7 @@ export default function BuyerProfile() {
                       <div className="flex justify-between items-start mb-2">
                         <h4 className="font-medium text-gray-900">{address.label}</h4>
                         {address.isDefault && (
-                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
-                            Padrão
-                          </span>
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Padrão</span>
                         )}
                       </div>
                       <p className="text-sm text-gray-600">
@@ -409,7 +382,7 @@ export default function BuyerProfile() {
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-6">Estatísticas</h3>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-blue-100 rounded-lg">
@@ -438,7 +411,7 @@ export default function BuyerProfile() {
                   <div>
                     <p className="text-sm text-gray-600">Total Gasto</p>
                     <p className="font-medium">
-                      R$ {(profile?.stats.totalSpent || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {(profile?.stats.totalSpent || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                     </p>
                   </div>
                 </div>
@@ -447,20 +420,20 @@ export default function BuyerProfile() {
               <div className="mt-8 pt-6 border-t border-gray-200">
                 <h4 className="font-medium text-gray-900 mb-4">Ações Rápidas</h4>
                 <div className="space-y-2">
-                  <button 
-                    onClick={() => window.location.href = '/buyer/orders'}
+                  <button
+                    onClick={() => (window.location.href = "/buyer/orders")}
                     className="w-full text-left p-2 text-sm text-gray-600 hover:bg-gray-50 rounded"
                   >
                     Ver meus pedidos
                   </button>
-                  <button 
-                    onClick={() => window.location.href = '/buyer/wishlist'}
+                  <button
+                    onClick={() => (window.location.href = "/buyer/wishlist")}
                     className="w-full text-left p-2 text-sm text-gray-600 hover:bg-gray-50 rounded"
                   >
                     Lista de desejos
                   </button>
-                  <button 
-                    onClick={() => window.location.href = '/buyer/settings'}
+                  <button
+                    onClick={() => (window.location.href = "/buyer/settings")}
                     className="w-full text-left p-2 text-sm text-gray-600 hover:bg-gray-50 rounded"
                   >
                     Configurações

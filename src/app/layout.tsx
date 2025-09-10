@@ -11,9 +11,7 @@ export default function RootLayout({
   return (
     <div className="min-h-screen flex flex-col font-sans antialiased bg-gray-50">
       <Navbar />
-      <main className="flex-1">
-        {children}
-      </main>
+      <main className="flex-1">{children}</main>
       <Footer />
       <Toaster position="top-right" richColors />
     </div>

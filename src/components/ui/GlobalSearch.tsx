@@ -1,15 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, X, Clock, TrendingUp, Package, Store, Loader2 } from 'lucide-react';
-import { useProductStore } from '@/store/productStore';
-import { useStoreStore } from '@/stores/storeStore';
-import { useDebounce } from '@/hooks/useDebounce';
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { Search, X, Clock, TrendingUp, Package, Store, Loader2 } from "lucide-react";
+import { useProductStore } from "@/store/productStore";
+import { useStoreStore } from "@/stores/storeStore";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useTracking } from "@/components/TrackingScripts";
 
 interface SearchResult {
   id: string;
-  type: 'product' | 'store' | 'category';
+  type: "product" | "store" | "category";
   title: string;
   subtitle?: string;
   image?: string;
@@ -24,16 +25,16 @@ interface GlobalSearchProps {
   onResultClick?: (result: SearchResult) => void;
 }
 
-const RECENT_SEARCHES_KEY = 'recent_searches';
+const RECENT_SEARCHES_KEY = "recent_searches";
 const MAX_RECENT_SEARCHES = 5;
 const MAX_RESULTS_PER_TYPE = 3;
 
-export function GlobalSearch({ 
-  className = '', 
+export function GlobalSearch({
+  className = "",
   placeholder = "Buscar produtos, lojas...",
-  onResultClick 
+  onResultClick,
 }: GlobalSearchProps) {
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -43,22 +44,23 @@ export function GlobalSearch({
   const navigate = useNavigate();
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  
+  const { trackSearch } = useTracking();
+
   const { fetchProducts } = useProductStore();
   const { fetchStores } = useStoreStore();
-  
+
   const debouncedQuery = useDebounce(query, 300);
 
   // Popular searches - these could come from analytics
   const popularSearches = [
-    'Smartphone Samsung',
-    'iPhone 15',
-    'Notebook Gamer',
-    'Fone Bluetooth',
-    'Smart TV',
-    'Air Fryer',
-    'Console PlayStation',
-    'Câmera Digital'
+    "Smartphone Samsung",
+    "iPhone 15",
+    "Notebook Gamer",
+    "Fone Bluetooth",
+    "Smart TV",
+    "Air Fryer",
+    "Console PlayStation",
+    "Câmera Digital",
   ];
 
   // Load recent searches from localStorage
@@ -68,7 +70,7 @@ export function GlobalSearch({
       try {
         setRecentSearches(JSON.parse(saved));
       } catch (error) {
-        console.error('Error loading recent searches:', error);
+        console.error("Error loading recent searches:", error);
       }
     }
   }, []);
@@ -91,8 +93,8 @@ export function GlobalSearch({
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const performSearch = async (searchQuery: string) => {
@@ -101,15 +103,19 @@ export function GlobalSearch({
       const searchResults: SearchResult[] = [];
 
       // Search products
-      await fetchProducts({ 
-        search: searchQuery, 
-        limit: MAX_RESULTS_PER_TYPE 
+      await fetchProducts({
+        search: searchQuery,
+        limit: MAX_RESULTS_PER_TYPE,
       });
-      
-      // Search stores  
-      await fetchStores({ 
-        search: searchQuery
-      }, 1, MAX_RESULTS_PER_TYPE);
+
+      // Search stores
+      await fetchStores(
+        {
+          search: searchQuery,
+        },
+        1,
+        MAX_RESULTS_PER_TYPE
+      );
 
       // Add product results (fetchProducts is void, so we create mock results)
       if (searchQuery) {
@@ -119,12 +125,12 @@ export function GlobalSearch({
         for (let i = 0; i < Math.min(3, MAX_RESULTS_PER_TYPE); i++) {
           searchResults.push({
             id: `product-${i}`,
-            type: 'product',
+            type: "product",
             title: `Produto relacionado a "${searchQuery}" ${i + 1}`,
-            subtitle: 'Eletrônicos',
+            subtitle: "Eletrônicos",
             price: Math.floor(Math.random() * 1000) + 100,
             rating: 4 + Math.random(),
-            url: `/produto/${i + 1}`
+            url: `/produto/${i + 1}`,
           });
         }
       }
@@ -133,32 +139,30 @@ export function GlobalSearch({
       for (let i = 0; i < Math.min(2, MAX_RESULTS_PER_TYPE); i++) {
         searchResults.push({
           id: `store-${i}`,
-          type: 'store',
+          type: "store",
           title: `Loja ${searchQuery} ${i + 1}`,
-          subtitle: 'Loja verificada',
-          url: `/loja/${i + 1}`
+          subtitle: "Loja verificada",
+          url: `/loja/${i + 1}`,
         });
       }
 
       // Add category suggestions if query matches
-      const categories = ['Eletrônicos', 'Roupas', 'Casa e Jardim', 'Esportes', 'Beleza'];
-      const matchingCategories = categories.filter(cat => 
-        cat.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      
+      const categories = ["Eletrônicos", "Roupas", "Casa e Jardim", "Esportes", "Beleza"];
+      const matchingCategories = categories.filter((cat) => cat.toLowerCase().includes(searchQuery.toLowerCase()));
+
       matchingCategories.slice(0, 2).forEach((category, i) => {
         searchResults.push({
           id: `category-${i}`,
-          type: 'category',
+          type: "category",
           title: category,
-          subtitle: 'Categoria',
-          url: `/products?category=${encodeURIComponent(category)}`
+          subtitle: "Categoria",
+          url: `/products?category=${encodeURIComponent(category)}`,
         });
       });
 
       setResults(searchResults);
     } catch (error) {
-      console.error('Search error:', error);
+      console.error("Search error:", error);
       setResults([]);
     } finally {
       setLoading(false);
@@ -167,10 +171,9 @@ export function GlobalSearch({
 
   const saveRecentSearch = (searchQuery: string) => {
     if (!searchQuery.trim()) return;
-    
-    const updated = [searchQuery, ...recentSearches.filter(s => s !== searchQuery)]
-      .slice(0, MAX_RECENT_SEARCHES);
-    
+
+    const updated = [searchQuery, ...recentSearches.filter((s) => s !== searchQuery)].slice(0, MAX_RECENT_SEARCHES);
+
     setRecentSearches(updated);
     localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated));
   };
@@ -193,22 +196,25 @@ export function GlobalSearch({
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (!isOpen) return;
 
-    const allOptions = results.length > 0 ? results : [...recentSearches.map(s => ({ title: s })), ...popularSearches.map(s => ({ title: s }))];
-    
+    const allOptions =
+      results.length > 0
+        ? results
+        : [...recentSearches.map((s) => ({ title: s })), ...popularSearches.map((s) => ({ title: s }))];
+
     switch (e.key) {
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
-        setSelectedIndex(prev => Math.min(prev + 1, allOptions.length - 1));
+        setSelectedIndex((prev) => Math.min(prev + 1, allOptions.length - 1));
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
-        setSelectedIndex(prev => Math.max(prev - 1, -1));
+        setSelectedIndex((prev) => Math.max(prev - 1, -1));
         break;
-      case 'Enter':
+      case "Enter":
         e.preventDefault();
         if (selectedIndex >= 0 && selectedIndex < allOptions.length) {
           const selected = allOptions[selectedIndex];
-          if ('url' in selected) {
+          if ("url" in selected) {
             handleResultClick(selected as SearchResult);
           } else {
             handleSearchSubmit(selected.title);
@@ -217,7 +223,7 @@ export function GlobalSearch({
           handleSearchSubmit(query);
         }
         break;
-      case 'Escape':
+      case "Escape":
         setIsOpen(false);
         inputRef.current?.blur();
         break;
@@ -226,10 +232,10 @@ export function GlobalSearch({
 
   const handleResultClick = (result: SearchResult) => {
     saveRecentSearch(result.title);
-    setQuery('');
+    setQuery("");
     setIsOpen(false);
     setSelectedIndex(-1);
-    
+
     if (onResultClick) {
       onResultClick(result);
     } else {
@@ -240,12 +246,15 @@ export function GlobalSearch({
   const handleSearchSubmit = (searchQuery?: string) => {
     const finalQuery = searchQuery || query;
     if (!finalQuery.trim()) return;
-    
+
+    // Track search event
+    trackSearch(finalQuery, results.length);
+
     saveRecentSearch(finalQuery);
-    setQuery('');
+    setQuery("");
     setIsOpen(false);
     setSelectedIndex(-1);
-    
+
     navigate(`/products?search=${encodeURIComponent(finalQuery)}`);
   };
 
@@ -256,30 +265,31 @@ export function GlobalSearch({
 
   const getResultIcon = (type: string) => {
     switch (type) {
-      case 'product': return Package;
-      case 'store': return Store;
-      case 'category': return Search;
-      default: return Search;
+      case "product":
+        return Package;
+      case "store":
+        return Store;
+      case "category":
+        return Search;
+      default:
+        return Search;
     }
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(price);
   };
 
   const renderStars = (rating: number) => {
     const stars = [];
     const fullStars = Math.floor(rating);
-    
+
     for (let i = 0; i < 5; i++) {
       stars.push(
-        <span 
-          key={i} 
-          className={`text-xs ${i < fullStars ? 'text-yellow-400' : 'text-gray-300'}`}
-        >
+        <span key={i} className={`text-xs ${i < fullStars ? "text-yellow-400" : "text-gray-300"}`}>
           ★
         </span>
       );
@@ -305,17 +315,13 @@ export function GlobalSearch({
         {(query || loading) && (
           <button
             onClick={() => {
-              setQuery('');
+              setQuery("");
               setResults([]);
               inputRef.current?.focus();
             }}
             className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
           >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <X className="h-4 w-4" />
-            )}
+            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <X className="h-4 w-4" />}
           </button>
         )}
       </div>
@@ -326,34 +332,28 @@ export function GlobalSearch({
           {/* Search Results */}
           {results.length > 0 && (
             <div className="p-2">
-              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide px-3 py-2">
-                Resultados
-              </div>
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide px-3 py-2">Resultados</div>
               {results.map((result, index) => {
                 const Icon = getResultIcon(result.type);
                 const isSelected = index === selectedIndex;
-                
+
                 return (
                   <button
                     key={result.id}
                     onClick={() => handleResultClick(result)}
                     className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-left transition-colors ${
-                      isSelected ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'
+                      isSelected ? "bg-blue-50 text-blue-700" : "hover:bg-gray-50"
                     }`}
                   >
-                    <Icon className={`h-4 w-4 flex-shrink-0 ${isSelected ? 'text-blue-600' : 'text-gray-400'}`} />
+                    <Icon className={`h-4 w-4 flex-shrink-0 ${isSelected ? "text-blue-600" : "text-gray-400"}`} />
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-gray-900 truncate">
-                        {result.title}
-                      </div>
+                      <div className="font-medium text-gray-900 truncate">{result.title}</div>
                       <div className="flex items-center space-x-2 text-xs text-gray-500">
                         {result.subtitle && <span>{result.subtitle}</span>}
                         {result.price && (
                           <>
                             <span>•</span>
-                            <span className="font-medium text-green-600">
-                              {formatPrice(result.price)}
-                            </span>
+                            <span className="font-medium text-green-600">{formatPrice(result.price)}</span>
                           </>
                         )}
                         {result.rating && (
@@ -377,13 +377,8 @@ export function GlobalSearch({
           {results.length === 0 && recentSearches.length > 0 && (
             <div className="p-2">
               <div className="flex items-center justify-between px-3 py-2">
-                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Buscas Recentes
-                </span>
-                <button
-                  onClick={clearRecentSearches}
-                  className="text-xs text-blue-600 hover:text-blue-700"
-                >
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Buscas Recentes</span>
+                <button onClick={clearRecentSearches} className="text-xs text-blue-600 hover:text-blue-700">
                   Limpar
                 </button>
               </div>
@@ -392,10 +387,12 @@ export function GlobalSearch({
                   key={search}
                   onClick={() => handleRecentSearchClick(search)}
                   className={`w-full flex items-center space-x-3 px-3 py-2 rounded-md text-left transition-colors ${
-                    index === selectedIndex ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'
+                    index === selectedIndex ? "bg-blue-50 text-blue-700" : "hover:bg-gray-50"
                   }`}
                 >
-                  <Clock className={`h-4 w-4 flex-shrink-0 ${index === selectedIndex ? 'text-blue-600' : 'text-gray-400'}`} />
+                  <Clock
+                    className={`h-4 w-4 flex-shrink-0 ${index === selectedIndex ? "text-blue-600" : "text-gray-400"}`}
+                  />
                   <span className="font-medium text-gray-900">{search}</span>
                 </button>
               ))}
@@ -413,13 +410,13 @@ export function GlobalSearch({
                 {popularSearches.map((search, index) => {
                   const adjustedIndex = recentSearches.length + index;
                   const isSelected = adjustedIndex === selectedIndex;
-                  
+
                   return (
                     <button
                       key={search}
                       onClick={() => handleRecentSearchClick(search)}
                       className={`px-3 py-2 text-sm text-left rounded-md transition-colors ${
-                        isSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
+                        isSelected ? "bg-blue-50 text-blue-700" : "text-gray-600 hover:bg-gray-50"
                       }`}
                     >
                       {search}
@@ -437,9 +434,7 @@ export function GlobalSearch({
               <p className="text-sm text-gray-500">
                 Nenhum resultado encontrado para "<strong>{query}</strong>"
               </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Tente buscar por outro termo
-              </p>
+              <p className="text-xs text-gray-400 mt-1">Tente buscar por outro termo</p>
             </div>
           )}
         </div>

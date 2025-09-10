@@ -1,80 +1,85 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin, Building, Store } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { toast } from 'sonner';
-import { useAuthStore } from '@/store/authStore';
-import Logo from '@/components/ui/Logo';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin, Building, Store } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { useAuthStore } from "@/store/authStore";
+import Logo from "@/components/ui/Logo";
 
 const baseSchema = {
-  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-  email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
+  name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  email: z.string().email("Email inválido"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
   confirmPassword: z.string(),
-  phone: z.string().min(10, 'Telefone inválido'),
-  userType: z.enum(['buyer', 'seller'], {
-    message: 'Selecione o tipo de usuário'
-  })
+  phone: z.string().min(10, "Telefone inválido"),
+  userType: z.enum(["buyer", "seller"], {
+    message: "Selecione o tipo de usuário",
+  }),
 };
 
-const buyerSchema = z.object({
-  ...baseSchema,
-  city: z.string().min(2, 'Cidade é obrigatória'),
-  state: z.string().min(2, 'Estado é obrigatório')
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Senhas não coincidem',
-  path: ['confirmPassword']
-});
+const buyerSchema = z
+  .object({
+    ...baseSchema,
+    city: z.string().min(2, "Cidade é obrigatória"),
+    state: z.string().min(2, "Estado é obrigatório"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Senhas não coincidem",
+    path: ["confirmPassword"],
+  });
 
-const sellerSchema = z.object({
-  ...baseSchema,
-  storeName: z.string().min(2, 'Nome da loja é obrigatório'),
-  storeDescription: z.string().min(10, 'Descrição deve ter pelo menos 10 caracteres'),
-  cnpj: z.string().optional(),
-  address: z.string().min(5, 'Endereço é obrigatório'),
-  city: z.string().min(2, 'Cidade é obrigatória'),
-  state: z.string().min(2, 'Estado é obrigatório'),
-  zipCode: z.string().min(8, 'CEP inválido'),
-  category: z.string().min(1, 'Categoria é obrigatória')
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Senhas não coincidem',
-  path: ['confirmPassword']
-});
+const sellerSchema = z
+  .object({
+    ...baseSchema,
+    storeName: z.string().min(2, "Nome da loja é obrigatório"),
+    storeDescription: z.string().min(10, "Descrição deve ter pelo menos 10 caracteres"),
+    cnpj: z.string().optional(),
+    address: z.string().min(5, "Endereço é obrigatório"),
+    city: z.string().min(2, "Cidade é obrigatória"),
+    state: z.string().min(2, "Estado é obrigatório"),
+    zipCode: z.string().min(8, "CEP inválido"),
+    category: z.string().min(1, "Categoria é obrigatória"),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Senhas não coincidem",
+    path: ["confirmPassword"],
+  });
 
+// Type definitions (used in form validation)
 type BuyerFormData = z.infer<typeof buyerSchema>;
 type SellerFormData = z.infer<typeof sellerSchema>;
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [userType, setUserType] = useState<'buyer' | 'seller'>('buyer');
+  const [userType, setUserType] = useState<"buyer" | "seller">("buyer");
   const navigate = useNavigate();
   const { register: registerUser, isLoading, error, clearError } = useAuthStore();
 
-  const schema = userType === 'buyer' ? buyerSchema : sellerSchema;
-  
+  const schema = userType === "buyer" ? buyerSchema : sellerSchema;
+
   const {
     register,
     handleSubmit,
     formState: { errors },
     setValue,
-    watch
+    watch,
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: {
-      userType: 'buyer'
-    }
+      userType: "buyer",
+    },
   });
 
-  const watchedUserType = watch('userType');
+  const watchedUserType = watch("userType");
 
   const onSubmit = async (data: any) => {
     clearError();
-    
+
     try {
       // Preparar dados para o registro
       const registerData = {
@@ -84,24 +89,24 @@ export default function RegisterPage() {
         password: data.password,
         userType: data.userType,
         city: data.city,
-        state: data.state
+        state: data.state,
       };
 
       // Usar o authStore para registrar
       await registerUser(registerData);
-      
-      toast.success('Conta criada e login realizado com sucesso!');
-      
+
+      toast.success("Conta criada e login realizado com sucesso!");
+
       // Redirecionar para a página inicial ou dashboard
-      navigate('/');
+      navigate("/");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao criar conta. Tente novamente.');
+      toast.error(error instanceof Error ? error.message : "Erro ao criar conta. Tente novamente.");
     }
   };
 
-  const handleUserTypeChange = (type: 'buyer' | 'seller') => {
+  const handleUserTypeChange = (type: "buyer" | "seller") => {
     setUserType(type);
-    setValue('userType', type);
+    setValue("userType", type);
   };
 
   return (
@@ -110,15 +115,10 @@ export default function RegisterPage() {
         <div className="flex justify-center">
           <Logo size="lg" showText={false} />
         </div>
-        <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
-          Criar nova conta
-        </h2>
+        <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">Criar nova conta</h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Ou{' '}
-          <Link
-            to="/login"
-            className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
-          >
+          Ou{" "}
+          <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
             entrar na sua conta existente
           </Link>
         </p>
@@ -136,16 +136,14 @@ export default function RegisterPage() {
 
             {/* Tipo de Usuário */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Tipo de Conta
-              </label>
+              <label className="block text-sm font-medium text-gray-700 mb-3">Tipo de Conta</label>
               <div className="grid grid-cols-2 gap-4">
                 <label className="relative">
                   <input
                     type="radio"
                     value="buyer"
-                    checked={userType === 'buyer'}
-                    onChange={() => handleUserTypeChange('buyer')}
+                    checked={userType === "buyer"}
+                    onChange={() => handleUserTypeChange("buyer")}
                     className="sr-only peer"
                   />
                   <div className="p-4 text-center border-2 rounded-lg cursor-pointer peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all">
@@ -158,8 +156,8 @@ export default function RegisterPage() {
                   <input
                     type="radio"
                     value="seller"
-                    checked={userType === 'seller'}
-                    onChange={() => handleUserTypeChange('seller')}
+                    checked={userType === "seller"}
+                    onChange={() => handleUserTypeChange("seller")}
                     className="sr-only peer"
                   />
                   <div className="p-4 text-center border-2 rounded-lg cursor-pointer peer-checked:border-blue-600 peer-checked:bg-blue-50 transition-all">
@@ -185,14 +183,12 @@ export default function RegisterPage() {
                   <input
                     id="name"
                     type="text"
-                    {...register('name')}
+                    {...register("name")}
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Seu nome completo"
                   />
                 </div>
-                {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                )}
+                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>}
               </div>
 
               {/* Email */}
@@ -207,14 +203,12 @@ export default function RegisterPage() {
                   <input
                     id="email"
                     type="email"
-                    {...register('email')}
+                    {...register("email")}
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="seu@email.com"
                   />
                 </div>
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                )}
+                {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
               </div>
 
               {/* Telefone */}
@@ -229,14 +223,12 @@ export default function RegisterPage() {
                   <input
                     id="phone"
                     type="tel"
-                    {...register('phone')}
+                    {...register("phone")}
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="(11) 99999-9999"
                   />
                 </div>
-                {errors.phone && (
-                  <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-                )}
+                {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>}
               </div>
 
               {/* Senha */}
@@ -250,8 +242,8 @@ export default function RegisterPage() {
                   </div>
                   <input
                     id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    {...register('password')}
+                    type={showPassword ? "text" : "password"}
+                    {...register("password")}
                     className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Mínimo 6 caracteres"
                   />
@@ -267,9 +259,7 @@ export default function RegisterPage() {
                     )}
                   </button>
                 </div>
-                {errors.password && (
-                  <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-                )}
+                {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
               </div>
 
               {/* Confirmar Senha */}
@@ -283,8 +273,8 @@ export default function RegisterPage() {
                   </div>
                   <input
                     id="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    {...register('confirmPassword')}
+                    type={showConfirmPassword ? "text" : "password"}
+                    {...register("confirmPassword")}
                     className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Confirme sua senha"
                   />
@@ -317,14 +307,12 @@ export default function RegisterPage() {
                   <input
                     id="city"
                     type="text"
-                    {...register('city')}
+                    {...register("city")}
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Sua cidade"
                   />
                 </div>
-                {errors.city && (
-                  <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
-                )}
+                {errors.city && <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>}
               </div>
 
               {/* Estado */}
@@ -334,7 +322,7 @@ export default function RegisterPage() {
                 </label>
                 <select
                   id="state"
-                  {...register('state')}
+                  {...register("state")}
                   className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 >
                   <option value="">Selecione o estado</option>
@@ -346,17 +334,15 @@ export default function RegisterPage() {
                   <option value="RS">Rio Grande do Sul</option>
                   <option value="SC">Santa Catarina</option>
                 </select>
-                {errors.state && (
-                  <p className="mt-1 text-sm text-red-600">{errors.state.message}</p>
-                )}
+                {errors.state && <p className="mt-1 text-sm text-red-600">{errors.state.message}</p>}
               </div>
             </div>
 
             {/* Campos específicos para vendedor */}
-            {userType === 'seller' && (
+            {userType === "seller" && (
               <div className="space-y-6 border-t pt-6">
                 <h3 className="text-lg font-medium text-gray-900">Informações da Loja</h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Nome da Loja */}
                   <div>
@@ -370,7 +356,7 @@ export default function RegisterPage() {
                       <input
                         id="storeName"
                         type="text"
-                        {...register('storeName' as any)}
+                        {...register("storeName" as any)}
                         className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Nome da sua loja"
                       />
@@ -392,7 +378,7 @@ export default function RegisterPage() {
                       <input
                         id="cnpj"
                         type="text"
-                        {...register('cnpj' as any)}
+                        {...register("cnpj" as any)}
                         className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         placeholder="00.000.000/0000-00"
                       />
@@ -406,7 +392,7 @@ export default function RegisterPage() {
                     </label>
                     <select
                       id="category"
-                      {...register('category' as any)}
+                      {...register("category" as any)}
                       className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
                       <option value="">Selecione uma categoria</option>
@@ -432,7 +418,7 @@ export default function RegisterPage() {
                     <input
                       id="zipCode"
                       type="text"
-                      {...register('zipCode' as any)}
+                      {...register("zipCode" as any)}
                       className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                       placeholder="00000-000"
                     />
@@ -450,7 +436,7 @@ export default function RegisterPage() {
                   <input
                     id="address"
                     type="text"
-                    {...register('address' as any)}
+                    {...register("address" as any)}
                     className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Rua, número, bairro"
                   />
@@ -467,7 +453,7 @@ export default function RegisterPage() {
                   <textarea
                     id="storeDescription"
                     rows={3}
-                    {...register('storeDescription' as any)}
+                    {...register("storeDescription" as any)}
                     className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Conte um pouco sobre sua loja e produtos..."
                   />
@@ -488,11 +474,11 @@ export default function RegisterPage() {
                 className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
               />
               <label htmlFor="terms" className="ml-2 block text-sm text-gray-900">
-                Eu aceito os{' '}
+                Eu aceito os{" "}
                 <Link to="/terms" className="text-primary hover:text-primary/80">
                   Termos de Uso
-                </Link>{' '}
-                e a{' '}
+                </Link>{" "}
+                e a{" "}
                 <Link to="/privacy" className="text-primary hover:text-primary/80">
                   Política de Privacidade
                 </Link>
@@ -506,7 +492,7 @@ export default function RegisterPage() {
                 disabled={isLoading}
                 className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isLoading ? 'Criando conta...' : 'Criar conta'}
+                {isLoading ? "Criando conta..." : "Criar conta"}
               </button>
             </div>
           </form>

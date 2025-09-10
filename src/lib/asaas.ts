@@ -1,8 +1,8 @@
-import crypto from 'crypto';
+import crypto from "crypto";
 
 // Configuração da API ASAAS
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY!;
-const ASAAS_BASE_URL = process.env.ASAAS_BASE_URL || 'https://api.asaas.com/v3';
+const ASAAS_BASE_URL = process.env.ASAAS_BASE_URL || "https://api.asaas.com/v3";
 const ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN!;
 
 // Tipos e interfaces
@@ -25,14 +25,27 @@ export interface AsaasCustomer {
 export interface AsaasCharge {
   id?: string;
   customer: string; // Customer ID
-  billingType: 'BOLETO' | 'CREDIT_CARD' | 'PIX' | 'UNDEFINED';
+  billingType: "BOLETO" | "CREDIT_CARD" | "PIX" | "UNDEFINED";
   value: number;
   dueDate: string; // YYYY-MM-DD
   description?: string;
   externalReference?: string;
   installmentCount?: number;
   installmentValue?: number;
-  status?: 'PENDING' | 'RECEIVED' | 'CONFIRMED' | 'OVERDUE' | 'REFUNDED' | 'RECEIVED_IN_CASH' | 'REFUND_REQUESTED' | 'CHARGEBACK_REQUESTED' | 'CHARGEBACK_DISPUTE' | 'AWAITING_CHARGEBACK_REVERSAL' | 'DUNNING_REQUESTED' | 'DUNNING_RECEIVED' | 'AWAITING_RISK_ANALYSIS';
+  status?:
+    | "PENDING"
+    | "RECEIVED"
+    | "CONFIRMED"
+    | "OVERDUE"
+    | "REFUNDED"
+    | "RECEIVED_IN_CASH"
+    | "REFUND_REQUESTED"
+    | "CHARGEBACK_REQUESTED"
+    | "CHARGEBACK_DISPUTE"
+    | "AWAITING_CHARGEBACK_REVERSAL"
+    | "DUNNING_REQUESTED"
+    | "DUNNING_RECEIVED"
+    | "AWAITING_RISK_ANALYSIS";
   paymentDate?: string;
   discount?: {
     value: number;
@@ -77,7 +90,20 @@ export interface AsaasWebhookEvent {
     description: string;
     billingType: string;
     pixTransaction?: any;
-    status: 'PENDING' | 'RECEIVED' | 'CONFIRMED' | 'OVERDUE' | 'REFUNDED' | 'RECEIVED_IN_CASH' | 'REFUND_REQUESTED' | 'CHARGEBACK_REQUESTED' | 'CHARGEBACK_DISPUTE' | 'AWAITING_CHARGEBACK_REVERSAL' | 'DUNNING_REQUESTED' | 'DUNNING_RECEIVED' | 'AWAITING_RISK_ANALYSIS';
+    status:
+      | "PENDING"
+      | "RECEIVED"
+      | "CONFIRMED"
+      | "OVERDUE"
+      | "REFUNDED"
+      | "RECEIVED_IN_CASH"
+      | "REFUND_REQUESTED"
+      | "CHARGEBACK_REQUESTED"
+      | "CHARGEBACK_DISPUTE"
+      | "AWAITING_CHARGEBACK_REVERSAL"
+      | "DUNNING_REQUESTED"
+      | "DUNNING_RECEIVED"
+      | "AWAITING_RISK_ANALYSIS";
     dueDate: string;
     originalDueDate: string;
     paymentDate?: string;
@@ -104,17 +130,14 @@ class AsaasClient {
     this.apiKey = ASAAS_API_KEY;
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
-    
+
     const response = await fetch(url, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
-        'access_token': this.apiKey,
+        "Content-Type": "application/json",
+        access_token: this.apiKey,
         ...options.headers,
       },
     });
@@ -129,8 +152,8 @@ class AsaasClient {
 
   // Gerenciar clientes
   async createCustomer(customerData: AsaasCustomer): Promise<AsaasCustomer> {
-    return this.request<AsaasCustomer>('/customers', {
-      method: 'POST',
+    return this.request<AsaasCustomer>("/customers", {
+      method: "POST",
       body: JSON.stringify(customerData),
     });
   }
@@ -141,15 +164,15 @@ class AsaasClient {
 
   async updateCustomer(customerId: string, customerData: Partial<AsaasCustomer>): Promise<AsaasCustomer> {
     return this.request<AsaasCustomer>(`/customers/${customerId}`, {
-      method: 'POST',
+      method: "POST",
       body: JSON.stringify(customerData),
     });
   }
 
   // Gerenciar cobranças
   async createCharge(chargeData: AsaasCharge): Promise<AsaasCharge> {
-    return this.request<AsaasCharge>('/payments', {
-      method: 'POST',
+    return this.request<AsaasCharge>("/payments", {
+      method: "POST",
       body: JSON.stringify(chargeData),
     });
   }
@@ -158,14 +181,14 @@ class AsaasClient {
     return this.request<AsaasCharge>(`/payments/${chargeId}`);
   }
 
-  async createPixCharge(chargeData: Omit<AsaasCharge, 'billingType'>): Promise<AsaasCharge & { qrCode?: any }> {
+  async createPixCharge(chargeData: Omit<AsaasCharge, "billingType">): Promise<AsaasCharge & { qrCode?: any }> {
     const pixCharge = {
       ...chargeData,
-      billingType: 'PIX' as const,
+      billingType: "PIX" as const,
     };
 
-    const response = await this.request<AsaasCharge & { qrCode?: any }>('/payments', {
-      method: 'POST',
+    const response = await this.request<AsaasCharge & { qrCode?: any }>("/payments", {
+      method: "POST",
       body: JSON.stringify(pixCharge),
     });
 
@@ -175,7 +198,7 @@ class AsaasClient {
         const qrCode = await this.request<any>(`/payments/${response.id}/pixQrCode`);
         response.qrCode = qrCode;
       } catch (error) {
-        console.warn('Erro ao buscar QR Code PIX:', error);
+        console.warn("Erro ao buscar QR Code PIX:", error);
       }
     }
 
@@ -183,7 +206,7 @@ class AsaasClient {
   }
 
   async createCreditCardCharge(
-    chargeData: Omit<AsaasCharge, 'billingType'>,
+    chargeData: Omit<AsaasCharge, "billingType">,
     creditCardData: AsaasCreditCardData,
     creditCardHolderInfo?: {
       name: string;
@@ -198,37 +221,34 @@ class AsaasClient {
   ): Promise<AsaasCharge> {
     const creditCardCharge = {
       ...chargeData,
-      billingType: 'CREDIT_CARD' as const,
+      billingType: "CREDIT_CARD" as const,
       creditCard: creditCardData,
       creditCardHolderInfo,
     };
 
-    return this.request<AsaasCharge>('/payments', {
-      method: 'POST',
+    return this.request<AsaasCharge>("/payments", {
+      method: "POST",
       body: JSON.stringify(creditCardCharge),
     });
   }
 
   // Webhook validation
   validateWebhook(payload: string, signature: string): boolean {
-    const hash = crypto
-      .createHmac('sha256', ASAAS_WEBHOOK_TOKEN)
-      .update(payload)
-      .digest('hex');
-    
+    const hash = crypto.createHmac("sha256", ASAAS_WEBHOOK_TOKEN).update(payload).digest("hex");
+
     return hash === signature;
   }
 
   // Utilities
   formatCurrency(value: number): string {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(value);
   }
 
   formatDate(date: Date): string {
-    return date.toISOString().split('T')[0];
+    return date.toISOString().split("T")[0];
   }
 }
 
@@ -236,8 +256,7 @@ class AsaasClient {
 export const asaasClient = new AsaasClient();
 
 // Funções de conveniência
-export const createAsaasCustomer = (customerData: AsaasCustomer) =>
-  asaasClient.createCustomer(customerData);
+export const createAsaasCustomer = (customerData: AsaasCustomer) => asaasClient.createCustomer(customerData);
 
 export const createPixPayment = (
   customerId: string,
@@ -263,7 +282,7 @@ export const createBoletoPayment = (
 ) =>
   asaasClient.createCharge({
     customer: customerId,
-    billingType: 'BOLETO',
+    billingType: "BOLETO",
     value,
     dueDate: asaasClient.formatDate(dueDate),
     description,

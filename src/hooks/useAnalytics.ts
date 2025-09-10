@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { trackPageView, initGA } from '../utils/analytics';
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import { trackPageView, initGA } from "../utils/analytics";
 
 // Hook para rastrear mudanças de página automaticamente
 export const usePageTracking = () => {
@@ -15,7 +15,7 @@ export const usePageTracking = () => {
     // Rastrear mudança de página
     const pageTitle = document.title;
     const pagePath = location.pathname + location.search;
-    
+
     trackPageView(pageTitle, window.location.origin + pagePath);
   }, [location]);
 };
@@ -29,7 +29,7 @@ export const useEcommerceTracking = () => {
     trackBeginCheckout,
     trackPurchase,
     trackSelectItem,
-  } = require('../utils/analytics');
+  } = require("../utils/analytics");
 
   return {
     trackViewItem,
@@ -43,13 +43,7 @@ export const useEcommerceTracking = () => {
 
 // Hook para rastrear eventos de engajamento
 export const useEngagementTracking = () => {
-  const {
-    trackSearch,
-    trackShare,
-    trackLogin,
-    trackSignUp,
-    trackCustomEvent,
-  } = require('../utils/analytics');
+  const { trackSearch, trackShare, trackLogin, trackSignUp, trackCustomEvent } = require("../utils/analytics");
 
   return {
     trackSearch,
@@ -69,7 +63,7 @@ export const useMarketplaceTracking = () => {
     trackViewCategory,
     trackPaymentError,
     trackPaymentSuccess,
-  } = require('../utils/analytics');
+  } = require("../utils/analytics");
 
   return {
     trackViewStore,

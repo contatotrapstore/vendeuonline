@@ -1,7 +1,8 @@
 # 📡 REFERÊNCIA DA API - VENDEU ONLINE
 
 ## 🌐 **BASE URL**
-- **Desenvolvimento:** `http://localhost:4002`
+
+- **Desenvolvimento:** `http://localhost:3001` ✅ **ATUALIZADO**
 - **Produção:** `https://seu-projeto.vercel.app`
 
 ---
@@ -9,6 +10,7 @@
 ## 🔐 **AUTENTICAÇÃO**
 
 ### **Headers Obrigatórios**
+
 ```http
 Authorization: Bearer {token}
 Content-Type: application/json
@@ -17,6 +19,7 @@ Content-Type: application/json
 ### **Endpoints de Auth**
 
 #### `POST /api/auth/register`
+
 **Registrar novo usuário**
 
 ```json
@@ -32,6 +35,7 @@ Content-Type: application/json
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -46,6 +50,7 @@ Content-Type: application/json
 ```
 
 #### `POST /api/auth/login`
+
 **Login de usuário**
 
 ```json
@@ -56,6 +61,7 @@ Content-Type: application/json
 ```
 
 #### `GET /api/auth/profile`
+
 **Perfil do usuário autenticado** (requer auth)
 
 ---
@@ -63,9 +69,11 @@ Content-Type: application/json
 ## 🛍️ **PRODUTOS**
 
 #### `GET /api/products`
+
 **Listar produtos**
 
 **Query params:**
+
 - `page` - Página (default: 1)
 - `limit` - Itens por página (default: 10)
 - `category` - Filtrar por categoria
@@ -74,6 +82,7 @@ Content-Type: application/json
 - `maxPrice` - Preço máximo
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -105,9 +114,11 @@ Content-Type: application/json
 ```
 
 #### `GET /api/products/{id}`
+
 **Detalhes do produto**
 
 #### `POST /api/products`
+
 **Criar produto** (requer auth - seller)
 
 ```json
@@ -126,9 +137,11 @@ Content-Type: application/json
 ```
 
 #### `PUT /api/products/{id}`
+
 **Atualizar produto** (requer auth - seller)
 
 #### `DELETE /api/products/{id}`
+
 **Deletar produto** (requer auth - seller)
 
 ---
@@ -136,12 +149,15 @@ Content-Type: application/json
 ## 🏪 **LOJAS**
 
 #### `GET /api/stores`
+
 **Listar lojas**
 
 #### `GET /api/stores/{id}`
+
 **Detalhes da loja**
 
 #### `POST /api/stores`
+
 **Criar loja** (requer auth - seller)
 
 ```json
@@ -156,6 +172,7 @@ Content-Type: application/json
 ```
 
 #### `PUT /api/stores/{id}`
+
 **Atualizar loja** (requer auth - seller)
 
 ---
@@ -163,12 +180,15 @@ Content-Type: application/json
 ## 🛒 **PEDIDOS**
 
 #### `GET /api/orders`
+
 **Listar pedidos do usuário** (requer auth)
 
 #### `GET /api/orders/{id}`
+
 **Detalhes do pedido** (requer auth)
 
 #### `POST /api/orders`
+
 **Criar pedido** (requer auth)
 
 ```json
@@ -187,6 +207,7 @@ Content-Type: application/json
 ```
 
 #### `PUT /api/orders/{id}/status`
+
 **Atualizar status do pedido** (requer auth - seller)
 
 ```json
@@ -200,6 +221,7 @@ Content-Type: application/json
 ## 💳 **PAGAMENTOS**
 
 #### `POST /api/payments/create`
+
 **Criar cobrança** (requer auth)
 
 ```json
@@ -211,9 +233,11 @@ Content-Type: application/json
 ```
 
 #### `POST /api/payments/webhook`
+
 **Webhook ASAAS** (público)
 
 #### `GET /api/payments/{id}/status`
+
 **Status do pagamento** (requer auth)
 
 ---
@@ -221,6 +245,7 @@ Content-Type: application/json
 ## 📋 **PLANOS**
 
 #### `GET /api/plans`
+
 **Listar planos de assinatura**
 
 ```json
@@ -230,7 +255,7 @@ Content-Type: application/json
     {
       "id": "plan_id",
       "name": "Básico",
-      "price": 19.90,
+      "price": 19.9,
       "billingPeriod": "monthly",
       "maxProducts": 50,
       "maxImages": 5,
@@ -241,6 +266,7 @@ Content-Type: application/json
 ```
 
 #### `POST /api/subscriptions`
+
 **Assinar plano** (requer auth - seller)
 
 ```json
@@ -255,9 +281,11 @@ Content-Type: application/json
 ## 🎯 **CATEGORIAS**
 
 #### `GET /api/categories`
+
 **Listar categorias**
 
 #### `GET /api/categories/{id}/products`
+
 **Produtos da categoria**
 
 ---
@@ -265,9 +293,11 @@ Content-Type: application/json
 ## ❤️ **WISHLIST**
 
 #### `GET /api/wishlist`
+
 **Listar wishlist** (requer auth - buyer)
 
 #### `POST /api/wishlist`
+
 **Adicionar à wishlist** (requer auth - buyer)
 
 ```json
@@ -277,6 +307,7 @@ Content-Type: application/json
 ```
 
 #### `DELETE /api/wishlist/{productId}`
+
 **Remover da wishlist** (requer auth - buyer)
 
 ---
@@ -284,13 +315,16 @@ Content-Type: application/json
 ## ⭐ **AVALIAÇÕES**
 
 #### `GET /api/reviews`
+
 **Listar avaliações**
 
 **Query params:**
+
 - `productId` - Filtrar por produto
 - `storeId` - Filtrar por loja
 
 #### `POST /api/reviews`
+
 **Criar avaliação** (requer auth)
 
 ```json
@@ -308,26 +342,28 @@ Content-Type: application/json
 ## 📤 **UPLOAD**
 
 #### `POST /api/upload`
+
 **Upload de arquivo** (requer auth)
 
 **Content-Type:** `multipart/form-data`
 
 ```javascript
 const formData = new FormData();
-formData.append('file', file);
-formData.append('bucket', 'products');
-formData.append('folder', 'images');
+formData.append("file", file);
+formData.append("bucket", "products");
+formData.append("folder", "images");
 
-fetch('/api/upload', {
-  method: 'POST',
+fetch("/api/upload", {
+  method: "POST",
   body: formData,
   headers: {
-    'Authorization': `Bearer ${token}`
-  }
+    Authorization: `Bearer ${token}`,
+  },
 });
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -338,22 +374,213 @@ fetch('/api/upload', {
 
 ---
 
-## 📊 **ADMIN**
-
-#### `GET /api/admin/users`
-**Listar usuários** (requer auth - admin)
+## 📊 **ADMIN - 100% FUNCIONAL** ✅
 
 #### `GET /api/admin/stats`
-**Estatísticas do sistema** (requer auth - admin)
+
+**Estatísticas do sistema** ✅ **FUNCIONANDO**
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "totalUsers": 21,
+    "totalStores": 4,
+    "totalProducts": 7,
+    "totalOrders": 2,
+    "totalRevenue": 2500.50,
+    "newUsersThisMonth": 5,
+    "newOrdersThisMonth": 1,
+    "averageOrderValue": 1250.25
+  }
+}
+```
+
+#### `GET /api/admin/users`
+
+**Listar usuários** ✅ **FUNCIONANDO**
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "user_1",
+      "name": "Admin User",
+      "email": "admin@vendeuonline.com",
+      "userType": "admin",
+      "isActive": true,
+      "city": "Erechim",
+      "state": "RS",
+      "createdAt": "2024-01-15",
+      "lastLogin": "2024-01-20"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 21,
+    "totalPages": 2
+  }
+}
+```
+
+#### `GET /api/admin/stores`
+
+**Listar todas as lojas** ✅ **FUNCIONANDO**
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "store_1",
+      "name": "TechStore Premium",
+      "isActive": true,
+      "totalProducts": 15,
+      "totalSales": 1250.75,
+      "rating": 4.8,
+      "city": "São Paulo",
+      "state": "SP",
+      "owner": {
+        "name": "João Silva",
+        "email": "joao@techstore.com"
+      },
+      "createdAt": "2024-01-10"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 4,
+    "totalPages": 1
+  }
+}
+```
 
 #### `PUT /api/admin/users/{id}/status`
-**Ativar/desativar usuário** (requer auth - admin)
+
+**Ativar/desativar usuário** ✅ **FUNCIONANDO**
+
+## 📋 **ADMIN PLANOS**
+
+### **Endpoints de Planos Admin**
+
+#### `GET /api/admin/plans`
+**Listar todos os planos** (requer auth - admin)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "plan_1",
+      "name": "Gratuito",
+      "slug": "gratuito", 
+      "description": "Plano ideal para quem está começando a vender online",
+      "price": 0,
+      "billingPeriod": "monthly",
+      "maxAds": 3,
+      "maxPhotos": 1,
+      "maxProducts": 3,
+      "maxImages": 1,
+      "maxCategories": 2,
+      "prioritySupport": false,
+      "support": "Email",
+      "features": ["Até 3 anúncios", "1 foto por anúncio", "Suporte básico por email"],
+      "isActive": true,
+      "order": 1,
+      "_count": { "subscriptions": 150 }
+    }
+  ]
+}
+```
+
+#### `PUT /api/admin/plans/{id}`
+**Atualizar plano** (requer auth - admin)
+
+**Request:**
+```json
+{
+  "name": "Plano Atualizado",
+  "description": "Nova descrição do plano",
+  "price": 29.9,
+  "billingPeriod": "monthly",
+  "maxAds": 15,
+  "maxPhotos": 5,
+  "maxProducts": 15,
+  "maxImages": 5,
+  "maxCategories": 5,
+  "prioritySupport": true,
+  "support": "Chat",
+  "features": ["Funcionalidade 1", "Funcionalidade 2"],
+  "isActive": true
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Plano atualizado com sucesso",
+  "plan": {
+    "id": "plan_1",
+    "name": "Plano Atualizado",
+    "price": 29.9,
+    "updatedAt": "2025-01-01T12:00:00Z"
+  }
+}
+```
+
+## 📦 **ADMIN PRODUTOS**
+
+#### `GET /api/admin/products`
+**Listar todos os produtos** (requer auth - admin)
+
+**Query Parameters:**
+- `page` (opcional): Página (padrão: 1)
+- `limit` (opcional): Limite por página (padrão: 10)
+- `search` (opcional): Termo de busca
+- `status` (opcional): active/inactive
+- `category` (opcional): Filtrar por categoria
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "product_1",
+      "name": "iPhone 15 Pro Max",
+      "price": 8999.99,
+      "category": "Smartphones", 
+      "isActive": true,
+      "isFeatured": true,
+      "stock": 15,
+      "rating": 4.8,
+      "store": { "name": "TechStore" },
+      "images": [{ "url": "https://...", "isMain": true }]
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 3,
+    "totalPages": 1
+  }
+}
+```
 
 ---
 
 ## 🔍 **DIAGNÓSTICO**
 
 #### `GET /api/health`
+
 **Status da API**
 
 ```json
@@ -365,6 +592,7 @@ fetch('/api/upload', {
 ```
 
 #### `GET /api/diagnostics`
+
 **Diagnóstico completo**
 
 ```json
@@ -409,33 +637,33 @@ fetch('/api/upload', {
 
 ```javascript
 // 1. Login
-const login = await fetch('/api/auth/login', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ email, password })
+const login = await fetch("/api/auth/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email, password }),
 });
 
 // 2. Buscar produtos
-const products = await fetch('/api/products?category=electronics');
+const products = await fetch("/api/products?category=electronics");
 
 // 3. Criar pedido
-const order = await fetch('/api/orders', {
-  method: 'POST',
-  headers: { 
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json' 
+const order = await fetch("/api/orders", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
   },
-  body: JSON.stringify({ items, addresses })
+  body: JSON.stringify({ items, addresses }),
 });
 
 // 4. Processar pagamento
-const payment = await fetch('/api/payments/create', {
-  method: 'POST',
-  headers: { 
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json' 
+const payment = await fetch("/api/payments/create", {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
   },
-  body: JSON.stringify({ orderId, paymentMethod })
+  body: JSON.stringify({ orderId, paymentMethod }),
 });
 ```
 
@@ -444,11 +672,13 @@ const payment = await fetch('/api/payments/create', {
 ## 🔧 **WEBHOOKS**
 
 ### **ASAAS Payment Webhook**
+
 **URL:** `/api/payments/webhook`
 **Method:** `POST`
 **Headers:** `asaas-signature`
 
 **Eventos:**
+
 - `PAYMENT_CREATED`
 - `PAYMENT_RECEIVED`
 - `PAYMENT_CONFIRMED`

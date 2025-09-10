@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState } from "react";
 
-import { ChevronLeft, ChevronRight, Expand, Heart } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Expand, Heart } from "lucide-react";
 
 interface ProductGalleryProps {
   images: string[];
@@ -17,7 +17,7 @@ export function ProductGallery({ images, productName, className = "" }: ProductG
   const [imageLoadStates, setImageLoadStates] = useState<Record<number, boolean>>({});
 
   const handleImageLoad = (index: number) => {
-    setImageLoadStates(prev => ({ ...prev, [index]: true }));
+    setImageLoadStates((prev) => ({ ...prev, [index]: true }));
   };
 
   const nextImage = () => {
@@ -52,17 +52,17 @@ export function ProductGallery({ images, productName, className = "" }: ProductG
             <div className="w-16 h-16 bg-gray-300 rounded-lg"></div>
           </div>
         )}
-        
+
         <img
           src={images[currentImageIndex]}
           alt={`${productName} - Imagem ${currentImageIndex + 1}`}
           className={`w-full h-full object-cover transition-all duration-300 ${
-            isZoomed ? 'scale-150 cursor-zoom-out' : 'cursor-zoom-in'
-          } ${imageLoadStates[currentImageIndex] ? 'opacity-100' : 'opacity-0'}`}
+            isZoomed ? "scale-150 cursor-zoom-out" : "cursor-zoom-in"
+          } ${imageLoadStates[currentImageIndex] ? "opacity-100" : "opacity-0"}`}
           onClick={() => setIsZoomed(!isZoomed)}
           onLoad={() => handleImageLoad(currentImageIndex)}
         />
-        
+
         {/* Navigation Arrows */}
         {images.length > 1 && (
           <>
@@ -80,7 +80,7 @@ export function ProductGallery({ images, productName, className = "" }: ProductG
             </button>
           </>
         )}
-        
+
         {/* Action Buttons */}
         <div className="absolute top-4 right-4 flex flex-col gap-2">
           <button
@@ -88,11 +88,7 @@ export function ProductGallery({ images, productName, className = "" }: ProductG
             className="bg-white/80 hover:bg-white rounded-full p-2 shadow-md transition-all"
           >
             <Heart
-              className={`h-5 w-5 ${
-                isFavorited
-                  ? 'text-red-500 fill-current'
-                  : 'text-gray-700 hover:text-red-500'
-              }`}
+              className={`h-5 w-5 ${isFavorited ? "text-red-500 fill-current" : "text-gray-700 hover:text-red-500"}`}
             />
           </button>
           <button
@@ -102,7 +98,7 @@ export function ProductGallery({ images, productName, className = "" }: ProductG
             <Expand className="h-5 w-5 text-gray-700" />
           </button>
         </div>
-        
+
         {/* Image Counter */}
         {images.length > 1 && (
           <div className="absolute bottom-4 left-4 bg-black/60 text-white px-3 py-1 rounded-full text-sm">
@@ -110,7 +106,7 @@ export function ProductGallery({ images, productName, className = "" }: ProductG
           </div>
         )}
       </div>
-      
+
       {/* Thumbnail Navigation */}
       {images.length > 1 && (
         <div className="flex gap-2 overflow-x-auto pb-2">
@@ -120,29 +116,25 @@ export function ProductGallery({ images, productName, className = "" }: ProductG
               onClick={() => selectImage(index)}
               className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
                 index === currentImageIndex
-                  ? 'border-blue-500 ring-2 ring-blue-200'
-                  : 'border-gray-200 hover:border-gray-300'
+                  ? "border-blue-500 ring-2 ring-blue-200"
+                  : "border-gray-200 hover:border-gray-300"
               }`}
             >
-              {!imageLoadStates[index] && (
-                <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
-              )}
+              {!imageLoadStates[index] && <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>}
               <img
                 src={image}
                 alt={`${productName} - Miniatura ${index + 1}`}
                 className={`w-full h-full object-cover transition-opacity ${
-                  imageLoadStates[index] ? 'opacity-100' : 'opacity-0'
+                  imageLoadStates[index] ? "opacity-100" : "opacity-0"
                 }`}
                 onLoad={() => handleImageLoad(index)}
               />
-              {index === currentImageIndex && (
-                <div className="absolute inset-0 bg-blue-500/20"></div>
-              )}
+              {index === currentImageIndex && <div className="absolute inset-0 bg-blue-500/20"></div>}
             </button>
           ))}
         </div>
       )}
-      
+
       {/* Zoom Instructions */}
       <div className="text-center text-sm text-gray-500">
         <p>Clique na imagem para ampliar</p>

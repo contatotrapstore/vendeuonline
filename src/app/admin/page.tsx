@@ -1,54 +1,42 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
-import { useAuthStore, usePermissions } from '@/store/authStore';
-import { useAdminStore } from '@/store/adminStore';
-import { 
-  Users, 
-  Store, 
-  Package, 
-  ShoppingCart, 
-  TrendingUp, 
+import { useEffect } from "react";
+import { useAuthStore, usePermissions } from "@/store/authStore";
+import { useAdminStore } from "@/store/adminStore";
+import {
+  Users,
+  Store,
+  Package,
   DollarSign,
   Eye,
   AlertTriangle,
   CheckCircle,
-  Clock,
   Loader2,
   RefreshCw,
-  Shield
-} from 'lucide-react';
-
-
-
+  Shield,
+} from "lucide-react";
 
 export default function AdminDashboard() {
   const { user } = useAuthStore();
   const { isAdmin } = usePermissions();
-  const { 
-    stats, 
-    loading, 
-    error, 
-    fetchDashboardStats, 
-    clearError 
-  } = useAdminStore();
+  const { stats, loading, error, fetchDashboardStats, clearError } = useAdminStore();
 
-  console.log('Admin Dashboard - User:', user);
-  console.log('Admin Dashboard - isAdmin:', isAdmin);
-  console.log('Admin Dashboard - User type:', user?.userType);
-  console.log('Admin Dashboard - Stats:', stats);
+  console.log("Admin Dashboard - User:", user);
+  console.log("Admin Dashboard - isAdmin:", isAdmin);
+  console.log("Admin Dashboard - User type:", user?.userType);
+  console.log("Admin Dashboard - Stats:", stats);
 
   useEffect(() => {
     // Verificar autenticação e permissões
     if (!user) {
-      console.log('No user found, redirecting to login');
-      window.location.href = '/login';
+      console.log("No user found, redirecting to login");
+      window.location.href = "/login";
       return;
     }
-    
-    if (user.userType !== 'admin') {
-      console.log('User is not admin, redirecting to home');
-      window.location.href = '/';
+
+    if (user.userType !== "admin") {
+      console.log("User is not admin, redirecting to home");
+      window.location.href = "/";
       return;
     }
 
@@ -67,16 +55,13 @@ export default function AdminDashboard() {
     );
   }
 
-  if (user.userType !== 'admin') {
+  if (user.userType !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Acesso Negado</h2>
           <p className="text-gray-600 mb-4">Você não tem permissão para acessar esta área.</p>
-          <button 
-            onClick={() => window.location.href = '/'}
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-          >
+          <button onClick={() => (window.location.href = "/")} className="bg-blue-500 text-white px-4 py-2 rounded-lg">
             Voltar ao Início
           </button>
         </div>
@@ -89,13 +74,46 @@ export default function AdminDashboard() {
     fetchDashboardStats();
   };
 
-
   if (loading && !stats) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="animate-spin h-8 w-8 text-blue-600 mx-auto mb-4" />
           <p>Carregando dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar erro se houver
+  if (error && !stats) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-6">
+            <div className="flex items-center mb-4">
+              <AlertTriangle className="h-6 w-6 text-red-600 mr-3" />
+              <h3 className="text-lg font-semibold text-red-800">Erro ao Carregar Dashboard</h3>
+            </div>
+            <p className="text-red-700 mb-4">{error}</p>
+            <button
+              onClick={handleRefreshStats}
+              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="animate-spin h-4 w-4 mr-2" />
+                  Carregando...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Tentar Novamente
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -123,7 +141,7 @@ export default function AdminDashboard() {
                 disabled={loading}
                 className="flex items-center space-x-2 text-sm text-gray-500 hover:text-gray-700 disabled:opacity-50"
               >
-                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
                 <span>Atualizar</span>
               </button>
               <div className="flex items-center space-x-2 text-sm text-gray-500">
@@ -164,7 +182,7 @@ export default function AdminDashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total de Usuários</p>
-                <p className="text-2xl font-bold text-gray-900">{stats?.totalUsers?.toLocaleString() || '0'}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats?.totalUsers?.toLocaleString() || "0"}</p>
                 <p className="text-xs text-gray-500 mt-1">
                   {stats?.buyersCount || 0} compradores, {stats?.sellersCount || 0} vendedores
                 </p>
@@ -194,7 +212,7 @@ export default function AdminDashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Produtos</p>
-                <p className="text-2xl font-bold text-gray-900">{stats?.totalProducts?.toLocaleString() || '0'}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats?.totalProducts?.toLocaleString() || "0"}</p>
               </div>
             </div>
           </div>
@@ -207,7 +225,7 @@ export default function AdminDashboard() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Receita Mensal</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  R$ {stats?.monthlyRevenue?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '0,00'}
+                  R$ {stats?.monthlyRevenue?.toLocaleString("pt-BR", { minimumFractionDigits: 2 }) || "0,00"}
                 </p>
               </div>
             </div>
@@ -228,7 +246,7 @@ export default function AdminDashboard() {
                   <p className="text-sm text-blue-700">de {stats?.totalSubscriptions || 0} total</p>
                 </div>
               </div>
-              
+
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <h4 className="text-lg font-semibold text-green-900">Taxa de Conversão</h4>
                 <div className="mt-2">
@@ -236,7 +254,7 @@ export default function AdminDashboard() {
                   <p className="text-sm text-green-700">vendedores ativos</p>
                 </div>
               </div>
-              
+
               <div className="text-center p-4 bg-yellow-50 rounded-lg">
                 <h4 className="text-lg font-semibold text-yellow-900">Pedidos</h4>
                 <div className="mt-2">
@@ -244,7 +262,7 @@ export default function AdminDashboard() {
                   <p className="text-sm text-yellow-700">este mês</p>
                 </div>
               </div>
-              
+
               <div className="text-center p-4 bg-purple-50 rounded-lg">
                 <h4 className="text-lg font-semibold text-purple-900">Aprovações</h4>
                 <div className="mt-2">
@@ -271,7 +289,7 @@ export default function AdminDashboard() {
                     <p className="text-sm text-blue-600">Compradores</p>
                   </div>
                 </div>
-                
+
                 <div className="text-center">
                   <div className="p-4 bg-green-50 rounded-lg">
                     <Store className="h-8 w-8 text-green-600 mx-auto mb-2" />
@@ -279,7 +297,7 @@ export default function AdminDashboard() {
                     <p className="text-sm text-green-600">Vendedores</p>
                   </div>
                 </div>
-                
+
                 <div className="text-center">
                   <div className="p-4 bg-purple-50 rounded-lg">
                     <CheckCircle className="h-8 w-8 text-purple-600 mx-auto mb-2" />

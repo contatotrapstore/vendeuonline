@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
+import { createClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
 
 dotenv.config();
 
@@ -8,7 +8,7 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-console.log('🛠️ Criando tabelas no Supabase...\n');
+console.log("🛠️ Criando tabelas no Supabase...\n");
 
 // SQL para criar as tabelas necessárias
 const createTablesSQL = `
@@ -130,93 +130,96 @@ CREATE POLICY IF NOT EXISTS "Allow service role full access categories" ON categ
 
 async function createTables() {
   try {
-    console.log('📋 Executando SQL para criar tabelas...');
-    
-    const { data, error } = await supabase.rpc('exec_sql', {
-      sql: createTablesSQL
+    console.log("📋 Executando SQL para criar tabelas...");
+
+    const { data, error } = await supabase.rpc("exec_sql", {
+      sql: createTablesSQL,
     });
 
     if (error) {
-      console.error('❌ Erro ao executar SQL:', error.message);
-      
+      console.error("❌ Erro ao executar SQL:", error.message);
+
       // Tentar uma abordagem alternativa - criar tabelas uma por uma
-      console.log('\n🔄 Tentando abordagem alternativa...');
-      
+      console.log("\n🔄 Tentando abordagem alternativa...");
+
       // Tentar criar usuário de teste diretamente
       const { data: testUser, error: userError } = await supabase
-        .from('users')
-        .insert([{
-          name: 'Admin Teste',
-          email: 'admin@teste.com',
-          password: '$2a$12$LQv3c1yqBWVHxkd0LQ4YNu3PEFf4L1Z8.9JK4ELF5TKvq8JrBN2uC', // senha: 123456
-          phone: '11999999999',
-          city: 'São Paulo',
-          state: 'SP',
-          type: 'ADMIN',
-          isVerified: true,
-          isActive: true
-        }])
+        .from("users")
+        .insert([
+          {
+            name: "Admin Teste",
+            email: "admin@teste.com",
+            password: "$2a$12$LQv3c1yqBWVHxkd0LQ4YNu3PEFf4L1Z8.9JK4ELF5TKvq8JrBN2uC", // senha: 123456
+            phone: "11999999999",
+            city: "São Paulo",
+            state: "SP",
+            type: "ADMIN",
+            isVerified: true,
+            isActive: true,
+          },
+        ])
         .select()
         .single();
 
       if (userError) {
-        console.error('❌ Erro ao criar usuário teste:', userError.message);
-        console.log('\n💡 Possíveis soluções:');
-        console.log('1. Verifique se o projeto Supabase está ativo');
-        console.log('2. Acesse o painel do Supabase e crie as tabelas manualmente');
-        console.log('3. Execute as migrations SQL no SQL Editor do Supabase');
-        
+        console.error("❌ Erro ao criar usuário teste:", userError.message);
+        console.log("\n💡 Possíveis soluções:");
+        console.log("1. Verifique se o projeto Supabase está ativo");
+        console.log("2. Acesse o painel do Supabase e crie as tabelas manualmente");
+        console.log("3. Execute as migrations SQL no SQL Editor do Supabase");
+
         return false;
       } else {
-        console.log('✅ Usuário de teste criado com sucesso!');
+        console.log("✅ Usuário de teste criado com sucesso!");
       }
     } else {
-      console.log('✅ Tabelas criadas com sucesso!');
+      console.log("✅ Tabelas criadas com sucesso!");
     }
 
     // Testar inserção de loja de exemplo
-    console.log('\n🏪 Criando loja de exemplo...');
-    
+    console.log("\n🏪 Criando loja de exemplo...");
+
     const { data: testStore, error: storeError } = await supabase
-      .from('stores')
-      .insert([{
-        name: 'Loja Teste',
-        slug: 'loja-teste',
-        description: 'Uma loja de teste para demonstração',
-        category: 'eletronicos',
-        city: 'São Paulo',
-        state: 'SP',
-        phone: '11999999999',
-        email: 'loja@teste.com',
-        isActive: true,
-        isVerified: true
-      }])
+      .from("stores")
+      .insert([
+        {
+          name: "Loja Teste",
+          slug: "loja-teste",
+          description: "Uma loja de teste para demonstração",
+          category: "eletronicos",
+          city: "São Paulo",
+          state: "SP",
+          phone: "11999999999",
+          email: "loja@teste.com",
+          isActive: true,
+          isVerified: true,
+        },
+      ])
       .select()
       .single();
 
     if (storeError) {
-      console.error('⚠️ Erro ao criar loja teste:', storeError.message);
+      console.error("⚠️ Erro ao criar loja teste:", storeError.message);
     } else {
-      console.log('✅ Loja de teste criada!');
+      console.log("✅ Loja de teste criada!");
     }
 
     return true;
-
   } catch (error) {
-    console.error('❌ Erro geral:', error.message);
+    console.error("❌ Erro geral:", error.message);
     return false;
   }
 }
 
-createTables().then(success => {
+createTables().then((success) => {
   if (success) {
-    console.log('\n🎉 Setup do banco concluído!');
-    console.log('\n💡 Próximos passos:');
-    console.log('1. Execute: npm run dev');
-    console.log('2. Teste o login com: admin@teste.com / 123456');
-    console.log('3. Verifique se as lojas aparecem na página');
+    console.log("\n🎉 Setup do banco concluído!");
+    console.log("\n💡 Próximos passos:");
+    console.log("1. Execute: npm run dev");
+    console.log("2. Teste o login com: admin@teste.com / 123456");
+    console.log("3. Verifique se as lojas aparecem na página");
   } else {
-    console.log('\n❌ Falha no setup. Verifique as mensagens de erro acima.');
+    console.log("\n❌ Falha no setup. Verifique as mensagens de erro acima.");
   }
   process.exit(success ? 0 : 1);
 });

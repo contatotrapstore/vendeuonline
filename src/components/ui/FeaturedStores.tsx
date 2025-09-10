@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Star, MapPin, Package, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Star, MapPin, Package, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Store {
   id: string;
@@ -30,7 +30,7 @@ export function FeaturedStores({ stores, className = "" }: FeaturedStoresProps) 
   };
 
   const handleImageLoad = (storeId: string) => {
-    setImageLoadStates(prev => ({ ...prev, [storeId]: true }));
+    setImageLoadStates((prev) => ({ ...prev, [storeId]: true }));
   };
 
   const nextSlide = () => {
@@ -47,11 +47,7 @@ export function FeaturedStores({ stores, className = "" }: FeaturedStoresProps) 
         {[...Array(5)].map((_, i) => (
           <Star
             key={i}
-            className={`h-3 w-3 ${
-              i < Math.floor(rating)
-                ? 'text-yellow-400 fill-current'
-                : 'text-gray-300'
-            }`}
+            className={`h-3 w-3 ${i < Math.floor(rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
           />
         ))}
         <span className="ml-1 text-xs text-gray-600">{formatRating(rating)}</span>
@@ -89,13 +85,13 @@ export function FeaturedStores({ stores, className = "" }: FeaturedStoresProps) 
 
       {/* Stores Grid */}
       <div className="overflow-hidden">
-        <div 
+        <div
           className="flex transition-transform duration-300 ease-in-out"
           style={{ transform: `translateX(-${currentIndex * 100}%)` }}
         >
           {stores.map((store) => (
             <div key={store.id} className="w-full md:w-1/2 flex-shrink-0 px-3">
-              <Link to={`/loja/${store.name.toLowerCase().replace(/\s+/g, '-')}`}>
+              <Link to={`/stores/${store.id}`}>
                 <div className="group bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-xl hover:border-gray-300 transition-all duration-300 overflow-hidden transform hover:-translate-y-1">
                   <div className="p-8">
                     <div className="flex items-start space-x-4">
@@ -107,22 +103,26 @@ export function FeaturedStores({ stores, className = "" }: FeaturedStoresProps) 
                           </div>
                         )}
                         <img
-                          src={store.logo || '/placeholder-store.png'}
+                          src={store.logo || "/placeholder-store.png"}
                           alt={`Logo da ${store.name}`}
                           className={`w-full h-full object-cover rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-md ${
-                            imageLoadStates[store.id] ? 'opacity-100' : 'opacity-0'
+                            imageLoadStates[store.id] ? "opacity-100" : "opacity-0"
                           }`}
                           onLoad={() => handleImageLoad(store.id)}
                         />
                         {store.isVerified && (
                           <div className="absolute -top-2 -right-2 bg-blue-500 text-white rounded-full p-1.5 shadow-lg">
                             <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
                             </svg>
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Store Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
@@ -135,12 +135,10 @@ export function FeaturedStores({ stores, className = "" }: FeaturedStoresProps) 
                             )}
                           </div>
                         </div>
-                        
+
                         {/* Rating */}
-                        <div className="mt-3">
-                          {renderStars(store.rating)}
-                        </div>
-                        
+                        <div className="mt-3">{renderStars(store.rating)}</div>
+
                         {/* Stats */}
                         <div className="flex items-center justify-between mt-5 text-sm text-gray-600">
                           <div className="flex items-center bg-gray-50 px-3 py-2 rounded-lg">
@@ -152,16 +150,14 @@ export function FeaturedStores({ stores, className = "" }: FeaturedStoresProps) 
                             <span className="text-sm font-medium">{store.city}</span>
                           </div>
                         </div>
-                        
+
                         {/* Description */}
                         {store.description && (
-                          <p className="text-sm text-gray-600 mt-4 line-clamp-2 leading-relaxed">
-                            {store.description}
-                          </p>
+                          <p className="text-sm text-gray-600 mt-4 line-clamp-2 leading-relaxed">{store.description}</p>
                         )}
                       </div>
                     </div>
-                    
+
                     {/* Visit Store Button */}
                     <div className="mt-6 pt-6 border-t border-gray-100">
                       <div className="flex items-center justify-between">
@@ -178,7 +174,7 @@ export function FeaturedStores({ stores, className = "" }: FeaturedStoresProps) 
           ))}
         </div>
       </div>
-      
+
       {/* Dots Indicator */}
       {stores.length > 2 && (
         <div className="flex justify-center mt-6 space-x-2">
@@ -187,7 +183,7 @@ export function FeaturedStores({ stores, className = "" }: FeaturedStoresProps) 
               key={index}
               onClick={() => setCurrentIndex(index)}
               className={`w-2 h-2 rounded-full transition-colors ${
-                index === currentIndex ? 'bg-blue-600' : 'bg-gray-300'
+                index === currentIndex ? "bg-blue-600" : "bg-gray-300"
               }`}
             />
           ))}

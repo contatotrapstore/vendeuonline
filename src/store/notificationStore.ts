@@ -1,12 +1,12 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { get as apiGet, put } from '@/lib/api-client';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { get as apiGet, put } from "@/lib/api-client";
 
 export interface Notification {
   id: string;
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error' | 'promotion' | 'security';
+  type: "INFO" | "SUCCESS" | "WARNING" | "ERROR" | "PROMOTION" | "SECURITY" | "ORDER" | "PAYMENT" | "SYSTEM";
   isRead: boolean;
   readAt?: string;
   createdAt: string;
@@ -18,13 +18,13 @@ interface NotificationState {
   unreadCount: number;
   isLoading: boolean;
   error: string | null;
-  
+
   // Actions
   fetchNotifications: () => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   clearError: () => void;
-  addNotification: (notification: Omit<Notification, 'id' | 'createdAt' | 'isRead'>) => void;
+  addNotification: (notification: Omit<Notification, "id" | "createdAt" | "isRead">) => void;
 }
 
 export const useNotificationStore = create<NotificationState>()(
@@ -38,73 +38,67 @@ export const useNotificationStore = create<NotificationState>()(
       fetchNotifications: async () => {
         try {
           set({ isLoading: true, error: null });
-          
-          const data = await apiGet('/notifications');
+
+          const data = await apiGet("/api/notifications");
           const notifications = data.notifications || [];
           const unreadCount = notifications.filter((n: Notification) => !n.isRead).length;
-          
-          set({ 
+
+          set({
             notifications,
             unreadCount,
-            isLoading: false 
+            isLoading: false,
           });
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Erro ao buscar notificações',
-            isLoading: false 
+          set({
+            error: error instanceof Error ? error.message : "Erro ao buscar notificações",
+            isLoading: false,
           });
         }
       },
 
       markAsRead: async (id: string) => {
         try {
-          await put(`/notifications/${id}/read`);
-          
+          await put(`/api/notifications/${id}/read`);
+
           const { notifications } = get();
-          const updatedNotifications = notifications.map(notification =>
-            notification.id === id 
-              ? { ...notification, isRead: true, readAt: new Date().toISOString() }
-              : notification
+          const updatedNotifications = notifications.map((notification) =>
+            notification.id === id ? { ...notification, isRead: true, readAt: new Date().toISOString() } : notification
           );
-          
-          const unreadCount = updatedNotifications.filter(n => !n.isRead).length;
-          
-          set({ 
+
+          const unreadCount = updatedNotifications.filter((n) => !n.isRead).length;
+
+          set({
             notifications: updatedNotifications,
-            unreadCount
+            unreadCount,
           });
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Erro ao marcar notificação como lida'
+          set({
+            error: error instanceof Error ? error.message : "Erro ao marcar notificação como lida",
           });
         }
       },
 
       markAllAsRead: async () => {
         const { notifications } = get();
-        const unreadNotifications = notifications.filter(n => !n.isRead);
-        
+        const unreadNotifications = notifications.filter((n) => !n.isRead);
+
         try {
           // Marcar todas as não lidas como lidas
-          await Promise.all(
-            unreadNotifications.map(notification => 
-              put(`/notifications/${notification.id}/read`)
-            )
-          );
-          
-          const updatedNotifications = notifications.map(notification => ({
+          await Promise.all(unreadNotifications.map((notification) => put(`/api/notifications/${notification.id}/read`)));
+
+          const updatedNotifications = notifications.map((notification) => ({
             ...notification,
             isRead: true,
-            readAt: notification.readAt || new Date().toISOString()
+            readAt: notification.readAt || new Date().toISOString(),
           }));
-          
-          set({ 
+
+          set({
             notifications: updatedNotifications,
-            unreadCount: 0
+            unreadCount: 0,
           });
         } catch (error) {
-          set({ 
-            error: error instanceof Error ? error.message : 'Erro ao marcar todas como lidas'
+          set({
+            error: error instanceof Error ? error.message : "Erro ao marcar todas como lidas",
           });
         }
       },
@@ -117,21 +111,21 @@ export const useNotificationStore = create<NotificationState>()(
           ...notification,
           id: Date.now().toString(),
           createdAt: new Date().toISOString(),
-          isRead: false
+          isRead: false,
         };
-        
+
         set({
           notifications: [newNotification, ...notifications],
-          unreadCount: unreadCount + 1
+          unreadCount: unreadCount + 1,
         });
-      }
+      },
     }),
     {
-      name: 'notification-storage',
-      partialize: (state) => ({ 
+      name: "notification-storage",
+      partialize: (state) => ({
         notifications: state.notifications,
-        unreadCount: state.unreadCount 
-      })
+        unreadCount: state.unreadCount,
+      }),
     }
   )
 );

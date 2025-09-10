@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { ImageIcon, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from "react";
+import { ImageIcon, Loader2 } from "lucide-react";
 
 interface LazyImageProps {
   src: string;
@@ -17,14 +17,14 @@ interface LazyImageProps {
 export const LazyImage: React.FC<LazyImageProps> = ({
   src,
   alt,
-  className = '',
-  fallback = 'https://via.placeholder.com/400x300/f3f4f6/9ca3af?text=Imagem+Indispon%C3%ADvel',
+  className = "",
+  fallback = "https://via.placeholder.com/400x300/f3f4f6/9ca3af?text=Imagem+Indispon%C3%ADvel",
   placeholder,
   onLoad,
   onError,
   threshold = 0.1,
   sizes,
-  srcSet
+  srcSet,
 }) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);
@@ -47,7 +47,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
       },
       {
         threshold,
-        rootMargin: '50px' // Começar a carregar 50px antes da imagem aparecer
+        rootMargin: "50px", // Começar a carregar 50px antes da imagem aparecer
       }
     );
 
@@ -90,7 +90,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
     <div className={`relative overflow-hidden ${className}`}>
       {/* Placeholder enquanto não carregou */}
       {!isLoaded && (placeholder || defaultPlaceholder)}
-      
+
       {/* Imagem real */}
       <img
         ref={imgRef}
@@ -98,7 +98,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
         alt={alt}
         className={`
           transition-opacity duration-300
-          ${isLoaded ? 'opacity-100' : 'opacity-0 absolute inset-0'}
+          ${isLoaded ? "opacity-100" : "opacity-0 absolute inset-0"}
           ${className}
         `}
         onLoad={handleLoad}
@@ -108,7 +108,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
         loading="lazy" // Adicionar suporte nativo também
         decoding="async"
       />
-      
+
       {/* Loading overlay */}
       {isLoading && !isLoaded && (
         <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-75">
@@ -142,21 +142,21 @@ export const useImagePreloader = () => {
 
   const preloadImages = async (srcs: string[]): Promise<void> => {
     try {
-      await Promise.all(srcs.map(src => preloadImage(src)));
+      await Promise.all(srcs.map((src) => preloadImage(src)));
     } catch (error) {
-      console.warn('Some images failed to preload:', error);
+      console.warn("Some images failed to preload:", error);
     }
   };
 
   return {
     preloadImage,
     preloadImages,
-    isPreloaded: (src: string) => preloadedImages.current.has(src)
+    isPreloaded: (src: string) => preloadedImages.current.has(src),
   };
 };
 
 // Componente especializado para imagens de produtos
-interface ProductImageProps extends Omit<LazyImageProps, 'sizes' | 'srcSet'> {
+interface ProductImageProps extends Omit<LazyImageProps, "sizes" | "srcSet"> {
   product?: {
     name: string;
     category?: string;
@@ -167,15 +167,15 @@ export const ProductImage: React.FC<ProductImageProps> = ({
   src,
   alt,
   product,
-  className = 'w-full h-48 object-cover',
+  className = "w-full h-48 object-cover",
   ...props
 }) => {
   // Gerar srcSet para diferentes resoluções
   const generateSrcSet = (originalSrc: string) => {
-    if (originalSrc.includes('placeholder')) {
+    if (originalSrc.includes("placeholder")) {
       return undefined;
     }
-    
+
     // Se usar Cloudinary ou similar, pode gerar diferentes tamanhos
     // Por enquanto, retornar apenas a imagem original
     return undefined;
@@ -185,9 +185,7 @@ export const ProductImage: React.FC<ProductImageProps> = ({
   const productSizes = "(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw";
 
   // Alt text mais descritivo
-  const productAlt = product 
-    ? `${product.name}${product.category ? ` - ${product.category}` : ''}`
-    : alt;
+  const productAlt = product ? `${product.name}${product.category ? ` - ${product.category}` : ""}` : alt;
 
   return (
     <LazyImage

@@ -1,4 +1,4 @@
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary } from "cloudinary";
 
 // Configuração do Cloudinary
 cloudinary.config({
@@ -20,28 +20,27 @@ export interface CloudinaryUploadResult {
 
 export const uploadToCloudinary = async (
   file: Buffer,
-  folder: string = 'products'
+  folder: string = "products"
 ): Promise<CloudinaryUploadResult> => {
   return new Promise((resolve, reject) => {
-    cloudinary.uploader.upload_stream(
-      {
-        folder,
-        resource_type: 'auto',
-        transformation: [
-          { width: 800, height: 800, crop: 'limit', quality: 'auto' },
-          { format: 'webp' }
-        ],
-      },
-      (error, result) => {
-        if (error) {
-          reject(error);
-        } else if (result) {
-          resolve(result as CloudinaryUploadResult);
-        } else {
-          reject(new Error('Upload failed'));
+    cloudinary.uploader
+      .upload_stream(
+        {
+          folder,
+          resource_type: "auto",
+          transformation: [{ width: 800, height: 800, crop: "limit", quality: "auto" }, { format: "webp" }],
+        },
+        (error, result) => {
+          if (error) {
+            reject(error);
+          } else if (result) {
+            resolve(result as CloudinaryUploadResult);
+          } else {
+            reject(new Error("Upload failed"));
+          }
         }
-      }
-    ).end(file);
+      )
+      .end(file);
   });
 };
 
@@ -49,7 +48,7 @@ export const deleteFromCloudinary = async (publicId: string): Promise<void> => {
   try {
     await cloudinary.uploader.destroy(publicId);
   } catch (error) {
-    console.error('Error deleting image from Cloudinary:', error);
+    console.error("Error deleting image from Cloudinary:", error);
     throw error;
   }
 };

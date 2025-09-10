@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Star, Shield, Truck, MessageCircle, Share2, Minus, Plus, ShoppingCart, Heart } from 'lucide-react';
+import { useState } from "react";
+import { Star, Shield, Truck, MessageCircle, Share2, Minus, Plus, ShoppingCart, Heart } from "lucide-react";
 
 interface Product {
   id: string;
@@ -33,9 +33,9 @@ export function ProductInfo({ product, className = "" }: ProductInfoProps) {
   const [isFavorited, setIsFavorited] = useState(false);
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(price);
   };
 
@@ -45,11 +45,7 @@ export function ProductInfo({ product, className = "" }: ProductInfoProps) {
         {[...Array(5)].map((_, i) => (
           <Star
             key={i}
-            className={`h-4 w-4 ${
-              i < Math.floor(rating)
-                ? 'text-yellow-400 fill-current'
-                : 'text-gray-300'
-            }`}
+            className={`h-4 w-4 ${i < Math.floor(rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
           />
         ))}
         <span className="ml-2 text-sm text-gray-600">
@@ -75,19 +71,19 @@ export function ProductInfo({ product, className = "" }: ProductInfoProps) {
           url: window.location.href,
         });
       } catch (error) {
-        console.log('Erro ao compartilhar:', error);
+        console.log("Erro ao compartilhar:", error);
       }
     } else {
       // Fallback para copiar URL
       navigator.clipboard.writeText(window.location.href);
-      alert('Link copiado para a área de transferência!');
+      alert("Link copiado para a área de transferência!");
     }
   };
 
   const handleWhatsApp = () => {
     const message = `Olá! Tenho interesse no produto: ${product.name} - ${formatPrice(product.price)}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
+    window.open(whatsappUrl, "_blank");
   };
 
   return (
@@ -103,9 +99,7 @@ export function ProductInfo({ product, className = "" }: ProductInfoProps) {
             {product.condition}
           </span>
         </div>
-        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
-          {product.name}
-        </h1>
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4">{product.name}</h1>
       </div>
 
       {/* Rating and Reviews */}
@@ -115,11 +109,7 @@ export function ProductInfo({ product, className = "" }: ProductInfoProps) {
           onClick={() => setIsFavorited(!isFavorited)}
           className="flex items-center gap-2 text-gray-600 hover:text-red-500 transition-colors"
         >
-          <Heart
-            className={`h-5 w-5 ${
-              isFavorited ? 'text-red-500 fill-current' : ''
-            }`}
-          />
+          <Heart className={`h-5 w-5 ${isFavorited ? "text-red-500 fill-current" : ""}`} />
           <span className="text-sm">Favoritar</span>
         </button>
       </div>
@@ -127,14 +117,10 @@ export function ProductInfo({ product, className = "" }: ProductInfoProps) {
       {/* Price */}
       <div className="bg-gray-50 rounded-lg p-4">
         <div className="flex items-center gap-3 mb-2">
-          <span className="text-3xl font-bold text-gray-900">
-            {formatPrice(product.price)}
-          </span>
+          <span className="text-3xl font-bold text-gray-900">{formatPrice(product.price)}</span>
           {product.originalPrice && (
             <>
-              <span className="text-lg text-gray-500 line-through">
-                {formatPrice(product.originalPrice)}
-              </span>
+              <span className="text-lg text-gray-500 line-through">{formatPrice(product.originalPrice)}</span>
               {product.discount && (
                 <span className="bg-red-500 text-white px-2 py-1 rounded-full text-sm font-medium">
                   -{product.discount}%
@@ -143,9 +129,7 @@ export function ProductInfo({ product, className = "" }: ProductInfoProps) {
             </>
           )}
         </div>
-        <p className="text-sm text-gray-600">
-          Em até 12x de {formatPrice(product.price / 12)} sem juros
-        </p>
+        <p className="text-sm text-gray-600">Em até 12x de {formatPrice(product.price / 12)} sem juros</p>
       </div>
 
       {/* Stock and Quantity */}
@@ -154,13 +138,9 @@ export function ProductInfo({ product, className = "" }: ProductInfoProps) {
           <span className="text-sm text-gray-600">
             Estoque: <span className="font-medium text-gray-900">{product.stock} unidades</span>
           </span>
-          {product.stock <= 5 && (
-            <span className="text-sm text-orange-600 font-medium">
-              Últimas unidades!
-            </span>
-          )}
+          {product.stock <= 5 && <span className="text-sm text-orange-600 font-medium">Últimas unidades!</span>}
         </div>
-        
+
         <div className="flex items-center gap-4">
           <span className="text-sm font-medium text-gray-700">Quantidade:</span>
           <div className="flex items-center border border-gray-300 rounded-lg">
@@ -189,16 +169,16 @@ export function ProductInfo({ product, className = "" }: ProductInfoProps) {
           <ShoppingCart className="h-5 w-5" />
           Adicionar ao Carrinho
         </button>
-        
+
         <div className="grid grid-cols-2 gap-3">
-          <button 
+          <button
             onClick={handleWhatsApp}
             className="bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
             <MessageCircle className="h-4 w-4" />
             WhatsApp
           </button>
-          <button 
+          <button
             onClick={handleShare}
             className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-6 rounded-lg transition-colors flex items-center justify-center gap-2"
           >
@@ -217,24 +197,22 @@ export function ProductInfo({ product, className = "" }: ProductInfoProps) {
             <span className="text-gray-600">Garantia:</span>
             <span className="font-medium text-gray-900">{product.warranty}</span>
           </div>
-          
+
           {product.shipping.free && (
             <div className="flex items-center gap-3 text-sm">
               <Truck className="h-4 w-4 text-green-600" />
               <span className="text-gray-600">Frete grátis</span>
-              <span className="font-medium text-gray-900">
-                • Entrega em {product.shipping.estimatedDays}
-              </span>
+              <span className="font-medium text-gray-900">• Entrega em {product.shipping.estimatedDays}</span>
             </div>
           )}
-          
+
           <div className="text-sm text-gray-600">
             <span className="font-medium">Regiões atendidas:</span>
             <div className="mt-1">
               {product.shipping.regions.map((region, index) => (
                 <span key={region} className="inline-block">
                   {region}
-                  {index < product.shipping.regions.length - 1 && ', '}
+                  {index < product.shipping.regions.length - 1 && ", "}
                 </span>
               ))}
             </div>

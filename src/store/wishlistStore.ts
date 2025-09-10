@@ -1,7 +1,7 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { apiRequest } from '@/lib/api';
-import { useAuthStore } from './authStore';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { apiRequest } from "@/lib/api";
+import { useAuthStore } from "./authStore";
 
 export interface WishlistItem {
   id: string;
@@ -23,7 +23,7 @@ interface WishlistStore {
   items: WishlistItem[];
   loading: boolean;
   error: string | null;
-  
+
   // Actions
   fetchWishlist: () => Promise<void>;
   addToWishlist: (productId: string) => Promise<void>;
@@ -33,96 +33,98 @@ interface WishlistStore {
   clearError: () => void;
 }
 
-export const useWishlistStore = create<WishlistStore>()(persist(
-  (set, get) => ({
-    items: [],
-    loading: false,
-    error: null,
+export const useWishlistStore = create<WishlistStore>()(
+  persist(
+    (set, get) => ({
+      items: [],
+      loading: false,
+      error: null,
 
-    fetchWishlist: async () => {
-      set({ loading: true, error: null });
-      try {
-        const token = useAuthStore.getState().token;
-        const response = await apiRequest('/api/wishlist', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        set({ items: response.data || [], loading: false });
-      } catch (error: any) {
-        console.error('Erro ao buscar wishlist:', error);
-        set({ 
-          items: [], 
-          loading: false, 
-          error: 'Erro ao carregar lista de desejos' 
-        });
-      }
-    },
+      fetchWishlist: async () => {
+        set({ loading: true, error: null });
+        try {
+          const token = useAuthStore.getState().token;
+          const response = await apiRequest("/api/wishlist", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          set({ items: response.data || [], loading: false });
+        } catch (error: any) {
+          console.error("Erro ao buscar wishlist:", error);
+          set({
+            items: [],
+            loading: false,
+            error: "Erro ao carregar lista de desejos",
+          });
+        }
+      },
 
-    addToWishlist: async (productId: string) => {
-      set({ loading: true, error: null });
-      try {
-        const token = useAuthStore.getState().token;
-        const response = await apiRequest('/api/wishlist', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ productId })
-        });
-        
-        const newItem = response.data;
-        set(state => ({ 
-          items: [...state.items, newItem], 
-          loading: false 
-        }));
-      } catch (error: any) {
-        console.error('Erro ao adicionar à wishlist:', error);
-        set({ 
-          error: 'Erro ao adicionar produto à lista de desejos', 
-          loading: false 
-        });
-        throw error;
-      }
-    },
+      addToWishlist: async (productId: string) => {
+        set({ loading: true, error: null });
+        try {
+          const token = useAuthStore.getState().token;
+          const response = await apiRequest("/api/wishlist", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ productId }),
+          });
 
-    removeFromWishlist: async (itemId: string) => {
-      set({ loading: true, error: null });
-      try {
-        const token = useAuthStore.getState().token;
-        await apiRequest(`/api/wishlist/${itemId}`, {
-          method: 'DELETE',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        set(state => ({
-          items: state.items.filter(item => item.id !== itemId),
-          loading: false
-        }));
-      } catch (error: any) {
-        console.error('Erro ao remover da wishlist:', error);
-        set({ 
-          error: 'Erro ao remover produto da lista de desejos', 
-          loading: false 
-        });
-      }
-    },
+          const newItem = response.data;
+          set((state) => ({
+            items: [...state.items, newItem],
+            loading: false,
+          }));
+        } catch (error: any) {
+          console.error("Erro ao adicionar à wishlist:", error);
+          set({
+            error: "Erro ao adicionar produto à lista de desejos",
+            loading: false,
+          });
+          throw error;
+        }
+      },
 
-    clearWishlist: () => {
-      set({ items: [], error: null });
-    },
+      removeFromWishlist: async (itemId: string) => {
+        set({ loading: true, error: null });
+        try {
+          const token = useAuthStore.getState().token;
+          await apiRequest(`/api/wishlist/${itemId}`, {
+            method: "DELETE",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
 
-    isInWishlist: (productId: string) => {
-      const { items } = get();
-      return items.some(item => item.productId === productId);
-    },
+          set((state) => ({
+            items: state.items.filter((item) => item.id !== itemId),
+            loading: false,
+          }));
+        } catch (error: any) {
+          console.error("Erro ao remover da wishlist:", error);
+          set({
+            error: "Erro ao remover produto da lista de desejos",
+            loading: false,
+          });
+        }
+      },
 
-    clearError: () => set({ error: null })
-  }),
-  {
-    name: 'wishlist-storage',
-    partialize: (state) => ({ items: state.items })
-  }
-));
+      clearWishlist: () => {
+        set({ items: [], error: null });
+      },
+
+      isInWishlist: (productId: string) => {
+        const { items } = get();
+        return items.some((item) => item.productId === productId);
+      },
+
+      clearError: () => set({ error: null }),
+    }),
+    {
+      name: "wishlist-storage",
+      partialize: (state) => ({ items: state.items }),
+    }
+  )
+);

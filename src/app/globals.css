@@ -101,7 +101,7 @@ body {
 
 /* Estilos personalizados para o marketplace */
 .marketplace-gradient {
-  background: linear-gradient(135deg, #2563EB 0%, #1E40AF 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
 }
 
 .card-hover {

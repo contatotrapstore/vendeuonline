@@ -6,17 +6,17 @@ export interface DemoUploadResult {
   error?: string;
 }
 
-export async function uploadDemo(file: File, bucket: string = 'uploads'): Promise<DemoUploadResult> {
+export async function uploadDemo(file: File, bucket: string = "uploads"): Promise<DemoUploadResult> {
   // Simular delay de upload
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
   // Simular URL fictícia
   const timestamp = Date.now();
   const fileName = `${timestamp}_${file.name}`;
   const publicUrl = `https://demo-storage.vendeuonline.com/${bucket}/${fileName}`;
-  
+
   console.log(`📸 Upload simulado: ${file.name} → ${publicUrl}`);
-  
+
   return { publicUrl };
 }
 

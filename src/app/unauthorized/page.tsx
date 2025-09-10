@@ -1,24 +1,24 @@
-'use client';
+"use client";
 
-import { Link } from 'react-router-dom';
-import { Shield, ArrowLeft, Home } from 'lucide-react';
-import { useAuthStore } from '@/store/authStore';
+import { Link } from "react-router-dom";
+import { Shield, ArrowLeft, Home } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 
 export default function UnauthorizedPage() {
   const { user, logout } = useAuthStore();
 
   const getRedirectPath = () => {
-    if (!user) return '/';
-    
+    if (!user) return "/";
+
     switch (user.userType) {
-      case 'admin':
-        return '/admin';
-      case 'seller':
-        return '/seller';
-      case 'buyer':
-        return '/';
+      case "admin":
+        return "/admin";
+      case "seller":
+        return "/seller";
+      case "buyer":
+        return "/";
       default:
-        return '/';
+        return "/";
     }
   };
 
@@ -32,21 +32,21 @@ export default function UnauthorizedPage() {
           </div>
 
           {/* Título */}
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Acesso Negado
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Acesso Negado</h1>
 
           {/* Descrição */}
           <p className="text-gray-600 mb-8">
-            Você não tem permissão para acessar esta página. 
+            Você não tem permissão para acessar esta página.
             {user ? (
               <span className="block mt-2">
-                Você está logado como <strong>{user.userType === 'buyer' ? 'Comprador' : user.userType === 'seller' ? 'Vendedor' : 'Administrador'}</strong>.
+                Você está logado como{" "}
+                <strong>
+                  {user.userType === "buyer" ? "Comprador" : user.userType === "seller" ? "Vendedor" : "Administrador"}
+                </strong>
+                .
               </span>
             ) : (
-              <span className="block mt-2">
-                Faça login para continuar.
-              </span>
+              <span className="block mt-2">Faça login para continuar.</span>
             )}
           </p>
 
@@ -61,7 +61,7 @@ export default function UnauthorizedPage() {
                   <ArrowLeft className="h-4 w-4" />
                   <span>Voltar para minha área</span>
                 </Link>
-                
+
                 <Link
                   to="/"
                   className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors inline-flex items-center justify-center space-x-2"
@@ -85,7 +85,7 @@ export default function UnauthorizedPage() {
                 >
                   Fazer Login
                 </Link>
-                
+
                 <Link
                   to="/"
                   className="w-full bg-gray-100 text-gray-700 py-3 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors inline-flex items-center justify-center space-x-2"
@@ -99,17 +99,11 @@ export default function UnauthorizedPage() {
 
           {/* Informações adicionais */}
           <div className="mt-8 p-4 bg-gray-50 rounded-lg">
-            <h3 className="text-sm font-medium text-gray-700 mb-2">
-              Precisa de ajuda?
-            </h3>
+            <h3 className="text-sm font-medium text-gray-700 mb-2">Precisa de ajuda?</h3>
             <p className="text-xs text-gray-600">
-              Se você acredita que deveria ter acesso a esta página, 
-              entre em contato com o suporte.
+              Se você acredita que deveria ter acesso a esta página, entre em contato com o suporte.
             </p>
-            <Link
-              to="/contact"
-              className="text-xs text-blue-600 hover:text-blue-500 mt-2 inline-block"
-            >
+            <Link to="/contact" className="text-xs text-blue-600 hover:text-blue-500 mt-2 inline-block">
               Falar com suporte
             </Link>
           </div>

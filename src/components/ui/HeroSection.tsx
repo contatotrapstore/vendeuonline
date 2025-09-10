@@ -1,4 +1,4 @@
-import { Search, MapPin, Star, Store, Package, ChevronDown } from 'lucide-react';
+import { Search, MapPin, Star, Store, Package, ChevronDown } from "lucide-react";
 
 export default function HeroSection() {
   return (

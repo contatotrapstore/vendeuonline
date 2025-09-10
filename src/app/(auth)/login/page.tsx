@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { toast } from 'sonner';
-import { useAuthStore } from '@/store/authStore';
-import Logo from '@/components/ui/Logo';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import { useAuthStore } from "@/store/authStore";
+import Logo from "@/components/ui/Logo";
 
 const loginSchema = z.object({
-  email: z.string().email('Email inválido'),
-  password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres')
+  email: z.string().email("Email inválido"),
+  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -25,23 +25,23 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors }
+    formState: { errors },
   } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema)
+    resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (data: LoginFormData) => {
     clearError();
-    
+
     try {
       await login(data.email, data.password);
-      
-      toast.success('Login realizado com sucesso!');
-      
+
+      toast.success("Login realizado com sucesso!");
+
       // Redirecionar para a página inicial ou dashboard
-      navigate('/');
+      navigate("/");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Erro ao fazer login. Tente novamente.');
+      toast.error(error instanceof Error ? error.message : "Erro ao fazer login. Tente novamente.");
     }
   };
 
@@ -51,15 +51,10 @@ export default function LoginPage() {
         <div className="flex justify-center">
           <Logo size="lg" showText={false} />
         </div>
-        <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">
-          Entrar na sua conta
-        </h2>
+        <h2 className="mt-6 text-center text-3xl font-bold text-gray-900">Entrar na sua conta</h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Ou{' '}
-          <Link
-            to="/register"
-            className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
-          >
+          Ou{" "}
+          <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
             criar uma nova conta
           </Link>
         </p>
@@ -88,14 +83,12 @@ export default function LoginPage() {
                   id="email"
                   type="email"
                   autoComplete="email"
-                  {...register('email')}
+                  {...register("email")}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="seu@email.com"
                 />
               </div>
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-              )}
+              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
             </div>
 
             {/* Senha */}
@@ -109,9 +102,9 @@ export default function LoginPage() {
                 </div>
                 <input
                   id="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
-                  {...register('password')}
+                  {...register("password")}
                   className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                   placeholder="Sua senha"
                 />
@@ -127,9 +120,7 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-              )}
+              {errors.password && <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>}
             </div>
 
             {/* Lembrar de mim e Esqueci a senha */}
@@ -147,10 +138,7 @@ export default function LoginPage() {
               </div>
 
               <div className="text-sm">
-                <Link
-                  to="/forgot-password"
-                  className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
-                >
+                <Link to="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500 transition-colors">
                   Esqueceu a senha?
                 </Link>
               </div>
@@ -163,7 +151,7 @@ export default function LoginPage() {
                 disabled={isLoading}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {isLoading ? 'Entrando...' : 'Entrar'}
+                {isLoading ? "Entrando..." : "Entrar"}
               </button>
             </div>
           </form>

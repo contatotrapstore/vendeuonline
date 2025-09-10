@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Star, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState } from "react";
+import { Star, X, ChevronDown, ChevronUp } from "lucide-react";
 
 interface ProductFiltersProps {
   priceRange: [number, number];
@@ -30,33 +30,33 @@ export function ProductFilters({
   freeShippingOnly,
   onFreeShippingChange,
   minRating,
-  onMinRatingChange
+  onMinRatingChange,
 }: ProductFiltersProps) {
   const [expandedSections, setExpandedSections] = useState({
     price: true,
     brands: true,
     conditions: true,
     shipping: true,
-    rating: true
+    rating: true,
   });
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(price);
   };
 
   const toggleSection = (section: keyof typeof expandedSections) => {
-    setExpandedSections(prev => ({
+    setExpandedSections((prev) => ({
       ...prev,
-      [section]: !prev[section]
+      [section]: !prev[section],
     }));
   };
 
   const handleBrandToggle = (brand: string) => {
     if (selectedBrands.includes(brand)) {
-      onBrandsChange(selectedBrands.filter(b => b !== brand));
+      onBrandsChange(selectedBrands.filter((b) => b !== brand));
     } else {
       onBrandsChange([...selectedBrands, brand]);
     }
@@ -64,7 +64,7 @@ export function ProductFilters({
 
   const handleConditionToggle = (condition: string) => {
     if (selectedConditions.includes(condition)) {
-      onConditionsChange(selectedConditions.filter(c => c !== condition));
+      onConditionsChange(selectedConditions.filter((c) => c !== condition));
     } else {
       onConditionsChange([...selectedConditions, condition]);
     }
@@ -72,19 +72,9 @@ export function ProductFilters({
 
   const renderStars = (rating: number, interactive = false, onClick?: () => void) => {
     return (
-      <div 
-        className={`flex items-center gap-1 ${interactive ? 'cursor-pointer' : ''}`}
-        onClick={onClick}
-      >
+      <div className={`flex items-center gap-1 ${interactive ? "cursor-pointer" : ""}`} onClick={onClick}>
         {Array.from({ length: 5 }, (_, i) => (
-          <Star
-            key={i}
-            className={`h-4 w-4 ${
-              i < rating
-                ? 'text-yellow-400 fill-current'
-                : 'text-gray-300'
-            }`}
-          />
+          <Star key={i} className={`h-4 w-4 ${i < rating ? "text-yellow-400 fill-current" : "text-gray-300"}`} />
         ))}
       </div>
     );
@@ -98,12 +88,12 @@ export function ProductFilters({
     onMinRatingChange(0);
   };
 
-  const hasActiveFilters = 
-    priceRange[0] > 0 || 
-    priceRange[1] < 10000 || 
-    selectedBrands.length > 0 || 
-    selectedConditions.length > 0 || 
-    freeShippingOnly || 
+  const hasActiveFilters =
+    priceRange[0] > 0 ||
+    priceRange[1] < 10000 ||
+    selectedBrands.length > 0 ||
+    selectedConditions.length > 0 ||
+    freeShippingOnly ||
     minRating > 0;
 
   return (
@@ -125,10 +115,7 @@ export function ProductFilters({
       <div className="space-y-6">
         {/* Price Range */}
         <div>
-          <button
-            onClick={() => toggleSection('price')}
-            className="flex items-center justify-between w-full text-left"
-          >
+          <button onClick={() => toggleSection("price")} className="flex items-center justify-between w-full text-left">
             <h4 className="font-medium text-gray-900">Faixa de Preço</h4>
             {expandedSections.price ? (
               <ChevronUp className="h-4 w-4 text-gray-500" />
@@ -136,7 +123,7 @@ export function ProductFilters({
               <ChevronDown className="h-4 w-4 text-gray-500" />
             )}
           </button>
-          
+
           {expandedSections.price && (
             <div className="mt-4 space-y-4">
               <div className="flex items-center gap-3">
@@ -161,26 +148,26 @@ export function ProductFilters({
                   />
                 </div>
               </div>
-              
+
               <div className="text-sm text-gray-600">
                 {formatPrice(priceRange[0])} - {formatPrice(priceRange[1])}
               </div>
-              
+
               {/* Quick price ranges */}
               <div className="grid grid-cols-2 gap-2">
                 {[
                   [0, 100],
                   [100, 500],
                   [500, 1000],
-                  [1000, 5000]
+                  [1000, 5000],
                 ].map(([min, max]) => (
                   <button
                     key={`${min}-${max}`}
                     onClick={() => onPriceRangeChange([min, max])}
                     className={`text-xs px-3 py-2 rounded-md border transition-colors ${
                       priceRange[0] === min && priceRange[1] === max
-                        ? 'bg-blue-50 border-blue-300 text-blue-700'
-                        : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                        ? "bg-blue-50 border-blue-300 text-blue-700"
+                        : "border-gray-300 text-gray-700 hover:bg-gray-50"
                     }`}
                   >
                     {formatPrice(min)} - {formatPrice(max)}
@@ -194,7 +181,7 @@ export function ProductFilters({
         {/* Brands */}
         <div>
           <button
-            onClick={() => toggleSection('brands')}
+            onClick={() => toggleSection("brands")}
             className="flex items-center justify-between w-full text-left"
           >
             <h4 className="font-medium text-gray-900">Marcas</h4>
@@ -204,10 +191,10 @@ export function ProductFilters({
               <ChevronDown className="h-4 w-4 text-gray-500" />
             )}
           </button>
-          
+
           {expandedSections.brands && (
             <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
-              {availableBrands.map(brand => (
+              {availableBrands.map((brand) => (
                 <label key={brand} className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -225,7 +212,7 @@ export function ProductFilters({
         {/* Conditions */}
         <div>
           <button
-            onClick={() => toggleSection('conditions')}
+            onClick={() => toggleSection("conditions")}
             className="flex items-center justify-between w-full text-left"
           >
             <h4 className="font-medium text-gray-900">Condição</h4>
@@ -235,10 +222,10 @@ export function ProductFilters({
               <ChevronDown className="h-4 w-4 text-gray-500" />
             )}
           </button>
-          
+
           {expandedSections.conditions && (
             <div className="mt-4 space-y-2">
-              {availableConditions.map(condition => (
+              {availableConditions.map((condition) => (
                 <label key={condition} className="flex items-center gap-3 cursor-pointer">
                   <input
                     type="checkbox"
@@ -256,7 +243,7 @@ export function ProductFilters({
         {/* Shipping */}
         <div>
           <button
-            onClick={() => toggleSection('shipping')}
+            onClick={() => toggleSection("shipping")}
             className="flex items-center justify-between w-full text-left"
           >
             <h4 className="font-medium text-gray-900">Entrega</h4>
@@ -266,7 +253,7 @@ export function ProductFilters({
               <ChevronDown className="h-4 w-4 text-gray-500" />
             )}
           </button>
-          
+
           {expandedSections.shipping && (
             <div className="mt-4">
               <label className="flex items-center gap-3 cursor-pointer">
@@ -285,7 +272,7 @@ export function ProductFilters({
         {/* Rating */}
         <div>
           <button
-            onClick={() => toggleSection('rating')}
+            onClick={() => toggleSection("rating")}
             className="flex items-center justify-between w-full text-left"
           >
             <h4 className="font-medium text-gray-900">Avaliação</h4>
@@ -295,24 +282,22 @@ export function ProductFilters({
               <ChevronDown className="h-4 w-4 text-gray-500" />
             )}
           </button>
-          
+
           {expandedSections.rating && (
             <div className="mt-4 space-y-2">
-              {[4, 3, 2, 1].map(rating => (
+              {[4, 3, 2, 1].map((rating) => (
                 <button
                   key={rating}
                   onClick={() => onMinRatingChange(rating)}
                   className={`flex items-center gap-2 w-full text-left p-2 rounded-md transition-colors ${
-                    minRating === rating
-                      ? 'bg-blue-50 border border-blue-300'
-                      : 'hover:bg-gray-50'
+                    minRating === rating ? "bg-blue-50 border border-blue-300" : "hover:bg-gray-50"
                   }`}
                 >
                   {renderStars(rating)}
                   <span className="text-sm text-gray-700">e acima</span>
                 </button>
               ))}
-              
+
               {minRating > 0 && (
                 <button
                   onClick={() => onMinRatingChange(0)}
@@ -337,25 +322,13 @@ export function ProductFilters({
               </div>
             )}
             {selectedBrands.length > 0 && (
-              <div className="text-xs text-gray-600">
-                Marcas: {selectedBrands.join(', ')}
-              </div>
+              <div className="text-xs text-gray-600">Marcas: {selectedBrands.join(", ")}</div>
             )}
             {selectedConditions.length > 0 && (
-              <div className="text-xs text-gray-600">
-                Condição: {selectedConditions.join(', ')}
-              </div>
+              <div className="text-xs text-gray-600">Condição: {selectedConditions.join(", ")}</div>
             )}
-            {freeShippingOnly && (
-              <div className="text-xs text-gray-600">
-                Apenas frete grátis
-              </div>
-            )}
-            {minRating > 0 && (
-              <div className="text-xs text-gray-600">
-                Avaliação: {minRating}+ estrelas
-              </div>
-            )}
+            {freeShippingOnly && <div className="text-xs text-gray-600">Apenas frete grátis</div>}
+            {minRating > 0 && <div className="text-xs text-gray-600">Avaliação: {minRating}+ estrelas</div>}
           </div>
         </div>
       )}

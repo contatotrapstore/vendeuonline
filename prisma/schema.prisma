@@ -36,6 +36,7 @@ model User {
   addresses     Address[]
   reviews       Review[]
   subscriptions Subscription[]
+  notifications Notification[]
   
   @@map("users")
 }
@@ -449,5 +450,49 @@ model AuditLog {
   createdAt     DateTime @default(now())
   
   @@map("audit_logs")
+}
+
+// Modelo para configurações do sistema (pixels, analytics, etc.)
+model SystemConfig {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  value           String   @db.Text
+  description     String?
+  category        String   @default("general") // tracking, email, payment, etc.
+  isActive        Boolean  @default(true)
+  updatedBy       String?  // ID do admin que atualizou
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  
+  @@map("system_configs")
+}
+
+// Modelo de notificações
+model Notification {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  message     String            @db.Text
+  type        NotificationType  @default(INFO)
+  isRead      Boolean          @default(false)
+  readAt      DateTime?
+  data        String?          @db.Text  // JSON string com dados extras se necessário
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  
+  @@map("notifications")
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  PROMOTION
+  SECURITY
+  ORDER
+  PAYMENT
+  SYSTEM
 }
 

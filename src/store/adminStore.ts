@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 export interface DashboardStats {
   totalUsers: number;
@@ -23,7 +23,7 @@ interface AdminStore {
   stats: DashboardStats | null;
   loading: boolean;
   error: string | null;
-  
+
   // Actions
   fetchDashboardStats: () => Promise<void>;
   clearError: () => void;
@@ -37,16 +37,16 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   fetchDashboardStats: async () => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem('auth-token');
+      const token = localStorage.getItem("auth-token");
       if (!token) {
-        throw new Error('Token não encontrado. Faça login como administrador.');
+        throw new Error("Token não encontrado. Faça login como administrador.");
       }
 
-      const response = await fetch('/api/admin/stats', {
+      const response = await fetch("/api/admin/stats", {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
 
       if (!response.ok) {
@@ -54,7 +54,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         let errorMessage;
         try {
           const errorData = JSON.parse(errorText);
-          errorMessage = errorData.error || 'Erro ao buscar estatísticas';
+          errorMessage = errorData.error || "Erro ao buscar estatísticas";
         } catch {
           errorMessage = `Erro ${response.status}: ${response.statusText}`;
         }
@@ -62,21 +62,27 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
       }
 
       const data = await response.json();
-      set({ 
-        stats: data.data,
-        loading: false 
-      });
+      
+      // Verificar se a resposta é success e tem dados
+      if (data.success && data.data) {
+        set({
+          stats: data.data,
+          loading: false,
+        });
+      } else {
+        throw new Error("Dados de estatísticas não disponíveis no servidor");
+      }
     } catch (error: any) {
-      console.error('Erro ao buscar estatísticas do dashboard:', error);
+      console.error("Erro ao buscar estatísticas do dashboard:", error);
       set({
         stats: null,
-        error: error.message || 'Erro ao carregar estatísticas',
-        loading: false
+        error: error.message || "Erro ao carregar estatísticas",
+        loading: false,
       });
     }
   },
 
   clearError: () => {
     set({ error: null });
-  }
+  },
 }));

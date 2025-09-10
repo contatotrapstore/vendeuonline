@@ -1,53 +1,58 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { Search, Filter, UserPlus, Edit, Trash2, CheckCircle, XCircle, Shield, Store, User, Loader2, AlertCircle } from 'lucide-react';
-import { toast } from 'sonner';
-import { useUserStore } from '@/store/userStore';
+import { useState, useEffect } from "react";
+import {
+  Search,
+  Filter,
+  UserPlus,
+  Edit,
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Shield,
+  Store,
+  User,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useUserStore } from "@/store/userStore";
 
 export default function AdminUsersPage() {
-  const {
-    users,
-    loading,
-    error,
-    filters,
-    fetchUsers,
-    updateUserStatus,
-    deleteUser,
-    setFilters,
-    clearError
-  } = useUserStore();
+  const { users, loading, error, filters, fetchUsers, updateUserStatus, deleteUser, setFilters, clearError } =
+    useUserStore();
 
   // Carregar usuários ao montar o componente
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-                         user.email.toLowerCase().includes(filters.search.toLowerCase());
-    const matchesStatus = filters.status === 'all' || user.status === filters.status;
-    const matchesType = filters.userType === 'all' || user.userType === filters.userType;
-    
+  const filteredUsers = users.filter((user) => {
+    const matchesSearch =
+      user.name.toLowerCase().includes(filters.search.toLowerCase()) ||
+      user.email.toLowerCase().includes(filters.search.toLowerCase());
+    const matchesStatus = filters.status === "all" || user.status === filters.status;
+    const matchesType = filters.userType === "all" || user.userType === filters.userType;
+
     return matchesSearch && matchesStatus && matchesType;
   });
 
-  const handleStatusChange = async (userId: string, newStatus: 'active' | 'inactive') => {
+  const handleStatusChange = async (userId: string, newStatus: "active" | "inactive") => {
     try {
       await updateUserStatus(userId, newStatus);
-      toast.success(`Status do usuário atualizado para ${newStatus === 'active' ? 'ativo' : 'inativo'}`);
+      toast.success(`Status do usuário atualizado para ${newStatus === "active" ? "ativo" : "inativo"}`);
     } catch (error) {
-      toast.error('Erro ao atualizar status do usuário');
+      toast.error("Erro ao atualizar status do usuário");
     }
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (confirm('Tem certeza que deseja excluir este usuário?')) {
+    if (confirm("Tem certeza que deseja excluir este usuário?")) {
       try {
         await deleteUser(userId);
-        toast.success('Usuário excluído com sucesso');
+        toast.success("Usuário excluído com sucesso");
       } catch (error) {
-        toast.error('Erro ao excluir usuário');
+        toast.error("Erro ao excluir usuário");
       }
     }
   };
@@ -66,23 +71,27 @@ export default function AdminUsersPage() {
 
   const getUserTypeIcon = (type: string) => {
     switch (type) {
-      case 'admin': return <Shield className="h-4 w-4 text-purple-600" />;
-      case 'seller': return <Store className="h-4 w-4 text-blue-600" />;
-      case 'buyer': return <User className="h-4 w-4 text-green-600" />;
-      default: return <User className="h-4 w-4 text-gray-600" />;
+      case "admin":
+        return <Shield className="h-4 w-4 text-purple-600" />;
+      case "seller":
+        return <Store className="h-4 w-4 text-blue-600" />;
+      case "buyer":
+        return <User className="h-4 w-4 text-green-600" />;
+      default:
+        return <User className="h-4 w-4 text-gray-600" />;
     }
   };
 
   const getStatusBadge = (status: string) => {
     const styles = {
-      active: 'bg-green-100 text-green-800',
-      inactive: 'bg-red-100 text-red-800',
-      pending: 'bg-yellow-100 text-yellow-800'
+      active: "bg-green-100 text-green-800",
+      inactive: "bg-red-100 text-red-800",
+      pending: "bg-yellow-100 text-yellow-800",
     };
-    
+
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[status as keyof typeof styles]}`}>
-        {status === 'active' ? 'Ativo' : status === 'inactive' ? 'Inativo' : 'Pendente'}
+        {status === "active" ? "Ativo" : status === "inactive" ? "Inativo" : "Pendente"}
       </span>
     );
   };
@@ -162,7 +171,7 @@ export default function AdminUsersPage() {
               <option value="admin">Administrador</option>
             </select>
 
-            <button 
+            <button
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
@@ -220,73 +229,73 @@ export default function AdminUsersPage() {
                     </td>
                   </tr>
                 )}
-                {!loading && filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                        <div className="text-sm text-gray-500">{user.email}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        {getUserTypeIcon(user.userType)}
-                        <span className="text-sm text-gray-900 capitalize">
-                          {user.userType === 'buyer' ? 'Comprador' : 
-                           user.userType === 'seller' ? 'Vendedor' : 'Administrador'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(user.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <div>
-                        {user.storeCount !== undefined && (
-                          <div>Lojas: {user.storeCount}</div>
-                        )}
-                        <div>Pedidos: {user.orderCount || 0}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString('pt-BR') : 'Nunca'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex items-center gap-2">
-                        <button 
-                          className="text-blue-600 hover:text-blue-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={loading}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        {user.status === 'active' ? (
-                          <button 
-                            onClick={() => handleStatusChange(user.id, 'inactive')}
+                {!loading &&
+                  filteredUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                          <div className="text-sm text-gray-500">{user.email}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          {getUserTypeIcon(user.userType)}
+                          <span className="text-sm text-gray-900 capitalize">
+                            {user.userType === "buyer"
+                              ? "Comprador"
+                              : user.userType === "seller"
+                                ? "Vendedor"
+                                : "Administrador"}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(user.status)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div>
+                          {user.storeCount !== undefined && <div>Lojas: {user.storeCount}</div>}
+                          <div>Pedidos: {user.orderCount || 0}</div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString("pt-BR") : "Nunca"}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="text-blue-600 hover:text-blue-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={loading}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          {user.status === "active" ? (
+                            <button
+                              onClick={() => handleStatusChange(user.id, "inactive")}
+                              className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={loading}
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleStatusChange(user.id, "active")}
+                              className="text-green-600 hover:text-green-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                              disabled={loading}
+                            >
+                              <CheckCircle className="h-4 w-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteUser(user.id)}
                             className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={loading}
                           >
-                            <XCircle className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                           </button>
-                        ) : (
-                          <button 
-                            onClick={() => handleStatusChange(user.id, 'active')}
-                            className="text-green-600 hover:text-green-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                            disabled={loading}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </button>
-                        )}
-                        <button 
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="text-red-600 hover:text-red-900 disabled:opacity-50 disabled:cursor-not-allowed"
-                          disabled={loading}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -305,7 +314,7 @@ export default function AdminUsersPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
@@ -313,13 +322,11 @@ export default function AdminUsersPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Usuários Ativos</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {users.filter(u => u.status === 'active').length}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">{users.filter((u) => u.status === "active").length}</p>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
               <div className="p-2 bg-purple-100 rounded-lg">
@@ -328,12 +335,12 @@ export default function AdminUsersPage() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Vendedores</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {users.filter(u => u.userType === 'seller').length}
+                  {users.filter((u) => u.userType === "seller").length}
                 </p>
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 rounded-lg">
@@ -341,9 +348,7 @@ export default function AdminUsersPage() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Pendentes</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {users.filter(u => u.status === 'pending').length}
-                </p>
+                <p className="text-2xl font-bold text-gray-900">{users.filter((u) => u.status === "pending").length}</p>
               </div>
             </div>
           </div>

@@ -1,95 +1,83 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { useAuthStore } from '@/store/authStore';
-import { useNotificationStore, type Notification } from '@/store/notificationStore';
-import { 
-  Bell, 
-  Check, 
-  CheckCheck, 
-  Filter,
-  Search,
-  Trash2
-} from 'lucide-react';
+import { useEffect, useState } from "react";
+import { useAuthStore } from "@/store/authStore";
+import { useNotificationStore, type Notification } from "@/store/notificationStore";
+import { Bell, Check, CheckCheck, Filter, Search, Trash2 } from "lucide-react";
 
 export default function NotificationsPage() {
   const { user } = useAuthStore();
-  const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  const {
-    notifications,
-    unreadCount,
-    isLoading,
-    error,
-    fetchNotifications,
-    markAsRead,
-    markAllAsRead,
-    clearError
-  } = useNotificationStore();
+  const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const { notifications, unreadCount, isLoading, error, fetchNotifications, markAsRead, markAllAsRead, clearError } =
+    useNotificationStore();
 
   useEffect(() => {
-    if (!user || user.userType !== 'buyer') {
-      window.location.href = '/';
+    if (!user || user.userType !== "buyer") {
+      window.location.href = "/";
       return;
     }
 
     fetchNotifications();
   }, [user, fetchNotifications]);
 
-  const getNotificationIcon = (type: Notification['type']) => {
+  const getNotificationIcon = (type: Notification["type"]) => {
     switch (type) {
-      case 'success':
-        return '✅';
-      case 'warning':
-        return '⚠️';
-      case 'error':
-        return '❌';
-      case 'promotion':
-        return '🏷️';
-      case 'security':
-        return '🔒';
+      case "success":
+        return "✅";
+      case "warning":
+        return "⚠️";
+      case "error":
+        return "❌";
+      case "promotion":
+        return "🏷️";
+      case "security":
+        return "🔒";
       default:
-        return 'ℹ️';
+        return "ℹ️";
     }
   };
 
-  const getNotificationColor = (type: Notification['type']) => {
+  const getNotificationColor = (type: Notification["type"]) => {
     switch (type) {
-      case 'success':
-        return 'border-green-200 bg-green-50';
-      case 'warning':
-        return 'border-yellow-200 bg-yellow-50';
-      case 'error':
-        return 'border-red-200 bg-red-50';
-      case 'promotion':
-        return 'border-purple-200 bg-purple-50';
-      case 'security':
-        return 'border-blue-200 bg-blue-50';
+      case "success":
+        return "border-green-200 bg-green-50";
+      case "warning":
+        return "border-yellow-200 bg-yellow-50";
+      case "error":
+        return "border-red-200 bg-red-50";
+      case "promotion":
+        return "border-purple-200 bg-purple-50";
+      case "security":
+        return "border-blue-200 bg-blue-50";
       default:
-        return 'border-gray-200 bg-gray-50';
+        return "border-gray-200 bg-gray-50";
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('pt-BR');
+    return new Date(dateString).toLocaleString("pt-BR");
   };
 
-  const filteredNotifications = notifications.filter(notification => {
+  const filteredNotifications = notifications.filter((notification) => {
     // Filtro por status
-    if (filter === 'unread' && notification.isRead) return false;
-    if (filter === 'read' && !notification.isRead) return false;
-    
+    if (filter === "unread" && notification.isRead) return false;
+    if (filter === "read" && !notification.isRead) return false;
+
     // Filtro por tipo
-    if (typeFilter !== 'all' && notification.type !== typeFilter) return false;
-    
+    if (typeFilter !== "all" && notification.type !== typeFilter) return false;
+
     // Filtro por busca
-    if (searchQuery && !notification.title.toLowerCase().includes(searchQuery.toLowerCase()) && 
-        !notification.message.toLowerCase().includes(searchQuery.toLowerCase())) {
+    if (
+      searchQuery &&
+      !notification.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+      !notification.message.toLowerCase().includes(searchQuery.toLowerCase())
+    ) {
       return false;
     }
-    
+
     return true;
   });
 
@@ -99,7 +87,7 @@ export default function NotificationsPage() {
     }
   };
 
-  if (!user || user.userType !== 'buyer') {
+  if (!user || user.userType !== "buyer") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -116,7 +104,7 @@ export default function NotificationsPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Notificações</h1>
               <p className="text-gray-600">
-                {unreadCount > 0 ? `${unreadCount} não lidas` : 'Todas as notificações estão em dia'}
+                {unreadCount > 0 ? `${unreadCount} não lidas` : "Todas as notificações estão em dia"}
               </p>
             </div>
             {unreadCount > 0 && (
@@ -149,12 +137,12 @@ export default function NotificationsPage() {
                 />
               </div>
             </div>
-            
+
             {/* Status Filter */}
             <div className="sm:w-48">
               <select
                 value={filter}
-                onChange={(e) => setFilter(e.target.value as 'all' | 'unread' | 'read')}
+                onChange={(e) => setFilter(e.target.value as "all" | "unread" | "read")}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="all">Todas</option>
@@ -162,7 +150,7 @@ export default function NotificationsPage() {
                 <option value="read">Lidas</option>
               </select>
             </div>
-            
+
             {/* Type Filter */}
             <div className="sm:w-48">
               <select
@@ -187,10 +175,7 @@ export default function NotificationsPage() {
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex justify-between items-center">
               <p className="text-red-600">{error}</p>
-              <button
-                onClick={clearError}
-                className="text-red-400 hover:text-red-600"
-              >
+              <button onClick={clearError} className="text-red-400 hover:text-red-600">
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
@@ -210,23 +195,23 @@ export default function NotificationsPage() {
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
                 className={`bg-white border rounded-lg p-6 cursor-pointer transition-all hover:shadow-md ${
-                  notification.isRead ? 'opacity-75' : 'border-l-4 border-l-blue-500'
+                  notification.isRead ? "opacity-75" : "border-l-4 border-l-blue-500"
                 } ${getNotificationColor(notification.type)}`}
               >
                 <div className="flex items-start space-x-4">
                   {/* Icon */}
-                  <div className="flex-shrink-0 text-2xl">
-                    {getNotificationIcon(notification.type)}
-                  </div>
-                  
+                  <div className="flex-shrink-0 text-2xl">{getNotificationIcon(notification.type)}</div>
+
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className={`text-lg font-medium ${notification.isRead ? 'text-gray-700' : 'text-gray-900'}`}>
+                        <h3
+                          className={`text-lg font-medium ${notification.isRead ? "text-gray-700" : "text-gray-900"}`}
+                        >
                           {notification.title}
                         </h3>
-                        <p className={`mt-2 ${notification.isRead ? 'text-gray-500' : 'text-gray-700'}`}>
+                        <p className={`mt-2 ${notification.isRead ? "text-gray-500" : "text-gray-700"}`}>
                           {notification.message}
                         </p>
                         <p className="text-sm text-gray-400 mt-4">
@@ -236,7 +221,7 @@ export default function NotificationsPage() {
                           )}
                         </p>
                       </div>
-                      
+
                       {/* Status Indicator */}
                       <div className="flex items-center space-x-2">
                         {notification.isRead ? (
@@ -254,16 +239,14 @@ export default function NotificationsPage() {
             <div className="text-center py-12 bg-white rounded-lg">
               <Bell className="h-16 w-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {searchQuery || filter !== 'all' || typeFilter !== 'all' 
-                  ? 'Nenhuma notificação encontrada'
-                  : 'Nenhuma notificação'
-                }
+                {searchQuery || filter !== "all" || typeFilter !== "all"
+                  ? "Nenhuma notificação encontrada"
+                  : "Nenhuma notificação"}
               </h3>
               <p className="text-gray-500">
-                {searchQuery || filter !== 'all' || typeFilter !== 'all'
-                  ? 'Tente ajustar os filtros de busca'
-                  : 'Você está em dia com todas as suas notificações!'
-                }
+                {searchQuery || filter !== "all" || typeFilter !== "all"
+                  ? "Tente ajustar os filtros de busca"
+                  : "Você está em dia com todas as suas notificações!"}
               </p>
             </div>
           )}

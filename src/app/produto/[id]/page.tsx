@@ -1,28 +1,40 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Star, Heart, Share2, ShoppingCart, Truck, Shield, ArrowLeft, Plus, Minus, MapPin, MessageCircle } from 'lucide-react';
-import { useProductStore } from '@/store/productStore';
-import { Product } from '@/types';
-import { useAuthStore } from '@/store/authStore';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+  Star,
+  Heart,
+  Share2,
+  ShoppingCart,
+  Truck,
+  Shield,
+  ArrowLeft,
+  Plus,
+  Minus,
+  MapPin,
+  MessageCircle,
+} from "lucide-react";
+import { useProductStore } from "@/store/productStore";
+import { Product } from "@/types";
+import { useAuthStore } from "@/store/authStore";
+import { Link } from "react-router-dom";
 
 export default function ProductDetailPage() {
   const params = useParams();
   const navigate = useNavigate();
   const { products } = useProductStore();
   const { user } = useAuthStore();
-  
+
   const [product, setProduct] = useState<Product | null>(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [activeTab, setActiveTab] = useState('description');
-  
+  const [activeTab, setActiveTab] = useState("description");
+
   useEffect(() => {
     if (params.id) {
-      const foundProduct = products.find(p => p.id === params.id);
+      const foundProduct = products.find((p) => p.id === params.id);
       setProduct(foundProduct || null);
     }
   }, [params.id, products]);
@@ -44,9 +56,9 @@ export default function ProductDetailPage() {
   }
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     }).format(price);
   };
 
@@ -59,14 +71,14 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     // In a real app, this would add to cart store
-    console.log('Added to cart:', { productId: product.id, quantity });
+    console.log("Added to cart:", { productId: product.id, quantity });
     // Show success message or redirect to cart
   };
 
   const handleBuyNow = () => {
     // In a real app, this would redirect to checkout
-    console.log('Buy now:', { productId: product.id, quantity });
-    navigate('/checkout');
+    console.log("Buy now:", { productId: product.id, quantity });
+    navigate("/checkout");
   };
 
   const handleShare = async () => {
@@ -78,7 +90,7 @@ export default function ProductDetailPage() {
           url: window.location.href,
         });
       } catch (error) {
-        console.log('Error sharing:', error);
+        console.log("Error sharing:", error);
       }
     } else {
       // Fallback: copy to clipboard
@@ -91,22 +103,18 @@ export default function ProductDetailPage() {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`h-4 w-4 ${
-          i < Math.floor(rating)
-            ? 'text-yellow-400 fill-current'
-            : 'text-gray-300'
-        }`}
+        className={`h-4 w-4 ${i < Math.floor(rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
       />
     ));
   };
 
   const getStockStatus = () => {
     if (product.stock === 0) {
-      return { label: 'Produto esgotado', className: 'text-red-600', available: false };
+      return { label: "Produto esgotado", className: "text-red-600", available: false };
     } else if (product.stock <= 5) {
-      return { label: `Últimas ${product.stock} unidades!`, className: 'text-yellow-600', available: true };
+      return { label: `Últimas ${product.stock} unidades!`, className: "text-yellow-600", available: true };
     }
-    return { label: 'Em estoque', className: 'text-green-600', available: true };
+    return { label: "Em estoque", className: "text-green-600", available: true };
   };
 
   const stockStatus = getStockStatus();
@@ -117,12 +125,16 @@ export default function ProductDetailPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-gray-600 mb-6">
-          <Link to="/" className="hover:text-blue-600">Início</Link>
+          <Link to="/" className="hover:text-blue-600">
+            Início
+          </Link>
           <span>/</span>
-          <Link to="/products" className="hover:text-blue-600">Produtos</Link>
+          <Link to="/products" className="hover:text-blue-600">
+            Produtos
+          </Link>
           <span>/</span>
-          <Link to={`/products?category=${product.category}`} className="hover:text-blue-600">
-            {product.category}
+          <Link to={`/products?category=${typeof product.category === 'object' ? product.category.slug || product.category.name : product.category}`} className="hover:text-blue-600">
+            {typeof product.category === 'object' ? product.category.name : product.category}
           </Link>
           <span>/</span>
           <span className="text-gray-900">{product.name}</span>
@@ -139,7 +151,8 @@ export default function ProductDetailPage() {
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgdmlld0JveD0iMCAwIDUwMCA1MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MDAiIGhlaWdodD0iNTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMDAgMjUwQzIzMC45MjggMjUwIDI1NiAyMjQuOTI4IDI1NiAxOTRDMjU2IDE2My4wNzIgMjMwLjkyOCAxMzggMjAwIDEzOEMxNjkuMDcyIDEzOCAxNDQgMTYzLjA3MiAxNDQgMTk0QzE0NCAyMjQuOTI4IDE2OS4wNzIgMjUwIDIwMCAyNTBaIiBmaWxsPSIjOUI5QjlCIi8+CjxwYXRoIGQ9Ik0xMDAgMzYyTDE2MCAzMDJMMjAwIDM0MkwyODAgMjYyTDM2MCAzNDJWMzYySDE0MFoiIGZpbGw9IiM5QjlCOUIiLz4KPC9zdmc+Cg==';
+                  target.src =
+                    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgdmlld0JveD0iMCAwIDUwMCA1MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MDAiIGhlaWdodD0iNTAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMDAgMjUwQzIzMC45MjggMjUwIDI1NiAyMjQuOTI4IDI1NiAxOTRDMjU2IDE2My4wNzIgMjMwLjkyOCAxMzggMjAwIDEzOEMxNjkuMDcyIDEzOCAxNDQgMTYzLjA3MiAxNDQgMTk0QzE0NCAyMjQuOTI4IDE2OS4wNzIgMjUwIDIwMCAyNTBaIiBmaWxsPSIjOUI5QjlCIi8+CjxwYXRoIGQ9Ik0xMDAgMzYyTDE2MCAzMDJMMjAwIDM0MkwyODAgMjYyTDM2MCAzNDJWMzYySDE0MFoiIGZpbGw9IiM5QjlCOUIiLz4KPC9zdmc+Cg==";
                 }}
               />
             </div>
@@ -152,14 +165,10 @@ export default function ProductDetailPage() {
                     key={index}
                     onClick={() => setSelectedImage(index)}
                     className={`flex-shrink-0 w-20 h-20 rounded-lg border-2 overflow-hidden ${
-                      selectedImage === index ? 'border-blue-500' : 'border-gray-200'
+                      selectedImage === index ? "border-blue-500" : "border-gray-200"
                     }`}
                   >
-                    <img
-                      src={image.url}
-                      alt={`${product.name} ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={image.url} alt={`${product.name} ${index + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
@@ -186,21 +195,15 @@ export default function ProductDetailPage() {
             {/* Price */}
             <div className="space-y-2">
               <div className="flex items-center gap-3">
-                <span className="text-3xl font-bold text-gray-900">
-                  {formatPrice(product.price)}
-                </span>
+                <span className="text-3xl font-bold text-gray-900">{formatPrice(product.price)}</span>
                 {product.comparePrice && (
                   <>
-                    <span className="text-lg text-gray-500 line-through">
-                      {formatPrice(product.comparePrice)}
-                    </span>
-                    <span className="bg-red-100 text-red-800 text-sm font-medium px-2 py-1 rounded">
-                      -{discount}%
-                    </span>
+                    <span className="text-lg text-gray-500 line-through">{formatPrice(product.comparePrice)}</span>
+                    <span className="bg-red-100 text-red-800 text-sm font-medium px-2 py-1 rounded">-{discount}%</span>
                   </>
                 )}
               </div>
-              {product.specifications?.find(spec => spec.name === 'Frete Grátis')?.value === 'Sim' && (
+              {product.specifications?.find((spec) => spec.name === "Frete Grátis")?.value === "Sim" && (
                 <div className="flex items-center gap-2 text-green-600">
                   <Truck className="h-4 w-4" />
                   <span className="text-sm font-medium">Frete grátis</span>
@@ -209,9 +212,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Stock Status */}
-            <div className={`text-sm font-medium ${stockStatus.className}`}>
-              {stockStatus.label}
-            </div>
+            <div className={`text-sm font-medium ${stockStatus.className}`}>{stockStatus.label}</div>
 
             {/* Seller Info */}
             <div className="bg-gray-50 rounded-lg p-4">
@@ -226,7 +227,9 @@ export default function ProductDetailPage() {
                 </div>
                 <div className="flex items-center gap-2 text-gray-600">
                   <MapPin className="h-4 w-4" />
-                  <span className="text-sm">{product.specifications?.find(spec => spec.name === 'Localização')?.value || 'Não informado'}</span>
+                  <span className="text-sm">
+                    {product.specifications?.find((spec) => spec.name === "Localização")?.value || "Não informado"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -244,9 +247,7 @@ export default function ProductDetailPage() {
                     >
                       <Minus className="h-4 w-4" />
                     </button>
-                    <span className="px-4 py-2 border-x border-gray-300 min-w-[60px] text-center">
-                      {quantity}
-                    </span>
+                    <span className="px-4 py-2 border-x border-gray-300 min-w-[60px] text-center">{quantity}</span>
                     <button
                       onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
                       className="p-2 hover:bg-gray-50 transition-colors"
@@ -282,14 +283,14 @@ export default function ProductDetailPage() {
                 onClick={() => setIsWishlisted(!isWishlisted)}
                 className={`flex items-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
                   isWishlisted
-                    ? 'border-red-500 text-red-600 bg-red-50'
-                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                    ? "border-red-500 text-red-600 bg-red-50"
+                    : "border-gray-300 text-gray-700 hover:bg-gray-50"
                 }`}
               >
-                <Heart className={`h-4 w-4 ${isWishlisted ? 'fill-current' : ''}`} />
-                {isWishlisted ? 'Favoritado' : 'Favoritar'}
+                <Heart className={`h-4 w-4 ${isWishlisted ? "fill-current" : ""}`} />
+                {isWishlisted ? "Favoritado" : "Favoritar"}
               </button>
-              
+
               <button
                 onClick={handleShare}
                 className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
@@ -297,7 +298,7 @@ export default function ProductDetailPage() {
                 <Share2 className="h-4 w-4" />
                 Compartilhar
               </button>
-              
+
               <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                 <MessageCircle className="h-4 w-4" />
                 Perguntar
@@ -324,18 +325,18 @@ export default function ProductDetailPage() {
           <div className="border-b border-gray-200">
             <nav className="flex space-x-8 px-6">
               {[
-                { id: 'description', label: 'Descrição' },
-                { id: 'specifications', label: 'Especificações' },
-                { id: 'reviews', label: 'Avaliações' },
-                { id: 'shipping', label: 'Entrega' }
+                { id: "description", label: "Descrição" },
+                { id: "specifications", label: "Especificações" },
+                { id: "reviews", label: "Avaliações" },
+                { id: "shipping", label: "Entrega" },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      ? "border-blue-500 text-blue-600"
+                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                 >
                   {tab.label}
@@ -346,15 +347,17 @@ export default function ProductDetailPage() {
 
           {/* Tab Content */}
           <div className="p-6">
-            {activeTab === 'description' && (
+            {activeTab === "description" && (
               <div className="prose max-w-none">
                 <p className="text-gray-700 leading-relaxed">{product.description}</p>
               </div>
             )}
 
-            {activeTab === 'specifications' && (
+            {activeTab === "specifications" && (
               <div className="space-y-4">
-                {product.specifications && Array.isArray(product.specifications) && product.specifications.length > 0 ? (
+                {product.specifications &&
+                Array.isArray(product.specifications) &&
+                product.specifications.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {product.specifications.map((spec, index) => (
                       <div key={index} className="flex justify-between py-2 border-b border-gray-100">
@@ -369,7 +372,7 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {activeTab === 'reviews' && (
+            {activeTab === "reviews" && (
               <div className="space-y-6">
                 <div className="text-center py-8">
                   <p className="text-gray-500">Sistema de avaliações em desenvolvimento.</p>
@@ -380,7 +383,7 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {activeTab === 'shipping' && (
+            {activeTab === "shipping" && (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
@@ -389,10 +392,12 @@ export default function ProductDetailPage() {
                       <p>• Entrega via Correios ou transportadora</p>
                       <p>• Prazo: 3-7 dias úteis</p>
                       <p>• Rastreamento incluído</p>
-                      {product.specifications?.find(spec => spec.name === 'Frete Grátis')?.value === 'Sim' && <p>• Frete grátis para todo o Brasil</p>}
+                      {product.specifications?.find((spec) => spec.name === "Frete Grátis")?.value === "Sim" && (
+                        <p>• Frete grátis para todo o Brasil</p>
+                      )}
                     </div>
                   </div>
-                  
+
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Política de Devolução</h4>
                     <div className="space-y-2 text-sm text-gray-600">

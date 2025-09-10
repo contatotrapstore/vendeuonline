@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { 
-  Search, 
-  Filter, 
-  Package, 
-  Store, 
-  User, 
-  Eye, 
-  Edit, 
-  Trash2, 
+import { useState, useEffect } from "react";
+import {
+  Search,
+  Filter,
+  Package,
+  Store,
+  User,
+  Eye,
+  Edit,
+  Trash2,
   AlertTriangle,
   RefreshCw,
   ChevronLeft,
@@ -17,10 +17,10 @@ import {
   Loader2,
   Ban,
   CheckCircle,
-  DollarSign
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { buildApiUrl, getHeaders } from '@/config/api';
+  DollarSign,
+} from "lucide-react";
+import { toast } from "sonner";
+import { buildApiUrl, getHeaders } from "@/config/api";
 
 interface Product {
   id: string;
@@ -28,19 +28,20 @@ interface Product {
   description: string;
   price: number;
   images: string[];
-  categoryId: string;
+  categoryId?: string;
+  category?: string;
   isActive: boolean;
-  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED";
   rejectionReason?: string;
   approvedAt?: string;
   stock: number;
   createdAt: string;
-  store: {
-    id: string;
+  store?: {
+    id?: string;
     name: string;
   };
-  seller: {
-    user: {
+  seller?: {
+    user?: {
       name: string;
       email: string;
     };
@@ -59,16 +60,16 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<ProductFilters>({
-    search: '',
-    status: 'all',
-    category: 'all',
-    storeId: 'all'
+    search: "",
+    status: "all",
+    category: "all",
+    storeId: "all",
   });
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
     totalCount: 0,
-    pageSize: 20
+    pageSize: 20,
   });
 
   const fetchProducts = async (page = 1) => {
@@ -77,39 +78,46 @@ export default function AdminProductsPage() {
     try {
       const authHeaders = getHeaders();
       if (!authHeaders.Authorization) {
-        throw new Error('Token não encontrado');
+        throw new Error("Token não encontrado");
       }
 
       const params = new URLSearchParams({
         page: page.toString(),
-        limit: '20'
+        limit: "20",
       });
 
       // Adicionar filtros se especificados
-      if (filters.search) params.append('search', filters.search);
-      if (filters.status !== 'all') params.append('status', filters.status);
-      if (filters.category !== 'all') params.append('category', filters.category);
-      if (filters.storeId !== 'all') params.append('storeId', filters.storeId);
+      if (filters.search) params.append("search", filters.search);
+      if (filters.status !== "all") params.append("status", filters.status);
+      if (filters.category !== "all") params.append("category", filters.category);
+      if (filters.storeId !== "all") params.append("storeId", filters.storeId);
 
       const response = await fetch(buildApiUrl(`/api/admin/products?${params.toString()}`), {
-        headers: getHeaders()
+        headers: getHeaders(),
       });
 
       if (!response.ok) {
-        throw new Error('Erro ao buscar produtos');
+        throw new Error("Erro ao buscar produtos");
       }
 
       const data = await response.json();
-      setProducts(data.data || []);
+      
+      // Map the products to match our interface
+      const mappedProducts = (data.data || []).map((product: any) => ({
+        ...product,
+        seller: product.store?.seller || null
+      }));
+      
+      setProducts(mappedProducts);
       setPagination({
         currentPage: data.pagination?.page || 1,
         totalPages: data.pagination?.totalPages || 1,
         totalCount: data.pagination?.total || 0,
-        pageSize: data.pagination?.limit || 20
+        pageSize: data.pagination?.limit || 20,
       });
     } catch (error: any) {
-      console.error('Erro ao buscar produtos:', error);
-      setError(error.message || 'Erro ao carregar produtos');
+      console.error("Erro ao buscar produtos:", error);
+      setError(error.message || "Erro ao carregar produtos");
       setProducts([]);
     } finally {
       setLoading(false);
@@ -120,99 +128,105 @@ export default function AdminProductsPage() {
     fetchProducts();
   }, []);
 
-  const handleStatusChange = async (productId: string, newStatus: 'active' | 'inactive' | 'suspended') => {
+  const handleStatusChange = async (productId: string, newStatus: "active" | "inactive" | "suspended") => {
     try {
       const authHeaders = getHeaders();
-      if (!authHeaders.Authorization) throw new Error('Token não encontrado');
+      if (!authHeaders.Authorization) throw new Error("Token não encontrado");
 
       const response = await fetch(buildApiUrl(`/api/admin/products/${productId}/status`), {
-        method: 'PATCH',
+        method: "PATCH",
         headers: authHeaders,
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ status: newStatus }),
       });
 
-      if (!response.ok) throw new Error('Erro ao atualizar status');
+      if (!response.ok) throw new Error("Erro ao atualizar status");
 
       // Atualizar localmente (converter para isActive)
-      const isActive = newStatus.toLowerCase() === 'active';
-      setProducts(prev => prev.map(product => 
-        product.id === productId ? { ...product, isActive } : product
-      ));
-      
-      toast.success('Status atualizado com sucesso');
+      const isActive = newStatus.toLowerCase() === "active";
+      setProducts((prev) => prev.map((product) => (product.id === productId ? { ...product, isActive } : product)));
+
+      toast.success("Status atualizado com sucesso");
     } catch (error) {
-      toast.error('Erro ao atualizar status');
+      toast.error("Erro ao atualizar status");
     }
   };
 
-  const handleApprovalChange = async (productId: string, approvalStatus: 'APPROVED' | 'REJECTED', rejectionReason?: string) => {
+  const handleApprovalChange = async (
+    productId: string,
+    approvalStatus: "APPROVED" | "REJECTED",
+    rejectionReason?: string
+  ) => {
     try {
-      const token = localStorage.getItem('auth-token');
-      if (!token) throw new Error('Token não encontrado');
+      const token = localStorage.getItem("auth-token");
+      if (!token) throw new Error("Token não encontrado");
 
       const response = await fetch(`/api/admin/products/${productId}/approval`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ approvalStatus, rejectionReason })
+        body: JSON.stringify({ approvalStatus, rejectionReason }),
       });
 
-      if (!response.ok) throw new Error('Erro ao atualizar aprovação');
+      if (!response.ok) throw new Error("Erro ao atualizar aprovação");
 
       // Atualizar localmente
-      setProducts(prev => prev.map(product => 
-        product.id === productId ? { 
-          ...product, 
-          approvalStatus,
-          rejectionReason: approvalStatus === 'REJECTED' ? rejectionReason : undefined,
-          approvedAt: approvalStatus === 'APPROVED' ? new Date().toISOString() : undefined
-        } : product
-      ));
-      
-      toast.success(`Produto ${approvalStatus === 'APPROVED' ? 'aprovado' : 'rejeitado'} com sucesso`);
+      setProducts((prev) =>
+        prev.map((product) =>
+          product.id === productId
+            ? {
+                ...product,
+                approvalStatus,
+                rejectionReason: approvalStatus === "REJECTED" ? rejectionReason : undefined,
+                approvedAt: approvalStatus === "APPROVED" ? new Date().toISOString() : undefined,
+              }
+            : product
+        )
+      );
+
+      toast.success(`Produto ${approvalStatus === "APPROVED" ? "aprovado" : "rejeitado"} com sucesso`);
     } catch (error) {
-      toast.error('Erro ao atualizar aprovação');
+      toast.error("Erro ao atualizar aprovação");
     }
   };
 
   const handleDeleteProduct = async (productId: string) => {
-    if (confirm('Tem certeza que deseja excluir este produto?')) {
+    if (confirm("Tem certeza que deseja excluir este produto?")) {
       try {
-        const token = localStorage.getItem('auth-token');
-        if (!token) throw new Error('Token não encontrado');
+        const token = localStorage.getItem("auth-token");
+        if (!token) throw new Error("Token não encontrado");
 
         const response = await fetch(`/api/admin/products/${productId}`, {
-          method: 'DELETE',
+          method: "DELETE",
           headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         });
 
-        if (!response.ok) throw new Error('Erro ao excluir produto');
+        if (!response.ok) throw new Error("Erro ao excluir produto");
 
         // Remover localmente
-        setProducts(prev => prev.filter(product => product.id !== productId));
-        toast.success('Produto excluído com sucesso');
+        setProducts((prev) => prev.filter((product) => product.id !== productId));
+        toast.success("Produto excluído com sucesso");
       } catch (error) {
-        toast.error('Erro ao excluir produto');
+        toast.error("Erro ao excluir produto");
       }
     }
   };
 
   const getStatusBadge = (isActive: boolean) => {
     const styles = {
-      true: 'bg-green-100 text-green-800',
-      false: 'bg-gray-100 text-gray-800'
+      true: "bg-green-100 text-green-800",
+      false: "bg-gray-100 text-gray-800",
     };
-    
+
     const labels = {
-      true: 'Ativo',
-      false: 'Inativo'
+      true: "Ativo",
+      false: "Inativo",
     };
-    
+
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[String(isActive) as keyof typeof styles]}`}>
         {labels[String(isActive) as keyof typeof labels]}
@@ -222,17 +236,17 @@ export default function AdminProductsPage() {
 
   const getApprovalBadge = (approvalStatus: string) => {
     const styles = {
-      PENDING: 'bg-yellow-100 text-yellow-800',
-      APPROVED: 'bg-green-100 text-green-800',
-      REJECTED: 'bg-red-100 text-red-800'
+      PENDING: "bg-yellow-100 text-yellow-800",
+      APPROVED: "bg-green-100 text-green-800",
+      REJECTED: "bg-red-100 text-red-800",
     };
-    
+
     const labels = {
-      PENDING: 'Pendente',
-      APPROVED: 'Aprovado',
-      REJECTED: 'Rejeitado'
+      PENDING: "Pendente",
+      APPROVED: "Aprovado",
+      REJECTED: "Rejeitado",
     };
-    
+
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${styles[approvalStatus as keyof typeof styles]}`}>
         {labels[approvalStatus as keyof typeof labels]}
@@ -247,15 +261,15 @@ export default function AdminProductsPage() {
   };
 
   const handleFilterChange = (newFilters: Partial<ProductFilters>) => {
-    setFilters(prev => ({ ...prev, ...newFilters }));
+    setFilters((prev) => ({ ...prev, ...newFilters }));
     fetchProducts(1);
   };
 
   // Calcular estatísticas
-  const activeCount = products.filter(p => p.isActive === true).length;
-  const pendingApprovalCount = products.filter(p => p.approvalStatus === 'PENDING').length;
-  const approvedCount = products.filter(p => p.approvalStatus === 'APPROVED').length;
-  const rejectedCount = products.filter(p => p.approvalStatus === 'REJECTED').length;
+  const activeCount = products.filter((p) => p.isActive === true).length;
+  const pendingApprovalCount = products.filter((p) => p.approvalStatus === "PENDING").length;
+  const approvedCount = products.filter((p) => p.approvalStatus === "APPROVED").length;
+  const rejectedCount = products.filter((p) => p.approvalStatus === "REJECTED").length;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -272,7 +286,7 @@ export default function AdminProductsPage() {
               disabled={loading}
               className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
               <span>Atualizar</span>
             </button>
           </div>
@@ -291,7 +305,7 @@ export default function AdminProductsPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
               <div className="p-2 bg-yellow-100 rounded-lg">
@@ -303,7 +317,7 @@ export default function AdminProductsPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
               <div className="p-2 bg-green-100 rounded-lg">
@@ -315,7 +329,7 @@ export default function AdminProductsPage() {
               </div>
             </div>
           </div>
-          
+
           <div className="bg-white p-6 rounded-lg shadow-sm border">
             <div className="flex items-center">
               <div className="p-2 bg-red-100 rounded-lg">
@@ -461,104 +475,106 @@ export default function AdminProductsPage() {
                     </td>
                   </tr>
                 )}
-                {!loading && products.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          {product.images && product.images[0] ? (
-                            <img className="h-10 w-10 rounded-lg object-cover" src={product.images[0]} alt={product.name} />
-                          ) : (
-                            <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
-                              <Package className="h-5 w-5 text-gray-400" />
+                {!loading &&
+                  products.map((product) => (
+                    <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10">
+                            {product.images && product.images[0] ? (
+                              <img
+                                className="h-10 w-10 rounded-lg object-cover"
+                                src={product.images[0]}
+                                alt={product.name}
+                              />
+                            ) : (
+                              <div className="h-10 w-10 rounded-lg bg-gray-200 flex items-center justify-center">
+                                <Package className="h-5 w-5 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900 truncate max-w-xs">{product.name}</div>
+                            <div className="text-sm text-gray-500 truncate max-w-xs">{product.category || product.categoryId || 'Sem categoria'}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{product.store?.name || 'Loja não informada'}</div>
+                        <div className="text-sm text-gray-500">{product.seller?.user?.name || 'Vendedor não informado'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center text-sm text-gray-900">
+                          <DollarSign className="h-4 w-4 text-gray-400 mr-1" />
+                          R$ {product.price.toFixed(2)}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(product.isActive)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col space-y-1">
+                          {getApprovalBadge(product.approvalStatus || "PENDING")}
+                          {(product.approvalStatus === "PENDING" || !product.approvalStatus) && (
+                            <div className="flex space-x-1">
+                              <button
+                                onClick={() => handleApprovalChange(product.id, "APPROVED")}
+                                className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
+                                title="Aprovar produto"
+                              >
+                                ✓ Aprovar
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const reason = prompt("Motivo da rejeição (opcional):");
+                                  handleApprovalChange(product.id, "REJECTED", reason || undefined);
+                                }}
+                                className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
+                                title="Rejeitar produto"
+                              >
+                                ✗ Rejeitar
+                              </button>
+                            </div>
+                          )}
+                          {product.rejectionReason && (
+                            <div className="text-xs text-red-600" title={product.rejectionReason}>
+                              {product.rejectionReason.length > 20
+                                ? product.rejectionReason.substring(0, 20) + "..."
+                                : product.rejectionReason}
                             </div>
                           )}
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900 truncate max-w-xs">{product.name}</div>
-                          <div className="text-sm text-gray-500 truncate max-w-xs">{product.categoryId}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span className={product.stock <= 0 ? "text-red-600 font-medium" : ""}>
+                          {product.stock} unidades
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {new Date(product.createdAt).toLocaleDateString("pt-BR")}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button className="text-blue-600 hover:text-blue-900" title="Ver detalhes">
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <select
+                            value={product.isActive ? "active" : "inactive"}
+                            onChange={(e) => handleStatusChange(product.id, e.target.value as any)}
+                            className="text-xs border border-gray-300 rounded px-2 py-1"
+                          >
+                            <option value="active">Ativo</option>
+                            <option value="inactive">Inativo</option>
+                          </select>
+                          <button
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="text-red-600 hover:text-red-900"
+                            title="Excluir"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{product.store.name}</div>
-                      <div className="text-sm text-gray-500">{product.seller.user.name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center text-sm text-gray-900">
-                        <DollarSign className="h-4 w-4 text-gray-400 mr-1" />
-                        R$ {product.price.toFixed(2)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(product.isActive)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-col space-y-1">
-                        {getApprovalBadge(product.approvalStatus)}
-                        {product.approvalStatus === 'PENDING' && (
-                          <div className="flex space-x-1">
-                            <button
-                              onClick={() => handleApprovalChange(product.id, 'APPROVED')}
-                              className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700"
-                              title="Aprovar produto"
-                            >
-                              ✓ Aprovar
-                            </button>
-                            <button
-                              onClick={() => {
-                                const reason = prompt('Motivo da rejeição (opcional):');
-                                handleApprovalChange(product.id, 'REJECTED', reason || undefined);
-                              }}
-                              className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
-                              title="Rejeitar produto"
-                            >
-                              ✗ Rejeitar
-                            </button>
-                          </div>
-                        )}
-                        {product.rejectionReason && (
-                          <div className="text-xs text-red-600" title={product.rejectionReason}>
-                            {product.rejectionReason.length > 20 ? product.rejectionReason.substring(0, 20) + '...' : product.rejectionReason}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      <span className={product.stock <= 0 ? 'text-red-600 font-medium' : ''}>
-                        {product.stock} unidades
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(product.createdAt).toLocaleDateString('pt-BR')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          className="text-blue-600 hover:text-blue-900"
-                          title="Ver detalhes"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        <select
-                          value={product.isActive ? 'active' : 'inactive'}
-                          onChange={(e) => handleStatusChange(product.id, e.target.value as any)}
-                          className="text-xs border border-gray-300 rounded px-2 py-1"
-                        >
-                          <option value="active">Ativo</option>
-                          <option value="inactive">Inativo</option>
-                        </select>
-                        <button
-                          onClick={() => handleDeleteProduct(product.id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Excluir"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           </div>
@@ -585,16 +601,12 @@ export default function AdminProductsPage() {
               <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm text-gray-700">
-                    Mostrando{' '}
-                    <span className="font-medium">
-                      {((pagination.currentPage - 1) * pagination.pageSize) + 1}
-                    </span>{' '}
-                    até{' '}
+                    Mostrando{" "}
+                    <span className="font-medium">{(pagination.currentPage - 1) * pagination.pageSize + 1}</span> até{" "}
                     <span className="font-medium">
                       {Math.min(pagination.currentPage * pagination.pageSize, pagination.totalCount)}
-                    </span>{' '}
-                    de{' '}
-                    <span className="font-medium">{pagination.totalCount}</span> resultados
+                    </span>{" "}
+                    de <span className="font-medium">{pagination.totalCount}</span> resultados
                   </p>
                 </div>
                 <div>
@@ -606,7 +618,7 @@ export default function AdminProductsPage() {
                     >
                       <ChevronLeft className="h-5 w-5" />
                     </button>
-                    
+
                     {Array.from({ length: Math.min(5, pagination.totalPages) }, (_, i) => {
                       const page = i + 1;
                       return (
@@ -615,15 +627,15 @@ export default function AdminProductsPage() {
                           onClick={() => handlePageChange(page)}
                           className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                             page === pagination.currentPage
-                              ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                              ? "z-10 bg-blue-50 border-blue-500 text-blue-600"
+                              : "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
                           }`}
                         >
                           {page}
                         </button>
                       );
                     })}
-                    
+
                     <button
                       onClick={() => handlePageChange(pagination.currentPage + 1)}
                       disabled={pagination.currentPage >= pagination.totalPages}

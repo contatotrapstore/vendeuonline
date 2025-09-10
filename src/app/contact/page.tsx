@@ -1,31 +1,31 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { MapPin, Phone, Mail, Clock, Send, MessageCircle } from 'lucide-react';
-import { APP_CONFIG } from '@/config/app';
-import { toast } from 'sonner';
+import { useState } from "react";
+import { MapPin, Phone, Mail, Clock, Send, MessageCircle } from "lucide-react";
+import { APP_CONFIG } from "@/config/app";
+import { toast } from "sonner";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: '',
-    type: 'general'
+    name: "",
+    email: "",
+    subject: "",
+    message: "",
+    type: "general",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const contactTypes = [
-    { value: 'general', label: 'Informações Gerais' },
-    { value: 'support', label: 'Suporte Técnico' },
-    { value: 'sales', label: 'Vendas e Planos' },
-    { value: 'partnership', label: 'Parcerias' },
-    { value: 'complaint', label: 'Reclamações' }
+    { value: "general", label: "Informações Gerais" },
+    { value: "support", label: "Suporte Técnico" },
+    { value: "sales", label: "Vendas e Planos" },
+    { value: "partnership", label: "Parcerias" },
+    { value: "complaint", label: "Reclamações" },
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -34,18 +34,18 @@ export default function ContactPage() {
 
     try {
       // Simular envio do formulário
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast.success('Mensagem enviada com sucesso! Retornaremos em breve.');
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      toast.success("Mensagem enviada com sucesso! Retornaremos em breve.");
       setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        message: '',
-        type: 'general'
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+        type: "general",
       });
     } catch (error) {
-      toast.error('Erro ao enviar mensagem. Tente novamente.');
+      toast.error("Erro ao enviar mensagem. Tente novamente.");
     } finally {
       setIsSubmitting(false);
     }
@@ -57,9 +57,7 @@ export default function ContactPage() {
       <div className="bg-gradient-to-br from-blue-600 to-purple-600 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Entre em Contato
-            </h1>
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">Entre em Contato</h1>
             <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto">
               Estamos aqui para ajudar você. Entre em contato conosco através dos canais abaixo.
             </p>
@@ -73,7 +71,7 @@ export default function ContactPage() {
             {/* Contact Information */}
             <div className="lg:col-span-1">
               <h2 className="text-2xl font-bold text-gray-900 mb-8">Informações de Contato</h2>
-              
+
               <div className="space-y-6">
                 <div className="flex items-start space-x-4">
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -138,9 +136,7 @@ export default function ContactPage() {
                 <p className="text-gray-600 text-sm mb-4">
                   Antes de entrar em contato, confira nossa seção de perguntas frequentes.
                 </p>
-                <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
-                  Ver FAQ →
-                </button>
+                <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">Ver FAQ →</button>
               </div>
             </div>
 
@@ -148,7 +144,7 @@ export default function ContactPage() {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-lg p-8">
                 <h2 className="text-2xl font-bold text-gray-900 mb-8">Envie sua Mensagem</h2>
-                
+
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
@@ -166,7 +162,7 @@ export default function ContactPage() {
                         placeholder="Seu nome completo"
                       />
                     </div>
-                    
+
                     <div>
                       <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
                         E-mail *
@@ -196,7 +192,7 @@ export default function ContactPage() {
                       required
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                     >
-                      {contactTypes.map(type => (
+                      {contactTypes.map((type) => (
                         <option key={type.value} value={type.value}>
                           {type.label}
                         </option>
@@ -237,10 +233,8 @@ export default function ContactPage() {
                   </div>
 
                   <div className="flex items-center justify-between pt-4">
-                    <p className="text-sm text-gray-500">
-                      * Campos obrigatórios
-                    </p>
-                    
+                    <p className="text-sm text-gray-500">* Campos obrigatórios</p>
+
                     <button
                       type="submit"
                       disabled={isSubmitting}
