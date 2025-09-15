@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url      = "file:./dev.db"
 }
 
 // Modelo de usuário base
@@ -456,7 +456,7 @@ model AuditLog {
 model SystemConfig {
   id              String   @id @default(cuid())
   key             String   @unique
-  value           String   @db.Text
+  value           String
   description     String?
   category        String   @default("general") // tracking, email, payment, etc.
   isActive        Boolean  @default(true)
@@ -473,11 +473,11 @@ model Notification {
   userId      String
   user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   title       String
-  message     String            @db.Text
+  message     String
   type        NotificationType  @default(INFO)
   isRead      Boolean          @default(false)
   readAt      DateTime?
-  data        String?          @db.Text  // JSON string com dados extras se necessário
+  data        String?  // JSON string com dados extras se necessário
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   

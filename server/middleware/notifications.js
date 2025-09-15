@@ -1,4 +1,3 @@
-import prisma from "../lib/prisma.js";
 import { createClient } from "@supabase/supabase-js";
 
 // Configurar cliente Supabase
@@ -9,42 +8,27 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // Helper para criar notificações automáticas
 export const createNotification = async (userId, title, message, type = 'INFO', data = null) => {
   try {
-    return await prisma.notification.create({
-      data: {
-        userId,
+    const { data: notification, error } = await supabase
+      .from('notifications')
+      .insert([{
+        user_id: userId,
         title,
         message,
         type: type.toUpperCase(),
-        data: data ? JSON.stringify(data) : null
-      }
-    });
-  } catch (error) {
-    console.warn('⚠️ Prisma falhou, usando fallback Supabase para criar notificação:', error.message);
-    
-    // Fallback para Supabase
-    try {
-      const { data: notification, error: supabaseError } = await supabase
-        .from('notifications')
-        .insert([{
-          user_id: userId,
-          title,
-          message,
-          type: type.toUpperCase(),
-          data: data ? JSON.stringify(data) : null,
-          is_read: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
-        .select()
-        .single();
+        data: data ? JSON.stringify(data) : null,
+        is_read: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
 
-      if (supabaseError) throw supabaseError;
-      console.log('✅ Notificação criada no Supabase:', notification);
-      return notification;
-    } catch (supabaseError) {
-      console.error('❌ Erro ao criar notificação no Supabase:', supabaseError);
-      return null;
-    }
+    if (error) throw error;
+    console.log('✅ Notificação criada no Supabase:', notification);
+    return notification;
+  } catch (error) {
+    console.error('❌ Erro ao criar notificação:', error);
+    return null;
   }
 };
 
@@ -130,8 +114,13 @@ export const notificationTemplates = {
 // Middleware para criar notificações automáticas
 export const autoNotify = {
   onLogin: async (userId, userName) => {
-    const template = notificationTemplates.userLogin(userName);
-    return await createNotification(userId, template.title, template.message, template.type);
+    try {
+      const template = notificationTemplates.userLogin(userName);
+      return await createNotification(userId, template.title, template.message, template.type);
+    } catch (error) {
+      console.warn('⚠️ Falha ao criar notificação de login, continuando sem ela:', error.message);
+      return null;
+    }
   },
 
   onNewOrder: async (sellerId, orderNumber, storeName) => {

@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, Upload, MapPin, Clock, Phone, Mail, Globe, Camera, Star, Shield, Truck } from "lucide-react";
 import { toast } from "sonner";
+import { get, put } from "@/lib/api-client";
 
 interface StoreSettings {
+  id?: string;
   name: string;
   description: string;
   logo: string;
@@ -24,74 +26,27 @@ interface StoreSettings {
     email: string;
     website: string;
   };
-  businessHours: {
-    monday: { open: string; close: string; closed: boolean };
-    tuesday: { open: string; close: string; closed: boolean };
-    wednesday: { open: string; close: string; closed: boolean };
-    thursday: { open: string; close: string; closed: boolean };
-    friday: { open: string; close: string; closed: boolean };
-    saturday: { open: string; close: string; closed: boolean };
-    sunday: { open: string; close: string; closed: boolean };
-  };
-  shipping: {
-    freeShippingMinValue: number;
-    localDelivery: boolean;
-    localDeliveryFee: number;
-    localDeliveryRadius: number;
-    pickupAvailable: boolean;
-  };
-  policies: {
-    returnPolicy: string;
-    warrantyPolicy: string;
-    privacyPolicy: string;
-  };
 }
 
 const initialSettings: StoreSettings = {
-  name: "TechStore Erechim",
-  description:
-    "Sua loja de tecnologia em Erechim-RS. Oferecemos os melhores produtos com garantia e suporte técnico especializado.",
-  logo: "https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=modern%20tech%20store%20logo%20minimalist%20design&image_size=square",
-  banner:
-    "https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=technology%20store%20banner%20with%20electronics%20and%20gadgets&image_size=landscape_16_9",
+  name: "",
+  description: "",
+  logo: "",
+  banner: "",
   category: "eletronicos",
   address: {
-    street: "Rua Sete de Setembro",
-    number: "123",
-    neighborhood: "Centro",
-    city: "Erechim",
-    state: "RS",
-    zipCode: "99700-000",
+    street: "",
+    number: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+    zipCode: "",
   },
   contact: {
-    phone: "(54) 3321-1234",
-    whatsapp: "(54) 99999-1234",
-    email: "contato@techstore.com",
-    website: "www.techstore.com",
-  },
-  businessHours: {
-    monday: { open: "08:00", close: "18:00", closed: false },
-    tuesday: { open: "08:00", close: "18:00", closed: false },
-    wednesday: { open: "08:00", close: "18:00", closed: false },
-    thursday: { open: "08:00", close: "18:00", closed: false },
-    friday: { open: "08:00", close: "18:00", closed: false },
-    saturday: { open: "08:00", close: "12:00", closed: false },
-    sunday: { open: "09:00", close: "12:00", closed: true },
-  },
-  shipping: {
-    freeShippingMinValue: 200,
-    localDelivery: true,
-    localDeliveryFee: 15,
-    localDeliveryRadius: 10,
-    pickupAvailable: true,
-  },
-  policies: {
-    returnPolicy:
-      "Aceitamos devoluções em até 7 dias corridos após o recebimento do produto, desde que esteja em perfeitas condições.",
-    warrantyPolicy:
-      "Todos os produtos possuem garantia do fabricante. Produtos eletrônicos têm garantia mínima de 12 meses.",
-    privacyPolicy:
-      "Seus dados pessoais são protegidos e utilizados apenas para processar pedidos e melhorar nossos serviços.",
+    phone: "",
+    whatsapp: "",
+    email: "",
+    website: "",
   },
 };
 
@@ -106,30 +61,118 @@ const categories = [
   { value: "moveis", label: "Móveis" },
 ];
 
-const weekDays = [
-  { key: "monday", label: "Segunda-feira" },
-  { key: "tuesday", label: "Terça-feira" },
-  { key: "wednesday", label: "Quarta-feira" },
-  { key: "thursday", label: "Quinta-feira" },
-  { key: "friday", label: "Sexta-feira" },
-  { key: "saturday", label: "Sábado" },
-  { key: "sunday", label: "Domingo" },
-];
-
 export default function SellerStorePage() {
   const [settings, setSettings] = useState<StoreSettings>(initialSettings);
   const [activeTab, setActiveTab] = useState("general");
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
+  // Função para buscar dados da loja
+  const fetchStoreData = async () => {
+    try {
+      const data = await get("/api/seller/store");
+      if (data.success && data.data) {
+        setSettings(data.data);
+      }
+    } catch (error: any) {
+      console.error("Erro ao carregar dados da loja:", error);
+      toast.error("Erro ao carregar dados da loja: " + error.message);
+    } finally {
+      setIsInitialLoading(false);
+    }
+  };
+
+  // Carregar dados ao montar o componente
+  useEffect(() => {
+    fetchStoreData();
+  }, []);
+
+  // Função para salvar alterações
   const handleSave = async () => {
     setIsLoading(true);
-    // Simular salvamento
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    toast.success("Configurações salvas com sucesso!");
-    setIsLoading(false);
+    try {
+      const data = await put("/api/seller/store", settings);
+      
+      if (data.success) {
+        toast.success("Configurações salvas com sucesso!");
+        // Atualizar o estado com os dados retornados
+        if (data.data) {
+          setSettings(data.data);
+        }
+      }
+    } catch (error: any) {
+      console.error("Erro ao salvar:", error);
+      toast.error("Erro ao salvar: " + error.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Função para fazer upload de imagem
+  const handleImageUpload = async (file: File, type: "store-logo" | "store-banner") => {
+    try {
+      const token = localStorage.getItem("auth-token");
+      if (!token) {
+        toast.error("Token de autenticação não encontrado");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("type", type);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro no upload");
+      }
+
+      const data = await response.json();
+      if (data.success && data.url) {
+        // Atualizar a URL da imagem no estado
+        if (type === "store-logo") {
+          updateSettings("logo", data.url);
+        } else {
+          updateSettings("banner", data.url);
+        }
+        toast.success("Imagem enviada com sucesso!");
+      }
+    } catch (error: any) {
+      console.error("Erro no upload:", error);
+      toast.error("Erro no upload: " + error.message);
+    }
+  };
+
+  // Função para aplicar máscara de telefone
+  const maskPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    if (numbers.length <= 11) {
+      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    }
+    return value;
+  };
+
+  // Função para aplicar máscara de CEP
+  const maskCEP = (value: string) => {
+    const numbers = value.replace(/\D/g, '');
+    return numbers.replace(/(\d{5})(\d{3})/, '$1-$2');
   };
 
   const updateSettings = (path: string, value: any) => {
+    // Aplicar máscaras conforme o campo
+    if (path.includes('phone') || path.includes('whatsapp')) {
+      value = maskPhone(value);
+    } else if (path.includes('zipCode')) {
+      value = maskCEP(value);
+    }
+
     setSettings((prev) => {
       const keys = path.split(".");
       const newSettings = { ...prev };
@@ -148,10 +191,18 @@ export default function SellerStorePage() {
   const tabs = [
     { id: "general", label: "Geral", icon: <Globe className="h-4 w-4" /> },
     { id: "contact", label: "Contato", icon: <Phone className="h-4 w-4" /> },
-    { id: "hours", label: "Horários", icon: <Clock className="h-4 w-4" /> },
-    { id: "shipping", label: "Entrega", icon: <Truck className="h-4 w-4" /> },
-    { id: "policies", label: "Políticas", icon: <Shield className="h-4 w-4" /> },
   ];
+
+  if (isInitialLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-500 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Carregando dados da loja...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -176,20 +227,29 @@ export default function SellerStorePage() {
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview da Loja</h3>
           <div className="flex items-start gap-4">
-            <img src={settings.logo} alt="Logo da loja" className="w-16 h-16 rounded-lg object-cover border" />
+            <div className="w-16 h-16 rounded-lg border flex items-center justify-center bg-gray-50">
+              {settings.logo ? (
+                <img src={settings.logo} alt="Logo da loja" className="w-16 h-16 rounded-lg object-cover" />
+              ) : (
+                <Camera className="h-8 w-8 text-gray-400" />
+              )}
+            </div>
             <div className="flex-1">
-              <h4 className="text-xl font-bold text-gray-900">{settings.name}</h4>
-              <p className="text-gray-600 mb-2">{settings.description}</p>
+              <h4 className="text-xl font-bold text-gray-900">{settings.name || "Nome da Loja"}</h4>
+              <p className="text-gray-600 mb-2">{settings.description || "Descrição da loja"}</p>
               <div className="flex items-center gap-4 text-sm text-gray-500">
                 <div className="flex items-center gap-1">
                   <MapPin className="h-4 w-4" />
                   <span>
-                    {settings.address.city}, {settings.address.state}
+                    {settings.address.city && settings.address.state 
+                      ? `${settings.address.city}, ${settings.address.state}`
+                      : "Cidade, Estado"
+                    }
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 text-yellow-500" />
-                  <span>4.8 (127 avaliações)</span>
+                  <span>Nova loja</span>
                 </div>
               </div>
             </div>
@@ -229,6 +289,7 @@ export default function SellerStorePage() {
                       value={settings.name}
                       onChange={(e) => updateSettings("name", e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Digite o nome da sua loja"
                     />
                   </div>
 
@@ -255,6 +316,7 @@ export default function SellerStorePage() {
                     onChange={(e) => updateSettings("description", e.target.value)}
                     rows={4}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Descreva sua loja, produtos e diferenciais"
                   />
                 </div>
 
@@ -262,22 +324,60 @@ export default function SellerStorePage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Logo da Loja</label>
                     <div className="flex items-center gap-4">
-                      <img src={settings.logo} alt="Logo" className="w-16 h-16 rounded-lg object-cover border" />
-                      <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                      <div className="w-16 h-16 rounded-lg border flex items-center justify-center bg-gray-50">
+                        {settings.logo ? (
+                          <img src={settings.logo} alt="Logo" className="w-16 h-16 rounded-lg object-cover" />
+                        ) : (
+                          <Camera className="h-8 w-8 text-gray-400" />
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload(file, "store-logo");
+                        }}
+                        className="hidden"
+                        id="logo-upload"
+                      />
+                      <label
+                        htmlFor="logo-upload"
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+                      >
                         <Upload className="h-4 w-4" />
                         Alterar Logo
-                      </button>
+                      </label>
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Banner da Loja</label>
                     <div className="flex items-center gap-4">
-                      <img src={settings.banner} alt="Banner" className="w-24 h-12 rounded object-cover border" />
-                      <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                      <div className="w-24 h-12 rounded border flex items-center justify-center bg-gray-50">
+                        {settings.banner ? (
+                          <img src={settings.banner} alt="Banner" className="w-24 h-12 rounded object-cover" />
+                        ) : (
+                          <Camera className="h-6 w-6 text-gray-400" />
+                        )}
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageUpload(file, "store-banner");
+                        }}
+                        className="hidden"
+                        id="banner-upload"
+                      />
+                      <label
+                        htmlFor="banner-upload"
+                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+                      >
                         <Camera className="h-4 w-4" />
                         Alterar Banner
-                      </button>
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -295,6 +395,7 @@ export default function SellerStorePage() {
                       value={settings.contact.phone}
                       onChange={(e) => updateSettings("contact.phone", e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="(11) 99999-9999"
                     />
                   </div>
 
@@ -305,6 +406,7 @@ export default function SellerStorePage() {
                       value={settings.contact.whatsapp}
                       onChange={(e) => updateSettings("contact.whatsapp", e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="(11) 99999-9999"
                     />
                   </div>
 
@@ -315,7 +417,10 @@ export default function SellerStorePage() {
                       value={settings.contact.email}
                       onChange={(e) => updateSettings("contact.email", e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="contato@loja.com"
+                      disabled
                     />
+                    <p className="text-xs text-gray-500 mt-1">E-mail da conta (não pode ser alterado)</p>
                   </div>
 
                   <div>
@@ -325,6 +430,7 @@ export default function SellerStorePage() {
                       value={settings.contact.website}
                       onChange={(e) => updateSettings("contact.website", e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="https://www.minhaoja.com"
                     />
                   </div>
                 </div>
@@ -339,6 +445,7 @@ export default function SellerStorePage() {
                         value={settings.address.street}
                         onChange={(e) => updateSettings("address.street", e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Rua das Flores"
                       />
                     </div>
 
@@ -349,6 +456,7 @@ export default function SellerStorePage() {
                         value={settings.address.number}
                         onChange={(e) => updateSettings("address.number", e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="123"
                       />
                     </div>
 
@@ -359,6 +467,7 @@ export default function SellerStorePage() {
                         value={settings.address.neighborhood}
                         onChange={(e) => updateSettings("address.neighborhood", e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Centro"
                       />
                     </div>
 
@@ -369,6 +478,18 @@ export default function SellerStorePage() {
                         value={settings.address.city}
                         onChange={(e) => updateSettings("address.city", e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="São Paulo"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                      <input
+                        type="text"
+                        value={settings.address.state}
+                        onChange={(e) => updateSettings("address.state", e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="SP"
                       />
                     </div>
 
@@ -379,152 +500,10 @@ export default function SellerStorePage() {
                         value={settings.address.zipCode}
                         onChange={(e) => updateSettings("address.zipCode", e.target.value)}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="01234-567"
                       />
                     </div>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* Business Hours Tab */}
-            {activeTab === "hours" && (
-              <div className="space-y-4">
-                <h4 className="text-lg font-medium text-gray-900 mb-4">Horário de Funcionamento</h4>
-                {weekDays.map((day) => (
-                  <div key={day.key} className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg">
-                    <div className="w-32">
-                      <span className="font-medium text-gray-900">{day.label}</span>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={!settings.businessHours[day.key as keyof typeof settings.businessHours].closed}
-                        onChange={(e) => updateSettings(`businessHours.${day.key}.closed`, !e.target.checked)}
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-600">Aberto</span>
-                    </div>
-
-                    {!settings.businessHours[day.key as keyof typeof settings.businessHours].closed && (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="time"
-                          value={settings.businessHours[day.key as keyof typeof settings.businessHours].open}
-                          onChange={(e) => updateSettings(`businessHours.${day.key}.open`, e.target.value)}
-                          className="px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                        <span className="text-gray-500">às</span>
-                        <input
-                          type="time"
-                          value={settings.businessHours[day.key as keyof typeof settings.businessHours].close}
-                          onChange={(e) => updateSettings(`businessHours.${day.key}.close`, e.target.value)}
-                          className="px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                      </div>
-                    )}
-
-                    {settings.businessHours[day.key as keyof typeof settings.businessHours].closed && (
-                      <span className="text-red-600 font-medium">Fechado</span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Shipping Tab */}
-            {activeTab === "shipping" && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Valor mínimo para frete grátis (R$)
-                    </label>
-                    <input
-                      type="number"
-                      value={settings.shipping.freeShippingMinValue}
-                      onChange={(e) => updateSettings("shipping.freeShippingMinValue", Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Taxa de entrega local (R$)</label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={settings.shipping.localDeliveryFee}
-                      onChange={(e) => updateSettings("shipping.localDeliveryFee", Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Raio de entrega local (km)</label>
-                    <input
-                      type="number"
-                      value={settings.shipping.localDeliveryRadius}
-                      onChange={(e) => updateSettings("shipping.localDeliveryRadius", Number(e.target.value))}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={settings.shipping.localDelivery}
-                      onChange={(e) => updateSettings("shipping.localDelivery", e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label className="text-sm font-medium text-gray-700">Oferecer entrega local</label>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      checked={settings.shipping.pickupAvailable}
-                      onChange={(e) => updateSettings("shipping.pickupAvailable", e.target.checked)}
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                    <label className="text-sm font-medium text-gray-700">Permitir retirada no local</label>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Policies Tab */}
-            {activeTab === "policies" && (
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Política de Devolução</label>
-                  <textarea
-                    value={settings.policies.returnPolicy}
-                    onChange={(e) => updateSettings("policies.returnPolicy", e.target.value)}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Política de Garantia</label>
-                  <textarea
-                    value={settings.policies.warrantyPolicy}
-                    onChange={(e) => updateSettings("policies.warrantyPolicy", e.target.value)}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Política de Privacidade</label>
-                  <textarea
-                    value={settings.policies.privacyPolicy}
-                    onChange={(e) => updateSettings("policies.privacyPolicy", e.target.value)}
-                    rows={4}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
                 </div>
               </div>
             )}

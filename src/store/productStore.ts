@@ -42,6 +42,7 @@ interface ProductStore {
     maxPrice?: number;
     sortBy?: string;
     sortOrder?: "asc" | "desc";
+    sellerId?: string;
   }) => Promise<void>;
   fetchProductById: (id: string) => Promise<Product | null>;
   createProduct: (product: {
@@ -156,6 +157,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
       if (params.maxPrice) searchParams.append("maxPrice", params.maxPrice.toString());
       if (params.sortBy) searchParams.append("sortBy", params.sortBy);
       if (params.sortOrder) searchParams.append("sortOrder", params.sortOrder);
+      if (params.sellerId) searchParams.append("sellerId", params.sellerId);
 
       const response = await apiGet(`/api/products?${searchParams.toString()}`);
 

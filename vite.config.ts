@@ -6,13 +6,13 @@ import { VitePWA } from "vite-plugin-pwa";
 // https://vite.dev/config/
 export default defineConfig({
   server: {
-    port: parseInt(process.env.VITE_FRONTEND_PORT || "5174"),
+    port: parseInt(process.env.VITE_FRONTEND_PORT || "5173"),
     host: true,
     open: true,
-    strictPort: false, // Permitir fallback de porta
+    strictPort: false, // Permitir fallback para encontrar porta disponível
     proxy: {
       "/api": {
-        target: "http://localhost:3001", // Backend na porta 3001
+        target: process.env.VITE_API_URL || "http://localhost:3000", // Backend na porta padrão
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path, // Manter /api no path
@@ -31,7 +31,7 @@ export default defineConfig({
     },
   },
   preview: {
-    port: 5173,
+    port: 5174,
     host: true,
   },
   build: {

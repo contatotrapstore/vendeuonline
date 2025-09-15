@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { body } from "express-validator";
 import { fixEncodingMiddleware } from "./server/middleware/encoding.js";
+import { testSupabaseConnection, getDatabaseStats, supabase } from "./server/lib/supabase-client.js";
 
 // Importar novos utilitários de erro e middleware
 import {
@@ -48,9 +49,18 @@ import {
 import productsRouter from "./server/routes/products.js";
 import storesRouter from "./server/routes/stores.js";
 import authRouter from "./server/routes/auth.js";
+import accountRouter from "./server/routes/account.js";
 import trackingRouter from "./server/routes/tracking.js";
 import adminRouter from "./server/routes/admin.js";
 import notificationsRouter from "./server/routes/notifications.js";
+import sellerRouter from "./server/routes/seller.js";
+import categoriesRouter from "./server/routes/categories.js";
+import uploadRouter from "./server/routes/upload.js";
+import ordersRouter from "./server/routes/orders.js";
+import wishlistRouter from "./server/routes/wishlist.js";
+import reviewsRouter from "./server/routes/reviews.js";
+import paymentsRouter from "./server/routes/payments.js";
+import plansRouter from "./server/routes/plans.js";
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -61,7 +71,7 @@ const JWT_SECRET =
   "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
 
 const app = express();
-const PORT = process.env.PORT || process.env.VITE_API_PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
 // ==== CORE MIDDLEWARES ====
 // Correlation ID (deve ser o primeiro middleware)
@@ -81,6 +91,8 @@ app.use(sanitizeInput);
 const corsOptions = {
   origin: [
     "http://localhost:5173",
+    "http://localhost:5175",
+    "http://localhost:5181",
     "http://localhost:4173",
     "http://localhost:4174",
     "https://vendeuonline.vercel.app",
@@ -118,6 +130,48 @@ app.use("/api/", apiRateLimit);
 
 // Iniciar limpeza de tokens expirados
 cleanupExpiredTokens();
+
+// ==== VALIDAÇÃO E TESTE DO SUPABASE ====
+// Testar conexão na inicialização
+(async () => {
+  console.log('🔍 Validando configuração do Supabase...');
+  
+  // Validar variáveis de ambiente críticas
+  const requiredEnvVars = {
+    'NEXT_PUBLIC_SUPABASE_URL': process.env.NEXT_PUBLIC_SUPABASE_URL,
+    'SUPABASE_SERVICE_ROLE_KEY': process.env.SUPABASE_SERVICE_ROLE_KEY,
+    'JWT_SECRET': process.env.JWT_SECRET
+  };
+
+  const missingVars = [];
+  for (const [key, value] of Object.entries(requiredEnvVars)) {
+    if (!value) {
+      missingVars.push(key);
+    }
+  }
+
+  if (missingVars.length > 0) {
+    console.error('❌ ERRO CRÍTICO: Variáveis de ambiente obrigatórias ausentes:');
+    missingVars.forEach(varName => console.error(`   - ${varName}`));
+    
+    if (process.env.NODE_ENV === 'production') {
+      console.error('🚨 Aplicação não pode iniciar em produção sem essas variáveis!');
+      process.exit(1);
+    } else {
+      console.warn('⚠️ Aplicação rodando em modo desenvolvimento com configuração incompleta');
+    }
+  } else {
+    console.log('✅ Todas as variáveis de ambiente estão configuradas');
+  }
+
+  // Testar conexão com Supabase
+  const connectionOk = await testSupabaseConnection();
+  if (connectionOk) {
+    // Obter estatísticas básicas
+    const stats = await getDatabaseStats();
+    console.log('📊 Estatísticas do banco:', stats);
+  }
+})();
 
 // Funções auxiliares
 const hashPassword = async (password) => {
@@ -188,6 +242,10 @@ app.use("/api/products", productsRouter);
 
 // Rotas de lojas (rate limiting padrão)
 app.use("/api/stores", storesRouter);
+app.use("/api/categories", categoriesRouter);
+
+// Rotas de conta (requer autenticação)
+app.use("/api/account", accountRouter);
 
 // Rotas de tracking (rate limiting padrão)
 app.use("/api/tracking", trackingRouter);
@@ -199,6 +257,27 @@ app.use("/api/notifications", authenticate, notificationsRouter);
 // Rotas administrativas principais - temporariamente sem auth para testes
 app.use("/api/admin", adminRouter);
 // PRODUÇÃO: app.use("/api/admin", authenticate, protectRoute(["ADMIN"]), adminRouter);
+
+// Rotas do vendedor
+app.use("/api/seller", sellerRouter);
+
+// Rotas de upload
+app.use("/api/upload", uploadRateLimit, uploadRouter);
+
+// Rotas de pedidos (requer autenticação)
+app.use("/api/orders", authenticate, ordersRouter);
+
+// Rotas de wishlist (requer autenticação)
+app.use("/api/wishlist", authenticate, wishlistRouter);
+
+// Rotas de reviews (público para GET, autenticação para POST/PUT/DELETE)
+app.use("/api/reviews", reviewsRouter);
+
+// Rotas de pagamentos
+app.use("/api/payments", paymentsRouter);
+
+// Rotas de planos (público)
+app.use("/api/plans", plansRouter);
 
 // Funções de Auditoria
 const createAuditLog = async (
@@ -964,26 +1043,55 @@ app.delete("/api/addresses/:id", authenticate, csrfProtection, async (req, res) 
 // Buscar estatísticas reais do usuário
 app.get("/api/users/stats", authenticate, async (req, res) => {
   try {
-    // Buscar pedidos do usuário
-    const orders = await prisma.order.findMany({
-      where: { buyerId: req.user.userId },
-      select: {
-        id: true,
-        total: true,
-        status: true,
-        createdAt: true,
-      },
-    });
+    let orders = [];
+    let wishlist = [];
 
-    // Buscar produtos favoritados (wishlist)
-    const wishlist = await prisma.wishlist.findMany({
-      where: {
-        buyer: {
-          userId: req.user.userId,
+    // Buscar pedidos do usuário com fallback Supabase
+    try {
+      orders = await prisma.order.findMany({
+        where: { buyerId: req.user.userId },
+        select: {
+          id: true,
+          total: true,
+          status: true,
+          createdAt: true,
         },
-      },
-      select: { id: true },
-    });
+      });
+    } catch (prismaError) {
+      console.log("Erro ao buscar pedidos:", prismaError.message);
+      // Fallback para Supabase
+      const { data: supabaseOrders, error: ordersError } = await supabase
+        .from('Order')
+        .select('id, total, status, createdAt')
+        .eq('buyerId', req.user.userId);
+      
+      if (!ordersError && supabaseOrders) {
+        orders = supabaseOrders;
+      }
+    }
+
+    // Buscar produtos favoritados (wishlist) com fallback
+    try {
+      wishlist = await prisma.wishlist.findMany({
+        where: {
+          buyer: {
+            userId: req.user.userId,
+          },
+        },
+        select: { id: true },
+      });
+    } catch (prismaError) {
+      console.log("Erro ao buscar wishlist:", prismaError.message);
+      // Fallback para Supabase
+      const { data: supabaseWishlist, error: wishlistError } = await supabase
+        .from('wishlist')
+        .select('id')
+        .eq('buyerId', req.user.userId);
+      
+      if (!wishlistError && supabaseWishlist) {
+        wishlist = supabaseWishlist;
+      }
+    }
 
     // Calcular estatísticas
     const totalOrders = orders?.length || 0;
@@ -1100,8 +1208,33 @@ app.get(
       });
     } catch (dbError) {
       console.warn("Erro ao buscar pedidos:", dbError.message);
-      // Usar dados mock se falhar a conexão com o banco
-      orders = [];
+      
+      // Tentar fallback com Supabase
+      try {
+        const { data: supabaseOrders, error: supabaseError } = await supabase
+          .from('Order')
+          .select(`
+            *,
+            OrderItem!inner(*, Product!inner(name)),
+            stores!inner(id, name, slug)
+          `)
+          .eq('buyerId', req.user.userId)
+          .order('createdAt', { ascending: false });
+
+        if (!supabaseError && supabaseOrders) {
+          // Mapear dados do Supabase para formato esperado
+          orders = supabaseOrders.map(order => ({
+            ...order,
+            items: order.OrderItem || [],
+            store: order.stores
+          }));
+        } else {
+          orders = [];
+        }
+      } catch (supabaseError) {
+        console.warn("Fallback Supabase também falhou:", supabaseError.message);
+        orders = [];
+      }
     }
 
     // Retornar lista vazia se não há pedidos
@@ -1146,20 +1279,8 @@ app.get('/api/stores', async (req, res) => {
 });
 */
 
-// ==== CATEGORIES API ====
-app.get("/api/categories", async (req, res) => {
-  try {
-    const categories = await prisma.category.findMany({
-      where: { isActive: true },
-      orderBy: { order: "asc" },
-    });
-
-    res.json({ data: categories });
-  } catch (error) {
-    console.error("Erro ao buscar categorias:", error);
-    res.status(500).json({ error: "Erro interno do servidor" });
-  }
-});
+// ==== CATEGORIES API ==== 
+// REMOVIDO - usando rota em /server/routes/categories.js
 
 // ==== PLANS API ====
 app.get("/api/plans", async (req, res) => {

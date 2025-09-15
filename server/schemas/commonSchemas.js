@@ -15,9 +15,19 @@ export const emailSchema = z
 export const phoneSchema = z
   .string()
   .regex(
-    /^(\(\d{2}\)\s?\d{4,5}-?\d{4}|\d{3}-\d{4})$/,
-    "Telefone deve estar no formato (xx) xxxxx-xxxx, (xx)xxxxx-xxxx ou xxx-xxxx"
-  );
+    /^(\(\d{2}\)\s?\d{4,5}-?\d{4}|\d{10,11}|\d{3}-\d{4})$/,
+    "Telefone deve estar no formato (xx) xxxxx-xxxx ou apenas números (10-11 dígitos)"
+  )
+  .transform(phone => {
+    // Normalizar para formato padrão se for apenas números
+    const numbers = phone.replace(/\D/g, '');
+    if (numbers.length === 11) {
+      return `(${numbers.slice(0,2)}) ${numbers.slice(2,7)}-${numbers.slice(7)}`;
+    } else if (numbers.length === 10) {
+      return `(${numbers.slice(0,2)}) ${numbers.slice(2,6)}-${numbers.slice(6)}`;
+    }
+    return phone;
+  });
 
 export const passwordSchema = z
   .string()
@@ -30,7 +40,7 @@ export const nameSchema = z
   .trim()
   .min(2, "Nome deve ter pelo menos 2 caracteres")
   .max(100, "Nome deve ter no máximo 100 caracteres")
-  .regex(/^[a-zA-ZÀ-ÿ\s]+$/, "Nome deve conter apenas letras e espaços");
+  .regex(/^[a-zA-ZÀ-ÿ\s\d]+$/, "Nome deve conter apenas letras, números e espaços");
 
 export const priceSchema = z
   .number()
@@ -66,12 +76,12 @@ export const searchSchema = z
 export const userTypeSchema = z.enum(["BUYER", "SELLER", "ADMIN"]);
 
 export const createUserSchema = z.object({
-  name: nameSchema.optional(),
+  name: nameSchema,
   email: emailSchema,
   password: passwordSchema,
   phone: phoneSchema.optional(),
-  city: z.string().min(2, "Cidade deve ter pelo menos 2 caracteres").max(100).optional(),
-  state: stateSchema.optional(),
+  city: z.string().min(2, "Cidade deve ter pelo menos 2 caracteres").max(100),
+  state: stateSchema,
   userType: z
     .enum(["buyer", "seller", "BUYER", "SELLER"])
     .transform((val) => val.toUpperCase())

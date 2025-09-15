@@ -80,7 +80,7 @@ export function ProductCard({
                 src={product.images[0]?.url || "/placeholder-image.jpg"}
                 alt={product.name}
                 className="w-full h-full object-cover rounded-lg"
-                product={{ name: product.name, category: product.category }}
+                product={{ name: product.name, category: typeof product.category === 'string' ? product.category : product.category.name }}
                 onLoad={() => setImageLoaded(true)}
                 onError={() => setImageError(true)}
               />
@@ -180,7 +180,7 @@ export function ProductCard({
             src={product.images[0]?.url || "/placeholder-image.jpg"}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-            product={{ name: product.name, category: product.category }}
+            product={{ name: product.name, category: typeof product.category === 'string' ? product.category : product.category.name }}
             onLoad={() => setImageLoaded(true)}
             onError={() => setImageError(true)}
           />

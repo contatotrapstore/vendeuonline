@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { User, Mail, Phone, MapPin, Calendar, Camera, Save, Edit3, Package, Heart, ShoppingCart } from "lucide-react";
 
@@ -35,6 +36,7 @@ interface Address {
 }
 
 export default function BuyerProfile() {
+  const navigate = useNavigate();
   const { user, token } = useAuthStore();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -42,9 +44,29 @@ export default function BuyerProfile() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    // Verificar autenticação e tipo de usuário
-    if (!user || user.userType !== "buyer") {
-      window.location.href = "/";
+    // Verificar autenticação
+    if (!user) {
+      console.log('Usuário não autenticado, redirecionando para home');
+      navigate("/");
+      return;
+    }
+
+    // Redirecionamento inteligente por tipo de usuário
+    if (user.userType === "seller") {
+      console.log('Vendedor tentando acessar perfil de buyer, redirecionando para perfil de seller');
+      navigate("/seller/profile");
+      return;
+    }
+    
+    if (user.userType === "admin") {
+      console.log('Admin tentando acessar perfil de buyer, redirecionando para admin dashboard');
+      navigate("/admin");
+      return;
+    }
+
+    if (user.userType !== "buyer") {
+      console.log('Tipo de usuário não reconhecido, redirecionando para home');
+      navigate("/");
       return;
     }
 
@@ -159,13 +181,7 @@ export default function BuyerProfile() {
     }
   };
 
-  if (!user || user.userType !== "buyer") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
+  // Não precisa mais dessa verificação duplicada - já feita no useEffect
 
   if (isLoading) {
     return (

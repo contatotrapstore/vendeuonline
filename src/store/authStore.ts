@@ -23,6 +23,11 @@ export interface User {
     totalSales: number;
     plan: string;
     isVerified: boolean;
+    store?: {
+      id: string;
+      slug: string;
+      name: string;
+    };
   };
   // Campos específicos para compradores
   buyer?: {
@@ -102,24 +107,9 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true, error: null });
 
         try {
-          // Tentar login com userType se fornecido, senão tentar ambos os tipos
-          let response;
-
-          if (userType) {
-            response = await post("/api/auth/login", { email, password, userType });
-          } else {
-            // Tentar primeiro como buyer, depois como seller
-            try {
-              response = await post("/api/auth/login", { email, password, userType: "buyer" });
-            } catch {
-              try {
-                response = await post("/api/auth/login", { email, password, userType: "seller" });
-              } catch {
-                response = await post("/api/auth/login", { email, password, userType: "admin" });
-              }
-            }
-          }
-
+          // O backend já identifica o tipo de usuário automaticamente
+          // Não precisamos tentar múltiplos tipos
+          const response = await post("/api/auth/login", { email, password });
           const { user, token } = response;
 
           console.log("Login successful - User data:", user);
@@ -305,6 +295,8 @@ export const useStoreData = () => {
   return {
     sellerId: user?.seller?.id,
     storeName: user?.seller?.storeName,
+    storeId: user?.seller?.store?.id,
+    storeSlug: user?.seller?.store?.slug,
     rating: user?.seller?.rating || 0,
     totalSales: user?.seller?.totalSales || 0,
     plan: user?.seller?.plan,

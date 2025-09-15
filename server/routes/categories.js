@@ -1,23 +1,25 @@
 import express from "express";
-import { prisma } from "../lib/prisma.js";
+import { supabase } from "../lib/supabase-client.js";
 
 const router = express.Router();
 
 // GET /api/categories - Listar categorias
 router.get("/", async (req, res) => {
   try {
-    const categories = await prisma.categories.findMany({
-      where: { isActive: true },
-      orderBy: { order: "asc" },
-      include: {
-        children: {
-          where: { isActive: true },
-          orderBy: { order: "asc" },
-        },
-      },
-    });
+    const { data: categories, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('isActive', true)
+      .order('order', { ascending: true });
 
-    res.json({ categories });
+    if (error) {
+      throw error;
+    }
+
+    res.json({
+      success: true,
+      data: categories || []
+    });
   } catch (error) {
     console.error("Erro ao buscar categorias:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
@@ -29,31 +31,25 @@ router.get("/:slug", async (req, res) => {
   try {
     const { slug } = req.params;
 
-    const category = await prisma.categories.findFirst({
-      where: {
-        slug,
-        isActive: true,
-      },
-      include: {
-        children: {
-          where: { isActive: true },
-          orderBy: { order: "asc" },
-        },
-        parent: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-      },
-    });
+    const { data: category, error } = await supabase
+      .from('categories')
+      .select(`
+        *,
+        children:categories!parent_id(*),
+        parent:categories!parent_id(id, name, slug)
+      `)
+      .eq('slug', slug)
+      .eq('isActive', true)
+      .single();
 
-    if (!category) {
+    if (error || !category) {
       return res.status(404).json({ error: "Categoria não encontrada" });
     }
 
-    res.json(category);
+    res.json({
+      success: true,
+      data: category
+    });
   } catch (error) {
     console.error("Erro ao buscar categoria:", error);
     res.status(500).json({ error: "Erro interno do servidor" });

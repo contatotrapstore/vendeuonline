@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuthStore, useStoreData } from "@/store/authStore";
 import {
   Package,
@@ -16,78 +16,9 @@ import {
   Users,
   Clock,
   Store,
+  Crown,
 } from "lucide-react";
-
-// Dados mock para o dashboard do vendedor
-const sellerStats = {
-  totalProducts: 45,
-  totalOrders: 128,
-  monthlyRevenue: 8750.3,
-  storeViews: 2340,
-  averageRating: 4.7,
-  totalReviews: 89,
-  pendingOrders: 5,
-  lowStockProducts: 3,
-};
-
-const recentOrders = [
-  {
-    id: "#1234",
-    customer: "Maria Silva",
-    product: "Smartphone Samsung Galaxy",
-    value: 899.9,
-    status: "pending",
-    time: "2 min atrás",
-  },
-  {
-    id: "#1233",
-    customer: "João Santos",
-    product: "Fone de Ouvido Bluetooth",
-    value: 199.9,
-    status: "processing",
-    time: "15 min atrás",
-  },
-  {
-    id: "#1232",
-    customer: "Ana Costa",
-    product: "Carregador Portátil",
-    value: 89.9,
-    status: "shipped",
-    time: "1 hora atrás",
-  },
-  {
-    id: "#1231",
-    customer: "Pedro Lima",
-    product: "Cabo USB-C",
-    value: 29.9,
-    status: "delivered",
-    time: "2 horas atrás",
-  },
-];
-
-const topProducts = [
-  {
-    id: 1,
-    name: "Smartphone Samsung Galaxy",
-    sales: 23,
-    revenue: 20677.7,
-    stock: 12,
-  },
-  {
-    id: 2,
-    name: "Fone de Ouvido Bluetooth",
-    sales: 18,
-    revenue: 3598.2,
-    stock: 5,
-  },
-  {
-    id: 3,
-    name: "Carregador Portátil",
-    sales: 15,
-    revenue: 1348.5,
-    stock: 0,
-  },
-];
+import { apiRequest } from "@/lib/api-client";
 
 const quickActions = [
   {
@@ -103,6 +34,13 @@ const quickActions = [
     icon: ShoppingCart,
     color: "bg-green-500",
     href: "/seller/orders",
+  },
+  {
+    title: "Meus Planos",
+    description: "Gerenciar assinatura",
+    icon: Crown,
+    color: "bg-yellow-500",
+    href: "/seller/plans",
   },
   {
     title: "Ver Analytics",
@@ -121,17 +59,68 @@ const quickActions = [
 ];
 
 export default function SellerDashboard() {
-  const { user } = useAuthStore();
-  const { storeName } = useStoreData();
+  const { user, token } = useAuthStore();
+  const { storeName, storeId, storeSlug } = useStoreData();
+  
+  const [stats, setStats] = useState(null);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Verificar autenticação e tipo de usuário
     if (!user || user.userType !== "seller") {
       window.location.href = "/";
+      return;
     }
-  }, [user]);
+    
+    loadDashboardData();
+  }, [user, token]);
 
-  if (!user || user.userType !== "seller") {
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Carregar dados em paralelo
+      const [statsRes, ordersRes, productsRes] = await Promise.all([
+        apiRequest('/api/seller/stats', { token }),
+        apiRequest('/api/seller/recent-orders?limit=4', { token }),
+        apiRequest('/api/seller/top-products?limit=3', { token })
+      ]);
+      
+      // Verificar se as respostas têm formato { success: true, data: ... }
+      setStats(statsRes?.data || statsRes);
+      setRecentOrders(ordersRes?.data || ordersRes || []);
+      setTopProducts(productsRes?.data || productsRes || []);
+      
+    } catch (error) {
+      console.error('Erro ao carregar dados do dashboard:', error);
+      // Manter dados vazios em caso de erro
+      setStats({
+        totalProducts: 0,
+        totalOrders: 0,
+        monthlyRevenue: 0,
+        storeViews: 0,
+        averageRating: 0,
+        totalReviews: 0,
+        pendingOrders: 0,
+        lowStockProducts: 0,
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!user || user.userType !== "seller" || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+  
+  // Se não há stats ainda, mostrar loading
+  if (!stats) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -189,9 +178,23 @@ export default function SellerDashboard() {
             </div>
             <div className="flex items-center space-x-4">
               <button
-                onClick={() =>
-                  (window.location.href = `/loja/${storeName?.toLowerCase().replace(/\s+/g, "-") || "minha-loja"}`)
-                }
+                onClick={() => {
+                  console.log("🔍 Debug botão Ver minha loja:");
+                  console.log("- user:", user);
+                  console.log("- seller:", user?.seller);
+                  console.log("- store:", user?.seller?.store);
+                  console.log("- storeId:", storeId);
+                  console.log("- storeSlug:", storeSlug);
+                  console.log("- storeName:", storeName);
+
+                  if (storeId) {
+                    console.log(`✅ Navegando para: /stores/${storeId}`);
+                    window.location.href = `/stores/${storeId}`;
+                  } else {
+                    console.log("❌ StoreId não encontrado");
+                    alert("Sua loja ainda não foi criada. Configure sua loja primeiro.");
+                  }
+                }}
                 className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-700"
               >
                 <Eye className="h-4 w-4" />
@@ -212,7 +215,7 @@ export default function SellerDashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Produtos</p>
-                <p className="text-2xl font-bold text-gray-900">{sellerStats.totalProducts}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalProducts}</p>
               </div>
             </div>
           </div>
@@ -224,7 +227,7 @@ export default function SellerDashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Pedidos</p>
-                <p className="text-2xl font-bold text-gray-900">{sellerStats.totalOrders}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.totalOrders}</p>
               </div>
             </div>
           </div>
@@ -237,7 +240,7 @@ export default function SellerDashboard() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Receita Mensal</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  R$ {sellerStats.monthlyRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                  R$ {stats.monthlyRevenue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
                 </p>
               </div>
             </div>
@@ -250,7 +253,7 @@ export default function SellerDashboard() {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Visualizações</p>
-                <p className="text-2xl font-bold text-gray-900">{sellerStats.storeViews.toLocaleString()}</p>
+                <p className="text-2xl font-bold text-gray-900">{stats.storeViews.toLocaleString()}</p>
               </div>
             </div>
           </div>
@@ -296,7 +299,7 @@ export default function SellerDashboard() {
                     <Star className="h-5 w-5 text-yellow-400 mr-2" />
                     <span className="text-sm text-gray-600">Avaliação</span>
                   </div>
-                  <span className="font-medium">{sellerStats.averageRating}/5.0</span>
+                  <span className="font-medium">{stats.averageRating}/5.0</span>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -304,7 +307,7 @@ export default function SellerDashboard() {
                     <MessageCircle className="h-5 w-5 text-blue-500 mr-2" />
                     <span className="text-sm text-gray-600">Avaliações</span>
                   </div>
-                  <span className="font-medium">{sellerStats.totalReviews}</span>
+                  <span className="font-medium">{stats.totalReviews}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -312,7 +315,7 @@ export default function SellerDashboard() {
                     <Users className="h-5 w-5 text-green-500 mr-2" />
                     <span className="text-sm text-gray-600">Visualizações</span>
                   </div>
-                  <span className="font-medium">{sellerStats.storeViews}</span>
+                  <span className="font-medium">{stats.storeViews}</span>
                 </div>
               </div>
             </div>
@@ -412,16 +415,16 @@ export default function SellerDashboard() {
         </div>
 
         {/* Alerts */}
-        {(sellerStats.pendingOrders > 0 || sellerStats.lowStockProducts > 0) && (
+        {(stats.pendingOrders > 0 || stats.lowStockProducts > 0) && (
           <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-            {sellerStats.pendingOrders > 0 && (
+            {stats.pendingOrders > 0 && (
               <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
                 <div className="flex items-center">
                   <ShoppingCart className="h-6 w-6 text-yellow-600 mr-3" />
                   <div>
                     <h4 className="font-medium text-yellow-800">Pedidos Pendentes</h4>
                     <p className="text-sm text-yellow-700">
-                      Você tem {sellerStats.pendingOrders} pedidos aguardando processamento
+                      Você tem {stats.pendingOrders} pedidos aguardando processamento
                     </p>
                   </div>
                 </div>
@@ -434,14 +437,14 @@ export default function SellerDashboard() {
               </div>
             )}
 
-            {sellerStats.lowStockProducts > 0 && (
+            {stats.lowStockProducts > 0 && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-6">
                 <div className="flex items-center">
                   <Package className="h-6 w-6 text-red-600 mr-3" />
                   <div>
                     <h4 className="font-medium text-red-800">Estoque Baixo</h4>
                     <p className="text-sm text-red-700">
-                      {sellerStats.lowStockProducts} produtos com estoque baixo ou zerado
+                      {stats.lowStockProducts} produtos com estoque baixo ou zerado
                     </p>
                   </div>
                 </div>

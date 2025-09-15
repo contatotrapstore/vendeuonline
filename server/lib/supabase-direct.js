@@ -10,7 +10,11 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 console.log('🔧 Supabase Direct Configuration:');
 console.log('URL:', supabaseUrl);
 console.log('Service Key exists:', !!supabaseServiceKey);
-console.log('Service Key preview:', supabaseServiceKey?.substring(0, 20) + '...');
+if (supabaseServiceKey) {
+  console.log('Service Key preview:', supabaseServiceKey.substring(0, 50) + '...');
+  console.log('Service Key length:', supabaseServiceKey.length);
+  console.log('Service Key starts with JWT?', supabaseServiceKey.startsWith('eyJ'));
+}
 
 if (!supabaseUrl || !supabaseServiceKey) {
   throw new Error('Missing Supabase configuration. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.');

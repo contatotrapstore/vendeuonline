@@ -1,6 +1,7 @@
 {
   "version": 2,
   "name": "vendeu-online",
+  "domains": ["www.vendeu.online", "vendeu.online"],
   "buildCommand": "npm run vercel-build",
   "outputDirectory": "dist",
   "functions": {

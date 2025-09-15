@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import {
   Store,
@@ -89,6 +90,7 @@ const daysOfWeek = [
 ];
 
 export default function SellerProfile() {
+  const navigate = useNavigate();
   const { user, token } = useAuthStore();
   const [profile, setProfile] = useState<StoreProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -99,7 +101,7 @@ export default function SellerProfile() {
   useEffect(() => {
     // Verificar autenticação e tipo de usuário
     if (!user || user.userType !== "seller") {
-      window.location.href = "/";
+      navigate("/");
       return;
     }
 
@@ -189,13 +191,6 @@ export default function SellerProfile() {
     }
   };
 
-  if (!user || user.userType !== "seller") {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
 
   if (isLoading) {
     return (

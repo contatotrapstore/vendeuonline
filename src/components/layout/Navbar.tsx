@@ -246,12 +246,23 @@ const Navbar = () => {
 
                     {user.userType !== "admin" && (
                       <Link
-                        to={user.userType === "seller" ? "/seller/profile" : "/buyer/profile"}
+                        to={user.userType === "seller" ? "/seller/account" : "/buyer/profile"}
                         className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 font-medium"
                         onClick={() => setIsProfileOpen(false)}
                       >
                         <User className="h-4 w-4" />
-                        <span>Meu Perfil</span>
+                        <span>{user.userType === "seller" ? "Minha Conta" : "Meu Perfil"}</span>
+                      </Link>
+                    )}
+
+                    {user.userType === "seller" && (
+                      <Link
+                        to="/seller/store"
+                        className="flex items-center space-x-3 px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 font-medium"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        <Store className="h-4 w-4" />
+                        <span>Gerenciar Loja</span>
                       </Link>
                     )}
 

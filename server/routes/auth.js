@@ -2,7 +2,7 @@ import express from "express";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase-client.js";
 import prisma from "../lib/prisma.js";
 import { AppError, ValidationError, AuthenticationError, ConflictError, DatabaseError } from "../lib/errors.js";
 import { asyncHandler, validateSchema } from "../middleware/errorHandler.js";
@@ -10,11 +10,6 @@ import { loginSchema, createUserSchema } from "../schemas/commonSchemas.js";
 import { autoNotify } from "../middleware/notifications.js";
 
 const router = express.Router();
-
-// Configurar cliente Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // JWT Secret
 const JWT_SECRET =
@@ -101,6 +96,28 @@ router.post(
       // Criar notificação de login
       await autoNotify.onLogin(user.id, user.name);
 
+      // Buscar dados adicionais se for vendedor (Prisma já inclui store)
+      if (user.type.toUpperCase() === 'SELLER' && user.seller && !user.seller.store) {
+        console.log("📊 Complementando dados da loja via Supabase...");
+
+        // Buscar dados da loja se não vieram do Prisma
+        const { data: store, error: storeError } = await supabase
+          .from('stores')
+          .select('*')
+          .eq('sellerId', user.seller.id)
+          .single();
+
+        if (!storeError && store) {
+          console.log("✅ Dados da loja encontrados via Supabase:", store.name);
+          user.seller.store = store;
+        } else {
+          console.log("⚠️ Loja não encontrada para seller:", user.seller.id);
+        }
+      }
+
+      // Debug: log dos dados que serão retornados
+      console.log("🔍 Dados do seller antes da resposta:", JSON.stringify(user.seller, null, 2));
+
       // Construir resposta (remover senha)
       const { password: _, ...userData } = user;
       userData.userType = user.type.toLowerCase();
@@ -148,6 +165,49 @@ router.post(
 
     // Criar notificação de login
     await autoNotify.onLogin(user.id, user.name);
+
+    // Debug: verificar tipo do usuário
+    console.log(`🔍 Verificando tipo do usuário: "${user.type}" (length: ${user.type.length})`);
+    console.log(`🔍 Comparação SELLER: ${user.type === 'SELLER'}`);
+    console.log(`🔍 Comparação seller: ${user.type === 'seller'}`);
+    console.log(`🔍 Comparação .toUpperCase(): ${user.type.toUpperCase() === 'SELLER'}`);
+
+    // Buscar dados adicionais se for vendedor
+    if (user.type.toUpperCase() === 'SELLER') {
+      console.log("📊 Buscando dados do vendedor no Supabase...");
+
+      // Buscar dados do seller
+      const { data: seller, error: sellerError } = await supabase
+        .from('sellers')
+        .select('*')
+        .eq('userId', user.id)
+        .single();
+
+      if (!sellerError && seller) {
+        console.log("✅ Dados do seller encontrados:", seller.id);
+
+        // Buscar dados da loja
+        const { data: store, error: storeError } = await supabase
+          .from('stores')
+          .select('*')
+          .eq('sellerId', seller.id)
+          .single();
+
+        if (!storeError && store) {
+          console.log("✅ Dados da loja encontrados:", store.name);
+          seller.store = store;
+        } else {
+          console.log("⚠️ Loja não encontrada para seller:", seller.id);
+        }
+
+        user.seller = seller;
+      } else {
+        console.log("⚠️ Dados do seller não encontrados para user:", user.id);
+      }
+    }
+
+    // Debug: log dos dados que serão retornados (Supabase)
+    console.log("🔍 Dados do seller antes da resposta (Supabase):", JSON.stringify(user.seller, null, 2));
 
     // Construir resposta com dados específicos do tipo de usuário (remover senha)
     const { password: _, ...userData } = user;
@@ -216,6 +276,7 @@ router.post(
       type: userType,
       isVerified: false,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     // Tentar criar usuário no Prisma primeiro
@@ -273,7 +334,7 @@ router.post(
         type: newUser.type,
         userType: userType,
         isVerified: newUser.isVerified,
-        createdAt: newUser.createdAt.toISOString(),
+        createdAt: newUser.createdAt,
       },
       token,
     });

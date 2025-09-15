@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Upload, X, Plus, Minus } from "lucide-react";
 import { useProductStore } from "@/store/productStore";
 import { useAuthStore } from "@/store/authStore";
 import ImageUploader, { UploadedImage } from "@/components/ui/ImageUploader";
 import { Link } from "react-router-dom";
+import { apiRequest } from "@/lib/api-client";
+import { toast } from "sonner";
 
 interface ProductForm {
   name: string;
@@ -29,7 +31,7 @@ interface ProductForm {
   status: "active" | "inactive" | "draft";
 }
 
-const categoryOptions = ["Eletrônicos", "Imóveis", "Veículos", "Roupas", "Comida", "Serviços", "Emprego", "Móveis"];
+// Categories will be loaded from API
 
 const conditionOptions = [
   { value: "new", label: "Novo" },
@@ -37,12 +39,21 @@ const conditionOptions = [
   { value: "refurbished", label: "Recondicionado" },
 ];
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+}
+
 export default function NewProductPage() {
   const navigate = useNavigate();
   const { createProduct } = useProductStore();
-  const { user } = useAuthStore();
+  const { user, token } = useAuthStore();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const [formData, setFormData] = useState<ProductForm>({
@@ -65,6 +76,31 @@ export default function NewProductPage() {
     },
     status: "draft",
   });
+
+  useEffect(() => {
+    // Verificar autenticação
+    if (!user || user.userType !== "seller") {
+      navigate("/");
+      return;
+    }
+
+    loadCategories();
+  }, [user]);
+
+  const loadCategories = async () => {
+    try {
+      setLoadingCategories(true);
+      const response = await apiRequest('/api/categories', { token });
+      if (response?.data) {
+        setCategories(response.data);
+      }
+    } catch (error) {
+      console.error('Erro ao carregar categorias:', error);
+      toast.error('Erro ao carregar categorias');
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -239,10 +275,12 @@ export default function NewProductPage() {
                     errors.category ? "border-red-500" : "border-gray-300"
                   }`}
                 >
-                  <option value="">Selecione uma categoria</option>
-                  {categoryOptions.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
+                  <option value="">
+                    {loadingCategories ? "Carregando..." : "Selecione uma categoria"}
+                  </option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
                     </option>
                   ))}
                 </select>

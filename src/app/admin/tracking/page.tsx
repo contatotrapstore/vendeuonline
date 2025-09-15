@@ -301,7 +301,13 @@ export default function AdminTrackingPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {["google_analytics_id", "google_tag_manager_id", "meta_pixel_id"].map((key) => {
-                const config = configs[key] || { isConfigured: false, isActive: false };
+                const config = configs[key] || {
+                  key,
+                  value: '',
+                  description: '',
+                  isConfigured: false,
+                  isActive: false
+                };
                 const labels = {
                   google_analytics_id: "Google Analytics",
                   google_tag_manager_id: "Google Tag Manager", 

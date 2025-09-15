@@ -105,7 +105,7 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
       set({ isLoading: true, error: null });
 
       const currentPeriod = period || get().period;
-      const response = await apiRequest(`/api/stores/${storeId}/stats?period=${currentPeriod}`);
+      const response = await apiRequest(`/api/seller/analytics?period=${currentPeriod.replace('d', '')}`);
 
       set({
         stats: response,

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Heart, ShoppingCart, Share2, Grid, List, Star, Filter, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
+import { useAuthStore } from "@/store/authStore";
 
 interface WishlistItem {
   id: string;
@@ -22,6 +23,7 @@ interface WishlistItem {
 }
 
 export default function WishlistPage() {
+  const { token, isAuthenticated } = useAuthStore();
   const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -36,12 +38,45 @@ export default function WishlistPage() {
     try {
       setLoading(true);
 
-      // Tentar buscar da API real primeiro
-      const response = await fetch("/api/buyer/wishlist");
+      // Se não estiver autenticado, usar dados simulados
+      if (!isAuthenticated || !token) {
+        // Usar dados simulados quando não autenticado
+        setWishlist([
+          {
+            id: "1",
+            productId: "prod-1",
+            name: "Produto Exemplo",
+            image:
+              "https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=product%20example&image_size=square",
+            price: 99.9,
+            originalPrice: 149.9,
+            seller: "Vendedor Exemplo",
+            category: "Eletrônicos",
+            rating: 4.5,
+            reviews: 123,
+            addedAt: new Date().toISOString(),
+            inStock: true,
+            discount: 33,
+          },
+        ]);
+        return;
+      }
+
+      // Tentar buscar da API real com autenticação
+      const response = await fetch("/api/wishlist", {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
 
       if (response.ok) {
         const data = await response.json();
         setWishlist(data.wishlist || []);
+      } else if (response.status === 401) {
+        // Token inválido ou expirado
+        console.log('Sessão expirada ou não autenticado');
+        setWishlist([]);
       } else {
         // Fallback para dados simulados mínimos
         setWishlist([

@@ -149,7 +149,7 @@ The application requires environment variables for:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - ✅ Supabase anonymous key configurada
 - `SUPABASE_SERVICE_ROLE_KEY` - ✅ Supabase service role key configurada
 - `JWT_SECRET` - ✅ JWT token signing secret configurado
-- `PORT` - ✅ API porta 3001 configurada
+- `PORT` - ✅ API porta 3000 configurada
 
 ### 💳 Pagamentos (ASAAS)
 
@@ -175,8 +175,9 @@ The application requires environment variables for:
 
 ## Quick Setup
 
-🚀 **SERVIDOR RODANDO EM: http://localhost:5174**
-🔧 **API SERVIDOR RODANDO EM: http://localhost:3001**
+🚀 **SERVIDOR RODANDO EM: http://localhost:5173**
+🔧 **API SERVIDOR RODANDO EM: http://localhost:3000**
+🌐 **PRODUÇÃO: https://www.vendeu.online**
 
 ✅ **STATUS ATUAL: 100/100 PRODUCTION READY & FULLY FUNCTIONAL**
 
@@ -188,8 +189,8 @@ The application requires environment variables for:
 
 **Para desenvolvimento:**
 
-1. **API**: `npm run api` (porta 3001)
-2. **Frontend**: `npm run dev:client` (porta 5174)
+1. **API**: `npm run api` (porta 3000)
+2. **Frontend**: `npm run dev:client` (porta 5173)
 3. **Completo**: `npm run dev` (ambos servidores)
 
 ### Core Features ✅
@@ -238,3 +239,27 @@ The application requires environment variables for:
 - **Lazy Loading**: All pages lazily loaded
 - **Code Splitting**: Bundle optimization
 - **Error Boundaries**: Robust error handling
+
+## Documentation Structure ✅
+
+### 📚 Comprehensive Documentation in `/docs/`
+- **getting-started/**: Setup guides and commands
+  - `GETTING_STARTED.md` - Complete setup tutorial
+  - `DEVELOPMENT.md` - Development environment
+  - `COMMANDS.md` - NPM scripts reference
+
+- **architecture/**: System design and technical specs
+  - `ARCHITECTURE.md` - System overview and design
+  - `BACKEND-FIXES-SUMMARY.md` - Database fixes
+  - `TRACKING-PIXELS-GUIDE.md` - Analytics setup
+
+- **api/**: Complete API reference
+  - `API_REFERENCE.md` - All endpoints and schemas
+
+- **testing/**: Testing guides and setup
+  - `TESTING.md` - Unit, integration, and E2E testing
+
+- **deployment/**: Production deployment guides
+  - `DEPLOY_GUIDE.md` - Vercel deployment instructions
+
+- **reports/**: Generated reports and analytics

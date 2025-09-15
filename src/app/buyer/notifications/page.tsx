@@ -25,15 +25,15 @@ export default function NotificationsPage() {
 
   const getNotificationIcon = (type: Notification["type"]) => {
     switch (type) {
-      case "success":
+      case "SUCCESS":
         return "✅";
-      case "warning":
+      case "WARNING":
         return "⚠️";
-      case "error":
+      case "ERROR":
         return "❌";
-      case "promotion":
+      case "PROMOTION":
         return "🏷️";
-      case "security":
+      case "SECURITY":
         return "🔒";
       default:
         return "ℹ️";
@@ -42,15 +42,15 @@ export default function NotificationsPage() {
 
   const getNotificationColor = (type: Notification["type"]) => {
     switch (type) {
-      case "success":
+      case "SUCCESS":
         return "border-green-200 bg-green-50";
-      case "warning":
+      case "WARNING":
         return "border-yellow-200 bg-yellow-50";
-      case "error":
+      case "ERROR":
         return "border-red-200 bg-red-50";
-      case "promotion":
+      case "PROMOTION":
         return "border-purple-200 bg-purple-50";
-      case "security":
+      case "SECURITY":
         return "border-blue-200 bg-blue-50";
       default:
         return "border-gray-200 bg-gray-50";

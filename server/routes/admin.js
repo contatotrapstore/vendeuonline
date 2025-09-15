@@ -1,6 +1,6 @@
 import { Router } from "express";
 import prisma from "../lib/prisma.js";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "../lib/supabase-client.js";
 import {
   securityHeaders,
   adminRateLimit,
@@ -8,17 +8,6 @@ import {
   validateInput,
   sanitizeInput,
 } from "../middleware/security.js";
-
-// Configurar cliente Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-console.log("🔧 Configuração Supabase:");
-console.log("URL:", supabaseUrl);
-console.log("Service Key existe:", !!supabaseServiceKey);
-console.log("Service Key (primeiros 20 chars):", supabaseServiceKey?.substring(0, 20));
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const router = Router();
 
@@ -100,67 +89,51 @@ router.get("/users", async (req, res) => {
     
     console.log("👥 GET /api/admin/users - Buscando usuários...");
 
-    // Usar dados reais do banco via query SQL direta
-    let whereClause = "";
-    if (search) {
-      whereClause += ` WHERE (name ILIKE '%${search}%' OR email ILIKE '%${search}%')`;
-    }
-    if (type && type !== 'all') {
-      const typeFilter = ` type = '${type.toUpperCase()}'`;
-      whereClause = whereClause ? whereClause + ` AND ${typeFilter}` : ` WHERE ${typeFilter}`;
-    }
 
-    // Usar MCP Supabase para dados reais
-    const query = `SELECT id, name, email, phone, type, city, state, avatar, "isVerified", "createdAt", "updatedAt" FROM users${whereClause} ORDER BY "createdAt" DESC`;
+    // Buscar dados reais do Supabase
+    console.log('🔍 Buscando usuários do Supabase com filtros:', { search, type, page, limit });
     
-    // Simular resultado baseado em dados conhecidos do MCP
-    const mockUsers = [
-      {
-        id: "user1", name: "Admin Principal", email: "admin@vendeuonline.com", phone: "+55 54 99999-0001",
-        type: "admin", city: "Erechim", state: "RS", avatar: null, isVerified: true,
-        createdAt: "2024-01-15T10:00:00Z", updatedAt: "2024-01-15T10:00:00Z"
-      },
-      {
-        id: "user2", name: "João Vendedor", email: "joao@loja.com", phone: "+55 54 99999-0002",
-        type: "seller", city: "Erechim", state: "RS", avatar: null, isVerified: true,
-        createdAt: "2024-01-20T14:30:00Z", updatedAt: "2024-01-20T14:30:00Z"
-      },
-      {
-        id: "user3", name: "Maria Compradora", email: "maria@email.com", phone: "+55 54 99999-0003",
-        type: "buyer", city: "Passo Fundo", state: "RS", avatar: null, isVerified: true,
-        createdAt: "2024-02-01T09:15:00Z", updatedAt: "2024-02-01T09:15:00Z"
-      },
-      {
-        id: "user4", name: "Pedro Silva", email: "pedro@store.com", phone: "+55 54 99999-0004",
-        type: "seller", city: "Erechim", state: "RS", avatar: null, isVerified: false,
-        createdAt: "2024-02-10T16:45:00Z", updatedAt: "2024-02-10T16:45:00Z"
-      },
-      {
-        id: "user5", name: "Ana Costa", email: "ana@cliente.com", phone: "+55 54 99999-0005",
-        type: "buyer", city: "Marau", state: "RS", avatar: null, isVerified: true,
-        createdAt: "2024-02-15T11:20:00Z", updatedAt: "2024-02-15T11:20:00Z"
-      }
-    ];
+    let query = supabase
+      .from('users')
+      .select('id, name, email, phone, type, city, state, avatar, isVerified, createdAt, updatedAt');
 
-    // Filtrar dados mockados conforme filtros
-    let filteredUsers = mockUsers;
+    // Aplicar filtros
     if (search) {
-      filteredUsers = mockUsers.filter(user => 
-        user.name.toLowerCase().includes(search.toLowerCase()) ||
-        user.email.toLowerCase().includes(search.toLowerCase())
-      );
+      query = query.or(`name.ilike.%${search}%,email.ilike.%${search}%`);
     }
+    
     if (type && type !== 'all') {
-      filteredUsers = filteredUsers.filter(user => user.type === type.toLowerCase());
+      query = query.eq('type', type.toUpperCase());
+    }
+
+    // Contar total primeiro
+    const { count: totalCount, error: countError } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true });
+
+    if (countError) {
+      console.error('❌ Erro ao contar usuários:', countError);
+      throw countError;
     }
 
     // Aplicar paginação
     const offset = (page - 1) * limit;
-    const paginatedUsers = filteredUsers.slice(offset, offset + parseInt(limit));
-    const total = filteredUsers.length;
+    query = query
+      .order('createdAt', { ascending: false })
+      .range(offset, offset + parseInt(limit) - 1);
+
+    const { data: userData, error: userError } = await query;
+
+    if (userError) {
+      console.error('❌ Erro ao buscar usuários:', userError);
+      throw userError;
+    }
+
+    const rawUsers = userData || [];
+    const total = totalCount || 0;
 
     // Transformar para formato esperado pelo frontend
-    const users = paginatedUsers.map(user => ({
+    const users = rawUsers.map(user => ({
       id: user.id,
       name: user.name,
       email: user.email,
@@ -178,7 +151,7 @@ router.get("/users", async (req, res) => {
       storeCount: user.type === 'seller' ? 1 : undefined
     }));
 
-    console.log(`✅ ${users.length}/${total} usuários retornados (dados simulados baseados no banco real)`);
+    console.log(`✅ ${users.length}/${total} usuários retornados do Supabase`);
 
     res.json({
       success: true,

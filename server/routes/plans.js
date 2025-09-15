@@ -1,26 +1,29 @@
 import express from "express";
-import { PrismaClient } from "@prisma/client";
+import { supabase } from "../lib/supabase-client.js";
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 // GET /api/plans - Listar todos os planos
 router.get("/", async (req, res) => {
   try {
-    const plans = await prisma.plan.findMany({
-      where: {
-        isActive: true,
-      },
-      orderBy: {
-        order: "asc",
-      },
-    });
+    const { data: plans, error } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('is_active', true)
+      .order('order', { ascending: true });
 
-    res.json(plans);
+    if (error) {
+      throw error;
+    }
+
+    res.json({
+      success: true,
+      data: plans || []
+    });
   } catch (error) {
     console.error("Erro ao buscar planos:", error);
     res.status(500).json({
-      error: "Erro interno do servidor",
+      error: "Erro interno do servidor"
     });
   }
 });
@@ -30,21 +33,29 @@ router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    const plan = await prisma.plan.findUnique({
-      where: { id },
-    });
+    const { data: plan, error } = await supabase
+      .from('plans')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-    if (!plan) {
-      return res.status(404).json({
-        error: "Plano não encontrado",
-      });
+    if (error) {
+      if (error.code === 'PGRST116') {
+        return res.status(404).json({
+          error: "Plano não encontrado"
+        });
+      }
+      throw error;
     }
 
-    res.json(plan);
+    res.json({
+      success: true,
+      data: plan
+    });
   } catch (error) {
     console.error("Erro ao buscar plano:", error);
     res.status(500).json({
-      error: "Erro interno do servidor",
+      error: "Erro interno do servidor"
     });
   }
 });

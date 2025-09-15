@@ -70,7 +70,7 @@ npm run db:seed
 npm run dev
 ```
 
-**🌐 URLs:** Frontend: `http://localhost:4173` | API: `http://localhost:4002`
+**🌐 URLs:** Frontend: `http://localhost:5173` | API: `http://localhost:3000`
 
 ### **2. Deploy Produção**
 
@@ -94,10 +94,12 @@ git add . && git commit -m "deploy" && git push
 
 ```
 vendeuonline-main/
-├── 📚 docs/               # Documentação completa
-│   ├── DEPLOY_GUIDE.md   # Guia de deploy
-│   ├── DEVELOPMENT.md    # Setup de desenvolvimento
-│   └── API_REFERENCE.md  # Referência da API
+├── 📚 docs/               # Documentação completa e organizada
+│   ├── getting-started/  # Setup e início rápido
+│   ├── architecture/     # Arquitetura e design
+│   ├── api/             # Referência da API
+│   ├── testing/         # Guias de testes
+│   └── deployment/      # Deploy e produção
 ├── 🏗️ src/               # Código fonte
 │   ├── app/             # Páginas (Next.js App Router)
 │   ├── components/      # Componentes React
@@ -162,12 +164,15 @@ git push  # Deploy automático via Vercel
 
 ## 📚 **DOCUMENTAÇÃO**
 
-| Documento                                              | Descrição                   |
-| ------------------------------------------------------ | --------------------------- |
-| 🚀 [`/docs/DEPLOY_GUIDE.md`](./docs/DEPLOY_GUIDE.md)   | **Guia completo de deploy** |
-| 💻 [`/docs/DEVELOPMENT.md`](./docs/DEVELOPMENT.md)     | Setup desenvolvimento local |
-| 📡 [`/docs/API_REFERENCE.md`](./docs/API_REFERENCE.md) | Referência completa da API  |
-| ⚙️ [`/docs/COMMANDS.md`](./docs/COMMANDS.md)           | Comandos úteis do projeto   |
+📖 **[Documentação Completa](./docs/README.md)** - Índice de toda documentação
+
+| Documento | Descrição |
+|-----------|-----------|
+| 🚀 [**Getting Started**](./docs/getting-started/GETTING_STARTED.md) | Setup completo e início rápido |
+| 🏗️ [**Architecture**](./docs/architecture/ARCHITECTURE.md) | Design do sistema e stack |
+| 📡 [**API Reference**](./docs/api/API_REFERENCE.md) | Referência completa da API |
+| 🧪 [**Testing**](./docs/testing/TESTING.md) | Guia completo de testes |
+| 🚀 [**Deploy Guide**](./docs/deployment/DEPLOY_GUIDE.md) | Deploy no Vercel |
 
 ## 🧪 **CREDENCIAIS DE TESTE**
 
@@ -181,11 +186,12 @@ Após executar `npm run db:seed`:
 
 ## 🌐 **ENDPOINTS IMPORTANTES**
 
-- **Frontend:** `https://seu-projeto.vercel.app`
-- **Health Check:** `/api/health`
-- **API Diagnostics:** `/api/diagnostics`
-- **Planos:** `/api/plans`
-- **Admin Dashboard:** `/admin`
+- **🌐 Production:** `https://www.vendeu.online`
+- **⚕️ Health Check:** `/api/health`
+- **🔧 API Diagnostics:** `/api/diagnostics`
+- **💰 Planos:** `/api/plans`
+- **⚙️ Admin Dashboard:** `/admin`
+- **📊 Analytics:** `/api/analytics`
 
 ## 🏆 **STATUS ATUAL**
 

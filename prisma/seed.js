@@ -6,10 +6,14 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Iniciando seed do banco de dados...");
 
-  // Limpar dados existentes
+  // Limpar dados existentes na ordem correta (dependências primeiro)
+  await prisma.seller.deleteMany({});
+  await prisma.buyer.deleteMany({});
+  await prisma.admin.deleteMany({});
+  await prisma.store.deleteMany({});
+  await prisma.user.deleteMany({});
   await prisma.plan.deleteMany({});
   await prisma.category.deleteMany({});
-  await prisma.user.deleteMany({});
 
   console.log("🗑️  Dados existentes removidos");
 

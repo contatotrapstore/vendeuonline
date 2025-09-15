@@ -14,6 +14,11 @@ declare global {
     gtag: any;
     dataLayer: any[];
     fbq: any;
+    chrome?: {
+      runtime?: {
+        id?: string;
+      };
+    };
   }
 }
 
@@ -27,10 +32,22 @@ export default function TrackingScripts() {
       const reason = event.reason;
       if (reason && typeof reason === 'object') {
         const message = reason.message || reason.toString() || '';
-        if (message.includes('Receiving end does not exist') || 
-            message.includes('Could not establish connection') ||
-            message.includes('Extension context invalidated')) {
+        // Lista expandida de mensagens de erro de extensão para silenciar
+        const extensionErrors = [
+          'Receiving end does not exist',
+          'Could not establish connection',
+          'Extension context invalidated',
+          'chrome-extension://',
+          'moz-extension://',
+          'The message port closed before a response was received',
+          'Failed to fetch'
+        ];
+
+        if (extensionErrors.some(errorText => message.includes(errorText))) {
           event.preventDefault(); // Silenciar o erro
+          if (process.env.NODE_ENV === 'development') {
+            console.debug("Extension error silenciado:", message);
+          }
           return;
         }
       }
@@ -38,10 +55,19 @@ export default function TrackingScripts() {
 
     const handleError = (event: ErrorEvent) => {
       const message = event.message || '';
-      if (message.includes('Receiving end does not exist') || 
-          message.includes('Could not establish connection') ||
-          message.includes('Extension context invalidated')) {
+      const extensionErrors = [
+        'Receiving end does not exist',
+        'Could not establish connection',
+        'Extension context invalidated',
+        'chrome-extension://',
+        'moz-extension://'
+      ];
+
+      if (extensionErrors.some(errorText => message.includes(errorText))) {
         event.preventDefault(); // Silenciar o erro
+        if (process.env.NODE_ENV === 'development') {
+          console.debug("Extension error silenciado:", message);
+        }
         return;
       }
     };
@@ -89,33 +115,55 @@ export default function TrackingScripts() {
   };
 
   const initializePixels = (configs: TrackingConfig) => {
-    // Inicializar Google Analytics
-    if (configs.google_analytics_id) {
-      initGoogleAnalytics(configs.google_analytics_id);
-    }
+    try {
+      // Inicializar Google Analytics
+      if (configs.google_analytics_id) {
+        initGoogleAnalytics(configs.google_analytics_id);
+      }
 
-    // Inicializar Google Tag Manager
-    if (configs.google_tag_manager_id) {
-      initGoogleTagManager(configs.google_tag_manager_id);
-    }
+      // Inicializar Google Tag Manager
+      if (configs.google_tag_manager_id) {
+        initGoogleTagManager(configs.google_tag_manager_id);
+      }
 
-    // Inicializar Meta Pixel
-    if (configs.meta_pixel_id) {
-      initMetaPixel(configs.meta_pixel_id);
+      // Inicializar Meta Pixel
+      if (configs.meta_pixel_id) {
+        initMetaPixel(configs.meta_pixel_id);
+      }
+    } catch (error) {
+      // Silenciar erros de inicialização de pixels
+      if (process.env.NODE_ENV === 'development') {
+        console.warn("Pixel initialization error (ignorado):", error);
+      }
     }
 
 
     // Aguardar um momento para garantir que os pixels carregaram e disparar PageView inicial
     setTimeout(() => {
-      console.log("📊 Disparando PageView inicial para todos os pixels");
+      try {
+        if (process.env.NODE_ENV === 'development') {
+          console.log("📊 Disparando PageView inicial para todos os pixels");
+        }
 
-      // Google Analytics PageView já é disparado automaticamente na configuração
+        // Google Analytics PageView já é disparado automaticamente na configuração
 
-      // Meta Pixel PageView adicional (se necessário)
-      if (window.fbq && configs.meta_pixel_id) {
-        window.fbq("track", "PageView");
+        // Meta Pixel PageView adicional (se necessário) - com proteção
+        if (window.fbq && typeof window.fbq === 'function' && configs.meta_pixel_id) {
+          try {
+            window.fbq("track", "PageView");
+          } catch (pixelError) {
+            // Silenciar erros de pixel - pode ser bloqueado por adblockers
+            if (process.env.NODE_ENV === 'development') {
+              console.warn("Meta Pixel error (ignorado):", pixelError);
+            }
+          }
+        }
+      } catch (error) {
+        // Silenciar erros de tracking em geral
+        if (process.env.NODE_ENV === 'development') {
+          console.warn("Tracking initialization error (ignorado):", error);
+        }
       }
-
     }, 1000);
   };
 
@@ -237,7 +285,7 @@ export const useTracking = () => {
     try {
       // Verificar se não é uma extensão do Chrome tentando se comunicar
       try {
-        if (typeof chrome !== 'undefined' && chrome?.runtime?.id) {
+        if (typeof window.chrome !== 'undefined' && window.chrome?.runtime?.id) {
           return; // Ignorar completamente se for extensão ativa
         }
       } catch {

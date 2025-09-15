@@ -46,6 +46,10 @@ const SellerProducts = lazy(() => import("@/app/seller/products/page"));
 const SellerOrders = lazy(() => import("@/app/seller/orders/page"));
 const SellerStore = lazy(() => import("@/app/seller/store/page"));
 const SellerAnalytics = lazy(() => import("@/app/seller/analytics/page"));
+const SellerProfile = lazy(() => import("@/app/seller/profile/page"));
+const SellerAccount = lazy(() => import("@/app/seller/account/page"));
+const SellerPlans = lazy(() => import("@/app/seller/plans/page"));
+const SellerSettings = lazy(() => import("@/app/seller/settings/page"));
 
 // Buyer Pages
 const BuyerDashboard = lazy(() => import("@/app/buyer/page"));
@@ -122,6 +126,10 @@ function AppContent() {
               <Route path="/seller/orders" element={<SellerOrders />} />
               <Route path="/seller/store" element={<SellerStore />} />
               <Route path="/seller/analytics" element={<SellerAnalytics />} />
+              <Route path="/seller/profile" element={<SellerProfile />} />
+              <Route path="/seller/account" element={<SellerAccount />} />
+              <Route path="/seller/plans" element={<SellerPlans />} />
+              <Route path="/seller/settings" element={<SellerSettings />} />
 
               {/* Buyer Routes */}
               <Route path="/buyer" element={<BuyerDashboard />} />

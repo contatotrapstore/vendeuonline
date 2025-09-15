@@ -18,6 +18,7 @@ export interface ApiRequestOptions extends Omit<RequestInit, "headers"> {
   timeout?: number;
   retryAttempts?: number;
   retryDelay?: number;
+  token?: string;
 }
 
 /**
@@ -90,7 +91,39 @@ export const apiRequest = async <T = any>(endpoint: string, options: ApiRequestO
           errorData = { error: `Erro ${response.status}: ${response.statusText}` };
         }
 
-        const error = new Error(errorData.error || `Erro ${response.status}`);
+        // Extrair a mensagem de erro mais específica possível
+        let errorMessage = `Erro ${response.status}`;
+        if (errorData) {
+          // Se tem erro específico na resposta
+          if (errorData.error) {
+            // Tentar extrair mensagens de validação do Zod se for um JSON string
+            if (typeof errorData.error === 'string' && errorData.error.startsWith('[')) {
+              try {
+                const validationErrors = JSON.parse(errorData.error);
+                if (Array.isArray(validationErrors) && validationErrors.length > 0) {
+                  // Pegar a primeira mensagem de erro
+                  errorMessage = validationErrors[0].message || errorData.error;
+                } else {
+                  errorMessage = errorData.error;
+                }
+              } catch {
+                errorMessage = errorData.error;
+              }
+            } else {
+              errorMessage = errorData.error;
+            }
+          }
+          // Se tem mensagem específica na resposta
+          else if (errorData.message) {
+            errorMessage = errorData.message;
+          }
+          // Se tem detalhes de validação (como do Zod)
+          else if (typeof errorData === 'string') {
+            errorMessage = errorData;
+          }
+        }
+        
+        const error = new Error(errorMessage);
 
         // Se é erro 4xx, não tentar novamente
         if (response.status >= 400 && response.status < 500) {

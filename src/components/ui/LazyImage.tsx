@@ -18,7 +18,7 @@ export const LazyImage: React.FC<LazyImageProps> = ({
   src,
   alt,
   className = "",
-  fallback = "https://via.placeholder.com/400x300/f3f4f6/9ca3af?text=Imagem+Indispon%C3%ADvel",
+  fallback = "https://picsum.photos/400/300?grayscale&blur=1",
   placeholder,
   onLoad,
   onError,
