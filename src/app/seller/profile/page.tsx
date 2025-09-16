@@ -101,12 +101,12 @@ export default function SellerProfile() {
   useEffect(() => {
     // Verificar autenticação e tipo de usuário
     if (!user || user.userType !== "seller") {
-      navigate("/");
+      navigate("/login");
       return;
     }
 
     loadStoreProfile();
-  }, [user]);
+  }, [user, navigate]);
 
   const loadStoreProfile = async () => {
     try {
@@ -190,7 +190,6 @@ export default function SellerProfile() {
       console.error("Error uploading image:", error);
     }
   };
-
 
   if (isLoading) {
     return (

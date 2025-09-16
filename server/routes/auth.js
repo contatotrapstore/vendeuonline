@@ -76,7 +76,7 @@ router.post(
       }
 
       // Verificar tipo de usuário se especificado (admins podem acessar independente do userType)
-      if (userType && user.type.toLowerCase() !== userType.toLowerCase() && user.type.toLowerCase() !== 'admin') {
+      if (userType && user.type.toLowerCase() !== userType.toLowerCase() && user.type.toLowerCase() !== "admin") {
         console.log("❌ Tipo de usuário incorreto:", { expected: userType, actual: user.type });
         throw new AuthenticationError("Tipo de usuário incorreto");
       }
@@ -97,14 +97,14 @@ router.post(
       await autoNotify.onLogin(user.id, user.name);
 
       // Buscar dados adicionais se for vendedor (Prisma já inclui store)
-      if (user.type.toUpperCase() === 'SELLER' && user.seller && !user.seller.store) {
+      if (user.type.toUpperCase() === "SELLER" && user.seller && !user.seller.store) {
         console.log("📊 Complementando dados da loja via Supabase...");
 
         // Buscar dados da loja se não vieram do Prisma
         const { data: store, error: storeError } = await supabase
-          .from('stores')
-          .select('*')
-          .eq('sellerId', user.seller.id)
+          .from("stores")
+          .select("*")
+          .eq("sellerId", user.seller.id)
           .single();
 
         if (!storeError && store) {
@@ -145,7 +145,7 @@ router.post(
     console.log("✅ Usuário encontrado no Supabase");
 
     // Verificar tipo de usuário se especificado (admins podem acessar independente do userType)
-    if (userType && user.type.toLowerCase() !== userType.toLowerCase() && user.type.toLowerCase() !== 'admin') {
+    if (userType && user.type.toLowerCase() !== userType.toLowerCase() && user.type.toLowerCase() !== "admin") {
       console.log("❌ Tipo de usuário incorreto:", { expected: userType, actual: user.type });
       throw new AuthenticationError("Tipo de usuário incorreto");
     }
@@ -168,19 +168,19 @@ router.post(
 
     // Debug: verificar tipo do usuário
     console.log(`🔍 Verificando tipo do usuário: "${user.type}" (length: ${user.type.length})`);
-    console.log(`🔍 Comparação SELLER: ${user.type === 'SELLER'}`);
-    console.log(`🔍 Comparação seller: ${user.type === 'seller'}`);
-    console.log(`🔍 Comparação .toUpperCase(): ${user.type.toUpperCase() === 'SELLER'}`);
+    console.log(`🔍 Comparação SELLER: ${user.type === "SELLER"}`);
+    console.log(`🔍 Comparação seller: ${user.type === "seller"}`);
+    console.log(`🔍 Comparação .toUpperCase(): ${user.type.toUpperCase() === "SELLER"}`);
 
     // Buscar dados adicionais se for vendedor
-    if (user.type.toUpperCase() === 'SELLER') {
+    if (user.type.toUpperCase() === "SELLER") {
       console.log("📊 Buscando dados do vendedor no Supabase...");
 
       // Buscar dados do seller
       const { data: seller, error: sellerError } = await supabase
-        .from('sellers')
-        .select('*')
-        .eq('userId', user.id)
+        .from("sellers")
+        .select("*")
+        .eq("userId", user.id)
         .single();
 
       if (!sellerError && seller) {
@@ -188,9 +188,9 @@ router.post(
 
         // Buscar dados da loja
         const { data: store, error: storeError } = await supabase
-          .from('stores')
-          .select('*')
-          .eq('sellerId', seller.id)
+          .from("stores")
+          .select("*")
+          .eq("sellerId", seller.id)
           .single();
 
         if (!storeError && store) {
@@ -236,9 +236,9 @@ router.post(
     // Verificar se o usuário já existe primeiro no Prisma
     try {
       const existingPrismaUser = await prisma.user.findUnique({
-        where: { email: emailLower }
+        where: { email: emailLower },
       });
-      
+
       if (existingPrismaUser) {
         console.log("❌ Email já existe no banco de dados:", email);
         throw new ValidationError("Email já está em uso");
@@ -282,7 +282,7 @@ router.post(
     // Tentar criar usuário no Prisma primeiro
     try {
       const newUser = await prisma.user.create({
-        data: userData
+        data: userData,
       });
 
       const token = generateToken(newUser);
@@ -337,6 +337,104 @@ router.post(
         createdAt: newUser.createdAt,
       },
       token,
+    });
+  })
+);
+
+// Middleware de autenticação para mudança de senha
+const authenticateUser = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Token não fornecido" });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, JWT_SECRET);
+
+    // Buscar usuário no banco
+    const { data: user, error } = await supabase.from("users").select("*").eq("id", decoded.userId).single();
+
+    if (error || !user) {
+      return res.status(401).json({ error: "Usuário não encontrado" });
+    }
+
+    req.user = user;
+    next();
+  } catch (error) {
+    console.error("❌ Erro na autenticação:", error);
+
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({ error: "Token expirado" });
+    }
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({ error: "Token inválido" });
+    }
+
+    res.status(401).json({ error: "Falha na autenticação" });
+  }
+};
+
+// Schema de validação para mudança de senha
+const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Senha atual é obrigatória"),
+    newPassword: z.string().min(6, "Nova senha deve ter pelo menos 6 caracteres"),
+    confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "As senhas não coincidem",
+    path: ["confirmPassword"],
+  });
+
+// POST /api/users/change-password - Alterar senha do usuário
+router.post(
+  "/users/change-password",
+  authenticateUser,
+  validateSchema(changePasswordSchema),
+  asyncHandler(async (req, res) => {
+    console.log("🔐 Solicitação de mudança de senha para:", req.user.email);
+
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user.id;
+
+    // Verificar senha atual
+    const isValidCurrentPassword = await comparePassword(currentPassword, req.user.password);
+
+    if (!isValidCurrentPassword) {
+      console.log("❌ Senha atual incorreta para:", req.user.email);
+      throw new AuthenticationError("Senha atual incorreta");
+    }
+
+    // Gerar hash da nova senha
+    const newPasswordHash = await hashPassword(newPassword);
+
+    // Atualizar senha no Supabase
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({
+        password: newPasswordHash,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq("id", userId);
+
+    if (updateError) {
+      console.error("❌ Erro ao atualizar senha no Supabase:", updateError);
+      throw new DatabaseError("Erro ao atualizar senha");
+    }
+
+    console.log("✅ Senha alterada com sucesso para:", req.user.email);
+
+    // Criar notificação de mudança de senha
+    try {
+      await autoNotify.onPasswordChange(userId, req.user.name);
+    } catch (notifyError) {
+      console.warn("⚠️ Erro ao criar notificação de mudança de senha:", notifyError);
+    }
+
+    res.json({
+      success: true,
+      message: "Senha alterada com sucesso",
     });
   })
 );

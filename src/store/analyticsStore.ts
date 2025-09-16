@@ -105,7 +105,7 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
       set({ isLoading: true, error: null });
 
       const currentPeriod = period || get().period;
-      const response = await apiRequest(`/api/seller/analytics?period=${currentPeriod.replace('d', '')}`);
+      const response = await apiRequest(`/api/seller/analytics?period=${currentPeriod.replace("d", "")}`);
 
       set({
         stats: response,
@@ -147,16 +147,20 @@ export const transformStatsToAnalyticsData = (stats: StoreStats): AnalyticsData[
 };
 
 export const transformProductsToPerformance = (products: any[]): ProductPerformance[] => {
+  if (!products || !Array.isArray(products)) {
+    return [];
+  }
+
   return products.map((product) => ({
-    id: product.id,
-    name: product.name,
-    views: product.viewCount || 0,
-    sales: product.salesCount || 0,
-    revenue: (product.salesCount || 0) * product.price,
-    conversion: product.viewCount > 0 ? ((product.salesCount || 0) / product.viewCount) * 100 : 0,
-    stock: product.stock,
-    price: product.price,
-    images: product.images,
+    id: product?.id || "",
+    name: product?.name || "Produto sem nome",
+    views: product?.viewCount || 0,
+    sales: product?.salesCount || 0,
+    revenue: (product?.salesCount || 0) * (product?.price || 0),
+    conversion: product?.viewCount > 0 ? ((product?.salesCount || 0) / product.viewCount) * 100 : 0,
+    stock: product?.stock || 0,
+    price: product?.price || 0,
+    images: product?.images || [],
   }));
 };
 

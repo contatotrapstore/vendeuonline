@@ -178,6 +178,18 @@ export const useOrderStore = create<OrderStore>()(
         try {
           set({ isLoading: true, error: null });
 
+          // Verificar se usuário está autenticado
+          const token = getStoredToken();
+          if (!token) {
+            set({
+              orders: [],
+              pagination: initialPagination,
+              isLoading: false,
+              error: "Usuário não autenticado",
+            });
+            return;
+          }
+
           const searchParams = new URLSearchParams();
           if (params.page) searchParams.append("page", params.page.toString());
           if (params.limit) searchParams.append("limit", params.limit.toString());

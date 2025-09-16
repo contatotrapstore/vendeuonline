@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import compression from "compression";
 import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -77,6 +78,10 @@ const PORT = process.env.PORT || 3000;
 // Correlation ID (deve ser o primeiro middleware)
 app.use(correlationIdMiddleware);
 
+// ==== PERFORMANCE MIDDLEWARES ====
+// Compressão gzip
+app.use(compression());
+
 // ==== SECURITY MIDDLEWARES ====
 // Headers de segurança (deve vir primeiro)
 app.use(securityHeaders);
@@ -105,20 +110,24 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Parse JSON com limite de tamanho e encoding UTF-8
-app.use(express.json({ 
-  limit: "10mb",
-  type: ['application/json', 'text/plain']
-}));
-app.use(express.urlencoded({ 
-  extended: true, 
-  limit: "10mb",
-  parameterLimit: 10000
-}));
+app.use(
+  express.json({
+    limit: "10mb",
+    type: ["application/json", "text/plain"],
+  })
+);
+app.use(
+  express.urlencoded({
+    extended: true,
+    limit: "10mb",
+    parameterLimit: 10000,
+  })
+);
 
 // Middleware para garantir encoding UTF-8 em todas as respostas
 app.use((req, res, next) => {
-  res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Accept-Charset', 'utf-8');
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  res.setHeader("Accept-Charset", "utf-8");
   next();
 });
 
@@ -134,13 +143,13 @@ cleanupExpiredTokens();
 // ==== VALIDAÇÃO E TESTE DO SUPABASE ====
 // Testar conexão na inicialização
 (async () => {
-  console.log('🔍 Validando configuração do Supabase...');
-  
+  console.log("🔍 Validando configuração do Supabase...");
+
   // Validar variáveis de ambiente críticas
   const requiredEnvVars = {
-    'NEXT_PUBLIC_SUPABASE_URL': process.env.NEXT_PUBLIC_SUPABASE_URL,
-    'SUPABASE_SERVICE_ROLE_KEY': process.env.SUPABASE_SERVICE_ROLE_KEY,
-    'JWT_SECRET': process.env.JWT_SECRET
+    NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    JWT_SECRET: process.env.JWT_SECRET,
   };
 
   const missingVars = [];
@@ -151,17 +160,17 @@ cleanupExpiredTokens();
   }
 
   if (missingVars.length > 0) {
-    console.error('❌ ERRO CRÍTICO: Variáveis de ambiente obrigatórias ausentes:');
-    missingVars.forEach(varName => console.error(`   - ${varName}`));
-    
-    if (process.env.NODE_ENV === 'production') {
-      console.error('🚨 Aplicação não pode iniciar em produção sem essas variáveis!');
+    console.error("❌ ERRO CRÍTICO: Variáveis de ambiente obrigatórias ausentes:");
+    missingVars.forEach((varName) => console.error(`   - ${varName}`));
+
+    if (process.env.NODE_ENV === "production") {
+      console.error("🚨 Aplicação não pode iniciar em produção sem essas variáveis!");
       process.exit(1);
     } else {
-      console.warn('⚠️ Aplicação rodando em modo desenvolvimento com configuração incompleta');
+      console.warn("⚠️ Aplicação rodando em modo desenvolvimento com configuração incompleta");
     }
   } else {
-    console.log('✅ Todas as variáveis de ambiente estão configuradas');
+    console.log("✅ Todas as variáveis de ambiente estão configuradas");
   }
 
   // Testar conexão com Supabase
@@ -169,7 +178,7 @@ cleanupExpiredTokens();
   if (connectionOk) {
     // Obter estatísticas básicas
     const stats = await getDatabaseStats();
-    console.log('📊 Estatísticas do banco:', stats);
+    console.log("📊 Estatísticas do banco:", stats);
   }
 })();
 
@@ -203,7 +212,6 @@ const authenticate = asyncHandler(async (req, res, next) => {
 
   const token = authHeader.substring(7);
 
-
   // Validar formato básico do token
   if (!token || token.length < 10) {
     throw new AuthenticationError("Formato de token inválido");
@@ -236,6 +244,7 @@ const authenticate = asyncHandler(async (req, res, next) => {
 // ==== USAR ROTAS EXTERNAS COM RATE LIMITING ====
 // Rotas de autenticação com rate limiting específico
 app.use("/api/auth", authRateLimit, authRouter);
+app.use("/api", authRouter); // Para /api/users/change-password
 
 // Rotas de produtos (públicas, rate limiting padrão)
 app.use("/api/products", productsRouter);
@@ -260,6 +269,9 @@ app.use("/api/admin", adminRouter);
 
 // Rotas do vendedor
 app.use("/api/seller", sellerRouter);
+// APIs de sellers consolidadas em /api/seller
+
+// Rotas consolidadas em /api/seller (settings, subscription, upgrade agora incluídos)
 
 // Rotas de upload
 app.use("/api/upload", uploadRateLimit, uploadRouter);
@@ -824,41 +836,13 @@ app.post(
 // Listar endereços do usuário
 app.get("/api/addresses", authenticate, async (req, res) => {
   try {
-    // Mock addresses data while database connection is being resolved
-    const mockAddresses = [
-      {
-        id: "addr_1",
-        userId: req.user.userId,
-        label: "Casa",
-        street: "Rua das Flores, 123",
-        number: "123",
-        complement: "Apto 45",
-        neighborhood: "Centro",
-        city: "São Paulo",
-        state: "SP",
-        zipCode: "01234-567",
-        isDefault: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: "addr_2",
-        userId: req.user.userId,
-        label: "Trabalho",
-        street: "Av. Paulista, 1000",
-        number: "1000",
-        complement: "Sala 10",
-        neighborhood: "Bela Vista",
-        city: "São Paulo",
-        state: "SP",
-        zipCode: "01310-100",
-        isDefault: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-    ];
+    // Buscar endereços reais do usuário no banco
+    const addresses = await prisma.address.findMany({
+      where: { userId: req.user.userId },
+      orderBy: { isDefault: "desc" },
+    });
 
-    res.json({ addresses: mockAddresses });
+    res.json({ addresses: addresses || [] });
   } catch (error) {
     console.error("Erro na API de endereços:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
@@ -1061,10 +1045,10 @@ app.get("/api/users/stats", authenticate, async (req, res) => {
       console.log("Erro ao buscar pedidos:", prismaError.message);
       // Fallback para Supabase
       const { data: supabaseOrders, error: ordersError } = await supabase
-        .from('Order')
-        .select('id, total, status, createdAt')
-        .eq('buyerId', req.user.userId);
-      
+        .from("Order")
+        .select("id, total, status, createdAt")
+        .eq("buyerId", req.user.userId);
+
       if (!ordersError && supabaseOrders) {
         orders = supabaseOrders;
       }
@@ -1084,10 +1068,10 @@ app.get("/api/users/stats", authenticate, async (req, res) => {
       console.log("Erro ao buscar wishlist:", prismaError.message);
       // Fallback para Supabase
       const { data: supabaseWishlist, error: wishlistError } = await supabase
-        .from('wishlist')
-        .select('id')
-        .eq('buyerId', req.user.userId);
-      
+        .from("wishlist")
+        .select("id")
+        .eq("buyerId", req.user.userId);
+
       if (!wishlistError && supabaseWishlist) {
         wishlist = supabaseWishlist;
       }
@@ -1208,25 +1192,27 @@ app.get(
       });
     } catch (dbError) {
       console.warn("Erro ao buscar pedidos:", dbError.message);
-      
+
       // Tentar fallback com Supabase
       try {
         const { data: supabaseOrders, error: supabaseError } = await supabase
-          .from('Order')
-          .select(`
+          .from("Order")
+          .select(
+            `
             *,
             OrderItem!inner(*, Product!inner(name)),
             stores!inner(id, name, slug)
-          `)
-          .eq('buyerId', req.user.userId)
-          .order('createdAt', { ascending: false });
+          `
+          )
+          .eq("buyerId", req.user.userId)
+          .order("createdAt", { ascending: false });
 
         if (!supabaseError && supabaseOrders) {
           // Mapear dados do Supabase para formato esperado
-          orders = supabaseOrders.map(order => ({
+          orders = supabaseOrders.map((order) => ({
             ...order,
             items: order.OrderItem || [],
-            store: order.stores
+            store: order.stores,
           }));
         } else {
           orders = [];
@@ -1279,98 +1265,11 @@ app.get('/api/stores', async (req, res) => {
 });
 */
 
-// ==== CATEGORIES API ==== 
+// ==== CATEGORIES API ====
 // REMOVIDO - usando rota em /server/routes/categories.js
 
 // ==== PLANS API ====
-app.get("/api/plans", async (req, res) => {
-  try {
-    // Mock plans data that matches the expected interface
-    const mockPlans = [
-      {
-        id: "plan_1",
-        name: "Gratuito",
-        slug: "gratuito",
-        description: "Para começar a vender",
-        price: 0,
-        billingPeriod: "monthly",
-        maxAds: 3,
-        maxPhotos: 1,
-        support: "email",
-        features: ["Até 3 anúncios", "1 foto por anúncio", "Suporte básico por email", "Perfil simples de vendedor"],
-        isActive: true,
-        order: 1,
-      },
-      {
-        id: "plan_2",
-        name: "Básico",
-        slug: "basico",
-        description: "Ideal para vendedores iniciantes",
-        price: 19.9,
-        billingPeriod: "monthly",
-        maxAds: 10,
-        maxPhotos: 5,
-        support: "chat",
-        features: [
-          "Até 10 anúncios",
-          "Até 5 fotos por anúncio",
-          "Suporte prioritário",
-          "Destaque nos resultados",
-          "Estatísticas básicas",
-        ],
-        isActive: true,
-        order: 2,
-      },
-      {
-        id: "plan_3",
-        name: "Profissional",
-        slug: "profissional",
-        description: "Para vendedores experientes",
-        price: 39.9,
-        billingPeriod: "monthly",
-        maxAds: 50,
-        maxPhotos: 10,
-        support: "whatsapp",
-        features: [
-          "Até 50 anúncios",
-          "Até 10 fotos por anúncio",
-          "Suporte prioritário 24/7",
-          "Destaque premium",
-          "Estatísticas avançadas",
-          "Badge de verificado",
-        ],
-        isActive: true,
-        order: 3,
-      },
-      {
-        id: "plan_4",
-        name: "Empresa",
-        slug: "empresa",
-        description: "Para grandes vendedores",
-        price: 79.9,
-        billingPeriod: "monthly",
-        maxAds: -1,
-        maxPhotos: -1,
-        support: "telefone",
-        features: [
-          "Anúncios ilimitados",
-          "Fotos ilimitadas",
-          "Suporte dedicado",
-          "Destaque máximo",
-          "Dashboard completo",
-          "API de integração",
-        ],
-        isActive: true,
-        order: 4,
-      },
-    ];
-
-    res.json({ data: mockPlans });
-  } catch (error) {
-    console.error("Erro ao buscar planos:", error);
-    res.status(500).json({ error: "Erro interno do servidor" });
-  }
-});
+// REMOVIDO - usando rota em /server/routes/plans.js
 
 // ==== WISHLIST API ====
 app.get("/api/wishlist", authenticate, async (req, res) => {
@@ -1924,10 +1823,18 @@ const startServer = (port) => {
   if (port > 65535) port = 3000; // Reset para porta padrão se ultrapassar limite
 
   const server = app
-    .listen(port, () => {
+    .listen(port, async () => {
       console.log(`🚀 Servidor API rodando em http://localhost:${port}`);
       console.log(`📱 Frontend disponível em http://localhost:${process.env.VITE_FRONTEND_PORT || 5173}`);
       console.log(`🔗 Teste a API: http://localhost:${port}/api/health`);
+
+      // Salvar a porta atual para o frontend usar
+      if (process.env.NODE_ENV !== "production") {
+        const fs = await import("fs");
+        const portInfo = { apiPort: port, frontendPort: process.env.VITE_FRONTEND_PORT || 5173 };
+        fs.writeFileSync(".port-config.json", JSON.stringify(portInfo, null, 2));
+        console.log(`📝 Configuração de portas salva em .port-config.json`);
+      }
     })
     .on("error", (err) => {
       if (err.code === "EADDRINUSE") {

@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 
-const quickActions = [
+const getQuickActions = (stats) => [
   {
     title: "Adicionar Produto",
     description: "Cadastrar novo produto",
@@ -30,7 +30,7 @@ const quickActions = [
   },
   {
     title: "Gerenciar Pedidos",
-    description: "5 pedidos pendentes",
+    description: stats ? `${stats.pendingOrders} pedidos pendentes` : "Carregando...",
     icon: ShoppingCart,
     color: "bg-green-500",
     href: "/seller/orders",
@@ -61,7 +61,7 @@ const quickActions = [
 export default function SellerDashboard() {
   const { user, token } = useAuthStore();
   const { storeName, storeId, storeSlug } = useStoreData();
-  
+
   const [stats, setStats] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
@@ -73,28 +73,27 @@ export default function SellerDashboard() {
       window.location.href = "/";
       return;
     }
-    
+
     loadDashboardData();
   }, [user, token]);
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
-      
+
       // Carregar dados em paralelo
       const [statsRes, ordersRes, productsRes] = await Promise.all([
-        apiRequest('/api/seller/stats', { token }),
-        apiRequest('/api/seller/recent-orders?limit=4', { token }),
-        apiRequest('/api/seller/top-products?limit=3', { token })
+        apiRequest("/api/seller/stats", { token }),
+        apiRequest("/api/seller/recent-orders?limit=4", { token }),
+        apiRequest("/api/seller/top-products?limit=3", { token }),
       ]);
-      
+
       // Verificar se as respostas têm formato { success: true, data: ... }
       setStats(statsRes?.data || statsRes);
       setRecentOrders(ordersRes?.data || ordersRes || []);
       setTopProducts(productsRes?.data || productsRes || []);
-      
     } catch (error) {
-      console.error('Erro ao carregar dados do dashboard:', error);
+      console.error("Erro ao carregar dados do dashboard:", error);
       // Manter dados vazios em caso de erro
       setStats({
         totalProducts: 0,
@@ -118,7 +117,7 @@ export default function SellerDashboard() {
       </div>
     );
   }
-  
+
   // Se não há stats ainda, mostrar loading
   if (!stats) {
     return (
@@ -267,7 +266,7 @@ export default function SellerDashboard() {
                 <h3 className="text-lg font-medium text-gray-900">Ações Rápidas</h3>
               </div>
               <div className="p-6 space-y-4">
-                {quickActions.map((action, index) => {
+                {getQuickActions(stats).map((action, index) => {
                   const Icon = action.icon;
                   return (
                     <button

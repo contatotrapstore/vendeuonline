@@ -43,10 +43,14 @@ npm run db:seed
 # Rodar aplicação completa (frontend + backend) ✅ ATUALIZADO
 npm run dev
 
-# Apenas frontend (porta 5174) ✅ CORRIGIDO
+# ⚙️ PORTAS DINÂMICAS AUTOMÁTICAS (16 Setembro 2025):
+# Frontend: 5173 → 5174 → 5175... até 5184
+# API: 3000 → 3001 → 3002... até 3011
+
+# Apenas frontend
 npm run dev:client
 
-# Apenas backend/API (porta 3001) ✅ CORRIGIDO
+# Apenas backend/API
 npm run api
 
 # Preview de produção
@@ -268,10 +272,17 @@ const charge = await asaas.createCharge({
 
 - `/api/health` - Status da API
 - `/api/diagnostics` - Diagnóstico completo
-- `/api/admin/stats` - ✅ **Estatísticas funcionando (21 users, 4 stores, 7 products)**
+- `/api/admin/stats` - ✅ **Estatísticas funcionando (28 users, 6 stores, 10 products)**
 - `/api/admin/users` - ✅ **Lista de usuários funcionando**
 - `/api/admin/stores` - ✅ **Lista de lojas funcionando**
 - `/api/admin/products` - ✅ **Lista de produtos funcionando**
+
+### **🆕 Novos Endpoints (Setembro 2025)** ✅
+
+- `/api/sellers/settings` - ✅ **Configurações do vendedor (GET/PUT)**
+- `/api/sellers/subscription` - ✅ **Assinatura atual (GET)**
+- `/api/sellers/upgrade` - ✅ **Upgrade de plano (POST)**
+- `/api/users/change-password` - ✅ **Alterar senha (POST)**
 
 ### **Logs**
 
@@ -305,6 +316,7 @@ JWT_SECRET="chave-forte-configurada"
 ```
 
 ### **Status Atual:**
+
 - ✅ **Admin Panel**: 100% funcional
 - ✅ **Supabase**: Conectado e funcionando
 - ✅ **APIs**: Todas retornando dados reais
@@ -360,6 +372,64 @@ A: `npm install pacote` e importar onde necessário
 
 **Q: Como atualizar o schema do banco?**
 A: Editar `prisma/schema.prisma` e rodar `npx prisma db push`
+
+---
+
+## 🚨 **TROUBLESHOOTING**
+
+### **APIs retornando 404**
+
+**Problema:** Nova API implementada retorna 404
+
+**Solução:**
+
+```bash
+# 1. Reiniciar servidor para detectar novas rotas
+npm run dev
+
+# 2. Verificar se rota está registrada em server.js
+# 3. Testar com curl:
+curl -X GET "http://localhost:3001/api/nova-rota"
+```
+
+### **Portas ocupadas**
+
+**Problema:** `EADDRINUSE: address already in use`
+
+**Solução:**
+
+```bash
+# Verificar processos usando as portas
+netstat -ano | findstr ":3000"
+netstat -ano | findstr ":5173"
+
+# Matar processo se necessário
+taskkill /F /PID [PID_NUMBER]
+
+# O sistema usa portas dinâmicas automaticamente (16 Setembro 2025):
+# API: 3000 → 3001 → 3002... até 3011
+# Frontend: 5173 → 5174 → 5175... até 5184
+```
+
+### **Navegação quebrada**
+
+**Problema:** Links não funcionam ou erro de imports
+
+**Verificar:**
+
+- ✅ Usar `useRouter()` do Next.js, não `useNavigate()`
+- ✅ Importar `Link` de `next/link`, não `react-router-dom`
+- ✅ Usar `/login` para redirect de auth
+
+### **Dados mockados aparecendo**
+
+**Problema:** Dashboard mostra dados hardcoded
+
+**Verificar:**
+
+- ✅ Remover arrays estáticos no código
+- ✅ Usar dados de `stats` ou `data` das APIs
+- ✅ Verificar se API está retornando dados reais
 
 ---
 

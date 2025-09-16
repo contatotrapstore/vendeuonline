@@ -7,11 +7,13 @@ import jwt from "jsonwebtoken";
 
 const router = express.Router();
 
+console.log("📦 Products routes loaded - PUT/DELETE should be available");
+
 // Middleware de autenticação
 const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return res.status(401).json({
         error: "Acesso negado. Faça login primeiro.",
         code: "AUTHENTICATION_REQUIRED",
@@ -19,21 +21,19 @@ const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.substring(7);
-    const jwtSecret = process.env.JWT_SECRET || 'cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac';
+    const jwtSecret =
+      process.env.JWT_SECRET ||
+      "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
     const decoded = jwt.verify(token, jwtSecret);
 
     // Buscar dados atualizados do usuário
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', decoded.userId)
-      .single();
+    const { data: user, error } = await supabase.from("users").select("*").eq("id", decoded.userId).single();
 
     if (error || !user) {
-      console.error('❌ Erro ao buscar usuário:', error);
+      console.error("❌ Erro ao buscar usuário:", error);
       return res.status(401).json({
         error: "Usuário não encontrado",
-        code: "USER_NOT_FOUND"
+        code: "USER_NOT_FOUND",
       });
     }
 
@@ -42,29 +42,45 @@ const authenticate = async (req, res, next) => {
       email: user.email,
       type: user.type,
       name: user.name,
-      ...user
+      ...user,
     };
+
+    // Se for seller, buscar sellerId
+    if (user.type === "SELLER") {
+      const { data: seller, error: sellerError } = await supabase
+        .from("sellers")
+        .select("id")
+        .eq("userId", user.id)
+        .single();
+
+      if (!sellerError && seller) {
+        req.user.sellerId = seller.id;
+        // Debug: Seller autenticado
+      } else {
+        console.warn("⚠️ Seller não encontrado para usuário:", user.id);
+      }
+    }
 
     next();
   } catch (error) {
-    console.error('❌ Erro na autenticação:', error);
+    console.error("❌ Erro na autenticação:", error);
 
-    if (error.name === 'TokenExpiredError') {
+    if (error.name === "TokenExpiredError") {
       return res.status(401).json({
-        error: 'Token expirado',
-        code: "TOKEN_EXPIRED"
+        error: "Token expirado",
+        code: "TOKEN_EXPIRED",
       });
     }
-    if (error.name === 'JsonWebTokenError') {
+    if (error.name === "JsonWebTokenError") {
       return res.status(401).json({
-        error: 'Token inválido',
-        code: "TOKEN_INVALID"
+        error: "Token inválido",
+        code: "TOKEN_INVALID",
       });
     }
 
     res.status(401).json({
-      error: 'Falha na autenticação',
-      code: "AUTHENTICATION_FAILED"
+      error: "Falha na autenticação",
+      code: "AUTHENTICATION_FAILED",
     });
   }
 };
@@ -82,7 +98,7 @@ const processQuery = (query) => {
     sortOrder: query.sortOrder || "desc",
     storeId: query.storeId || undefined,
     sellerId: query.sellerId || undefined,
-    featured: query.featured === "true" || undefined
+    featured: query.featured === "true" || undefined,
   };
 };
 
@@ -122,15 +138,17 @@ router.get("/", async (req, res) => {
 
     // Usar Supabase diretamente para evitar problemas do Prisma
     let supabaseQuery = supabase
-      .from('Product')
-      .select(`
+      .from("Product")
+      .select(
+        `
         *,
         images:ProductImage(*),
         specifications:ProductSpecification(*),
         category:categories(*),
         store:stores(id, name, slug, isVerified)
-      `)
-      .eq('isActive', true);
+      `
+      )
+      .eq("isActive", true);
 
     // Aplicar filtros
     if (query.search) {
@@ -138,34 +156,34 @@ router.get("/", async (req, res) => {
     }
 
     if (query.category) {
-      supabaseQuery = supabaseQuery.eq('category.name', query.category);
+      supabaseQuery = supabaseQuery.eq("category.name", query.category);
     }
 
     if (query.minPrice) {
-      supabaseQuery = supabaseQuery.gte('price', query.minPrice);
+      supabaseQuery = supabaseQuery.gte("price", query.minPrice);
     }
 
     if (query.maxPrice) {
-      supabaseQuery = supabaseQuery.lte('price', query.maxPrice);
+      supabaseQuery = supabaseQuery.lte("price", query.maxPrice);
     }
 
     if (query.featured) {
-      supabaseQuery = supabaseQuery.eq('isFeatured', true);
+      supabaseQuery = supabaseQuery.eq("isFeatured", true);
     }
 
     if (query.storeId) {
-      supabaseQuery = supabaseQuery.eq('storeId', query.storeId);
+      supabaseQuery = supabaseQuery.eq("storeId", query.storeId);
     }
 
     if (query.sellerId) {
-      supabaseQuery = supabaseQuery.eq('sellerId', query.sellerId);
+      supabaseQuery = supabaseQuery.eq("sellerId", query.sellerId);
     }
 
     // Ordenação
-    const sortField = query.sortBy === 'price_asc' ? 'price' : query.sortBy;
-    const sortOrder = query.sortBy === 'price_asc' ? 'asc' : query.sortOrder;
+    const sortField = query.sortBy === "price_asc" ? "price" : query.sortBy;
+    const sortOrder = query.sortBy === "price_asc" ? "asc" : query.sortOrder;
 
-    supabaseQuery = supabaseQuery.order(sortField, { ascending: sortOrder === 'asc' });
+    supabaseQuery = supabaseQuery.order(sortField, { ascending: sortOrder === "asc" });
 
     // Paginação
     const rangeStart = (query.page - 1) * query.limit;
@@ -176,24 +194,24 @@ router.get("/", async (req, res) => {
     const { data: products, error, count } = await supabaseQuery;
 
     if (error) {
-      console.error('Erro ao buscar produtos no Supabase:', error);
+      console.error("Erro ao buscar produtos no Supabase:", error);
       throw error;
     }
 
     // Formatar produtos para resposta
-    const formattedProducts = (products || []).map(product => ({
+    const formattedProducts = (products || []).map((product) => ({
       ...product,
       averageRating: product.rating || 0,
       totalReviews: product.reviewCount || 0,
       store: {
         ...product.store,
-        rating: 5 // Placeholder rating
+        rating: 5, // Placeholder rating
       },
       seller: {
         id: product.sellerId,
         rating: 5,
-        storeName: product.store?.name || 'Loja'
-      }
+        storeName: product.store?.name || "Loja",
+      },
     }));
 
     const totalCount = count || 0;
@@ -207,11 +225,11 @@ router.get("/", async (req, res) => {
         total: totalCount,
         totalPages: Math.ceil(totalCount / query.limit),
         hasNext: query.page * query.limit < totalCount,
-        hasPrev: query.page > 1
-      }
+        hasPrev: query.page > 1,
+      },
     });
   } catch (error) {
-    console.error('Erro ao buscar produtos:', error);
+    console.error("Erro ao buscar produtos:", error);
 
     // Se um sellerId específico foi solicitado, retornar lista vazia
     if (req.query.sellerId) {
@@ -224,8 +242,8 @@ router.get("/", async (req, res) => {
           total: 0,
           totalPages: 0,
           hasNext: false,
-          hasPrev: false
-        }
+          hasPrev: false,
+        },
       });
     }
 
@@ -239,8 +257,8 @@ router.get("/", async (req, res) => {
         total: 0,
         totalPages: 0,
         hasNext: false,
-        hasPrev: false
-      }
+        hasPrev: false,
+      },
     });
   }
 });
@@ -250,7 +268,7 @@ router.get("/test", async (req, res) => {
   res.json({
     success: true,
     message: "API de produtos funcionando!",
-    query: req.query
+    query: req.query,
   });
 });
 
@@ -263,7 +281,7 @@ router.get("/:id", async (req, res) => {
       where: { id },
       include: {
         images: {
-          orderBy: { order: 'asc' }
+          orderBy: { order: "asc" },
         },
         specifications: true,
         category: true,
@@ -272,19 +290,19 @@ router.get("/:id", async (req, res) => {
             id: true,
             name: true,
             slug: true,
-            isVerified: true
-          }
+            isVerified: true,
+          },
         },
         seller: {
           include: {
             user: {
               select: {
-                name: true
-              }
-            }
-          }
-        }
-      }
+                name: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     if (!product) {
@@ -306,13 +324,13 @@ router.get("/:id", async (req, res) => {
       totalReviews: product.reviewCount || 0,
       store: {
         ...product.store,
-        rating: 5 // Placeholder rating
+        rating: 5, // Placeholder rating
       },
       seller: {
         id: product.sellerId,
         rating: product.seller?.rating || 5,
-        storeName: product.store?.name || product.seller?.user?.name || 'Loja'
-      }
+        storeName: product.store?.name || product.seller?.user?.name || "Loja",
+      },
     };
 
     res.json(formattedProduct);
@@ -363,7 +381,7 @@ router.get("/:id/related", async (req, res) => {
       throw error;
     }
 
-    res.set('Content-Type', 'application/json; charset=utf-8');
+    res.set("Content-Type", "application/json; charset=utf-8");
     res.json({
       products: relatedProducts || [],
     });
@@ -540,5 +558,132 @@ router.post(
     }
   }
 );
+
+// PUT /api/products/:id - Atualizar produto
+router.put("/:id", authenticate, protectRoute(["SELLER", "ADMIN"]), async (req, res) => {
+  try {
+    const productId = req.params.id;
+    const updateData = req.body;
+
+    console.log("🚀 PUT route called for product:", productId);
+    console.log("🔄 Atualizando produto:", productId, updateData);
+
+    // Verificar se o produto existe e se o seller tem permissão
+    const { data: existingProduct, error: fetchError } = await supabase
+      .from("Product")
+      .select("sellerId")
+      .eq("id", productId)
+      .single();
+
+    if (fetchError || !existingProduct) {
+      return res.status(404).json({
+        success: false,
+        error: "Produto não encontrado",
+      });
+    }
+
+    // Verificar se o seller é o dono do produto (exceto admin)
+    if (req.user.type !== "ADMIN" && existingProduct.sellerId !== req.user.sellerId) {
+      return res.status(403).json({
+        success: false,
+        error: "Sem permissão para editar este produto",
+      });
+    }
+
+    // Atualizar produto
+    const { data: updatedProduct, error: updateError } = await supabase
+      .from("Product")
+      .update({
+        ...updateData,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq("id", productId)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error("❌ Erro ao atualizar produto:", updateError);
+      return res.status(500).json({
+        success: false,
+        error: "Erro ao atualizar produto",
+      });
+    }
+
+    console.log("✅ Produto atualizado:", productId);
+
+    res.json({
+      success: true,
+      message: "Produto atualizado com sucesso",
+      product: updatedProduct,
+    });
+  } catch (error) {
+    console.error("❌ Erro ao atualizar produto:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erro interno do servidor",
+    });
+  }
+});
+
+// DELETE /api/products/:id - Deletar produto
+router.delete("/:id", authenticate, protectRoute(["SELLER", "ADMIN"]), async (req, res) => {
+  try {
+    const productId = req.params.id;
+
+    console.log("🗑️ Deletando produto:", productId);
+
+    // Verificar se o produto existe e se o seller tem permissão
+    const { data: existingProduct, error: fetchError } = await supabase
+      .from("Product")
+      .select("sellerId, name")
+      .eq("id", productId)
+      .single();
+
+    if (fetchError || !existingProduct) {
+      return res.status(404).json({
+        success: false,
+        error: "Produto não encontrado",
+      });
+    }
+
+    // Verificar se o seller é o dono do produto (exceto admin)
+    if (req.user.type !== "ADMIN" && existingProduct.sellerId !== req.user.sellerId) {
+      return res.status(403).json({
+        success: false,
+        error: "Sem permissão para deletar este produto",
+      });
+    }
+
+    // Soft delete - marcar como inativo ao invés de deletar
+    const { error: deleteError } = await supabase
+      .from("Product")
+      .update({
+        isActive: false,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq("id", productId);
+
+    if (deleteError) {
+      console.error("❌ Erro ao deletar produto:", deleteError);
+      return res.status(500).json({
+        success: false,
+        error: "Erro ao deletar produto",
+      });
+    }
+
+    console.log("✅ Produto deletado (soft delete):", productId);
+
+    res.json({
+      success: true,
+      message: `Produto "${existingProduct.name}" removido com sucesso`,
+    });
+  } catch (error) {
+    console.error("❌ Erro ao deletar produto:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erro interno do servidor",
+    });
+  }
+});
 
 export default router;

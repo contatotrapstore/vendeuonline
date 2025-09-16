@@ -67,33 +67,33 @@ export default function SellerPlansPage() {
   useEffect(() => {
     // Verificar autenticação e tipo de usuário
     if (!user || user.userType !== "seller") {
-      navigate("/");
+      navigate("/login");
       return;
     }
 
     loadPlansAndSubscription();
-  }, [user]);
+  }, [user, navigate]);
 
   const loadPlansAndSubscription = async () => {
     try {
       setIsLoading(true);
-      
+
       // Buscar planos disponíveis usando dados reais do Supabase
-      const plansData = await apiRequest('/api/plans', { token });
+      const plansData = await apiRequest("/api/plans", { token });
       if (plansData?.data) {
         setPlans(plansData.data);
       }
 
       // Buscar assinatura atual
       try {
-        const subscriptionData = await apiRequest('/api/sellers/subscription', { token });
+        const subscriptionData = await apiRequest("/api/sellers/subscription", { token });
         if (subscriptionData?.data) {
           setCurrentSubscription(subscriptionData.data);
         }
       } catch (subscriptionError) {
         // Se não tem assinatura, criar uma padrão para o plano gratuito
         if (plansData?.data?.length > 0) {
-          const freePlan = plansData.data.find(p => p.price === 0) || plansData.data[0];
+          const freePlan = plansData.data.find((p) => p.price === 0) || plansData.data[0];
           setCurrentSubscription({
             id: "default",
             planId: freePlan.id,
@@ -119,15 +119,15 @@ export default function SellerPlansPage() {
 
     setIsUpgrading(planId);
     try {
-      const result = await apiRequest('/api/sellers/upgrade', {
-        method: 'POST',
+      const result = await apiRequest("/api/sellers/upgrade", {
+        method: "POST",
         token,
         body: JSON.stringify({ planId }),
         headers: {
-          'Content-Type': 'application/json'
-        }
+          "Content-Type": "application/json",
+        },
       });
-        
+
       if (result?.data?.paymentUrl) {
         // Redirecionar para pagamento
         window.open(result.data.paymentUrl, "_blank");
@@ -163,9 +163,9 @@ export default function SellerPlansPage() {
 
   const canUpgrade = (planId: string) => {
     if (!currentSubscription) return false;
-    const currentPlan = plans.find(p => p.id === currentSubscription.planId);
-    const targetPlan = plans.find(p => p.id === planId);
-    
+    const currentPlan = plans.find((p) => p.id === currentSubscription.planId);
+    const targetPlan = plans.find((p) => p.id === planId);
+
     if (!currentPlan || !targetPlan) return false;
     return targetPlan.order > currentPlan.order;
   };
@@ -212,11 +212,11 @@ export default function SellerPlansPage() {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-lg font-semibold text-gray-900">Minha Assinatura</h2>
-                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  currentSubscription.status === "active" 
-                    ? "bg-green-100 text-green-800" 
-                    : "bg-red-100 text-red-800"
-                }`}>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    currentSubscription.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                  }`}
+                >
                   {currentSubscription.status === "active" ? "Ativa" : "Inativa"}
                 </span>
               </div>
@@ -230,10 +230,9 @@ export default function SellerPlansPage() {
                   <div>
                     <p className="text-sm text-gray-600">Valor</p>
                     <p className="font-medium text-gray-900">
-                      {currentSubscription.plan.price === 0 
-                        ? "Gratuito" 
-                        : `R$ ${currentSubscription.plan.price.toFixed(2)}/mês`
-                      }
+                      {currentSubscription.plan.price === 0
+                        ? "Gratuito"
+                        : `R$ ${currentSubscription.plan.price.toFixed(2)}/mês`}
                     </p>
                   </div>
                 </div>
@@ -291,8 +290,8 @@ export default function SellerPlansPage() {
                   plan.popular
                     ? "border-blue-500 ring-2 ring-blue-200"
                     : isCurrent
-                    ? "border-green-500 ring-2 ring-green-200"
-                    : "border-gray-200 hover:border-blue-300"
+                      ? "border-green-500 ring-2 ring-green-200"
+                      : "border-gray-200 hover:border-blue-300"
                 }`}
               >
                 {plan.popular && (
@@ -300,7 +299,7 @@ export default function SellerPlansPage() {
                     ⭐ Mais Popular
                   </div>
                 )}
-                
+
                 <div className="p-6">
                   <div className="flex items-center justify-between mb-4">
                     <Icon className={`h-8 w-8 ${isCurrent ? "text-green-600" : "text-blue-600"}`} />
@@ -319,9 +318,7 @@ export default function SellerPlansPage() {
                       <span className="text-3xl font-bold text-gray-900">
                         {plan.price === 0 ? "Grátis" : `R$ ${plan.price.toFixed(2)}`}
                       </span>
-                      {plan.price > 0 && (
-                        <span className="text-gray-600 ml-1">/mês</span>
-                      )}
+                      {plan.price > 0 && <span className="text-gray-600 ml-1">/mês</span>}
                     </div>
                   </div>
 
@@ -356,8 +353,8 @@ export default function SellerPlansPage() {
                       isCurrent
                         ? "bg-green-100 text-green-800 cursor-not-allowed"
                         : canUpgradeToThis
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                        : "bg-gray-100 text-gray-500 cursor-not-allowed"
+                          ? "bg-blue-600 text-white hover:bg-blue-700"
+                          : "bg-gray-100 text-gray-500 cursor-not-allowed"
                     } ${isUpgrading === plan.id ? "opacity-50" : ""}`}
                   >
                     {isUpgrading === plan.id ? (
@@ -382,29 +379,29 @@ export default function SellerPlansPage() {
         {/* FAQ / Ajuda */}
         <div className="mt-12 bg-white rounded-lg shadow-sm border p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Dúvidas Frequentes</h2>
-          
+
           <div className="space-y-4">
             <div className="border-b border-gray-200 pb-4">
               <h3 className="font-medium text-gray-900 mb-2">Como funciona a cobrança?</h3>
               <p className="text-sm text-gray-600">
-                A cobrança é realizada mensalmente no cartão de crédito cadastrado. 
-                O valor é proporcional ao período de uso.
+                A cobrança é realizada mensalmente no cartão de crédito cadastrado. O valor é proporcional ao período de
+                uso.
               </p>
             </div>
-            
+
             <div className="border-b border-gray-200 pb-4">
               <h3 className="font-medium text-gray-900 mb-2">Posso cancelar a qualquer momento?</h3>
               <p className="text-sm text-gray-600">
-                Sim, você pode cancelar sua assinatura a qualquer momento. 
-                O plano permanecerá ativo até o fim do período já pago.
+                Sim, você pode cancelar sua assinatura a qualquer momento. O plano permanecerá ativo até o fim do
+                período já pago.
               </p>
             </div>
-            
+
             <div>
               <h3 className="font-medium text-gray-900 mb-2">E se eu exceder os limites do plano?</h3>
               <p className="text-sm text-gray-600">
-                Você receberá notificações quando se aproximar dos limites. 
-                Para continuar usando todas as funcionalidades, será necessário fazer upgrade.
+                Você receberá notificações quando se aproximar dos limites. Para continuar usando todas as
+                funcionalidades, será necessário fazer upgrade.
               </p>
             </div>
           </div>

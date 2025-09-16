@@ -85,7 +85,7 @@ export default function SellerAnalyticsPage() {
 
   // Transformar dados da API para o formato dos gráficos
   const analyticsData = stats ? transformStatsToAnalyticsData(stats) : [];
-  const productsData = stats ? transformProductsToPerformance(stats.topProducts) : [];
+  const productsData = stats?.topProducts ? transformProductsToPerformance(stats.topProducts) : [];
   const categoriesData = generateCategoryData();
 
   // Calcular métricas

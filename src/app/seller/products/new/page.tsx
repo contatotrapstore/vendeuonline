@@ -80,23 +80,23 @@ export default function NewProductPage() {
   useEffect(() => {
     // Verificar autenticação
     if (!user || user.userType !== "seller") {
-      navigate("/");
+      navigate("/login");
       return;
     }
 
     loadCategories();
-  }, [user]);
+  }, [user, navigate]);
 
   const loadCategories = async () => {
     try {
       setLoadingCategories(true);
-      const response = await apiRequest('/api/categories', { token });
+      const response = await apiRequest("/api/categories", { token });
       if (response?.data) {
         setCategories(response.data);
       }
     } catch (error) {
-      console.error('Erro ao carregar categorias:', error);
-      toast.error('Erro ao carregar categorias');
+      console.error("Erro ao carregar categorias:", error);
+      toast.error("Erro ao carregar categorias");
     } finally {
       setLoadingCategories(false);
     }
@@ -275,9 +275,7 @@ export default function NewProductPage() {
                     errors.category ? "border-red-500" : "border-gray-300"
                   }`}
                 >
-                  <option value="">
-                    {loadingCategories ? "Carregando..." : "Selecione uma categoria"}
-                  </option>
+                  <option value="">{loadingCategories ? "Carregando..." : "Selecione uma categoria"}</option>
                   {categories.map((category) => (
                     <option key={category.id} value={category.id}>
                       {category.name}

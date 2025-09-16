@@ -3,20 +3,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
-import {
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  Camera,
-  Save,
-  Edit3,
-  Shield,
-  Key,
-  Bell,
-  CreditCard,
-} from "lucide-react";
+import { User, Mail, Phone, MapPin, Calendar, Camera, Save, Edit3, Shield, Key, Bell, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 
 interface SellerAccountData {
@@ -52,12 +39,12 @@ export default function SellerAccountPage() {
   useEffect(() => {
     // Verificar autenticação e tipo de usuário
     if (!user || user.userType !== "seller") {
-      navigate("/");
+      navigate("/login");
       return;
     }
 
     loadAccountData();
-  }, [user]);
+  }, [user, navigate]);
 
   const loadAccountData = async () => {
     try {
@@ -139,7 +126,7 @@ export default function SellerAccountPage() {
 
       if (response.ok) {
         const updatedData = await response.json();
-        
+
         // Atualizar dados do usuário no store
         updateUser({
           ...user,
@@ -259,7 +246,7 @@ export default function SellerAccountPage() {
               {tabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
-                
+
                 return (
                   <button
                     key={tab.id}
@@ -285,7 +272,7 @@ export default function SellerAccountPage() {
               {activeTab === "profile" && (
                 <div className="p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-6">Informações Pessoais</h3>
-                  
+
                   {/* Avatar */}
                   <div className="mb-8">
                     <div className="flex items-center space-x-6">
@@ -317,9 +304,7 @@ export default function SellerAccountPage() {
                   {/* Campos do formulário */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nome Completo *
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Nome Completo *</label>
                       <input
                         type="text"
                         value={accountData.name}
@@ -330,9 +315,7 @@ export default function SellerAccountPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        E-mail *
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">E-mail *</label>
                       <input
                         type="email"
                         value={accountData.email}
@@ -343,9 +326,7 @@ export default function SellerAccountPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Telefone *
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Telefone *</label>
                       <input
                         type="tel"
                         value={accountData.phone}
@@ -356,9 +337,7 @@ export default function SellerAccountPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        CPF
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">CPF</label>
                       <input
                         type="text"
                         value={accountData.cpf || ""}
@@ -370,9 +349,7 @@ export default function SellerAccountPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Cidade *
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Cidade *</label>
                       <input
                         type="text"
                         value={accountData.city}
@@ -383,9 +360,7 @@ export default function SellerAccountPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Estado *
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Estado *</label>
                       <input
                         type="text"
                         value={accountData.state}
@@ -396,9 +371,7 @@ export default function SellerAccountPage() {
                     </div>
 
                     <div className="lg:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Bio
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
                       <textarea
                         value={accountData.bio || ""}
                         onChange={(e) => handleInputChange("bio", e.target.value)}
@@ -416,7 +389,7 @@ export default function SellerAccountPage() {
               {activeTab === "notifications" && (
                 <div className="p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-6">Preferências de Notificação</h3>
-                  
+
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <div>
@@ -467,7 +440,7 @@ export default function SellerAccountPage() {
               {activeTab === "privacy" && (
                 <div className="p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-6">Configurações de Privacidade</h3>
-                  
+
                   <div className="space-y-6">
                     <div className="flex items-center justify-between">
                       <div>
@@ -504,7 +477,7 @@ export default function SellerAccountPage() {
               {activeTab === "security" && (
                 <div className="p-6">
                   <h3 className="text-lg font-medium text-gray-900 mb-6">Segurança da Conta</h3>
-                  
+
                   <div className="space-y-6">
                     <div className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between">

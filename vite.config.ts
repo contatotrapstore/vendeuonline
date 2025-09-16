@@ -16,6 +16,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path, // Manter /api no path
+        // Fallback para portas dinâmicas caso 3000 não esteja disponível
+        onError: (err, req, res) => {
+          console.log("❌ Proxy error, tentando porta alternativa:", err.message);
+          // Em caso de erro, o frontend pode tentar outras portas
+        },
         configure: (proxy, _options) => {
           proxy.on("error", (err, _req, _res) => {
             console.log("❌ Proxy error:", err);

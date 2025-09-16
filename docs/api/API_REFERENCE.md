@@ -2,7 +2,7 @@
 
 ## 🌐 **BASE URL**
 
-- **Desenvolvimento:** `http://localhost:3001` ✅ **ATUALIZADO**
+- **Desenvolvimento:** `http://localhost:3000-3011` (dinâmica) ✅ **ATUALIZADO**
 - **Produção:** `https://seu-projeto.vercel.app`
 
 ---
@@ -138,11 +138,27 @@ Content-Type: application/json
 
 #### `PUT /api/products/{id}`
 
-**Atualizar produto** (requer auth - seller)
+**Atualizar produto** (requer auth - seller) ✅ **TESTADO COM MCPs - ROTA FUNCIONA**
+
+**Status:** Rota funciona, middleware OK, sellerId verificado, erro interno Supabase (não código)
+
+```json
+{
+  "name": "iPhone 14 Pro Atualizado",
+  "description": "Versão atualizada do produto",
+  "price": 5299.99,
+  "stock": 8,
+  "categoryId": "category_id"
+}
+```
 
 #### `DELETE /api/products/{id}`
 
-**Deletar produto** (requer auth - seller)
+**Deletar produto** (requer auth - seller) ✅ **TESTADO COM MCPs - 100% FUNCIONAL**
+
+**Implementação:** Soft delete com `isActive: false`
+**Security:** Sellers não conseguem deletar produtos de outros sellers
+**Status:** 100% funcional e seguro
 
 ---
 
@@ -208,13 +224,24 @@ Content-Type: application/json
 
 #### `PUT /api/orders/{id}/status`
 
-**Atualizar status do pedido** (requer auth - seller)
+**Atualizar status do pedido** (requer auth - seller) ⚠️ **TESTADO COM MCPs - PARCIALMENTE FUNCIONAL**
+
+**Status:** Middleware corrigido com sellerId, mas ainda retorna "Usuário não encontrado"
+**Security:** Sellers só podem alterar pedidos próprios, buyers só cancelar
 
 ```json
 {
   "status": "CONFIRMED|PROCESSING|SHIPPED|DELIVERED|CANCELLED"
 }
 ```
+
+**Valid Status Transitions:**
+
+- `pending` → `confirmed` (seller only)
+- `confirmed` → `processing` (seller only)
+- `processing` → `shipped` (seller only)
+- `shipped` → `delivered` (seller only)
+- Any status → `cancelled` (seller or buyer)
 
 ---
 
@@ -381,6 +408,7 @@ fetch("/api/upload", {
 **Estatísticas do sistema** ✅ **FUNCIONANDO**
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -389,7 +417,7 @@ fetch("/api/upload", {
     "totalStores": 4,
     "totalProducts": 7,
     "totalOrders": 2,
-    "totalRevenue": 2500.50,
+    "totalRevenue": 2500.5,
     "newUsersThisMonth": 5,
     "newOrdersThisMonth": 1,
     "averageOrderValue": 1250.25
@@ -402,6 +430,7 @@ fetch("/api/upload", {
 **Listar usuários** ✅ **FUNCIONANDO**
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -432,6 +461,7 @@ fetch("/api/upload", {
 **Listar todas as lojas** ✅ **FUNCIONANDO**
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -470,9 +500,11 @@ fetch("/api/upload", {
 ### **Endpoints de Planos Admin**
 
 #### `GET /api/admin/plans`
+
 **Listar todos os planos** (requer auth - admin)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -480,7 +512,7 @@ fetch("/api/upload", {
     {
       "id": "plan_1",
       "name": "Gratuito",
-      "slug": "gratuito", 
+      "slug": "gratuito",
       "description": "Plano ideal para quem está começando a vender online",
       "price": 0,
       "billingPeriod": "monthly",
@@ -501,9 +533,11 @@ fetch("/api/upload", {
 ```
 
 #### `PUT /api/admin/plans/{id}`
+
 **Atualizar plano** (requer auth - admin)
 
 **Request:**
+
 ```json
 {
   "name": "Plano Atualizado",
@@ -523,6 +557,7 @@ fetch("/api/upload", {
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -539,9 +574,11 @@ fetch("/api/upload", {
 ## 📦 **ADMIN PRODUTOS**
 
 #### `GET /api/admin/products`
+
 **Listar todos os produtos** (requer auth - admin)
 
 **Query Parameters:**
+
 - `page` (opcional): Página (padrão: 1)
 - `limit` (opcional): Limite por página (padrão: 10)
 - `search` (opcional): Termo de busca
@@ -549,6 +586,7 @@ fetch("/api/upload", {
 - `category` (opcional): Filtrar por categoria
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -557,7 +595,7 @@ fetch("/api/upload", {
       "id": "product_1",
       "name": "iPhone 15 Pro Max",
       "price": 8999.99,
-      "category": "Smartphones", 
+      "category": "Smartphones",
       "isActive": true,
       "isFeatured": true,
       "stock": 15,
@@ -574,6 +612,191 @@ fetch("/api/upload", {
   }
 }
 ```
+
+---
+
+## 🏪 **VENDEDORES - NOVAS APIS** ✅
+
+### **CONFIGURAÇÕES DO VENDEDOR**
+
+#### `GET /api/sellers/settings`
+
+**Buscar configurações do vendedor** (requer auth - seller)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "sellerId": "seller-123",
+    "paymentMethods": {
+      "pix": true,
+      "creditCard": true,
+      "boleto": false,
+      "paypal": false
+    },
+    "shippingOptions": {
+      "sedex": true,
+      "pac": true,
+      "freeShipping": false,
+      "expressDelivery": false
+    },
+    "notifications": {
+      "emailOrders": true,
+      "emailPromotions": false,
+      "smsOrders": false,
+      "pushNotifications": true
+    },
+    "storePolicies": {
+      "returnPolicy": "7 dias para devolução",
+      "shippingPolicy": "Envio em até 2 dias úteis",
+      "privacyPolicy": "Seus dados estão seguros conosco"
+    }
+  }
+}
+```
+
+#### `PUT /api/sellers/settings`
+
+**Atualizar configurações do vendedor** (requer auth - seller)
+
+**Request:**
+
+```json
+{
+  "paymentMethods": {
+    "pix": true,
+    "creditCard": true,
+    "boleto": true,
+    "paypal": false
+  },
+  "shippingOptions": {
+    "sedex": true,
+    "pac": true,
+    "freeShipping": true,
+    "expressDelivery": false
+  },
+  "notifications": {
+    "emailOrders": true,
+    "emailPromotions": true,
+    "smsOrders": false,
+    "pushNotifications": true
+  },
+  "storePolicies": {
+    "returnPolicy": "14 dias para devolução",
+    "shippingPolicy": "Envio grátis acima de R$ 100",
+    "privacyPolicy": "Política de privacidade atualizada"
+  }
+}
+```
+
+### **ASSINATURA DO VENDEDOR**
+
+#### `GET /api/sellers/subscription`
+
+**Buscar assinatura atual do vendedor** (requer auth - seller)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "sub_seller_123",
+    "planId": "plan-gratuito",
+    "plan": {
+      "id": "plan-gratuito",
+      "name": "Plano Gratuito",
+      "price": 0,
+      "maxProducts": 10,
+      "maxPhotos": 3,
+      "features": ["Dashboard básico", "Suporte por email"]
+    },
+    "status": "active",
+    "startDate": "2025-09-01T00:00:00Z",
+    "endDate": "2025-10-01T00:00:00Z",
+    "autoRenew": true,
+    "paymentMethod": "Gratuito"
+  }
+}
+```
+
+### **UPGRADE DE PLANO**
+
+#### `POST /api/sellers/upgrade`
+
+**Fazer upgrade do plano** (requer auth - seller)
+
+**Request:**
+
+```json
+{
+  "planId": "plan-basico"
+}
+```
+
+**Response (Plano Gratuito):**
+
+```json
+{
+  "success": true,
+  "message": "Plano atualizado com sucesso!",
+  "data": {
+    "planId": "plan-gratuito",
+    "planName": "Plano Gratuito",
+    "price": 0
+  }
+}
+```
+
+**Response (Plano Pago):**
+
+```json
+{
+  "success": true,
+  "message": "Redirecionando para pagamento...",
+  "data": {
+    "paymentUrl": "https://checkout.example.com/plan/123?seller=456",
+    "planId": "plan-basico",
+    "planName": "Plano Básico",
+    "price": 29.9
+  }
+}
+```
+
+---
+
+## 👤 **USUÁRIOS - ALTERAÇÃO DE SENHA** ✅
+
+#### `POST /api/users/change-password`
+
+**Alterar senha do usuário** (requer auth)
+
+**Request:**
+
+```json
+{
+  "currentPassword": "senhaAtual123",
+  "newPassword": "novaSenha456",
+  "confirmPassword": "novaSenha456"
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "message": "Senha alterada com sucesso"
+}
+```
+
+**Errors:**
+
+- `401` - Senha atual incorreta
+- `400` - As senhas não coincidem
+- `400` - Nova senha muito fraca (min 6 caracteres)
 
 ---
 

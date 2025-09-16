@@ -21,21 +21,16 @@ export default function AdminDashboard() {
   const { isAdmin } = usePermissions();
   const { stats, loading, error, fetchDashboardStats, clearError } = useAdminStore();
 
-  console.log("Admin Dashboard - User:", user);
-  console.log("Admin Dashboard - isAdmin:", isAdmin);
-  console.log("Admin Dashboard - User type:", user?.userType);
-  console.log("Admin Dashboard - Stats:", stats);
+  // Debug logs removidos para produção
 
   useEffect(() => {
     // Verificar autenticação e permissões
     if (!user) {
-      console.log("No user found, redirecting to login");
       window.location.href = "/login";
       return;
     }
 
     if (user.userType !== "admin") {
-      console.log("User is not admin, redirecting to home");
       window.location.href = "/";
       return;
     }
