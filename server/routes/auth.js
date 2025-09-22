@@ -12,9 +12,11 @@ import { autoNotify } from "../middleware/notifications.js";
 const router = express.Router();
 
 // JWT Secret
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error("❌ JWT_SECRET não está configurado no ambiente");
+  process.exit(1);
+}
 
 // Função auxiliar para hash da senha
 const hashPassword = async (password) => {
@@ -436,6 +438,99 @@ router.post(
       success: true,
       message: "Senha alterada com sucesso",
     });
+  })
+);
+
+// GET /api/auth/me - Obter dados do usuário autenticado
+router.get(
+  "/me",
+  authenticateUser,
+  asyncHandler(async (req, res) => {
+    console.log("🔍 Buscando dados do usuário:", req.user.email);
+
+    try {
+      // Se for vendedor, buscar dados completos do seller e store
+      if (req.user.type === "SELLER") {
+        console.log("📊 Buscando dados do vendedor...");
+
+        const { data: seller, error: sellerError } = await supabase
+          .from("sellers")
+          .select(
+            `
+            id,
+            planId,
+            rating,
+            totalSales,
+            commission,
+            isVerified,
+            stores(
+              id,
+              name,
+              slug,
+              description,
+              email,
+              phone,
+              city,
+              state,
+              logo,
+              banner,
+              isVerified,
+              isActive
+            )
+          `
+          )
+          .eq("userId", req.user.id)
+          .single();
+
+        if (!sellerError && seller) {
+          console.log("✅ Dados do seller encontrados:", seller.id);
+
+          // Estruturar dados do seller no formato esperado pelo frontend
+          req.user.seller = {
+            id: seller.id,
+            rating: seller.rating,
+            totalSales: seller.totalSales,
+            isVerified: seller.isVerified,
+            store: seller.stores?.[0] || null, // Primeira loja se existir
+          };
+        } else {
+          console.log("⚠️ Dados do seller não encontrados");
+        }
+      }
+
+      // Se for comprador, buscar dados do buyer
+      if (req.user.type === "BUYER") {
+        const { data: buyer, error: buyerError } = await supabase
+          .from("buyers")
+          .select("id")
+          .eq("userId", req.user.id)
+          .single();
+
+        if (!buyerError && buyer) {
+          req.user.buyer = {
+            id: buyer.id,
+            wishlistCount: 0, // TODO: implementar contagem real
+            orderCount: 0, // TODO: implementar contagem real
+          };
+        }
+      }
+
+      // Remover senha da resposta
+      const { password, ...userData } = req.user;
+      userData.userType = req.user.type.toLowerCase();
+
+      console.log("✅ Dados do usuário carregados com sucesso");
+      res.json({
+        success: true,
+        user: userData,
+      });
+    } catch (error) {
+      console.error("❌ Erro ao buscar dados do usuário:", error);
+      res.status(500).json({
+        success: false,
+        error: "Erro ao carregar dados do usuário",
+      });
+    }
   })
 );
 

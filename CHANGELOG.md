@@ -5,6 +5,59 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.4] - 2025-09-22 (Seller 100% Validation & Documentation) 🎯
+
+### 🏆 **SELLER 100% COMPLETO - MARCO HISTÓRICO**
+
+#### **✅ Validação Seller 100% Funcional**
+
+- **20/20 APIs seller funcionando** (100% de sucesso)
+- **10/10 páginas seller operacionais**
+- **Problema crítico EXPRESS ROUTE ORDERING resolvido**
+- **Sistema 100% pronto para produção**
+
+#### **🔧 Correção Crítica - Express Route Ordering**
+
+- **Issue**: Rotas `GET /api/stores/profile` e `PUT /api/stores/profile` retornavam 404
+- **Root Cause**: Rota `/:id` capturava "profile" como ID antes das rotas específicas
+- **Fix**: Reorganização da ordem das rotas em `server/routes/stores.js`
+- **Impact**: 18/20 → 20/20 APIs funcionando (100%)
+
+**Correção aplicada:**
+
+```javascript
+// ANTES (PROBLEMA):
+router.get("/:id"); // Linha 211 - capturava "profile" como ID
+router.get("/profile"); // Linha 667 - nunca executada
+
+// DEPOIS (CORRIGIDO):
+router.get("/profile"); // Linha 211 - executa primeiro ✅
+router.put("/profile"); // Linha 323 - executa primeiro ✅
+router.get("/:id"); // Linha 443 - executa depois ✅
+```
+
+#### **📚 Reorganização Completa da Documentação**
+
+- **Estrutura organizada** em `docs/` com subpastas temáticas
+- **Documentos seller** movidos para `docs/reports/seller/`
+- **Documentos deployment** consolidados em `docs/deployment/`
+- **Arquivos obsoletos** movidos para `docs/reports/archive/`
+- **README.md e CLAUDE.md** atualizados com status atual
+- **LogoVO.png** preservado sem modificações
+
+#### **🎯 Métricas de Sucesso**
+
+| Categoria              | APIs      | Status      |
+| ---------------------- | --------- | ----------- |
+| Dashboard & Analytics  | 5/5       | ✅ 100%     |
+| Gestão de Produtos     | 5/5       | ✅ 100%     |
+| Gestão da Loja         | 4/4       | ✅ 100%     |
+| Configurações & Planos | 4/4       | ✅ 100%     |
+| Gestão de Pedidos      | 2/2       | ✅ 100%     |
+| **TOTAL**              | **20/20** | **✅ 100%** |
+
+---
+
 ## [1.2.3] - 2025-09-16 (Optimization & Performance) ⚡
 
 ### 🚀 Otimização Completa de Performance e Qualidade

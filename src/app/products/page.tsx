@@ -318,7 +318,7 @@ export default function ProductsPage() {
                           id: product.id,
                           name: product.name,
                           price: product.price,
-                          image: product.images?.[0]?.url || "/placeholder-product.png",
+                          image: product.images?.[0]?.url || "/assets/default-product.svg",
                           store: product.store?.name || "Loja",
                           maxQuantity: product.stock,
                         });

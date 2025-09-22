@@ -107,8 +107,29 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
       const currentPeriod = period || get().period;
       const response = await apiRequest(`/api/seller/analytics?period=${currentPeriod.replace("d", "")}`);
 
+      // A API retorna { success: true, data: {...} }
+      const statsData = response?.data || response;
+
+      // Estruturar dados corretamente para o frontend
+      const formattedStats = {
+        summary: {
+          totalRevenue: statsData?.revenue || 0,
+          totalOrders: statsData?.orders || 0,
+          totalVisits: statsData?.visits || 0,
+          conversionRate: statsData?.conversionRate || 0,
+          averageOrderValue: statsData?.averageOrderValue || 0,
+        },
+        comparison: statsData?.comparison || {
+          revenueChange: 0,
+          ordersChange: 0,
+          visitsChange: 0,
+        },
+        topProducts: [],
+        salesByDay: [],
+      };
+
       set({
-        stats: response,
+        stats: formattedStats,
         isLoading: false,
         period: currentPeriod,
       });
@@ -164,13 +185,41 @@ export const transformProductsToPerformance = (products: any[]): ProductPerforma
   }));
 };
 
-// Função para gerar dados de categoria (placeholder até ter dados reais)
-export const generateCategoryData = (): CategoryData[] => {
-  return [
-    { name: "Eletrônicos", value: 35, color: "#3B82F6" },
-    { name: "Roupas", value: 25, color: "#10B981" },
-    { name: "Casa", value: 20, color: "#F59E0B" },
-    { name: "Esportes", value: 12, color: "#EF4444" },
-    { name: "Outros", value: 8, color: "#8B5CF6" },
-  ];
+// Função para calcular distribuição real de categorias
+export const calculateCategoryData = async (): Promise<CategoryData[]> => {
+  try {
+    const token = getStoredToken();
+    if (!token) return [];
+
+    // Buscar distribuição real de categorias via API
+    const response = await apiRequest("/api/seller/categories");
+
+    // Se a API retornar dados, usar eles
+    if (response?.success && response?.data && Array.isArray(response.data)) {
+      const colors = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#9333EA", "#EC4899"];
+
+      // Calcular total para percentuais
+      const total = response.data.reduce((sum: number, cat: any) => sum + (cat.count || 0), 0);
+
+      if (total === 0) return [];
+
+      return response.data
+        .filter((cat: any) => cat.count > 0)
+        .map((cat: any, index: number) => ({
+          name: cat.category || "Sem categoria",
+          value: Math.round((cat.count / total) * 100),
+          color: colors[index % colors.length],
+        }));
+    }
+
+    // Fallback: retornar array vazio se não houver dados
+    return [];
+  } catch (error) {
+    // Silenciar erros 404, 401 e retornar array vazio
+    if (error?.message?.includes("404") || error?.message?.includes("401")) {
+      return [];
+    }
+    console.warn("Distribuição de categorias não disponível");
+    return [];
+  }
 };

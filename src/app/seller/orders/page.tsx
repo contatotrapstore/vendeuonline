@@ -59,8 +59,7 @@ const actionLabels = {
 };
 
 export default function SellerOrdersPage() {
-  const { orders, isLoading, error, updateOrderStatus, addTrackingCode, cancelOrder, fetchOrders, clearError } =
-    useOrderStore();
+  const { orders, isLoading, error, updateOrderStatus, addTrackingCode, cancelOrder, clearError } = useOrderStore();
 
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -69,12 +68,75 @@ export default function SellerOrdersPage() {
   const [showTrackingModal, setShowTrackingModal] = useState(false);
   const [orderToTrack, setOrderToTrack] = useState<Order | null>(null);
 
-  // Filter orders for current store (in real app, filter by store ID)
-  const storeOrders = orders;
+  // Usa os pedidos já filtrados pela API do vendedor
+  const storeOrders = orders || [];
 
   useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+    // Buscar pedidos do seller usando endpoint correto
+    const fetchSellerOrders = async () => {
+      try {
+        const token = localStorage.getItem("auth-token");
+        if (!token) {
+          useOrderStore.setState({
+            orders: [],
+            isLoading: false,
+            error: "Faça login para ver seus pedidos",
+          });
+          return;
+        }
+
+        useOrderStore.setState({ isLoading: true, error: null });
+
+        const response = await fetch("/api/seller/orders", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error("Sessão expirada. Por favor, faça login novamente.");
+          }
+          throw new Error(`Erro ao buscar pedidos: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Garantir que sempre temos arrays vazios como fallback
+        const orders = Array.isArray(data?.orders)
+          ? data.orders
+          : Array.isArray(data?.data)
+            ? data.data
+            : Array.isArray(data)
+              ? data
+              : [];
+
+        useOrderStore.setState({
+          orders: orders,
+          pagination: data?.pagination || {
+            page: 1,
+            limit: 20,
+            total: orders.length,
+            totalPages: 1,
+            hasNext: false,
+            hasPrev: false,
+          },
+          isLoading: false,
+          error: null,
+        });
+      } catch (err) {
+        console.error("Erro ao buscar pedidos:", err);
+        const errorMessage = err instanceof Error ? err.message : "Erro ao carregar pedidos do vendedor";
+        useOrderStore.setState({
+          orders: [],
+          error: errorMessage,
+          isLoading: false,
+        });
+      }
+    };
+
+    fetchSellerOrders();
+  }, []);
 
   useEffect(() => {
     if (error) {
@@ -140,7 +202,7 @@ export default function SellerOrdersPage() {
     setShowTrackingModal(true);
   };
 
-  if (isLoading && orders.length === 0) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
         <div className="max-w-7xl mx-auto px-4">
@@ -155,6 +217,31 @@ export default function SellerOrdersPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Estado de erro não relacionado ao login
+  if (error && !error.includes("login")) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <div className="flex items-center gap-3">
+              <X className="h-5 w-5 text-red-600" />
+              <div>
+                <h3 className="font-medium text-red-900">Erro ao carregar pedidos</h3>
+                <p className="text-red-700 mt-1">{error}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              Tentar novamente
+            </button>
           </div>
         </div>
       </div>
@@ -274,7 +361,7 @@ export default function SellerOrdersPage() {
                         <div key={item.id} className="flex items-center gap-4">
                           <div className="w-16 h-16 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
                             <img
-                              src={item.product.images[0]?.url || "/placeholder.jpg"}
+                              src={item.product.images[0]?.url || "/assets/default-product.svg"}
                               alt={item.product.name}
                               className="w-full h-full object-cover"
                             />
@@ -516,7 +603,7 @@ export default function SellerOrdersPage() {
                         <div key={item.id} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
                           <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden">
                             <img
-                              src={item.product.images[0]?.url || "/placeholder.jpg"}
+                              src={item.product.images[0]?.url || "/assets/default-product.svg"}
                               alt={item.product.name}
                               className="w-full h-full object-cover"
                             />

@@ -31,7 +31,7 @@ import {
   useAnalyticsStore,
   transformStatsToAnalyticsData,
   transformProductsToPerformance,
-  generateCategoryData,
+  calculateCategoryData,
 } from "@/store/analyticsStore";
 import { useStoreData } from "@/store/authStore";
 import { toast } from "sonner";
@@ -86,19 +86,24 @@ export default function SellerAnalyticsPage() {
   // Transformar dados da API para o formato dos gráficos
   const analyticsData = stats ? transformStatsToAnalyticsData(stats) : [];
   const productsData = stats?.topProducts ? transformProductsToPerformance(stats.topProducts) : [];
-  const categoriesData = generateCategoryData();
+  const [categoriesData, setCategoriesData] = useState([]);
 
-  // Calcular métricas
-  const totalRevenue = stats?.summary.totalRevenue || 0;
-  const totalSales = stats?.summary.totalOrders || 0;
-  const totalViews = analyticsData.reduce((sum, item) => sum + item.views, 0);
-  const avgConversion = totalViews > 0 ? (totalSales / totalViews) * 100 : 0;
+  // Carregar dados de categorias
+  useEffect(() => {
+    calculateCategoryData().then((data) => setCategoriesData(data));
+  }, []);
 
-  // Calcular mudanças (comparação simples com dados disponíveis)
-  const revenueChange = 0; // Placeholder - API não retorna comparação ainda
-  const salesChange = 0;
-  const viewsChange = 0;
-  const ordersChange = 0;
+  // Calcular métricas com safe navigation
+  const totalRevenue = stats?.summary?.totalRevenue || 0;
+  const totalSales = stats?.summary?.totalOrders || 0;
+  const totalViews = stats?.summary?.totalVisits || analyticsData.reduce((sum, item) => sum + item.views, 0);
+  const avgConversion = stats?.summary?.conversionRate || (totalViews > 0 ? (totalSales / totalViews) * 100 : 0);
+
+  // Usar comparações reais da API (se disponíveis)
+  const revenueChange = stats?.comparison?.revenueChange || 0;
+  const salesChange = stats?.comparison?.ordersChange || 0;
+  const viewsChange = stats?.comparison?.visitsChange || 0;
+  const ordersChange = stats?.comparison?.ordersChange || 0;
 
   const getChangeIcon = (change: number) => {
     return change >= 0 ? (

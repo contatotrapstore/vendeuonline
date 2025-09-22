@@ -103,7 +103,7 @@ export function FeaturedStores({ stores, className = "" }: FeaturedStoresProps) 
                           </div>
                         )}
                         <img
-                          src={store.logo || "/placeholder-store.png"}
+                          src={store.logo || "/assets/default-store.svg"}
                           alt={`Logo da ${store.name}`}
                           className={`w-full h-full object-cover rounded-xl group-hover:scale-110 transition-transform duration-300 shadow-md ${
                             imageLoadStates[store.id] ? "opacity-100" : "opacity-0"

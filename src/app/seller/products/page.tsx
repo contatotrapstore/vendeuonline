@@ -26,7 +26,7 @@ const categoryOptions = [
 
 export default function SellerProductsPage() {
   const { user } = useAuthStore();
-  const { products, fetchProducts, updateProduct, deleteProduct } = useProductStore();
+  const { products, fetchSellerProducts, updateProduct, deleteProduct } = useProductStore();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -39,9 +39,9 @@ export default function SellerProductsPage() {
   // Fetch products for current seller on mount
   useEffect(() => {
     if (user?.id) {
-      fetchProducts({ sellerId: user.id });
+      fetchSellerProducts();
     }
-  }, [user?.id, fetchProducts]);
+  }, [user?.id, fetchSellerProducts]);
 
   // Since we're fetching by sellerId, all products returned will be from the current seller
   const sellerProducts = products;
@@ -53,7 +53,7 @@ export default function SellerProductsPage() {
       product.description.toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesStatus = statusFilter === "all" || (statusFilter === "active" ? product.isActive : !product.isActive);
-    const categoryName = typeof product.category === 'string' ? product.category : product.category?.name || '';
+    const categoryName = typeof product.category === "string" ? product.category : product.category?.name || "";
     const matchesCategory = categoryFilter === "all" || categoryName === categoryFilter;
 
     return matchesSearch && matchesStatus && matchesCategory;
@@ -276,7 +276,9 @@ export default function SellerProductsPage() {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {typeof product.category === 'string' ? product.category : product.category?.name || 'Sem categoria'}
+                            {typeof product.category === "string"
+                              ? product.category
+                              : product.category?.name || "Sem categoria"}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <div>

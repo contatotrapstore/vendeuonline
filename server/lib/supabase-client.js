@@ -4,15 +4,31 @@ import dotenv from "dotenv";
 // Carregar variáveis de ambiente
 dotenv.config();
 
-// URL e Keys do Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://dycsfnbqgojhttnjbndp.supabase.co";
-const supabaseAnonKey =
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3NDg2NTYsImV4cCI6MjA2OTMyNDY1Nn0.eLO91-DAAWWP-5g3MG19s6lDtFhrfOu3qk-TTlbrtbQ";
-// Service role key para operações administrativas
-const supabaseServiceKey =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw";
+// Validar variáveis de ambiente obrigatórias
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+  console.error("⚠️ NEXT_PUBLIC_SUPABASE_URL não está configurada no ambiente");
+}
+if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  console.error("⚠️ NEXT_PUBLIC_SUPABASE_ANON_KEY não está configurada no ambiente");
+}
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error("⚠️ SUPABASE_SERVICE_ROLE_KEY não está configurada no ambiente");
+}
+
+// URL e Keys do Supabase (somente de variáveis de ambiente)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Validar se as credenciais foram carregadas
+if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
+  console.error("❌ ERRO CRÍTICO: Credenciais do Supabase não configuradas!");
+  console.error("Configure as seguintes variáveis no arquivo .env:");
+  console.error("- NEXT_PUBLIC_SUPABASE_URL");
+  console.error("- NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  console.error("- SUPABASE_SERVICE_ROLE_KEY");
+  process.exit(1); // Encerrar aplicação se credenciais não estiverem configuradas
+}
 
 // Cliente normal (para operações gerais)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -28,9 +44,17 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
     autoRefreshToken: false,
     persistSession: false,
   },
+  db: {
+    schema: "public",
+  },
+  global: {
+    headers: {
+      Authorization: `Bearer ${supabaseServiceKey}`,
+    },
+  },
 });
 
-console.log("✅ Cliente Supabase inicializado com credenciais hardcoded");
+console.log("✅ Cliente Supabase inicializado com variáveis de ambiente");
 
 // Função para testar a conexão
 export async function testSupabaseConnection() {

@@ -21,9 +21,11 @@ const authenticate = async (req, res, next) => {
     }
 
     const token = authHeader.substring(7);
-    const jwtSecret =
-      process.env.JWT_SECRET ||
-      "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error("❌ JWT_SECRET não está configurado no ambiente");
+      process.exit(1);
+    }
     const decoded = jwt.verify(token, jwtSecret);
 
     // Buscar dados atualizados do usuário
@@ -406,6 +408,81 @@ router.post(
       // Validar dados de entrada
       const productData = createProductSchema.parse(req.body);
 
+      // VALIDAÇÃO DE LIMITES DE PLANO
+      if (req.user.type === "SELLER") {
+        // 1. Buscar plano atual do seller
+        const { data: seller, error: sellerError } = await supabase
+          .from("sellers")
+          .select(
+            `
+            id,
+            planId,
+            plans:planId (
+              id,
+              name,
+              maxProducts,
+              maxAds,
+              maxPhotos,
+              isActive
+            )
+          `
+          )
+          .eq("userId", req.user.userId)
+          .single();
+
+        if (sellerError || !seller) {
+          console.error("❌ Erro ao buscar seller:", sellerError);
+          return res.status(400).json({
+            error: "Seller não encontrado",
+            code: "SELLER_NOT_FOUND",
+          });
+        }
+
+        const sellerPlan = seller.plans;
+        if (!sellerPlan || !sellerPlan.isActive) {
+          return res.status(403).json({
+            error: "Plano inativo ou não encontrado",
+            code: "PLAN_INACTIVE",
+          });
+        }
+
+        console.log(`📊 Validando limites - Plano: ${sellerPlan.name}, Max Produtos: ${sellerPlan.maxProducts}`);
+
+        // 2. Contar produtos atuais do seller
+        if (sellerPlan.maxProducts !== -1) {
+          // -1 = ilimitado
+          const { count: currentProducts, error: countError } = await supabase
+            .from("Product")
+            .select("id", { count: "exact" })
+            .eq("sellerId", seller.id)
+            .eq("isActive", true);
+
+          if (countError) {
+            console.error("❌ Erro ao contar produtos:", countError);
+            return res.status(500).json({
+              error: "Erro interno ao validar limites",
+              code: "COUNT_ERROR",
+            });
+          }
+
+          console.log(`🔢 Produtos atuais: ${currentProducts}/${sellerPlan.maxProducts}`);
+
+          // 3. Verificar se excede o limite
+          if (currentProducts >= sellerPlan.maxProducts) {
+            return res.status(403).json({
+              error: `Limite de produtos excedido. Seu plano "${sellerPlan.name}" permite até ${sellerPlan.maxProducts} produtos ativos.`,
+              code: "PRODUCT_LIMIT_EXCEEDED",
+              details: {
+                currentCount: currentProducts,
+                maxAllowed: sellerPlan.maxProducts,
+                planName: sellerPlan.name,
+                upgradeRequired: true,
+              },
+            });
+          }
+        }
+      }
+
       // Gerar ID único para o produto
       const productId = `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
@@ -421,7 +498,7 @@ router.post(
             comparePrice: productData.comparePrice || null,
             stock: productData.stock,
             categoryId: productData.categoryId,
-            sellerId: req.user.userId,
+            sellerId: req.user.sellerId || req.user.userId,
             storeId: req.user.type === "SELLER" ? `store_${req.user.userId}` : "store_1",
             isActive: productData.isActive,
             isFeatured: req.user.type === "ADMIN" ? productData.isFeatured : false,

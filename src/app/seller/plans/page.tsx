@@ -86,7 +86,7 @@ export default function SellerPlansPage() {
 
       // Buscar assinatura atual
       try {
-        const subscriptionData = await apiRequest("/api/sellers/subscription", { token });
+        const subscriptionData = await apiRequest("/api/seller/subscription", { token });
         if (subscriptionData?.data) {
           setCurrentSubscription(subscriptionData.data);
         }
@@ -119,7 +119,7 @@ export default function SellerPlansPage() {
 
     setIsUpgrading(planId);
     try {
-      const result = await apiRequest("/api/sellers/upgrade", {
+      const result = await apiRequest("/api/seller/upgrade", {
         method: "POST",
         token,
         body: JSON.stringify({ planId }),

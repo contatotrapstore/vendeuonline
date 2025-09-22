@@ -4,9 +4,11 @@ import jwt from "jsonwebtoken";
 
 const router = express.Router();
 const prisma = new PrismaClient();
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error("❌ JWT_SECRET não está configurado no ambiente");
+  process.exit(1);
+}
 
 // Middleware de autenticação admin
 const authenticateAdmin = (req, res, next) => {

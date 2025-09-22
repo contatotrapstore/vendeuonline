@@ -62,6 +62,10 @@ import wishlistRouter from "./server/routes/wishlist.js";
 import reviewsRouter from "./server/routes/reviews.js";
 import paymentsRouter from "./server/routes/payments.js";
 import plansRouter from "./server/routes/plans.js";
+import usersRouter from "./server/routes/users.js";
+import cartRouter from "./server/routes/cart.js";
+import checkoutRouter from "./server/routes/checkout.js";
+import addressesRouter from "./server/routes/addresses.js";
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -290,6 +294,18 @@ app.use("/api/payments", paymentsRouter);
 
 // Rotas de planos (público)
 app.use("/api/plans", plansRouter);
+
+// Rotas de usuários (requer autenticação)
+app.use("/api/users", usersRouter);
+
+// Rotas de carrinho (requer autenticação)
+app.use("/api/cart", cartRouter);
+
+// Rotas de checkout (requer autenticação)
+app.use("/api/checkout", checkoutRouter);
+
+// Rotas de endereços (requer autenticação)
+app.use("/api/addresses", addressesRouter);
 
 // Funções de Auditoria
 const createAuditLog = async (

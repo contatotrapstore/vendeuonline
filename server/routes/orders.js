@@ -37,6 +37,11 @@ const authenticateUser = async (req, res, next) => {
     req.seller = user.sellers?.[0] || null;
     req.buyer = user.buyers?.[0] || null;
 
+    // Para buyers, se não existe buyer profile, criar referência fake temporária
+    if (user.type === "BUYER" && !req.buyer) {
+      req.buyer = { id: `buyer_${user.id}` };
+    }
+
     // Se for seller, adicionar sellerId ao req.user
     if (user.type === "SELLER" && req.seller) {
       req.user.sellerId = req.seller.id;
@@ -83,9 +88,9 @@ router.get("/", authenticateUser, async (req, res) => {
       query = query.eq("sellerId", req.seller.id);
     }
 
-    // Filtrar por comprador se usuário for buyer
-    if (user.type === "BUYER" && req.buyer) {
-      query = query.eq("buyerId", req.buyer.id);
+    // Filtrar por comprador se usuário for buyer (usar userId como buyerId)
+    if (user.type === "BUYER") {
+      query = query.eq("userId", user.id); // Buscar pelo userId ao invés de buyerId
     }
 
     // Filtrar por status se especificado
@@ -167,6 +172,123 @@ router.get("/", authenticateUser, async (req, res) => {
     console.error("Erro ao buscar pedidos:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
+    });
+  }
+});
+
+// GET /api/orders/:id - Buscar detalhes de um pedido específico
+router.get("/:id", authenticateUser, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = req.user;
+
+    console.log("🔍 Buscando pedido:", id, "usuário:", user.id);
+
+    let query = supabase
+      .from("Order")
+      .select(
+        `
+        *,
+        buyers!inner(
+          users!inner(name, email)
+        ),
+        stores!inner(name, slug),
+        OrderItem(
+          id,
+          quantity,
+          price,
+          Product!inner(
+            id,
+            name,
+            images:product_images(url, alt, isMain)
+          )
+        )
+      `
+      )
+      .eq("id", id)
+      .single();
+
+    // Verificar permissão: sellers veem seus pedidos, buyers veem os seus
+    if (user.type === "SELLER" && req.seller) {
+      query = query.eq("sellerId", req.seller.id);
+    } else if (user.type === "BUYER") {
+      query = query.eq("userId", user.id);
+    } else if (user.type !== "ADMIN") {
+      return res.status(403).json({
+        success: false,
+        error: "Sem permissão para acessar este pedido",
+      });
+    }
+
+    const { data: order, error } = await query;
+
+    if (error || !order) {
+      console.error("❌ Erro ao buscar pedido ou pedido não encontrado:", error);
+      return res.status(404).json({
+        success: false,
+        error: "Pedido não encontrado",
+      });
+    }
+
+    // Formatar dados para o frontend
+    const items =
+      order.OrderItem?.map((item) => ({
+        id: item.id || `item-${Math.random()}`,
+        productId: item.Product.id,
+        quantity: item.quantity,
+        price: parseFloat(item.price),
+        subtotal: parseFloat(item.price) * item.quantity,
+        product: {
+          name: item.Product.name,
+          images:
+            item.Product.images?.map((img) => ({
+              url: img.url,
+              alt: img.alt,
+              isMain: img.isMain,
+            })) || [],
+        },
+      })) || [];
+
+    const formattedOrder = {
+      id: order.id,
+      buyerId: order.buyerId,
+      sellerId: order.sellerId,
+      storeId: order.storeId,
+      status: order.status.toLowerCase(),
+      items,
+      subtotal: parseFloat(order.subtotal || 0),
+      shipping: parseFloat(order.shippingCost || 0),
+      tax: parseFloat(order.tax || 0),
+      discount: parseFloat(order.discount || 0),
+      total: parseFloat(order.total),
+      paymentMethod: order.paymentMethod,
+      paymentStatus: order.paymentStatus,
+      trackingCode: order.trackingCode,
+      estimatedDelivery: order.estimatedDelivery,
+      createdAt: order.createdAt,
+      updatedAt: order.updatedAt,
+      // Informações do comprador
+      buyerName: order.buyers?.users?.name || "Cliente",
+      buyerEmail: order.buyers?.users?.email || "",
+      // Informações da loja
+      storeName: order.stores?.name || "Loja",
+      storeSlug: order.stores?.slug || "",
+      // Endereço de entrega (se disponível)
+      shippingAddress: order.shippingAddress ? JSON.parse(order.shippingAddress) : null,
+    };
+
+    console.log("✅ Pedido encontrado:", order.id);
+
+    res.json({
+      success: true,
+      order: formattedOrder,
+    });
+  } catch (error) {
+    console.error("❌ Erro ao buscar pedido:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erro interno do servidor",
+      details: error.message,
     });
   }
 });

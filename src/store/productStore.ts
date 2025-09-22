@@ -44,6 +44,13 @@ interface ProductStore {
     sortOrder?: "asc" | "desc";
     sellerId?: string;
   }) => Promise<void>;
+  fetchSellerProducts: (params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    category?: string;
+    status?: string;
+  }) => Promise<void>;
   fetchProductById: (id: string) => Promise<Product | null>;
   createProduct: (product: {
     name: string;
@@ -181,6 +188,54 @@ export const useProductStore = create<ProductStore>((set, get) => ({
     } catch (error) {
       // Se for erro 404 ou similar, tratar como lista vazia em vez de erro
       const errorMessage = error instanceof Error ? error.message : "Erro ao carregar produtos";
+      const isNotFoundError = errorMessage.includes("404") || errorMessage.includes("não encontrado");
+
+      if (isNotFoundError) {
+        set({
+          products: [],
+          filteredProducts: [],
+          isEmpty: true,
+          loading: false,
+          error: null,
+        });
+      } else {
+        set({
+          error: errorMessage,
+          loading: false,
+        });
+      }
+    }
+  },
+
+  fetchSellerProducts: async (params = {}) => {
+    try {
+      set({ loading: true, error: null });
+
+      const searchParams = new URLSearchParams();
+      if (params.page) searchParams.append("page", params.page.toString());
+      if (params.limit) searchParams.append("limit", params.limit.toString());
+      if (params.search) searchParams.append("search", params.search);
+      if (params.category) searchParams.append("category", params.category);
+      if (params.status) searchParams.append("status", params.status);
+
+      const response = await apiGet(`/api/seller/products?${searchParams.toString()}`);
+
+      set({
+        products: response.data || [],
+        filteredProducts: response.data || [],
+        isEmpty: !response.data || response.data.length === 0,
+        pagination: {
+          page: response.pagination?.page || 1,
+          limit: response.pagination?.limit || 10,
+          total: response.pagination?.total || 0,
+          totalPages: response.pagination?.totalPages || 0,
+          hasNext: response.pagination?.hasNext || false,
+          hasPrev: response.pagination?.hasPrev || false,
+        },
+        loading: false,
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Erro ao carregar produtos do seller";
       const isNotFoundError = errorMessage.includes("404") || errorMessage.includes("não encontrado");
 
       if (isNotFoundError) {

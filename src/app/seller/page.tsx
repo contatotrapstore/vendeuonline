@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore, useStoreData } from "@/store/authStore";
 import {
   Package,
@@ -59,6 +60,7 @@ const getQuickActions = (stats) => [
 ];
 
 export default function SellerDashboard() {
+  const navigate = useNavigate();
   const { user, token } = useAuthStore();
   const { storeName, storeId, storeSlug } = useStoreData();
 
@@ -70,7 +72,7 @@ export default function SellerDashboard() {
   useEffect(() => {
     // Verificar autenticação e tipo de usuário
     if (!user || user.userType !== "seller") {
-      window.location.href = "/";
+      navigate("/");
       return;
     }
 
@@ -188,7 +190,7 @@ export default function SellerDashboard() {
 
                   if (storeId) {
                     console.log(`✅ Navegando para: /stores/${storeId}`);
-                    window.location.href = `/stores/${storeId}`;
+                    navigate(`/stores/${storeId}`);
                   } else {
                     console.log("❌ StoreId não encontrado");
                     alert("Sua loja ainda não foi criada. Configure sua loja primeiro.");
@@ -271,7 +273,7 @@ export default function SellerDashboard() {
                   return (
                     <button
                       key={index}
-                      onClick={() => (window.location.href = action.href)}
+                      onClick={() => navigate(action.href)}
                       className="w-full flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-left"
                     >
                       <div className={`p-2 rounded-lg ${action.color}`}>
@@ -327,7 +329,7 @@ export default function SellerDashboard() {
                 <div className="flex justify-between items-center">
                   <h3 className="text-lg font-medium text-gray-900">Pedidos Recentes</h3>
                   <button
-                    onClick={() => (window.location.href = "/seller/orders")}
+                    onClick={() => navigate("/seller/orders")}
                     className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                   >
                     Ver todos →
@@ -428,7 +430,7 @@ export default function SellerDashboard() {
                   </div>
                 </div>
                 <button
-                  onClick={() => (window.location.href = "/seller/orders?status=pending")}
+                  onClick={() => navigate("/seller/orders?status=pending")}
                   className="mt-3 text-sm text-yellow-800 hover:text-yellow-900 font-medium"
                 >
                   Ver pedidos →
@@ -448,7 +450,7 @@ export default function SellerDashboard() {
                   </div>
                 </div>
                 <button
-                  onClick={() => (window.location.href = "/seller/products?filter=low-stock")}
+                  onClick={() => navigate("/seller/products?filter=low-stock")}
                   className="mt-3 text-sm text-red-800 hover:text-red-900 font-medium"
                 >
                   Ver produtos →

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import {
   Shield,
@@ -71,52 +72,10 @@ interface PlanInfo {
   };
 }
 
-const plans = [
-  {
-    id: "free",
-    name: "Gratuito",
-    price: 0,
-    features: ["5 produtos", "1 foto por produto", "Suporte por email"],
-    productsLimit: 5,
-    photosPerProduct: 1,
-    popular: false,
-  },
-  {
-    id: "basic",
-    name: "Básico",
-    price: 29.9,
-    features: ["25 produtos", "5 fotos por produto", "Suporte prioritário", "Relatórios básicos"],
-    productsLimit: 25,
-    photosPerProduct: 5,
-    popular: true,
-  },
-  {
-    id: "pro",
-    name: "Profissional",
-    price: 59.9,
-    features: [
-      "100 produtos",
-      "10 fotos por produto",
-      "Suporte 24/7",
-      "Relatórios avançados",
-      "Integração com redes sociais",
-    ],
-    productsLimit: 100,
-    photosPerProduct: 10,
-    popular: false,
-  },
-  {
-    id: "enterprise",
-    name: "Empresarial",
-    price: 99.9,
-    features: ["Produtos ilimitados", "Fotos ilimitadas", "Suporte dedicado", "API personalizada", "Múltiplas lojas"],
-    productsLimit: 999999,
-    photosPerProduct: 999999,
-    popular: false,
-  },
-];
+// Plans will be loaded from API
 
 export default function SellerSettings() {
+  const navigate = useNavigate();
   const { user, token, logout } = useAuthStore();
   const [activeTab, setActiveTab] = useState("payment");
   const [isLoading, setIsLoading] = useState(false);
@@ -161,9 +120,12 @@ export default function SellerSettings() {
     monthlyReport: true,
   });
 
+  // Plans State
+  const [plans, setPlans] = useState<any[]>([]);
+
   // Plan Info
   const [planInfo, setPlanInfo] = useState<PlanInfo>({
-    current: plans[0],
+    current: plans[0] || null,
     usage: {
       productsUsed: 3,
       photosUsed: 8,
@@ -183,17 +145,32 @@ export default function SellerSettings() {
   useEffect(() => {
     // Verificar autenticação e tipo de usuário
     if (!user || user.userType !== "seller") {
-      window.location.href = "/";
+      navigate("/");
       return;
     }
 
     loadSettings();
   }, [user]);
 
+  // Atualizar planInfo quando plans são carregados
+  useEffect(() => {
+    if (plans.length > 0) {
+      setPlanInfo((prev) => ({
+        ...prev,
+        current: prev.current || plans[0],
+      }));
+      loadUsageData();
+    }
+  }, [plans]);
+
   const loadSettings = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/sellers/settings", {
+
+      // Carregar planos primeiro
+      await loadPlans();
+
+      const response = await fetch("/api/seller/settings", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -217,7 +194,7 @@ export default function SellerSettings() {
   const handlePaymentSave = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/sellers/settings", {
+      const response = await fetch("/api/seller/settings", {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -240,7 +217,7 @@ export default function SellerSettings() {
   const handleShippingSave = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/sellers/settings", {
+      const response = await fetch("/api/seller/settings", {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -260,10 +237,57 @@ export default function SellerSettings() {
     }
   };
 
+  const loadPlans = async () => {
+    try {
+      const response = await fetch("/api/plans", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPlans(data.plans || []);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar planos:", error);
+    }
+  };
+
+  const loadUsageData = async () => {
+    try {
+      // Buscar dados reais de uso do vendedor
+      const [productsRes, subscriptionRes] = await Promise.all([
+        fetch("/api/products?sellerId=" + user?.id, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch("/api/seller/subscription", {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      const productsData = productsRes.ok ? await productsRes.json() : { products: [] };
+      const subData = subscriptionRes.ok ? await subscriptionRes.json() : null;
+
+      if (subData?.data && plans.length > 0) {
+        const currentPlan = plans.find((p) => p.id === subData.data.planId) || plans[0];
+        setPlanInfo({
+          current: currentPlan,
+          usage: {
+            productsUsed: productsData.products?.length || 0,
+            photosUsed: productsData.products?.reduce((acc, p) => acc + (p.images?.length || 0), 0) || 0,
+          },
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao carregar dados de uso:", error);
+    }
+  };
+
   const handleNotificationSave = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/sellers/settings", {
+      const response = await fetch("/api/seller/settings", {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -326,7 +350,7 @@ export default function SellerSettings() {
   const handlePlanUpgrade = async (planId: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/sellers/upgrade-plan", {
+      const response = await fetch("/api/seller/upgrade", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -805,9 +829,13 @@ export default function SellerSettings() {
                     {/* Current Plan */}
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
                       <div className="flex items-center justify-between mb-4">
-                        <h4 className="font-medium text-blue-800">Plano Atual: {planInfo.current.name}</h4>
+                        <h4 className="font-medium text-blue-800">
+                          Plano Atual: {planInfo.current?.name || "Carregando..."}
+                        </h4>
                         <div className="text-right">
-                          <p className="text-2xl font-bold text-blue-600">R$ {planInfo.current.price.toFixed(2)}</p>
+                          <p className="text-2xl font-bold text-blue-600">
+                            R$ {planInfo.current?.price?.toFixed(2) || "0.00"}
+                          </p>
                           <p className="text-sm text-blue-600">/mês</p>
                         </div>
                       </div>
@@ -861,7 +889,7 @@ export default function SellerSettings() {
                           <div
                             key={plan.id}
                             className={`border rounded-lg p-4 relative ${
-                              plan.id === planInfo.current.name.toLowerCase().replace(" ", "")
+                              plan.id === planInfo.current?.name?.toLowerCase().replace(" ", "")
                                 ? "border-blue-500 bg-blue-50"
                                 : "border-gray-200"
                             } ${plan.popular ? "ring-2 ring-yellow-400" : ""}`}
@@ -891,7 +919,7 @@ export default function SellerSettings() {
                               ))}
                             </ul>
 
-                            {plan.id !== planInfo.current.name.toLowerCase().replace(" ", "") && (
+                            {plan.id !== planInfo.current?.name?.toLowerCase().replace(" ", "") && (
                               <button
                                 onClick={() => handlePlanUpgrade(plan.id)}
                                 disabled={isLoading}
@@ -901,7 +929,7 @@ export default function SellerSettings() {
                               </button>
                             )}
 
-                            {plan.id === planInfo.current.name.toLowerCase().replace(" ", "") && (
+                            {plan.id === planInfo.current?.name?.toLowerCase().replace(" ", "") && (
                               <div className="w-full bg-gray-100 text-gray-600 py-2 px-4 rounded text-center">
                                 Plano Atual
                               </div>
@@ -1009,7 +1037,7 @@ export default function SellerSettings() {
                           <strong>E-mail:</strong> {user.email}
                         </p>
                         <p className="text-sm">
-                          <strong>Nome:</strong> {user.name}
+                          <strong>Nome:</strong> {user?.name || "Não informado"}
                         </p>
                         <p className="text-sm">
                           <strong>Tipo de Conta:</strong> Vendedor
