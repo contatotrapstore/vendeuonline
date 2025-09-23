@@ -76,7 +76,7 @@ npm run dev
 ### **2. Deploy Produção**
 
 ```bash
-# 1. Configure variáveis no Vercel (veja /docs/DEPLOY_GUIDE.md)
+# 1. Configure variáveis no Vercel (veja /docs/deployment/VERCEL_COMPLETE_GUIDE.md)
 # 2. Push para GitHub
 git add . && git commit -m "deploy" && git push
 ```
@@ -173,7 +173,7 @@ git push  # Deploy automático via Vercel
 | 🏗️ [**Architecture**](./docs/architecture/ARCHITECTURE.md)          | Design do sistema e stack      |
 | 📡 [**API Reference**](./docs/api/API_REFERENCE.md)                 | Referência completa da API     |
 | 🧪 [**Testing**](./docs/testing/TESTING.md)                         | Guia completo de testes        |
-| 🚀 [**Deploy Guide**](./docs/deployment/DEPLOY_GUIDE.md)            | Deploy no Vercel               |
+| 🚀 [**Deploy Guide**](./docs/deployment/VERCEL_COMPLETE_GUIDE.md)   | Deploy completo no Vercel      |
 
 ## 🧪 **CREDENCIAIS DE TESTE**
 

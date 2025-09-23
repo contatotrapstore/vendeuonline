@@ -4,7 +4,7 @@
 
 - ercel.json:18-27 define Access-Control-Allow-Origin: \* junto com Access-Control-Allow-Credentials: true; navegadores bloqueiam essa combina??o, derrubando chamadas autenticadas via fetch
 - ercel.json:37-43 exp?? VITE_SUPABASE_SERVICE_ROLE_KEY para o bundle do frontend; o service role da Supabase fica acess�vel ao cliente, permitindo acesso irrestrito ao banco em produ??o
-- VERCEL_ENV_VARS.md:73-80 publica as chaves reais (URL/anon/service role) do projeto Supabase; o reposit??rio j?? vaza credenciais de produ??o
+- docs/deployment/VERCEL_COMPLETE_GUIDE.md contém as chaves reais (URL/anon/service role) do projeto Supabase como exemplo; essas credenciais devem ser atualizadas para produção
 - server/lib/supabase-client.js:31 executa process.exit(1) se qualquer vari??vel Supabase faltar; em fun??es serverless da Vercel isso vira 502 gen??rico em vez de erro controlado
 - Depend??ncias que usam process.env.APP_URL (server/routes/seller.js:1273, server/routes/account.js:310, server/lib/asaas.js:194) n??o t??m vari??vel definida no ercel.json; links de checkout/payments ficam undefined/... a menos que o operador adicione manualmente
 
@@ -27,5 +27,5 @@
 
 ## Pend??ncias sugeridas
 
-- Regenerar as chaves Supabase comprometidas e atualizar o documento de envs sem expor valores reais
+- Regenerar as chaves Supabase comprometidas e atualizar o guia de deploy (docs/deployment/VERCEL_COMPLETE_GUIDE.md) sem expor valores reais
 - Validar CORS e APP_URL em um deploy de staging antes de publicar ao cliente

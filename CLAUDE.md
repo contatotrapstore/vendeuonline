@@ -297,10 +297,18 @@ The application requires environment variables for:
   - `TESTING.md` - Unit, integration, and E2E testing
 
 - **deployment/**: Production deployment guides
-  - `DEPLOY_GUIDE.md` - Vercel deployment instructions
+  - `VERCEL_COMPLETE_GUIDE.md` - Guia completo de deploy no Vercel
 
 - **reports/**: Generated reports and analytics
-  - `FIXES-IMPLEMENTATION-REPORT.md` - Relatório de correções 16/09/2025
+  - `archive/` - Reports antigos arquivados
+  - `audit-20250923/` - Auditoria completa do sistema
+  - Reports atuais organizados por categoria
+
+### 📋 **Arquivos Reorganizados (Setembro 2025)**
+
+- `PROJECT-STATUS.md` → **Movido para** `docs/PROJECT-STATUS.md`
+- `DEPLOY_VERCEL_INSTRUCTIONS.md` + `VERCEL_ENV_VARS.md` → **Consolidado em** `docs/deployment/VERCEL_COMPLETE_GUIDE.md`
+- Reports antigos → **Arquivados em** `docs/reports/archive/`
 
 ## 🆕 **ÚLTIMAS CORREÇÕES (16 Setembro 2025)**
 

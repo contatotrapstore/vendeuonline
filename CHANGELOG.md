@@ -5,6 +5,37 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2025-09-23 📁 **ORGANIZAÇÃO COMPLETA DA DOCUMENTAÇÃO**
+
+### ✨ **ADICIONADO**
+
+- 📚 **Guia unificado de deploy** (`docs/deployment/VERCEL_COMPLETE_GUIDE.md`)
+- 📋 **Índice de documentação** (`docs/README.md`)
+- 🗂️ **Pasta archive** para reports antigos (`docs/reports/archive/`)
+- 📝 **Variáveis de ambiente consolidadas** no guia completo
+
+### 🔧 **CORRIGIDO**
+
+- 🔗 **Links quebrados** no README.md para documentação
+- 📁 **Referências obsoletas** no CLAUDE.md
+- 🎯 **Audit report** com menções a arquivos deletados
+
+### 🗑️ **REMOVIDO**
+
+- ❌ **Arquivo corrompido** (`nul`)
+- 📄 **Documentações duplicadas** (`DEPLOY_VERCEL_INSTRUCTIONS.md`, `VERCEL_ENV_VARS.md`)
+- 📝 **Documentação seller duplicada** (`docs/SELLER_API_VALIDATION.md`)
+- 📊 **Reports antigos** movidos para archive (6 arquivos)
+
+### 🔄 **MUDADO**
+
+- 📁 **PROJECT-STATUS.md** movido para `docs/PROJECT-STATUS.md`
+- 📚 **Estrutura de documentação** reorganizada e consolidada
+- 🎯 **Referências** atualizadas em toda documentação
+- 📋 **Deploy guide** unificado com todas as informações
+
+---
+
 ## [2.3.0] - 2025-09-22 🚀 **VERSÃO FINAL - PRODUCTION READY**
 
 ### ✨ **ADICIONADO**

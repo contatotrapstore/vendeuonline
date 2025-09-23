@@ -36,7 +36,7 @@ Testing strategies, setup, and best practices
 
 Production deployment guides and configurations
 
-- [**Deploy Guide**](./deployment/DEPLOY_GUIDE.md) - Vercel deployment instructions
+- [**Deploy Guide**](./deployment/VERCEL_COMPLETE_GUIDE.md) - Guia completo de deploy no Vercel
 
 ### 📊 [Reports](./reports/)
 
@@ -84,7 +84,7 @@ Generated reports, validations, and analytics
 | **Development** | Local development environment   | [Development Guide](./getting-started/DEVELOPMENT.md)   |
 | **API**         | Complete API reference          | [API Docs](./api/API_REFERENCE.md)                      |
 | **Testing**     | Testing setup and examples      | [Testing Guide](./testing/TESTING.md)                   |
-| **Deploy**      | Production deployment           | [Deploy Guide](./deployment/DEPLOY_GUIDE.md)            |
+| **Deploy**      | Production deployment           | [Deploy Guide](./deployment/VERCEL_COMPLETE_GUIDE.md)   |
 
 ## 📈 Project Status
 
@@ -98,11 +98,14 @@ Generated reports, validations, and analytics
 | **Security**    | ✅ Hardened      | JWT, RLS, Rate limiting            |
 | **Performance** | ✅ Optimized     | Lazy loading, PWA                  |
 
-### 🎯 **Latest Validation (22 Set 2025)**
+### 🎯 **Latest Updates (23 Set 2025)**
 
-- ✅ **Seller 100% Validado** - [Ver Relatório](./reports/seller/SELLER_FINAL_VALIDATION.md)
+- ✅ **Documentação Reorganizada** - Estrutura consolidada e índices atualizados
+- ✅ **Guia de Deploy Unificado** - [VERCEL_COMPLETE_GUIDE.md](./deployment/VERCEL_COMPLETE_GUIDE.md)
+- ✅ **Reports Arquivados** - Histórico movido para `reports/archive/`
+- ✅ **Seller 100% Validado** - [Ver Relatório](../SELLER_FINAL_VALIDATION.md)
 - ✅ **Express Route Ordering** corrigido
-- ✅ **Documentação** reorganizada e atualizada
+- ✅ **PROJECT-STATUS.md** movido para `docs/PROJECT-STATUS.md`
 
 ## 🛠️ Development Commands
 
@@ -158,4 +161,4 @@ This project is proprietary software. All rights reserved to Vendeu Online.
 
 **Happy coding! 🎉**
 
-_Last updated: December 2024_
+_Last updated: September 2025_
