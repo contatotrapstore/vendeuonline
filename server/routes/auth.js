@@ -507,10 +507,21 @@ router.get(
           .single();
 
         if (!buyerError && buyer) {
+          // Buscar contagens reais
+          const { data: wishlistCount } = await supabase
+            .from("wishlists")
+            .select("id", { count: "exact" })
+            .eq("buyerId", buyer.id);
+
+          const { data: orderCount } = await supabase
+            .from("orders")
+            .select("id", { count: "exact" })
+            .eq("userId", req.user.id);
+
           req.user.buyer = {
             id: buyer.id,
-            wishlistCount: 0, // TODO: implementar contagem real
-            orderCount: 0, // TODO: implementar contagem real
+            wishlistCount: wishlistCount?.length || 0,
+            orderCount: orderCount?.length || 0,
           };
         }
       }

@@ -1,47 +1,49 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
 
 // Configuração do Supabase - carregando do ambiente
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 dotenv.config();
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-console.log('🔧 Supabase Direct Configuration:');
-console.log('URL:', supabaseUrl);
-console.log('Service Key exists:', !!supabaseServiceKey);
+console.log("🔧 Supabase Direct Configuration:");
+console.log("URL:", supabaseUrl);
+console.log("Service Key exists:", !!supabaseServiceKey);
 if (supabaseServiceKey) {
-  console.log('Service Key preview:', supabaseServiceKey.substring(0, 50) + '...');
-  console.log('Service Key length:', supabaseServiceKey.length);
-  console.log('Service Key starts with JWT?', supabaseServiceKey.startsWith('eyJ'));
+  console.log("Service Key preview:", supabaseServiceKey.substring(0, 50) + "...");
+  console.log("Service Key length:", supabaseServiceKey.length);
+  console.log("Service Key starts with JWT?", supabaseServiceKey.startsWith("eyJ"));
 }
 
 if (!supabaseUrl || !supabaseServiceKey) {
-  throw new Error('Missing Supabase configuration. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables.');
+  throw new Error(
+    "Missing Supabase configuration. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables."
+  );
 }
 
 // Criar cliente Supabase com service role key
 const supabase = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
-    persistSession: false
-  }
+    persistSession: false,
+  },
 });
 
 // Função para executar SQL diretamente no Supabase
 async function executeSQL(query) {
   try {
-    console.log('Executando SQL:', query);
-    
+    console.log("Executando SQL:", query);
+
     // Usar a API REST do Supabase para executar SQL
     const response = await fetch(`${supabaseUrl}/rest/v1/rpc/execute_sql`, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseServiceKey}`,
-        'apikey': supabaseServiceKey
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${supabaseServiceKey}`,
+        apikey: supabaseServiceKey,
       },
-      body: JSON.stringify({ sql: query })
+      body: JSON.stringify({ sql: query }),
     });
 
     if (!response.ok) {
@@ -49,10 +51,10 @@ async function executeSQL(query) {
     }
 
     const data = await response.json();
-    console.log('Resultado SQL:', data);
+    console.log("Resultado SQL:", data);
     return data;
   } catch (error) {
-    console.error('Erro ao executar SQL:', error);
+    console.error("Erro ao executar SQL:", error);
     throw error;
   }
 }
@@ -60,7 +62,7 @@ async function executeSQL(query) {
 // Função para obter dados do dashboard admin
 async function getAdminDashboardStats() {
   try {
-    console.log('Buscando estatísticas do dashboard admin...');
+    console.log("Buscando estatísticas do dashboard admin...");
 
     // Query para obter todas as estatísticas em uma única consulta
     const statsQuery = `
@@ -81,16 +83,16 @@ async function getAdminDashboardStats() {
     `;
 
     // Usar o cliente Supabase diretamente para fazer a query
-    const { data, error } = await supabase.rpc('execute_sql', { sql: statsQuery });
-    
+    const { data, error } = await supabase.rpc("execute_sql", { sql: statsQuery });
+
     if (error) {
-      console.error('Erro na query Supabase:', error);
+      console.error("Erro na query Supabase:", error);
       // Fallback: buscar dados individualmente
       return await getStatsIndividually();
     }
 
     const stats = data[0];
-    
+
     return {
       totalUsers: parseInt(stats.total_users) || 0,
       buyersCount: parseInt(stats.buyers_count) || 0,
@@ -106,11 +108,10 @@ async function getAdminDashboardStats() {
       monthlyRevenue: parseFloat(stats.monthly_revenue) || 0,
       activeUsers: parseInt(stats.active_users) || 0,
       conversionRate: stats.sellers_count > 0 ? Math.round((stats.active_stores / stats.sellers_count) * 100) : 0,
-      pendingApprovals: parseInt(stats.pending_stores) || 0
+      pendingApprovals: parseInt(stats.pending_stores) || 0,
     };
-
   } catch (error) {
-    console.error('Erro ao buscar estatísticas:', error);
+    console.error("Erro ao buscar estatísticas:", error);
     // Fallback com dados conhecidos
     return await getStatsIndividually();
   }
@@ -119,20 +120,23 @@ async function getAdminDashboardStats() {
 // Função fallback para buscar dados individualmente
 async function getStatsIndividually() {
   try {
-    console.log('Usando fallback: buscando dados individualmente...');
+    console.log("Usando fallback: buscando dados individualmente...");
 
     // Buscar dados das tabelas individualmente
     const [users, stores, products, orders, subscriptions] = await Promise.allSettled([
-      supabase.from('users').select('type', { count: 'exact' }),
-      supabase.from('stores').select('isActive,approval_status', { count: 'exact' }),
-      supabase.from('Product').select('id', { count: 'exact' }),
-      supabase.from('Order').select('total,createdAt', { count: 'exact' }),
-      supabase.from('Subscription').select('status', { count: 'exact' })
+      supabase.from("users").select("type", { count: "exact" }),
+      supabase.from("stores").select("isActive,approval_status", { count: "exact" }),
+      supabase.from("products").select("id", { count: "exact" }),
+      supabase.from("orders").select("total,createdAt", { count: "exact" }),
+      supabase.from("subscriptions").select("status", { count: "exact" }),
     ]);
 
     // Processar resultados
-    let totalUsers = 0, buyersCount = 0, sellersCount = 0, adminsCount = 0;
-    if (users.status === 'fulfilled' && users.value.data) {
+    let totalUsers = 0,
+      buyersCount = 0,
+      sellersCount = 0,
+      adminsCount = 0;
+    if (users.status === "fulfilled" && users.value.data) {
       totalUsers = users.value.count || 0;
       const userTypes = users.value.data.reduce((acc, user) => {
         acc[user.type] = (acc[user.type] || 0) + 1;
@@ -143,29 +147,32 @@ async function getStatsIndividually() {
       adminsCount = userTypes.ADMIN || 0;
     }
 
-    let totalStores = 0, activeStores = 0, pendingStores = 0;
-    if (stores.status === 'fulfilled' && stores.value.data) {
+    let totalStores = 0,
+      activeStores = 0,
+      pendingStores = 0;
+    if (stores.status === "fulfilled" && stores.value.data) {
       totalStores = stores.value.count || 0;
-      activeStores = stores.value.data.filter(s => s.isActive).length;
-      pendingStores = stores.value.data.filter(s => s.approval_status === 'pending').length;
+      activeStores = stores.value.data.filter((s) => s.isActive).length;
+      pendingStores = stores.value.data.filter((s) => s.approval_status === "pending").length;
     }
 
-    const totalProducts = products.status === 'fulfilled' ? (products.value.count || 0) : 0;
-    const totalOrders = orders.status === 'fulfilled' ? (orders.value.count || 0) : 0;
-    
-    let totalSubscriptions = 0, activeSubscriptions = 0;
-    if (subscriptions.status === 'fulfilled' && subscriptions.value.data) {
+    const totalProducts = products.status === "fulfilled" ? products.value.count || 0 : 0;
+    const totalOrders = orders.status === "fulfilled" ? orders.value.count || 0 : 0;
+
+    let totalSubscriptions = 0,
+      activeSubscriptions = 0;
+    if (subscriptions.status === "fulfilled" && subscriptions.value.data) {
       totalSubscriptions = subscriptions.value.count || 0;
-      activeSubscriptions = subscriptions.value.data.filter(s => s.status === 'ACTIVE').length;
+      activeSubscriptions = subscriptions.value.data.filter((s) => s.status === "ACTIVE").length;
     }
 
     // Calcular receita mensal (será 0 pois não há pedidos)
     let monthlyRevenue = 0;
-    if (orders.status === 'fulfilled' && orders.value.data) {
+    if (orders.status === "fulfilled" && orders.value.data) {
       const thisMonth = new Date();
       thisMonth.setDate(1);
       monthlyRevenue = orders.value.data
-        .filter(order => new Date(order.createdAt) >= thisMonth)
+        .filter((order) => new Date(order.createdAt) >= thisMonth)
         .reduce((sum, order) => sum + (parseFloat(order.total) || 0), 0);
     }
 
@@ -184,11 +191,10 @@ async function getStatsIndividually() {
       monthlyRevenue,
       activeUsers: 1, // Usuário admin atual
       conversionRate: sellersCount > 0 ? Math.round((activeStores / sellersCount) * 100) : 0,
-      pendingApprovals: pendingStores
+      pendingApprovals: pendingStores,
     };
-
   } catch (error) {
-    console.error('Erro no fallback:', error);
+    console.error("Erro no fallback:", error);
     // Última tentativa: dados conhecidos do MCP
     return {
       totalUsers: 21,
@@ -205,7 +211,7 @@ async function getStatsIndividually() {
       monthlyRevenue: 0,
       activeUsers: 1,
       conversionRate: 100, // 4 lojas / 7 vendedores * 100
-      pendingApprovals: 0
+      pendingApprovals: 0,
     };
   }
 }
@@ -213,11 +219,9 @@ async function getStatsIndividually() {
 // Função para obter usuários para o admin
 async function getAdminUsers(filters = {}) {
   try {
-    console.log('Buscando usuários para admin:', filters);
+    console.log("Buscando usuários para admin:", filters);
 
-    let query = supabase
-      .from('users')
-      .select(`
+    let query = supabase.from("users").select(`
         id, name, email, phone, type, city, state, avatar, 
         "isVerified", "createdAt", "updatedAt"
       `);
@@ -227,19 +231,19 @@ async function getAdminUsers(filters = {}) {
       query = query.or(`name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
     }
 
-    if (filters.userType && filters.userType !== 'all') {
-      query = query.eq('type', filters.userType.toUpperCase());
+    if (filters.userType && filters.userType !== "all") {
+      query = query.eq("type", filters.userType.toUpperCase());
     }
 
-    const { data, error } = await query.order('createdAt', { ascending: false });
+    const { data, error } = await query.order("createdAt", { ascending: false });
 
     if (error) {
-      console.error('Erro ao buscar usuários:', error);
+      console.error("Erro ao buscar usuários:", error);
       throw error;
     }
 
     // Transformar dados para o formato esperado pelo frontend
-    const users = data.map(user => ({
+    const users = data.map((user) => ({
       id: user.id,
       name: user.name,
       email: user.email,
@@ -249,19 +253,18 @@ async function getAdminUsers(filters = {}) {
       state: user.state,
       avatar: user.avatar,
       isVerified: user.isVerified,
-      status: user.isVerified ? 'active' : 'pending', // Mapear status
+      status: user.isVerified ? "active" : "pending", // Mapear status
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       lastLogin: null, // Não temos este campo ainda
       orderCount: 0, // Buscar depois se necessário
-      storeCount: user.type === 'SELLER' ? 1 : undefined // Simplificado
+      storeCount: user.type === "SELLER" ? 1 : undefined, // Simplificado
     }));
 
     console.log(`Encontrados ${users.length} usuários`);
     return users;
-
   } catch (error) {
-    console.error('Erro ao buscar usuários:', error);
+    console.error("Erro ao buscar usuários:", error);
     throw error;
   }
 }
@@ -269,11 +272,9 @@ async function getAdminUsers(filters = {}) {
 // Função para obter lojas para o admin
 async function getAdminStores(filters = {}) {
   try {
-    console.log('Buscando lojas para admin:', filters);
+    console.log("Buscando lojas para admin:", filters);
 
-    let query = supabase
-      .from('stores')
-      .select(`
+    let query = supabase.from("stores").select(`
         id, name, sellerId, city, state, phone, email, category,
         "isActive", "isVerified", rating, "reviewCount", "productCount", 
         "salesCount", plan, "createdAt", "updatedAt"
@@ -284,26 +285,25 @@ async function getAdminStores(filters = {}) {
       query = query.or(`name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
     }
 
-    if (filters.status && filters.status !== 'all') {
-      if (filters.status === 'active') {
-        query = query.eq('isActive', true);
-      } else if (filters.status === 'inactive') {
-        query = query.eq('isActive', false);
+    if (filters.status && filters.status !== "all") {
+      if (filters.status === "active") {
+        query = query.eq("isActive", true);
+      } else if (filters.status === "inactive") {
+        query = query.eq("isActive", false);
       }
     }
 
-    const { data, error } = await query.order('createdAt', { ascending: false });
+    const { data, error } = await query.order("createdAt", { ascending: false });
 
     if (error) {
-      console.error('Erro ao buscar lojas:', error);
+      console.error("Erro ao buscar lojas:", error);
       throw error;
     }
 
     console.log(`Encontradas ${data.length} lojas`);
     return data;
-
   } catch (error) {
-    console.error('Erro ao buscar lojas:', error);
+    console.error("Erro ao buscar lojas:", error);
     throw error;
   }
 }
@@ -311,11 +311,9 @@ async function getAdminStores(filters = {}) {
 // Função para obter produtos para o admin
 async function getAdminProducts(filters = {}) {
   try {
-    console.log('Buscando produtos para admin:', filters);
+    console.log("Buscando produtos para admin:", filters);
 
-    let query = supabase
-      .from('Product')
-      .select(`
+    let query = supabase.from("products").select(`
         id, name, sellerId, storeId, categoryId, price, stock,
         "isActive", "isFeatured", rating, "reviewCount", "viewCount",
         "salesCount", "createdAt", "updatedAt"
@@ -323,29 +321,28 @@ async function getAdminProducts(filters = {}) {
 
     // Aplicar filtros se fornecidos
     if (filters.search) {
-      query = query.ilike('name', `%${filters.search}%`);
+      query = query.ilike("name", `%${filters.search}%`);
     }
 
-    if (filters.status && filters.status !== 'all') {
-      if (filters.status === 'active') {
-        query = query.eq('isActive', true);
-      } else if (filters.status === 'inactive') {
-        query = query.eq('isActive', false);
+    if (filters.status && filters.status !== "all") {
+      if (filters.status === "active") {
+        query = query.eq("isActive", true);
+      } else if (filters.status === "inactive") {
+        query = query.eq("isActive", false);
       }
     }
 
-    const { data, error } = await query.order('createdAt', { ascending: false });
+    const { data, error } = await query.order("createdAt", { ascending: false });
 
     if (error) {
-      console.error('Erro ao buscar produtos:', error);
+      console.error("Erro ao buscar produtos:", error);
       throw error;
     }
 
     console.log(`Encontrados ${data.length} produtos`);
     return data;
-
   } catch (error) {
-    console.error('Erro ao buscar produtos:', error);
+    console.error("Erro ao buscar produtos:", error);
     throw error;
   }
 }
@@ -353,23 +350,19 @@ async function getAdminProducts(filters = {}) {
 // Função para obter planos para o admin
 async function getAdminPlans() {
   try {
-    console.log('Buscando planos para admin');
+    console.log("Buscando planos para admin");
 
-    const { data, error } = await supabase
-      .from('Plan')
-      .select('*')
-      .order('order', { ascending: true });
+    const { data, error } = await supabase.from("plans").select("*").order("order", { ascending: true });
 
     if (error) {
-      console.error('Erro ao buscar planos:', error);
+      console.error("Erro ao buscar planos:", error);
       throw error;
     }
 
     console.log(`Encontrados ${data.length} planos`);
     return data;
-
   } catch (error) {
-    console.error('Erro ao buscar planos:', error);
+    console.error("Erro ao buscar planos:", error);
     throw error;
   }
 }
@@ -380,25 +373,24 @@ async function updateAdminPlan(planId, updates) {
     console.log(`Atualizando plano ${planId}:`, updates);
 
     const { data, error } = await supabase
-      .from('Plan')
+      .from("plans")
       .update({
         ...updates,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       })
-      .eq('id', planId)
+      .eq("id", planId)
       .select()
       .single();
 
     if (error) {
-      console.error('Erro ao atualizar plano:', error);
+      console.error("Erro ao atualizar plano:", error);
       throw error;
     }
 
-    console.log('Plano atualizado com sucesso');
+    console.log("Plano atualizado com sucesso");
     return data;
-
   } catch (error) {
-    console.error('Erro ao atualizar plano:', error);
+    console.error("Erro ao atualizar plano:", error);
     throw error;
   }
 }
@@ -411,5 +403,5 @@ export {
   getAdminStores,
   getAdminProducts,
   getAdminPlans,
-  updateAdminPlan
+  updateAdminPlan,
 };

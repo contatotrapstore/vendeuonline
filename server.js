@@ -267,9 +267,8 @@ app.use("/api/tracking", trackingRouter);
 app.use("/api/admin/tracking", adminRateLimit, trackingRouter);
 // Notifications endpoint (requires authentication)
 app.use("/api/notifications", authenticate, notificationsRouter);
-// Rotas administrativas principais - temporariamente sem auth para testes
-app.use("/api/admin", adminRouter);
-// PRODUÇÃO: app.use("/api/admin", authenticate, protectRoute(["ADMIN"]), adminRouter);
+// Rotas administrativas principais - COM AUTENTICAÇÃO OBRIGATÓRIA
+app.use("/api/admin", authenticate, protectRoute(["ADMIN"]), adminRouter);
 
 // Rotas do vendedor
 app.use("/api/seller", sellerRouter);

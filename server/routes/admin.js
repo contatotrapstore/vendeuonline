@@ -1,7 +1,6 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
 import { supabase, supabaseAdmin } from "../lib/supabase-client.js";
-import { getSubscriptionsViaMCP, updatePlanViaMCP } from "../lib/supabase-mcp-helper.js";
 import { securityHeaders, adminRateLimit, protectRoute, validateInput, sanitizeInput } from "../middleware/security.js";
 
 const router = Router();
@@ -255,7 +254,7 @@ router.get("/stores", async (req, res) => {
 
     console.log("🏪 GET /api/admin/stores - Buscando lojas REAIS do Supabase...");
 
-    // Query base para buscar stores com dados do seller
+    // Query base para buscar stores com dados do seller, reviews e products
     let query = supabase.from("stores").select(`
         id,
         name,
@@ -274,6 +273,12 @@ router.get("/stores", async (req, res) => {
             city,
             state
           )
+        ),
+        reviews (
+          id
+        ),
+        products (
+          id
         )
       `);
 
@@ -319,8 +324,8 @@ router.get("/stores", async (req, res) => {
         isActive: store.isActive,
         isVerified: true, // Por enquanto todas estão verificadas
         rating: 4.5, // Rating simulado
-        reviewCount: 0, // TODO: Implementar contagem de reviews
-        productCount: 0, // TODO: Implementar contagem de produtos
+        reviewCount: store.reviews?.length || 0,
+        productCount: store.products?.length || 0,
         salesCount: 0, // Vendas simuladas
         plan: "básico", // Plano simulado
         createdAt: store.createdAt,
@@ -362,8 +367,8 @@ router.get("/products", async (req, res) => {
 
     console.log("📦 GET /api/admin/products - Buscando produtos REAIS do Supabase...");
 
-    // Query base para buscar produtos (tabela Product com P maiúsculo)
-    let query = supabase.from("Product").select(`
+    // Query base para buscar produtos com joins de stores e sellers
+    let query = supabase.from("products").select(`
         id,
         name,
         description,
@@ -377,7 +382,19 @@ router.get("/products", async (req, res) => {
         createdAt,
         updatedAt,
         sellerId,
-        storeId
+        storeId,
+        stores (
+          id,
+          name
+        ),
+        sellers (
+          id,
+          users (
+            id,
+            name,
+            email
+          )
+        )
       `);
 
     // Aplicar filtros
@@ -457,9 +474,9 @@ router.get("/products", async (req, res) => {
         name: product.name,
         sellerId: product.sellerId,
         storeId: product.storeId,
-        storeName: "N/A", // TODO: Implementar join com stores
-        sellerName: "N/A", // TODO: Implementar join com sellers/users
-        sellerEmail: "N/A", // TODO: Implementar join com sellers/users
+        storeName: product.stores?.name || "N/A",
+        sellerName: product.sellers?.users?.name || "N/A",
+        sellerEmail: product.sellers?.users?.email || "N/A",
         category: "N/A", // Field doesn't exist in current schema
         price: product.price || 0,
         comparePrice: product.comparePrice || null,
@@ -633,7 +650,12 @@ router.put("/plans/:id", authenticateAdmin, async (req, res) => {
     if (planData.features) updateData.features = planData.features;
     if (planData.isActive !== undefined) updateData.isActive = Boolean(planData.isActive);
 
-    const { data: updatedPlan, error: updateError } = await updatePlanViaMCP(id, updateData);
+    const { data: updatedPlan, error: updateError } = await supabase
+      .from("plans")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single();
 
     if (updateError) {
       console.error("❌ Erro ao atualizar plano:", updateError);
@@ -680,7 +702,7 @@ router.post("/plans", authenticateAdmin, async (req, res) => {
       .replace(/^-|-$/g, "");
 
     // Verificar se já existe um plano com este nome
-    const { data: existingPlan } = await supabaseAdmin.from("Plan").select("id").eq("name", planData.name).single();
+    const { data: existingPlan } = await supabaseAdmin.from("plans").select("id").eq("name", planData.name).single();
 
     if (existingPlan) {
       return res.status(400).json({
@@ -691,7 +713,7 @@ router.post("/plans", authenticateAdmin, async (req, res) => {
 
     // Determinar ordem (ultimo + 1)
     const { data: lastPlan } = await supabaseAdmin
-      .from("Plan")
+      .from("plans")
       .select("order")
       .order("order", { ascending: false })
       .limit(1)
@@ -701,7 +723,7 @@ router.post("/plans", authenticateAdmin, async (req, res) => {
 
     // Criar novo plano (usando tabela Plan com camelCase)
     const { data: newPlan, error } = await supabaseAdmin
-      .from("Plan")
+      .from("plans")
       .insert([
         {
           name: planData.name,
@@ -766,7 +788,7 @@ router.delete("/plans/:id", async (req, res) => {
 
     // Verificar se há assinaturas ativas usando este plano
     const { count: activeSubscriptions, error: countError } = await supabaseAdmin
-      .from("Subscription")
+      .from("subscriptions")
       .select("id", { count: "exact" })
       .eq("planId", id)
       .eq("status", "ACTIVE");
@@ -791,7 +813,7 @@ router.delete("/plans/:id", async (req, res) => {
     }
 
     // Deletar o plano
-    const { error: deleteError } = await supabaseAdmin.from("Plan").delete().eq("id", id);
+    const { error: deleteError } = await supabaseAdmin.from("plans").delete().eq("id", id);
 
     if (deleteError) {
       console.error("❌ Erro ao deletar plano:", deleteError);
@@ -819,82 +841,85 @@ router.get("/subscriptions", authenticateAdmin, async (req, res) => {
   try {
     const { page = 1, limit = 10, status } = req.query;
 
-    console.log("💳 GET /api/admin/subscriptions - Usando helper MCP para contornar problema supabaseAdmin...");
+    console.log("💳 GET /api/admin/subscriptions - Buscando subscriptions REAIS do Supabase...");
 
-    // Usar helper MCP que retorna dados simulados
-    const filters = {};
+    // Buscar subscriptions reais do Supabase
+    let query = supabase.from("subscriptions").select(`
+        id,
+        userId,
+        planId,
+        status,
+        startDate,
+        endDate,
+        autoRenew,
+        paymentMethod,
+        createdAt,
+        updatedAt,
+        users (
+          id,
+          name,
+          email
+        ),
+        plans (
+          id,
+          name,
+          price
+        )
+      `);
+
+    // Aplicar filtros
     if (status && ["ACTIVE", "CANCELLED", "EXPIRED"].includes(status)) {
-      filters.status = status;
+      query = query.eq("status", status);
     }
 
-    const { data: subscriptions, error, count: total } = await getSubscriptionsViaMCP(filters);
+    // Aplicar paginação
+    const queryOffset = (page - 1) * limit;
+    query = query.range(queryOffset, queryOffset + parseInt(limit) - 1);
+
+    const { data: subscriptions, error } = await query;
 
     if (error) {
-      console.error("❌ Erro ao buscar subscriptions via MCP:", error);
+      console.error("❌ Erro ao buscar subscriptions:", error);
       throw new Error(`Erro na consulta: ${error.message}`);
     }
 
-    // Buscar dados de sellers e planos separadamente se temos subscriptions
-    let sellers = [];
-    let plans = [];
-
-    if (subscriptions && subscriptions.length > 0) {
-      const sellerIds = [...new Set(subscriptions.map((s) => s.sellerId))];
-      const planIds = [...new Set(subscriptions.map((s) => s.planId))];
-
-      // Buscar sellers (que são ligados aos users)
-      if (sellerIds.length > 0) {
-        const { data: sellersData } = await supabaseAdmin
-          .from("sellers")
-          .select(
-            `
-            id,
-            userId,
-            users:userId (
-              id,
-              name,
-              email
-            )
-          `
-          )
-          .in("id", sellerIds);
-        sellers = sellersData || [];
-      }
-
-      // Buscar planos
-      if (planIds.length > 0) {
-        const { data: plansData } = await supabaseAdmin.from("Plan").select("id, name, price").in("id", planIds);
-        plans = plansData || [];
-      }
+    // Contar total para paginação
+    let countQuery = supabase.from("subscriptions").select("id", { count: "exact" });
+    if (status && ["ACTIVE", "CANCELLED", "EXPIRED"].includes(status)) {
+      countQuery = countQuery.eq("status", status);
     }
+    const { count: total } = await countQuery;
 
-    // Transformar dados para formato esperado pelo frontend
+    // Transformar dados das subscriptions usando os joins já incluídos
     const transformedSubscriptions = (subscriptions || []).map((subscription) => {
-      const seller = sellers.find((s) => s.id === subscription.sellerId);
-      const plan = plans.find((p) => p.id === subscription.planId);
-
       return {
         id: subscription.id,
+        userId: subscription.userId,
+        planId: subscription.planId,
         status: subscription.status,
         startDate: subscription.startDate,
         endDate: subscription.endDate,
+        autoRenew: subscription.autoRenew || false,
+        paymentMethod: subscription.paymentMethod || "N/A",
         createdAt: subscription.createdAt,
-        seller: {
-          id: seller?.id || "N/A",
-          name: seller?.users?.name || "N/A",
-          email: seller?.users?.email || "N/A",
+        updatedAt: subscription.updatedAt,
+        user: {
+          id: subscription.users?.id,
+          name: subscription.users?.name || "N/A",
+          email: subscription.users?.email || "N/A",
         },
         plan: {
-          name: plan?.name || "N/A",
-          price: plan?.price || 0,
+          id: subscription.plans?.id,
+          name: subscription.plans?.name || "N/A",
+          price: subscription.plans?.price || 0,
         },
       };
     });
 
-    // Total já obtido do helper MCP
+    // Total já obtido da query count
     const subscriptionsTotal = total || 0;
 
-    console.log(`✅ ${transformedSubscriptions.length}/${subscriptionsTotal} assinaturas retornadas via Helper MCP`);
+    console.log(`✅ ${transformedSubscriptions.length}/${subscriptionsTotal} assinaturas retornadas do Supabase`);
 
     res.json({
       success: true,
@@ -1104,7 +1129,7 @@ router.get("/orders", async (req, res) => {
 
     console.log("🛒 GET /api/admin/orders - Buscando pedidos REAIS do Supabase...");
 
-    // Query base para buscar orders com dados do buyer e store
+    // Query base para buscar orders com dados do buyer, store e items
     let query = supabase.from("orders").select(`
         id,
         total,
@@ -1123,6 +1148,10 @@ router.get("/orders", async (req, res) => {
         stores!inner (
           id,
           name
+        ),
+        orderItems (
+          id,
+          quantity
         )
       `);
 
@@ -1164,7 +1193,7 @@ router.get("/orders", async (req, res) => {
           name: store?.name || "N/A",
         },
         _count: {
-          items: 0, // TODO: Implementar contagem de items
+          items: order.orderItems?.length || 0,
         },
       };
     });
@@ -1356,7 +1385,7 @@ router.put("/subscriptions/:id", authenticateAdmin, async (req, res) => {
 
     // Verificar se a assinatura existe
     const { data: subscription, error: fetchError } = await supabaseAdmin
-      .from("Subscription")
+      .from("subscriptions")
       .select(
         `
         id,
@@ -1402,7 +1431,7 @@ router.put("/subscriptions/:id", authenticateAdmin, async (req, res) => {
     }
 
     const { data: updatedSubscription, error: updateError } = await supabaseAdmin
-      .from("Subscription")
+      .from("subscriptions")
       .update(updateData)
       .eq("id", id)
       .select()
@@ -1444,7 +1473,7 @@ router.post("/subscriptions/:id/cancel", authenticateAdmin, async (req, res) => 
 
     // Verificar se a assinatura existe e está ativa
     const { data: subscription, error: fetchError } = await supabaseAdmin
-      .from("Subscription")
+      .from("subscriptions")
       .select(
         `
         id,
@@ -1484,7 +1513,7 @@ router.post("/subscriptions/:id/cancel", authenticateAdmin, async (req, res) => 
 
     // Cancelar assinatura
     const { data: cancelledSubscription, error: cancelError } = await supabaseAdmin
-      .from("Subscription")
+      .from("subscriptions")
       .update({
         status: "CANCELLED",
         cancelledAt: new Date().toISOString(),
@@ -1500,7 +1529,34 @@ router.post("/subscriptions/:id/cancel", authenticateAdmin, async (req, res) => 
       throw cancelError;
     }
 
-    // TODO: Se refund = true, integrar com gateway de pagamento para processar reembolso
+    // Processar reembolso se solicitado
+    if (refund && subscription.paymentId) {
+      try {
+        // Buscar informações do pagamento
+        const { data: payment } = await supabase
+          .from("payments")
+          .select("asaasPaymentId, amount")
+          .eq("id", subscription.paymentId)
+          .single();
+
+        if (payment?.asaasPaymentId) {
+          // Integrar com ASAAS para processar reembolso
+          const { asaasRequest } = await import("../lib/asaas.js");
+          const refundResult = await asaasRequest(`/payments/${payment.asaasPaymentId}/refund`, {
+            method: "POST",
+            body: JSON.stringify({
+              value: payment.amount,
+              description: `Reembolso - Cancelamento de assinatura ${subscription.plans.name}`,
+            }),
+          });
+
+          console.log("✅ Reembolso processado:", refundResult.id);
+        }
+      } catch (refundError) {
+        console.error("⚠️ Erro ao processar reembolso:", refundError);
+        // Não falhar o cancelamento se o reembolso der erro
+      }
+    }
 
     console.log("✅ Assinatura cancelada com sucesso");
 
@@ -1534,7 +1590,7 @@ router.post("/subscriptions/:id/renew", authenticateAdmin, async (req, res) => {
 
     // Verificar se a assinatura existe
     const { data: subscription, error: fetchError } = await supabaseAdmin
-      .from("Subscription")
+      .from("subscriptions")
       .select(
         `
         id,
@@ -1572,7 +1628,7 @@ router.post("/subscriptions/:id/renew", authenticateAdmin, async (req, res) => {
 
     // Renovar assinatura
     const { data: renewedSubscription, error: renewError } = await supabaseAdmin
-      .from("Subscription")
+      .from("subscriptions")
       .update({
         status: "ACTIVE",
         endDate: newEndDate.toISOString(),

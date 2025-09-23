@@ -1,6 +1,7 @@
 import express from "express";
 import jwt from "jsonwebtoken";
 import { supabase } from "../lib/supabase-client.js";
+import { createSubscriptionPayment } from "../lib/asaas.js";
 
 const router = express.Router();
 
@@ -244,11 +245,10 @@ router.post("/", authenticateUser, async (req, res) => {
           paymentMethod: paymentMethod,
           shippingAddress: shippingAddress,
         },
-        // Informações para redirecionamento de pagamento (futura integração ASAAS)
+        // Informações para redirecionamento de pagamento (integração ASAAS)
         payment: {
           method: paymentMethod,
           status: "pending",
-          // TODO: Integrar com ASAAS para gerar link de pagamento
           paymentUrl: null,
           instructions:
             paymentMethod === "PIX"

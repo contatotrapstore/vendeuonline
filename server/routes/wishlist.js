@@ -401,12 +401,48 @@ router.get("/check/:productId", optionalAuth, async (req, res) => {
 
   const { productId } = req.params;
 
-  // TODO: Implementar remoção real do banco de dados
-  return res.json({
-    success: true,
-    message: "Produto removido da wishlist",
-    productId,
-  });
+  try {
+    // Buscar o buyer atual
+    const { data: buyer, error: buyerError } = await supabase
+      .from("buyers")
+      .select("id")
+      .eq("userId", req.user.id)
+      .single();
+
+    if (buyerError || !buyer) {
+      return res.status(404).json({
+        success: false,
+        error: "Buyer não encontrado",
+      });
+    }
+
+    // Remover produto da wishlist
+    const { error: deleteError } = await supabase
+      .from("wishlists")
+      .delete()
+      .eq("buyerId", buyer.id)
+      .eq("productId", productId);
+
+    if (deleteError) {
+      console.error("❌ Erro ao remover da wishlist:", deleteError);
+      return res.status(500).json({
+        success: false,
+        error: "Erro ao remover produto da wishlist",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Produto removido da wishlist",
+      productId,
+    });
+  } catch (error) {
+    console.error("❌ Erro ao remover da wishlist:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Erro interno do servidor",
+    });
+  }
 });
 
 export default router;

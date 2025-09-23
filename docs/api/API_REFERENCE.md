@@ -10,7 +10,7 @@
 | **Produtos**    | 5 APIs | ✅ 100% |
 | **Lojas**       | 4 APIs | ✅ 100% |
 | **Pedidos**     | 3 APIs | ✅ 100% |
-| **Pagamentos**  | 3 APIs | ✅ 100% |
+| **Pagamentos**  | 4 APIs | ✅ 100% |
 | **Planos**      | 2 APIs | ✅ 100% |
 | **Categorias**  | 2 APIs | ✅ 100% |
 | **Wishlist**    | 3 APIs | ✅ 100% |
@@ -24,7 +24,7 @@
 | **Users**       | 1 API  | ✅ 100% |
 | **Diagnóstico** | 2 APIs | ✅ 100% |
 
-**TOTAL: 36 APIs Funcionais - Sistema Buyer 100% Completo** 🎉
+**TOTAL: 37 APIs Funcionais - Sistema Buyer 100% Completo** 🎉
 
 ---
 

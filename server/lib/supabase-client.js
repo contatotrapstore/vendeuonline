@@ -4,30 +4,31 @@ import dotenv from "dotenv";
 // Carregar variáveis de ambiente
 dotenv.config();
 
-// Validar variáveis de ambiente obrigatórias
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  console.error("⚠️ NEXT_PUBLIC_SUPABASE_URL não está configurada no ambiente");
+// URL e Keys do Supabase (aceita NEXT_PUBLIC_* ou VITE_PUBLIC_*)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+const missingSupabaseEnv = [];
+
+if (!supabaseUrl) {
+  console.error("[WARN] NEXT_PUBLIC_SUPABASE_URL or VITE_PUBLIC_SUPABASE_URL is not defined");
+  missingSupabaseEnv.push("NEXT_PUBLIC_SUPABASE_URL / VITE_PUBLIC_SUPABASE_URL");
 }
-if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-  console.error("⚠️ NEXT_PUBLIC_SUPABASE_ANON_KEY não está configurada no ambiente");
+if (!supabaseAnonKey) {
+  console.error("[WARN] NEXT_PUBLIC_SUPABASE_ANON_KEY or VITE_PUBLIC_SUPABASE_ANON_KEY is not defined");
+  missingSupabaseEnv.push("NEXT_PUBLIC_SUPABASE_ANON_KEY / VITE_PUBLIC_SUPABASE_ANON_KEY");
 }
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.error("⚠️ SUPABASE_SERVICE_ROLE_KEY não está configurada no ambiente");
+if (!supabaseServiceKey) {
+  console.error("[WARN] SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_SERVICE_ROLE_KEY is not defined");
+  missingSupabaseEnv.push("SUPABASE_SERVICE_ROLE_KEY / VITE_SUPABASE_SERVICE_ROLE_KEY");
 }
 
-// URL e Keys do Supabase (somente de variáveis de ambiente)
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-// Validar se as credenciais foram carregadas
-if (!supabaseUrl || !supabaseAnonKey || !supabaseServiceKey) {
-  console.error("❌ ERRO CRÍTICO: Credenciais do Supabase não configuradas!");
-  console.error("Configure as seguintes variáveis no arquivo .env:");
-  console.error("- NEXT_PUBLIC_SUPABASE_URL");
-  console.error("- NEXT_PUBLIC_SUPABASE_ANON_KEY");
-  console.error("- SUPABASE_SERVICE_ROLE_KEY");
-  process.exit(1); // Encerrar aplicação se credenciais não estiverem configuradas
+if (missingSupabaseEnv.length > 0) {
+  console.error("[ERROR] Missing Supabase credentials");
+  console.error("Define the following variables in your .env file:");
+  missingSupabaseEnv.forEach((envVar) => console.error(`- ${envVar}`));
+  process.exit(1); // Stop the app if credentials are missing
 }
 
 // Cliente normal (para operações gerais)
@@ -80,7 +81,7 @@ export async function getDatabaseStats() {
     const [usersResult, storesResult, productsResult] = await Promise.allSettled([
       supabase.from("users").select("*", { count: "exact", head: true }),
       supabase.from("stores").select("*", { count: "exact", head: true }),
-      supabase.from("Product").select("*", { count: "exact", head: true }),
+      supabase.from("products").select("*", { count: "exact", head: true }),
     ]);
 
     return {

@@ -306,8 +306,11 @@ DEBUG=* npm run dev
 # Supabase (FUNCIONANDO)
 DATABASE_URL="postgresql://postgres.dycsfnbqgojhttnjbndp:..."
 NEXT_PUBLIC_SUPABASE_URL="https://dycsfnbqgojhttnjbndp.supabase.co"
+VITE_PUBLIC_SUPABASE_URL="https://dycsfnbqgojhttnjbndp.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJ..."
+VITE_PUBLIC_SUPABASE_ANON_KEY="eyJ..."
 SUPABASE_SERVICE_ROLE_KEY="eyJ..."
+VITE_SUPABASE_SERVICE_ROLE_KEY="eyJ..."
 
 # API (FUNCIONANDO)
 PORT="3001"

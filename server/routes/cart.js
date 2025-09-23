@@ -1,40 +1,8 @@
 import express from "express";
-import jwt from "jsonwebtoken";
 import { supabase } from "../lib/supabase-client.js";
+import { authenticateUser } from "../middleware/auth.js";
 
 const router = express.Router();
-
-// JWT Secret
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
-
-// Middleware de autenticação
-const authenticateUser = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Token de autenticação necessário" });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    // Buscar usuário real do Supabase
-    const { data: user, error } = await supabase.from("users").select("*").eq("id", decoded.userId).single();
-
-    if (error || !user) {
-      return res.status(401).json({ error: "Usuário não encontrado" });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("❌ Erro na autenticação:", error);
-    return res.status(401).json({ error: "Token inválido" });
-  }
-};
 
 // GET /api/cart - Buscar carrinho do usuário
 router.get("/", authenticateUser, async (req, res) => {
@@ -43,7 +11,7 @@ router.get("/", authenticateUser, async (req, res) => {
 
     // Buscar itens do carrinho no Supabase
     const { data: cartItems, error } = await supabase
-      .from("Cart")
+      .from("carts")
       .select(
         `
         id,
@@ -177,7 +145,7 @@ router.post("/", authenticateUser, async (req, res) => {
 
     // Verificar se já está no carrinho
     const { data: existingItem, error: existingError } = await supabase
-      .from("Cart")
+      .from("carts")
       .select("id, quantity")
       .eq("userId", req.user.id)
       .eq("productId", productId)
@@ -202,7 +170,7 @@ router.post("/", authenticateUser, async (req, res) => {
       }
 
       const { data: updatedItem, error: updateError } = await supabase
-        .from("Cart")
+        .from("carts")
         .update({
           quantity: newQuantity,
           updatedAt: new Date().toISOString(),
@@ -226,7 +194,7 @@ router.post("/", authenticateUser, async (req, res) => {
     } else {
       // Adicionar novo item ao carrinho
       const { data: cartItem, error: insertError } = await supabase
-        .from("Cart")
+        .from("carts")
         .insert({
           userId: req.user.id,
           productId: productId,
@@ -275,7 +243,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
 
     // Verificar se o item existe e pertence ao usuário
     const { data: cartItem, error: cartError } = await supabase
-      .from("Cart")
+      .from("carts")
       .select(
         `
         id,
@@ -321,7 +289,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
 
     // Atualizar quantidade
     const { data: updatedItem, error: updateError } = await supabase
-      .from("Cart")
+      .from("carts")
       .update({
         quantity: quantity,
         updatedAt: new Date().toISOString(),
@@ -361,7 +329,7 @@ router.delete("/:id", authenticateUser, async (req, res) => {
 
     // Verificar se o item existe e pertence ao usuário
     const { data: cartItem, error: checkError } = await supabase
-      .from("Cart")
+      .from("carts")
       .select(
         `
         id,
@@ -380,7 +348,7 @@ router.delete("/:id", authenticateUser, async (req, res) => {
     }
 
     // Remover do carrinho
-    const { error: deleteError } = await supabase.from("Cart").delete().eq("id", id).eq("userId", req.user.id);
+    const { error: deleteError } = await supabase.from("carts").delete().eq("id", id).eq("userId", req.user.id);
 
     if (deleteError) {
       console.error("❌ Erro ao remover do carrinho:", deleteError);
@@ -409,7 +377,7 @@ router.delete("/", authenticateUser, async (req, res) => {
     console.log("🧹 Limpando carrinho para usuário:", req.user.id);
 
     // Remover todos os itens do carrinho do usuário
-    const { error } = await supabase.from("Cart").delete().eq("userId", req.user.id);
+    const { error } = await supabase.from("carts").delete().eq("userId", req.user.id);
 
     if (error) {
       console.error("❌ Erro ao limpar carrinho:", error);

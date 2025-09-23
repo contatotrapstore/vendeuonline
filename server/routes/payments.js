@@ -2,6 +2,7 @@ import express from "express";
 import { supabase } from "../lib/supabase-client.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import { createSubscriptionPayment, validateWebhookToken, mapAsaasStatus } from "../lib/asaas.js";
 
 const router = express.Router();
 
@@ -119,69 +120,23 @@ router.post("/create", authenticateUser, async (req, res) => {
     }
 
     try {
-      // Criar ou buscar cliente no ASAAS usando dados reais do usuário
-      let customer;
-      try {
-        // Tentar criar cliente no ASAAS
-        customer = await asaasRequest("/customers", {
-          method: "POST",
-          body: JSON.stringify({
-            name: req.user.name,
-            email: req.user.email,
-            phone: req.user.phone || "(11) 99999-9999", // Telefone padrão se não informado
-            cpfCnpj: req.user.cpf || "11144477735", // CPF padrão se não informado
-            city: req.user.city || "São Paulo",
-            state: req.user.state || "SP",
-            externalReference: req.user.id, // Referência para nosso usuário
-          }),
-        });
+      // Usar nova integração ASAAS para criar pagamento
+      console.log("💳 Criando pagamento ASAAS usando nova integração...");
 
-        console.log("✅ Cliente ASAAS criado:", customer.id);
-
-        // Salvar ID do cliente ASAAS no nosso banco
-        await supabase.from("users").update({ asaasCustomerId: customer.id }).eq("id", req.user.id);
-      } catch (customerError) {
-        console.warn("⚠️ Erro ao criar cliente, tentando buscar existente:", customerError.message);
-
-        // Tentar buscar cliente existente pelo email
-        try {
-          const existingCustomers = await asaasRequest(`/customers?email=${req.user.email}`);
-          if (existingCustomers.data && existingCustomers.data.length > 0) {
-            customer = existingCustomers.data[0];
-            console.log("✅ Cliente ASAAS encontrado:", customer.id);
-          } else {
-            throw new Error("Cliente não encontrado");
-          }
-        } catch (searchError) {
-          console.error("❌ Erro ao buscar cliente existente:", searchError);
-          return res.status(500).json({
-            error: "Erro ao gerenciar cliente no sistema de pagamentos",
-            details: searchError.message,
-          });
-        }
-      }
-
-      // Criar cobrança no ASAAS
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 7); // 7 dias para vencimento
-
-      const chargeData = {
-        customer: customer.id,
-        billingType: paymentMethod.toUpperCase(),
-        value: plan.price,
-        dueDate: dueDate.toISOString().split("T")[0], // YYYY-MM-DD
-        description: `Plano ${plan.name} - Vendeu Online`,
-        externalReference: `plan_${planId}_user_${req.user.id}_${Date.now()}`,
-      };
-
-      console.log("📄 Criando cobrança ASAAS:", chargeData);
-
-      const charge = await asaasRequest("/payments", {
-        method: "POST",
-        body: JSON.stringify(chargeData),
+      const paymentData = await createSubscriptionPayment(plan, {
+        id: req.user.id,
+        name: req.user.name,
+        email: req.user.email,
+        phone: req.user.phone || "(11) 99999-9999",
+        cpfCnpj: req.user.cpf || null,
+        city: req.user.city || "São Paulo",
+        state: req.user.state || "SP",
       });
 
-      console.log("✅ Cobrança ASAAS criada:", charge.id);
+      console.log("✅ Pagamento ASAAS criado:", paymentData.id);
+
+      // Atualizar o banco com dados do pagamento
+      // (aqui você pode salvar informações do pagamento se necessário)
 
       // Salvar transação no nosso banco
       const { data: transaction, error: transactionError } = await supabase
@@ -189,11 +144,11 @@ router.post("/create", authenticateUser, async (req, res) => {
         .insert({
           userId: req.user.id,
           planId: plan.id,
-          asaasPaymentId: charge.id,
+          asaasPaymentId: paymentData.id,
           amount: plan.price,
           paymentMethod: paymentMethod,
-          status: charge.status,
-          dueDate: charge.dueDate,
+          status: paymentData.status,
+          dueDate: paymentData.dueDate,
           description: `Assinatura ${plan.name}`,
         })
         .select()
@@ -204,36 +159,30 @@ router.post("/create", authenticateUser, async (req, res) => {
       } else {
         console.log("✅ Transação salva no banco:", transaction.id);
       }
-
-      // Se for PIX, buscar QR Code
-      let pixData = null;
-      if (paymentMethod === "pix") {
-        try {
-          pixData = await asaasRequest(`/payments/${charge.id}/pixQrCode`);
-          console.log("✅ QR Code PIX gerado");
-        } catch (pixError) {
-          console.warn("⚠️ Erro ao buscar QR Code PIX:", pixError.message);
-        }
-      }
-
       // Retornar resposta baseada no método de pagamento
       const response = {
         success: true,
-        charge_id: charge.id,
+        charge_id: paymentData.id,
         transaction_id: transaction?.id,
         payment_method: paymentMethod,
-        invoice_url: charge.invoiceUrl,
-        due_date: charge.dueDate,
-        value: charge.value,
-        status: charge.status,
+        invoice_url: paymentData.invoiceUrl,
+        due_date: paymentData.dueDate,
+        value: paymentData.value,
+        status: paymentData.status,
         plan_name: plan.name,
       };
 
-      if (paymentMethod === "pix" && pixData) {
+      // Adicionar dados PIX se disponíveis
+      if (paymentData.pixCode && paymentData.pixQrCode) {
         response.pix_qr_code = {
-          encodedImage: pixData.encodedImage,
-          payload: pixData.payload,
+          encodedImage: paymentData.pixQrCode,
+          payload: paymentData.pixCode,
         };
+      }
+
+      // Adicionar URL do boleto se disponível
+      if (paymentData.bankSlipUrl) {
+        response.bank_slip_url = paymentData.bankSlipUrl;
       }
 
       return res.json(response);
@@ -381,6 +330,93 @@ router.get("/:id", authenticateUser, async (req, res) => {
       error: "Erro interno do servidor",
       details: error.message,
     });
+  }
+});
+
+// POST /api/payments/webhook - Webhook ASAAS
+router.post("/webhook", async (req, res) => {
+  try {
+    console.log("🔔 Webhook ASAAS recebido:", req.body);
+
+    // Validar token do webhook (se configurado)
+    const receivedToken = req.headers["asaas-access-token"] || req.body.token;
+    if (!validateWebhookToken(receivedToken)) {
+      console.error("❌ Token de webhook inválido");
+      return res.status(401).json({ error: "Token inválido" });
+    }
+
+    const { event, payment } = req.body;
+
+    if (!payment || !payment.id) {
+      console.error("❌ Webhook sem dados de pagamento");
+      return res.status(400).json({ error: "Dados de pagamento ausentes" });
+    }
+
+    console.log(`🔔 Evento ASAAS: ${event} para pagamento ${payment.id}`);
+
+    // Buscar pagamento no nosso banco
+    const { data: localPayment, error: fetchError } = await supabase
+      .from("Payment")
+      .select("*")
+      .eq("asaasPaymentId", payment.id)
+      .single();
+
+    if (fetchError || !localPayment) {
+      console.error("❌ Pagamento não encontrado no banco:", payment.id);
+      return res.status(404).json({ error: "Pagamento não encontrado" });
+    }
+
+    // Mapear status ASAAS para nosso status
+    const newStatus = mapAsaasStatus(payment.status);
+    console.log(`📊 Status: ${payment.status} → ${newStatus}`);
+
+    // Atualizar status do pagamento
+    const { error: updateError } = await supabase
+      .from("Payment")
+      .update({
+        status: newStatus,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq("id", localPayment.id);
+
+    if (updateError) {
+      console.error("❌ Erro ao atualizar pagamento:", updateError);
+      return res.status(500).json({ error: "Erro ao atualizar pagamento" });
+    }
+
+    // Se pagamento foi aprovado, ativar assinatura
+    if (newStatus === "paid") {
+      console.log("✅ Pagamento aprovado, ativando assinatura...");
+
+      // Criar ou atualizar assinatura
+      const { error: subscriptionError } = await supabase.from("Subscription").upsert({
+        userId: localPayment.userId,
+        planId: localPayment.planId,
+        status: "ACTIVE",
+        startDate: new Date().toISOString(),
+        endDate: null, // Implementar lógica de data final baseada no plano
+        paymentId: localPayment.id,
+      });
+
+      if (subscriptionError) {
+        console.error("❌ Erro ao ativar assinatura:", subscriptionError);
+      } else {
+        console.log("✅ Assinatura ativada com sucesso");
+      }
+    }
+
+    // Log do evento para auditoria
+    console.log("✅ Webhook processado com sucesso:", {
+      event,
+      paymentId: payment.id,
+      status: newStatus,
+      userId: localPayment.userId,
+    });
+
+    res.json({ success: true, message: "Webhook processado" });
+  } catch (error) {
+    console.error("❌ Erro no webhook ASAAS:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
 

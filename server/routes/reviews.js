@@ -75,7 +75,7 @@ router.get("/", optionalAuth, async (req, res) => {
 
     // Construir query base
     let query = supabase
-      .from("Review")
+      .from("reviews")
       .select(
         `
         id,
@@ -140,7 +140,7 @@ router.get("/", optionalAuth, async (req, res) => {
     // Calcular estatísticas se for para um produto específico
     let stats = null;
     if (productId) {
-      const { data: allReviews } = await supabase.from("Review").select("rating").eq("productId", productId);
+      const { data: allReviews } = await supabase.from("reviews").select("rating").eq("productId", productId);
 
       if (allReviews && allReviews.length > 0) {
         const totalReviews = allReviews.length;
@@ -227,7 +227,7 @@ router.post("/", authenticateUser, async (req, res) => {
 
     // Verificar se usuário já fez review deste produto
     const { data: existingReview, error: existingError } = await supabase
-      .from("Review")
+      .from("reviews")
       .select("id")
       .eq("userId", req.user.id)
       .eq("productId", productId)
@@ -240,17 +240,34 @@ router.post("/", authenticateUser, async (req, res) => {
       });
     }
 
-    // TODO: Verificar se usuário comprou o produto (opcional)
-    // const { data: orderItem } = await supabase
-    //   .from("OrderItem")
-    //   .select("id")
-    //   .eq("productId", productId)
-    //   .eq("Order.userId", req.user.id)
-    //   .single();
+    // Verificar se usuário comprou o produto (somente usuários que compraram podem avaliar)
+    const { data: orderItem } = await supabase
+      .from("order_items")
+      .select(
+        `
+        id,
+        orders!inner (
+          id,
+          userId,
+          status
+        )
+      `
+      )
+      .eq("productId", productId)
+      .eq("orders.userId", req.user.id)
+      .eq("orders.status", "delivered")
+      .single();
+
+    if (!orderItem) {
+      return res.status(403).json({
+        success: false,
+        error: "Você só pode avaliar produtos que já comprou e recebeu",
+      });
+    }
 
     // Criar review
     const { data: review, error: insertError } = await supabase
-      .from("Review")
+      .from("reviews")
       .insert({
         userId: req.user.id,
         productId: productId,
@@ -306,7 +323,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
 
     // Verificar se review existe e pertence ao usuário
     const { data: review, error: reviewError } = await supabase
-      .from("Review")
+      .from("reviews")
       .select("id, userId, productId")
       .eq("id", id)
       .eq("userId", req.user.id)
@@ -329,7 +346,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
 
     // Atualizar review
     const { data: updatedReview, error: updateError } = await supabase
-      .from("Review")
+      .from("reviews")
       .update(updateData)
       .eq("id", id)
       .select()
@@ -368,7 +385,7 @@ router.delete("/:id", authenticateUser, async (req, res) => {
 
     // Verificar se review existe e pertence ao usuário
     const { data: review, error: reviewError } = await supabase
-      .from("Review")
+      .from("reviews")
       .select("id, userId")
       .eq("id", id)
       .eq("userId", req.user.id)
@@ -382,7 +399,7 @@ router.delete("/:id", authenticateUser, async (req, res) => {
     }
 
     // Deletar review
-    const { error: deleteError } = await supabase.from("Review").delete().eq("id", id).eq("userId", req.user.id);
+    const { error: deleteError } = await supabase.from("reviews").delete().eq("id", id).eq("userId", req.user.id);
 
     if (deleteError) {
       console.error("❌ Erro ao deletar review:", deleteError);
@@ -414,7 +431,7 @@ router.get("/my", authenticateUser, async (req, res) => {
     console.log("👤 Buscando reviews do usuário:", req.user.id);
 
     const { data: reviews, error } = await supabase
-      .from("Review")
+      .from("reviews")
       .select(
         `
         id,

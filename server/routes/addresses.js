@@ -43,7 +43,7 @@ router.get("/", authenticateUser, async (req, res) => {
 
     // Buscar endereços do usuário no Supabase
     const { data: addresses, error } = await supabase
-      .from("Address")
+      .from("addresses")
       .select("*")
       .eq("userId", req.user.id)
       .order("isDefault", { ascending: false })
@@ -95,7 +95,7 @@ router.post("/", authenticateUser, async (req, res) => {
     // Se isDefault é true, remover default de outros endereços
     if (isDefault) {
       const { error: updateError } = await supabase
-        .from("Address")
+        .from("addresses")
         .update({ isDefault: false })
         .eq("userId", req.user.id);
 
@@ -106,7 +106,7 @@ router.post("/", authenticateUser, async (req, res) => {
 
     // Criar novo endereço
     const { data: address, error: insertError } = await supabase
-      .from("Address")
+      .from("addresses")
       .insert({
         userId: req.user.id,
         label: label.trim(),
@@ -154,7 +154,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
 
     // Verificar se endereço existe e pertence ao usuário
     const { data: existingAddress, error: checkError } = await supabase
-      .from("Address")
+      .from("addresses")
       .select("id, isDefault")
       .eq("id", id)
       .eq("userId", req.user.id)
@@ -193,7 +193,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
     // Se isDefault está sendo definido como true, remover default de outros endereços
     if (updateData.isDefault && !existingAddress.isDefault) {
       const { error: updateOthersError } = await supabase
-        .from("Address")
+        .from("addresses")
         .update({ isDefault: false })
         .eq("userId", req.user.id)
         .neq("id", id);
@@ -205,7 +205,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
 
     // Atualizar endereço
     const { data: updatedAddress, error: updateError } = await supabase
-      .from("Address")
+      .from("addresses")
       .update(updateData)
       .eq("id", id)
       .select()
@@ -242,7 +242,7 @@ router.delete("/:id", authenticateUser, async (req, res) => {
 
     // Verificar se endereço existe e pertence ao usuário
     const { data: existingAddress, error: checkError } = await supabase
-      .from("Address")
+      .from("addresses")
       .select("id, isDefault")
       .eq("id", id)
       .eq("userId", req.user.id)
@@ -256,7 +256,7 @@ router.delete("/:id", authenticateUser, async (req, res) => {
     }
 
     // Deletar endereço
-    const { error: deleteError } = await supabase.from("Address").delete().eq("id", id).eq("userId", req.user.id);
+    const { error: deleteError } = await supabase.from("addresses").delete().eq("id", id).eq("userId", req.user.id);
 
     if (deleteError) {
       console.error("❌ Erro ao deletar endereço:", deleteError);
@@ -266,13 +266,13 @@ router.delete("/:id", authenticateUser, async (req, res) => {
     // Se era o endereço padrão, definir outro como padrão (se existir)
     if (existingAddress.isDefault) {
       const { data: otherAddresses, error: searchError } = await supabase
-        .from("Address")
+        .from("addresses")
         .select("id")
         .eq("userId", req.user.id)
         .limit(1);
 
       if (!searchError && otherAddresses && otherAddresses.length > 0) {
-        await supabase.from("Address").update({ isDefault: true }).eq("id", otherAddresses[0].id);
+        await supabase.from("addresses").update({ isDefault: true }).eq("id", otherAddresses[0].id);
 
         console.log("✅ Novo endereço padrão definido:", otherAddresses[0].id);
       }

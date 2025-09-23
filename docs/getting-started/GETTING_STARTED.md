@@ -5,6 +5,7 @@ Welcome to **Vendeu Online**, Brazil's premier multi-vendor e-commerce marketpla
 ## Quick Start
 
 ### Prerequisites
+
 - Node.js 18+ (LTS recommended)
 - PostgreSQL database (we use Supabase)
 - Git
@@ -12,34 +13,40 @@ Welcome to **Vendeu Online**, Brazil's premier multi-vendor e-commerce marketpla
 ### Installation
 
 1. **Clone the repository**
+
 ```bash
 git clone https://github.com/your-org/vendeu-online.git
 cd vendeu-online
 ```
 
 2. **Install dependencies**
+
 ```bash
 npm install
 ```
 
 3. **Environment Setup**
+
 ```bash
 cp .env.example .env
 # Edit .env with your configuration
 ```
 
 4. **Database Setup**
+
 ```bash
 npx prisma generate
 npx prisma db push
 ```
 
 5. **Start Development**
+
 ```bash
 npm run dev
 ```
 
 Your application will be running at:
+
 - 🌐 **Frontend**: http://localhost:5173
 - ⚡ **API**: http://localhost:3001
 
@@ -51,8 +58,11 @@ Your application will be running at:
 # Database (Supabase)
 DATABASE_URL="your-postgres-connection-string"
 NEXT_PUBLIC_SUPABASE_URL="your-supabase-url"
+VITE_PUBLIC_SUPABASE_URL="your-supabase-url"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
+VITE_PUBLIC_SUPABASE_ANON_KEY="your-supabase-anon-key"
 SUPABASE_SERVICE_ROLE_KEY="your-supabase-service-key"
+VITE_SUPABASE_SERVICE_ROLE_KEY="your-supabase-service-key"
 
 # Application
 APP_NAME="Vendeu Online"
@@ -68,6 +78,7 @@ ASAAS_WEBHOOK_URL="https://www.vendeu.online/api/payments/webhook"
 ## User Roles & Features
 
 ### 👤 **Buyer**
+
 - Browse and search products
 - Add items to cart and wishlist
 - Secure checkout with PIX/Credit Card
@@ -75,6 +86,7 @@ ASAAS_WEBHOOK_URL="https://www.vendeu.online/api/payments/webhook"
 - Product reviews and ratings
 
 ### 🏪 **Seller**
+
 - Create and manage store
 - Product catalog management
 - Order processing
@@ -82,6 +94,7 @@ ASAAS_WEBHOOK_URL="https://www.vendeu.online/api/payments/webhook"
 - Subscription plans
 
 ### ⚙️ **Admin**
+
 - Platform management
 - User moderation
 - Content management
