@@ -70,6 +70,17 @@ export interface StoreStats {
     avgRating: number;
     totalProducts: number;
     lowStockCount: number;
+    totalVisits: number;
+    conversionRate: number;
+  };
+  comparison: {
+    orders: number;
+    revenue: number;
+    visits: number;
+    conversion: number;
+    revenueChange: number;
+    ordersChange: number;
+    visitsChange: number;
   };
   ordersByStatus: Record<string, number>;
   salesByDay: {
@@ -111,21 +122,33 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
       const statsData = response?.data || response;
 
       // Estruturar dados corretamente para o frontend
-      const formattedStats = {
+      const formattedStats: StoreStats = {
+        period: currentPeriod,
         summary: {
           totalRevenue: statsData?.revenue || 0,
           totalOrders: statsData?.orders || 0,
+          totalItems: statsData?.totalItems || 0,
+          avgOrderValue: statsData?.averageOrderValue || 0,
+          avgRating: statsData?.avgRating || 0,
+          totalProducts: statsData?.totalProducts || 0,
+          lowStockCount: statsData?.lowStockCount || 0,
           totalVisits: statsData?.visits || 0,
           conversionRate: statsData?.conversionRate || 0,
-          averageOrderValue: statsData?.averageOrderValue || 0,
         },
         comparison: statsData?.comparison || {
+          orders: 0,
+          revenue: 0,
+          visits: 0,
+          conversion: 0,
           revenueChange: 0,
           ordersChange: 0,
           visitsChange: 0,
         },
-        topProducts: [],
-        salesByDay: [],
+        ordersByStatus: statsData?.ordersByStatus || {},
+        topProducts: statsData?.topProducts || [],
+        salesByDay: statsData?.salesByDay || [],
+        lowStockProducts: statsData?.lowStockProducts || [],
+        recentReviews: statsData?.recentReviews || [],
       };
 
       set({

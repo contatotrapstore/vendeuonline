@@ -286,7 +286,7 @@ const PlanForm: React.FC<PlanFormProps> = ({ plan, onSave, onCancel }) => {
     max_photos: plan?.max_photos || 0,
     max_products: plan?.max_products || 0,
     support: plan?.support || "",
-    is_active: plan?.is_active || true,
+    is_active: plan?.is_active ?? true,
   });
 
   const handleSubmit = (e: React.FormEvent) => {
