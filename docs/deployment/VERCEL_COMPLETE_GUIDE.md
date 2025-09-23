@@ -1,6 +1,6 @@
-# 🚀 INSTRUÇÕES COMPLETAS DE DEPLOY NO VERCEL
+# 🚀 GUIA COMPLETO DE DEPLOY NO VERCEL - VENDEU ONLINE
 
-Este guia fornece um passo a passo completo para fazer deploy da aplicação **Vendeu Online** no Vercel.
+Este documento unifica todas as instruções e configurações necessárias para fazer deploy da aplicação **Vendeu Online** no Vercel.
 
 ---
 
@@ -9,7 +9,7 @@ Este guia fornece um passo a passo completo para fazer deploy da aplicação **V
 ✅ Conta no [Vercel](https://vercel.com)
 ✅ Projeto conectado ao GitHub
 ✅ Banco PostgreSQL (Supabase) configurado
-✅ Variáveis de ambiente preparadas (veja `VERCEL_ENV_VARS.md`)
+✅ Variáveis de ambiente preparadas (seção abaixo)
 
 ---
 
@@ -20,17 +20,7 @@ Este guia fornece um passo a passo completo para fazer deploy da aplicação **V
 1. Acesse [Vercel Dashboard](https://vercel.com/dashboard)
 2. Selecione o projeto **vendeu-online**
 3. Vá em **Settings** → **Environment Variables**
-4. Configure todas as 20 variáveis do arquivo `VERCEL_ENV_VARS.md`
-
-#### ⚠️ IMPORTANTE:
-
-- Para variáveis `NEXT_PUBLIC_*`: **NÃO** marque como "Sensitive"
-- Para variáveis sensíveis: **MARQUE** como "Sensitive"
-  - `DATABASE_URL`
-  - `JWT_SECRET`
-  - `SUPABASE_SERVICE_ROLE_KEY`
-  - `ASAAS_API_KEY`
-  - `SMTP_PASS`
+4. Configure todas as variáveis listadas na seção abaixo
 
 ### 2. **Verificar Configurações do Projeto**
 
@@ -65,6 +55,64 @@ git push origin main
 ```bash
 npx vercel --prod
 ```
+
+---
+
+## 🔑 VARIÁVEIS DE AMBIENTE
+
+### Essenciais (OBRIGATÓRIAS)
+
+#### Database & Backend
+
+| Variável       | Valor                                                                                                                              | Sensível? |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| `DATABASE_URL` | `postgresql://postgres.dycsfnbqgojhttnjbndp:...`                                                                                   | ✅        |
+| `JWT_SECRET`   | `cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac` | ✅        |
+
+#### Supabase Configuration
+
+| Variável                        | Valor                                      | Sensível? |
+| ------------------------------- | ------------------------------------------ | --------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | `https://dycsfnbqgojhttnjbndp.supabase.co` | ❌        |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`  | ❌        |
+| `SUPABASE_SERVICE_ROLE_KEY`     | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`  | ✅        |
+
+#### App Configuration
+
+| Variável   | Valor                       | Sensível? |
+| ---------- | --------------------------- | --------- |
+| `APP_NAME` | `Vendeu Online`             | ❌        |
+| `APP_URL`  | `https://www.vendeu.online` | ❌        |
+| `APP_ENV`  | `production`                | ❌        |
+
+### Pagamentos - ASAAS (OBRIGATÓRIAS para compras)
+
+| Variável              | Valor                                                          | Sensível? |
+| --------------------- | -------------------------------------------------------------- | --------- |
+| `ASAAS_API_KEY`       | `$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY...` | ✅        |
+| `ASAAS_BASE_URL`      | `https://api.asaas.com/v3`                                     | ❌        |
+| `ASAAS_WEBHOOK_TOKEN` | `asaas-webhook-secret-2024`                                    | ✅        |
+| `ASAAS_WEBHOOK_URL`   | `https://www.vendeu.online/api/payments/webhook`               | ❌        |
+
+### Email (OPCIONAIS - Para notificações)
+
+| Variável    | Valor                      | Sensível? |
+| ----------- | -------------------------- | --------- |
+| `SMTP_HOST` | `smtp.gmail.com`           | ❌        |
+| `SMTP_PORT` | `587`                      | ❌        |
+| `SMTP_USER` | `demo@vendeuonline.com`    | ❌        |
+| `SMTP_PASS` | `demo-password`            | ✅        |
+| `SMTP_FROM` | `noreply@vendeuonline.com` | ❌        |
+
+### Configurações Adicionais (OPCIONAIS)
+
+| Variável               | Valor                             | Descrição                       |
+| ---------------------- | --------------------------------- | ------------------------------- |
+| `UPLOAD_MAX_SIZE`      | `10485760`                        | Tamanho máximo de upload (10MB) |
+| `UPLOAD_ALLOWED_TYPES` | `image/jpeg,image/png,image/webp` | Tipos de arquivo permitidos     |
+| `GOOGLE_ANALYTICS_ID`  | `G-DEMO123`                       | ID do Google Analytics          |
+| `RATE_LIMIT_MAX`       | `100`                             | Limite de requests por janela   |
+| `RATE_LIMIT_WINDOW`    | `900000`                          | Janela de rate limit (15min)    |
 
 ---
 
@@ -151,15 +199,6 @@ Verifique se o frontend consegue acessar a API sem erros de CORS.
 2. Configure no Vercel Environment Variables
 3. Redeploy a aplicação
 
-### ❌ Erro: Timeout na API
-
-**Causa:** Funções serverless com timeout muito baixo
-
-**Solução:**
-
-- Verifique se `vercel.json` tem `"maxDuration": 30`
-- Para operações mais pesadas, considere aumentar para 60s
-
 ### ❌ Erro: Build failed
 
 **Causa:** Dependências ou TypeScript errors
@@ -173,6 +212,31 @@ Verifique se o frontend consegue acessar a API sem erros de CORS.
    ```
 2. Corrija erros TypeScript
 3. Verifique dependencies no `package.json`
+
+---
+
+## ⚠️ CONFIGURAÇÃO IMPORTANTE
+
+### Para Produção:
+
+1. **JWT_SECRET**: Gere uma nova chave forte com:
+
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+   ```
+
+2. **ASAAS_API_KEY**: Certifique-se de usar a chave de produção (prefixo `$aact_prod_`)
+
+3. **Webhooks**: Configure o webhook no painel ASAAS apontando para:
+   ```
+   https://www.vendeu.online/api/payments/webhook
+   ```
+
+### Configuração no Vercel:
+
+- Para **todas** as variáveis, selecione **Environment**: `Production`, `Preview`, `Development`
+- **NÃO** marque como "sensitive" as variáveis PUBLIC (`NEXT_PUBLIC_*`)
+- **MARQUE** como "sensitive": `JWT_SECRET`, `ASAAS_API_KEY`, `SMTP_PASS`, `DATABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
 
 ---
 
