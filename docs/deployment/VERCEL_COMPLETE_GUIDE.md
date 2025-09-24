@@ -26,10 +26,16 @@ Este documento unifica todas as instruções e configurações necessárias para
 
 #### Domain Configuration
 
-```
-Primary Domain: www.vendeu.online
-Alias: vendeu.online
-```
+**IMPORTANTE:** Configuração de domínio deve ser feita via Dashboard do Vercel:
+
+1. Acesse [Vercel Dashboard](https://vercel.com/dashboard)
+2. Selecione o projeto **vendeu-online**
+3. Vá em **Settings** → **Domains**
+4. Adicione os domínios:
+   - `www.vendeu.online` (Primary)
+   - `vendeu.online` (Redirect to www.vendeu.online)
+
+**Nota:** A propriedade `"domains"` no vercel.json foi removida pois não é mais suportada.
 
 #### Build Settings
 
@@ -66,18 +72,18 @@ npx vercel --prod
 
 #### Database & Backend
 
-| Variável       | Valor                                                                                                                              | Sensível? |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| Variável       | Valor                                                                                              | Sensível? |
+| -------------- | -------------------------------------------------------------------------------------------------- | --------- |
 | `DATABASE_URL` | `postgresql://postgres.YOUR_PROJECT_ID:YOUR_PASSWORD@db.YOUR_PROJECT_ID.supabase.co:5432/postgres` | ✅        |
-| `JWT_SECRET`   | `YOUR_STRONG_JWT_SECRET_HERE` | ✅        |
+| `JWT_SECRET`   | `YOUR_STRONG_JWT_SECRET_HERE`                                                                      | ✅        |
 
 #### Supabase Configuration
 
-| Variável                        | Valor                                      | Sensível? |
-| ------------------------------- | ------------------------------------------ | --------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | `https://YOUR_PROJECT_ID.supabase.co` | ❌        |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.YOUR_ANON_KEY_HERE`  | ❌        |
-| `SUPABASE_SERVICE_ROLE_KEY`     | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.YOUR_SERVICE_ROLE_KEY_HERE`  | ✅        |
+| Variável                        | Valor                                                             | Sensível? |
+| ------------------------------- | ----------------------------------------------------------------- | --------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | `https://YOUR_PROJECT_ID.supabase.co`                             | ❌        |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.YOUR_ANON_KEY_HERE`         | ❌        |
+| `SUPABASE_SERVICE_ROLE_KEY`     | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.YOUR_SERVICE_ROLE_KEY_HERE` | ✅        |
 
 #### App Configuration
 
@@ -89,12 +95,12 @@ npx vercel --prod
 
 ### Pagamentos - ASAAS (OBRIGATÓRIAS para compras)
 
-| Variável              | Valor                                                          | Sensível? |
-| --------------------- | -------------------------------------------------------------- | --------- |
-| `ASAAS_API_KEY`       | `$aact_prod_YOUR_ASAAS_KEY_HERE` | ✅        |
-| `ASAAS_BASE_URL`      | `https://api.asaas.com/v3`                                     | ❌        |
-| `ASAAS_WEBHOOK_TOKEN` | `asaas-webhook-secret-2024`                                    | ✅        |
-| `ASAAS_WEBHOOK_URL`   | `https://www.vendeu.online/api/payments/webhook`               | ❌        |
+| Variável              | Valor                                            | Sensível? |
+| --------------------- | ------------------------------------------------ | --------- |
+| `ASAAS_API_KEY`       | `$aact_prod_YOUR_ASAAS_KEY_HERE`                 | ✅        |
+| `ASAAS_BASE_URL`      | `https://api.asaas.com/v3`                       | ❌        |
+| `ASAAS_WEBHOOK_TOKEN` | `asaas-webhook-secret-2024`                      | ✅        |
+| `ASAAS_WEBHOOK_URL`   | `https://www.vendeu.online/api/payments/webhook` | ❌        |
 
 ### Email (OPCIONAIS - Para notificações)
 
@@ -159,6 +165,25 @@ Verifique se o frontend consegue acessar a API sem erros de CORS.
 - Confirme conexão com banco de dados
 
 ---
+
+## 📁 **ASSETS E ARQUIVOS ESTÁTICOS**
+
+### **Logo do Projeto**
+
+- ✅ **LogoVO.png** está localizada em `/public/images/LogoVO.png`
+- ✅ **Componente Logo.tsx** configurado para usar `/images/LogoVO.png`
+- ✅ **Arquivo solto** da raiz foi removido para organização
+
+### **Estrutura de Assets**
+
+```
+public/
+├── images/
+│   ├── LogoVO.png      # Logo principal
+│   └── logo.png        # Logo alternativa
+├── favicon.ico
+└── manifest.json
+```
 
 ## 🐛 TROUBLESHOOTING
 

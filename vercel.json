@@ -1,15 +1,8 @@
 {
   "version": 2,
-  "name": "vendeu-online",
-  "domains": ["www.vendeu.online", "vendeu.online"],
   "buildCommand": "npm run vercel-build",
   "outputDirectory": "dist",
-  "functions": {
-    "api/*.js": {
-      "maxDuration": 30,
-      "memory": 1024
-    }
-  },
+  "installCommand": "npm install && npx prisma generate",
   "headers": [
     {
       "source": "/api/(.*)",
@@ -33,31 +26,10 @@
       ]
     }
   ],
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/index.js"
+  "functions": {
+    "server.js": {
+      "maxDuration": 30,
+      "memory": 1024
     }
-  ],
-  "installCommand": "npm install && npx prisma generate",
-  "env": {
-    "DATABASE_URL": "@database_url",
-    "JWT_SECRET": "@jwt_secret",
-    "SUPABASE_URL": "@supabase_url",
-    "SUPABASE_ANON_KEY": "@supabase_anon_key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
-    "NEXT_PUBLIC_SUPABASE_URL": "@next_public_supabase_url",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@next_public_supabase_anon_key",
-    "VITE_PUBLIC_SUPABASE_URL": "@vite_public_supabase_url",
-    "VITE_PUBLIC_SUPABASE_ANON_KEY": "@vite_public_supabase_anon_key",
-    "APP_NAME": "@app_name",
-    "APP_URL": "@app_url",
-    "APP_ENV": "@app_env",
-    "PORT": "@port",
-    "ASAAS_API_KEY": "@asaas_api_key",
-    "ASAAS_BASE_URL": "@asaas_base_url",
-    "ASAAS_WEBHOOK_TOKEN": "@asaas_webhook_token",
-    "ASAAS_WEBHOOK_URL": "@asaas_webhook_url",
-    "REDIS_URL": "@redis_url"
   }
 }

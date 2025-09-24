@@ -53,7 +53,7 @@ const Logo: React.FC<LogoProps> = ({ className, size = "md", showText = true, va
   return (
     <div className={cn("flex items-center", className)}>
       {/* Logo PNG */}
-      <img src="/LogoVO.png" alt="Vendeu Online Logo" className={cn("object-contain", sizeClasses[size])} />
+      <img src="/images/LogoVO.png" alt="Vendeu Online Logo" className={cn("object-contain", sizeClasses[size])} />
     </div>
   );
 };
