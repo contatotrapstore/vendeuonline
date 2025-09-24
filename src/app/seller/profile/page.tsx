@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -122,10 +124,10 @@ export default function SellerProfile() {
         const data = await response.json();
         setProfile(data.profile);
       } else {
-        console.error("Error loading store profile");
+        logger.error("Error loading store profile");
       }
     } catch (error) {
-      console.error("Error loading store profile:", error);
+      logger.error("Error loading store profile:", error);
     } finally {
       setIsLoading(false);
     }
@@ -149,7 +151,7 @@ export default function SellerProfile() {
         setIsEditing(false);
       }
     } catch (error) {
-      console.error("Error saving store profile:", error);
+      logger.error("Error saving store profile:", error);
     } finally {
       setIsSaving(false);
     }
@@ -187,7 +189,7 @@ export default function SellerProfile() {
         );
       }
     } catch (error) {
-      console.error("Error uploading image:", error);
+      logger.error("Error uploading image:", error);
     }
   };
 

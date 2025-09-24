@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { logger } from "@/lib/logger";
+
 
 export interface Plan {
   id: number;
@@ -59,7 +61,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
       const data = await response.json();
       set({ plans: data.data || [], loading: false });
     } catch (error: any) {
-      console.error("Erro ao buscar planos:", error);
+      logger.error("Erro ao buscar planos:", error);
       set({
         plans: [],
         error: error.message || "Erro ao carregar planos",
@@ -97,7 +99,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
         loading: false,
       });
     } catch (error: any) {
-      console.error("Erro ao criar plano:", error);
+      logger.error("Erro ao criar plano:", error);
       set({
         error: error.message || "Erro ao criar plano",
         loading: false,
@@ -136,7 +138,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
         loading: false,
       });
     } catch (error: any) {
-      console.error("Erro ao atualizar plano:", error);
+      logger.error("Erro ao atualizar plano:", error);
       set({
         error: error.message || "Erro ao atualizar plano",
         loading: false,
@@ -173,7 +175,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
         loading: false,
       });
     } catch (error: any) {
-      console.error("Erro ao excluir plano:", error);
+      logger.error("Erro ao excluir plano:", error);
       set({
         error: error.message || "Erro ao excluir plano",
         loading: false,

@@ -1,21 +1,18 @@
 import { createClient } from "@supabase/supabase-js";
 import { createClientComponentClient, createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 
-// Configurações do Supabase
+// Configurações do Supabase - APENAS credenciais públicas no frontend
 const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY!;
-const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY!;
+
+// 🚨 IMPORTANTE: Service Role Key NÃO deve ser exposto no frontend!
+// Todos os métodos admin foram movidos para o backend
 
 // Cliente público (para uso no frontend)
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Cliente de serviço (para uso no backend com privilégios administrativos)
-export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
-});
+// ❌ REMOVIDO: supabaseAdmin não deve existir no frontend
+// Cliente admin deve ficar apenas no backend por segurança
 
 // Cliente para componentes do lado do cliente
 export const createSupabaseClient = () => createClientComponentClient();
@@ -41,156 +38,42 @@ export interface UploadOptions {
   contentType?: string;
 }
 
-// Storage helpers
-export class SupabaseStorage {
-  private client = supabaseAdmin;
+// ❌ TODAS AS FUNCIONALIDADES ADMIN REMOVIDAS DO FRONTEND
+// Para operações admin (upload, criação de usuário, etc), use as APIs do backend:
+// - Upload: POST /api/upload
+// - Gerenciar usuários: APIs em /api/admin/*
+// - Storage: APIs em /api/upload/* ou /api/admin/*
 
-  async uploadFile(file: Buffer | File, options: UploadOptions): Promise<SupabaseUploadResult> {
-    const { bucket, folder = "", fileName, upsert = false, contentType } = options;
-
-    // Gerar nome do arquivo se não fornecido
-    const finalFileName = fileName || `${Date.now()}-${Math.random().toString(36).substring(7)}`;
-    const filePath = folder ? `${folder}/${finalFileName}` : finalFileName;
-
-    // Upload do arquivo
-    const { data, error } = await this.client.storage.from(bucket).upload(filePath, file, {
-      upsert,
-      contentType,
-    });
-
-    if (error) {
-      console.error("Erro no upload Supabase:", error);
-      throw new Error(`Falha no upload: ${error.message}`);
-    }
-
-    // Obter URL pública
-    const { data: urlData } = this.client.storage.from(bucket).getPublicUrl(data.path);
-
-    return {
-      publicUrl: urlData.publicUrl,
-      path: data.path,
-      fullPath: data.fullPath || data.path,
-    };
-  }
-
-  async uploadImage(
-    file: Buffer | File,
-    bucket: string = "images",
-    folder: string = "products"
-  ): Promise<SupabaseUploadResult> {
-    // Detectar tipo de arquivo
-    let contentType = "image/jpeg";
-    if (file instanceof File) {
-      contentType = file.type;
-    }
-
-    // Gerar nome único para a imagem
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(7);
-    const extension = contentType.split("/")[1] || "jpg";
-    const fileName = `${timestamp}-${random}.${extension}`;
-
-    return this.uploadFile(file, {
-      bucket,
-      folder,
-      fileName,
-      contentType,
-      upsert: false,
-    });
-  }
-
-  async deleteFile(bucket: string, filePath: string): Promise<void> {
-    const { error } = await this.client.storage.from(bucket).remove([filePath]);
-
-    if (error) {
-      console.error("Erro ao deletar arquivo:", error);
-      throw new Error(`Falha ao deletar: ${error.message}`);
-    }
-  }
-
-  async createBucket(
-    bucketName: string,
-    options: {
-      public?: boolean;
-      allowedMimeTypes?: string[];
-      fileSizeLimit?: number;
-    } = {}
-  ): Promise<void> {
-    const { public: isPublic = true, allowedMimeTypes, fileSizeLimit } = options;
-
-    const { error } = await this.client.storage.createBucket(bucketName, {
-      public: isPublic,
-      allowedMimeTypes,
-      fileSizeLimit,
-    });
-
-    if (error && error.message !== "Bucket already exists") {
-      console.error("Erro ao criar bucket:", error);
-      throw new Error(`Falha ao criar bucket: ${error.message}`);
-    }
-  }
-
-  async setupBuckets(): Promise<void> {
-    // Bucket para imagens de produtos
-    await this.createBucket("products", {
-      public: true,
-      allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
-      fileSizeLimit: 10 * 1024 * 1024, // 10MB
-    });
-
-    // Bucket para logos de lojas
-    await this.createBucket("stores", {
-      public: true,
-      allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/svg+xml"],
-      fileSizeLimit: 5 * 1024 * 1024, // 5MB
-    });
-
-    // Bucket para avatares de usuários
-    await this.createBucket("avatars", {
-      public: true,
-      allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
-      fileSizeLimit: 2 * 1024 * 1024, // 2MB
-    });
-
-    console.log("Buckets do Supabase configurados com sucesso");
-  }
-}
-
-// Instância global do storage
-export const supabaseStorage = new SupabaseStorage();
-
-// Funções de conveniência
-export const uploadProductImage = (file: Buffer | File) => supabaseStorage.uploadImage(file, "products", "images");
-
-export const uploadStoreLogo = (file: Buffer | File) => supabaseStorage.uploadImage(file, "stores", "logos");
-
-export const uploadAvatar = (file: Buffer | File) => supabaseStorage.uploadImage(file, "avatars", "profiles");
-
-export const deleteProductImage = (filePath: string) => supabaseStorage.deleteFile("products", filePath);
-
-export const deleteStoreLogo = (filePath: string) => supabaseStorage.deleteFile("stores", filePath);
-
-// Database helpers
-export const createSupabaseUser = async (email: string, password: string) => {
-  const { data, error } = await supabaseAdmin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
-
-  if (error) {
-    throw new Error(`Erro ao criar usuário: ${error.message}`);
-  }
-
-  return data.user;
+// Helper functions que podem ficar no frontend (apenas leitura pública)
+export const getPublicUrl = (bucket: string, path: string) => {
+  return supabase.storage.from(bucket).getPublicUrl(path);
 };
 
-export const deleteSupabaseUser = async (userId: string) => {
-  const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
+// Objeto supabaseStorage com métodos de upload
+export const supabaseStorage = {
+  // Upload de imagem usando API do backend
+  uploadImage: async (file: File, bucket: string = 'products', folder?: string): Promise<SupabaseUploadResult> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('bucket', bucket);
+    if (folder) formData.append('folder', folder);
 
-  if (error) {
-    throw new Error(`Erro ao deletar usuário: ${error.message}`);
-  }
+    const response = await fetch('/api/upload', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to upload image');
+    }
+
+    const result = await response.json();
+    return {
+      publicUrl: result.url,
+      path: result.path,
+      fullPath: result.fullPath || result.path,
+    };
+  },
 };
 
 export default supabase;

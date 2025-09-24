@@ -1,8 +1,10 @@
 import { test, expect } from "@playwright/test";
+import { logger } from "@/lib/logger";
+
 
 // TC005: Carrinho de Compras - Adicionar/Remover Produtos
 test("TC005: Shopping Cart - Add/Remove Products", async ({ page }) => {
-  console.log("🧪 Running TC005: Shopping Cart - Add/Remove Products");
+  logger.info("🧪 Running TC005: Shopping Cart - Add/Remove Products");
 
   await test.step("Access homepage and browse products", async () => {
     await page.goto("http://localhost:4174");
@@ -11,7 +13,7 @@ test("TC005: Shopping Cart - Add/Remove Products", async ({ page }) => {
     // Verificar se página carregou
     const title = await page.title();
     expect(title).toContain("Vendeu Online");
-    console.log("✅ Homepage loaded");
+    logger.info("✅ Homepage loaded");
   });
 
   await test.step("Navigate to products page", async () => {
@@ -26,11 +28,11 @@ test("TC005: Shopping Cart - Add/Remove Products", async ({ page }) => {
         await page.goto("http://localhost:4174/products");
       }
     } catch (error) {
-      console.log("Navigating directly to products page");
+      logger.info("Navigating directly to products page");
       await page.goto("http://localhost:4174/products");
     }
 
-    console.log("✅ Navigated to products area");
+    logger.info("✅ Navigated to products area");
   });
 
   await test.step("Add product to cart (mock test)", async () => {
@@ -42,9 +44,9 @@ test("TC005: Shopping Cart - Add/Remove Products", async ({ page }) => {
     if (await addToCartButtons.first().isVisible({ timeout: 3000 })) {
       await addToCartButtons.first().click();
       await page.waitForTimeout(1000);
-      console.log("✅ Product added to cart");
+      logger.info("✅ Product added to cart");
     } else {
-      console.log("✅ Cart functionality tested (no products available)");
+      logger.info("✅ Cart functionality tested (no products available)");
     }
   });
 
@@ -55,20 +57,20 @@ test("TC005: Shopping Cart - Add/Remove Products", async ({ page }) => {
     if (await cartIcon.first().isVisible({ timeout: 3000 })) {
       await cartIcon.first().click();
       await page.waitForTimeout(1000);
-      console.log("✅ Cart is accessible");
+      logger.info("✅ Cart is accessible");
     } else {
       // Tentar acessar carrinho diretamente
       await page.goto("http://localhost:4174/cart");
-      console.log("✅ Cart page accessible via direct URL");
+      logger.info("✅ Cart page accessible via direct URL");
     }
   });
 
-  console.log("✅ TC005 COMPLETED: Shopping cart functionality tested");
+  logger.info("✅ TC005 COMPLETED: Shopping cart functionality tested");
 });
 
 // TC006: Wishlist - Adicionar/Remover Favoritos
 test("TC006: Wishlist - Add/Remove Favorites", async ({ page }) => {
-  console.log("🧪 Running TC006: Wishlist - Add/Remove Favorites");
+  logger.info("🧪 Running TC006: Wishlist - Add/Remove Favorites");
 
   await test.step("Access products and test wishlist", async () => {
     await page.goto("http://localhost:4174/products");
@@ -80,9 +82,9 @@ test("TC006: Wishlist - Add/Remove Favorites", async ({ page }) => {
     if (await wishlistButtons.first().isVisible({ timeout: 3000 })) {
       await wishlistButtons.first().click();
       await page.waitForTimeout(1000);
-      console.log("✅ Product added to wishlist");
+      logger.info("✅ Product added to wishlist");
     } else {
-      console.log("✅ Wishlist functionality tested (no products available)");
+      logger.info("✅ Wishlist functionality tested (no products available)");
     }
   });
 
@@ -93,15 +95,15 @@ test("TC006: Wishlist - Add/Remove Favorites", async ({ page }) => {
 
     const url = page.url();
     expect(url).toContain("wishlist");
-    console.log("✅ Wishlist page accessible");
+    logger.info("✅ Wishlist page accessible");
   });
 
-  console.log("✅ TC006 COMPLETED: Wishlist functionality tested");
+  logger.info("✅ TC006 COMPLETED: Wishlist functionality tested");
 });
 
 // TC007: Busca e Filtros de Produtos
 test("TC007: Product Search and Filters", async ({ page }) => {
-  console.log("🧪 Running TC007: Product Search and Filters");
+  logger.info("🧪 Running TC007: Product Search and Filters");
 
   await test.step("Test search functionality", async () => {
     await page.goto("http://localhost:4174");
@@ -116,9 +118,9 @@ test("TC007: Product Search and Filters", async ({ page }) => {
       await searchInput.first().fill("produto");
       await searchInput.first().press("Enter");
       await page.waitForTimeout(2000);
-      console.log("✅ Search functionality working");
+      logger.info("✅ Search functionality working");
     } else {
-      console.log("✅ Search functionality tested (field not visible)");
+      logger.info("✅ Search functionality tested (field not visible)");
     }
   });
 
@@ -130,18 +132,18 @@ test("TC007: Product Search and Filters", async ({ page }) => {
     const filters = page.locator('select, .filter-btn, [data-testid*="filter"]');
 
     if (await filters.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ Product filters are available");
+      logger.info("✅ Product filters are available");
     } else {
-      console.log("✅ Filter functionality tested (filters not visible)");
+      logger.info("✅ Filter functionality tested (filters not visible)");
     }
   });
 
-  console.log("✅ TC007 COMPLETED: Search and filter functionality tested");
+  logger.info("✅ TC007 COMPLETED: Search and filter functionality tested");
 });
 
 // TC008: Checkout Process - Dados de Entrega
 test("TC008: Checkout Process - Delivery Data", async ({ page }) => {
-  console.log("🧪 Running TC008: Checkout Process - Delivery Data");
+  logger.info("🧪 Running TC008: Checkout Process - Delivery Data");
 
   await test.step("Access checkout page", async () => {
     // Tentar acessar checkout diretamente
@@ -150,11 +152,11 @@ test("TC008: Checkout Process - Delivery Data", async ({ page }) => {
 
     const url = page.url();
     if (url.includes("checkout")) {
-      console.log("✅ Checkout page accessible");
+      logger.info("✅ Checkout page accessible");
     } else if (url.includes("login")) {
-      console.log("✅ Checkout redirects to login (protected)");
+      logger.info("✅ Checkout redirects to login (protected)");
     } else {
-      console.log("✅ Checkout functionality tested");
+      logger.info("✅ Checkout functionality tested");
     }
   });
 
@@ -165,18 +167,18 @@ test("TC008: Checkout Process - Delivery Data", async ({ page }) => {
     );
 
     if (await addressFields.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ Delivery form fields are available");
+      logger.info("✅ Delivery form fields are available");
     } else {
-      console.log("✅ Delivery form tested (fields not visible)");
+      logger.info("✅ Delivery form tested (fields not visible)");
     }
   });
 
-  console.log("✅ TC008 COMPLETED: Checkout delivery process tested");
+  logger.info("✅ TC008 COMPLETED: Checkout delivery process tested");
 });
 
 // TC009: Checkout Process - Pagamento
 test("TC009: Checkout Process - Payment", async ({ page }) => {
-  console.log("🧪 Running TC009: Checkout Process - Payment");
+  logger.info("🧪 Running TC009: Checkout Process - Payment");
 
   await test.step("Test payment form access", async () => {
     await page.goto("http://localhost:4174/checkout");
@@ -186,9 +188,9 @@ test("TC009: Checkout Process - Payment", async ({ page }) => {
     const paymentOptions = page.locator('input[type="radio"], .payment-option, [data-testid*="payment"]');
 
     if (await paymentOptions.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ Payment options are available");
+      logger.info("✅ Payment options are available");
     } else {
-      console.log("✅ Payment functionality tested (options not visible)");
+      logger.info("✅ Payment functionality tested (options not visible)");
     }
   });
 
@@ -197,18 +199,18 @@ test("TC009: Checkout Process - Payment", async ({ page }) => {
     const pageContent = await page.content();
 
     if (pageContent.includes("ASAAS") || pageContent.includes("PIX") || pageContent.includes("Cartão")) {
-      console.log("✅ Payment integration is configured");
+      logger.info("✅ Payment integration is configured");
     } else {
-      console.log("✅ Payment integration tested (not yet configured)");
+      logger.info("✅ Payment integration tested (not yet configured)");
     }
   });
 
-  console.log("✅ TC009 COMPLETED: Payment process tested");
+  logger.info("✅ TC009 COMPLETED: Payment process tested");
 });
 
 // TC010: Histórico de Pedidos do Comprador
 test("TC010: Buyer Order History", async ({ page }) => {
-  console.log("🧪 Running TC010: Buyer Order History");
+  logger.info("🧪 Running TC010: Buyer Order History");
 
   await test.step("Access orders page", async () => {
     // Tentar acessar página de pedidos
@@ -217,11 +219,11 @@ test("TC010: Buyer Order History", async ({ page }) => {
 
     const url = page.url();
     if (url.includes("orders")) {
-      console.log("✅ Orders page accessible");
+      logger.info("✅ Orders page accessible");
     } else if (url.includes("login")) {
-      console.log("✅ Orders page requires authentication (protected)");
+      logger.info("✅ Orders page requires authentication (protected)");
     } else {
-      console.log("✅ Orders functionality tested");
+      logger.info("✅ Orders functionality tested");
     }
   });
 
@@ -230,18 +232,18 @@ test("TC010: Buyer Order History", async ({ page }) => {
     const orderElements = page.locator('.order-item, .order-card, [data-testid*="order"]');
 
     if (await orderElements.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ Order history interface is available");
+      logger.info("✅ Order history interface is available");
     } else {
-      console.log("✅ Order history tested (no orders visible)");
+      logger.info("✅ Order history tested (no orders visible)");
     }
   });
 
-  console.log("✅ TC010 COMPLETED: Order history tested");
+  logger.info("✅ TC010 COMPLETED: Order history tested");
 });
 
 // TC011: Sistema de Reviews e Avaliações
 test("TC011: Reviews and Rating System", async ({ page }) => {
-  console.log("🧪 Running TC011: Reviews and Rating System");
+  logger.info("🧪 Running TC011: Reviews and Rating System");
 
   await test.step("Test review form access", async () => {
     // Tentar acessar página de produto com reviews
@@ -254,9 +256,9 @@ test("TC011: Reviews and Rating System", async ({ page }) => {
     );
 
     if (await ratingElements.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ Rating system is available");
+      logger.info("✅ Rating system is available");
     } else {
-      console.log("✅ Rating system tested (not yet visible)");
+      logger.info("✅ Rating system tested (not yet visible)");
     }
   });
 
@@ -267,24 +269,24 @@ test("TC011: Reviews and Rating System", async ({ page }) => {
     );
 
     if (await reviewForm.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ Review submission form is available");
+      logger.info("✅ Review submission form is available");
     } else {
-      console.log("✅ Review system tested (form not visible)");
+      logger.info("✅ Review system tested (form not visible)");
     }
   });
 
-  console.log("✅ TC011 COMPLETED: Reviews and rating system tested");
+  logger.info("✅ TC011 COMPLETED: Reviews and rating system tested");
 });
 
 // Summary test
 test("E-commerce Tests Summary", async ({ page }) => {
-  console.log("📊 E-COMMERCE TESTS SUMMARY");
-  console.log("✅ TC005: Shopping Cart - COMPLETED");
-  console.log("✅ TC006: Wishlist - COMPLETED");
-  console.log("✅ TC007: Search & Filters - COMPLETED");
-  console.log("✅ TC008: Checkout Delivery - COMPLETED");
-  console.log("✅ TC009: Checkout Payment - COMPLETED");
-  console.log("✅ TC010: Order History - COMPLETED");
-  console.log("✅ TC011: Reviews & Rating - COMPLETED");
-  console.log("🎯 ALL E-COMMERCE FUNCTIONALITY TESTED SUCCESSFULLY");
+  logger.info("📊 E-COMMERCE TESTS SUMMARY");
+  logger.info("✅ TC005: Shopping Cart - COMPLETED");
+  logger.info("✅ TC006: Wishlist - COMPLETED");
+  logger.info("✅ TC007: Search & Filters - COMPLETED");
+  logger.info("✅ TC008: Checkout Delivery - COMPLETED");
+  logger.info("✅ TC009: Checkout Payment - COMPLETED");
+  logger.info("✅ TC010: Order History - COMPLETED");
+  logger.info("✅ TC011: Reviews & Rating - COMPLETED");
+  logger.info("🎯 ALL E-COMMERCE FUNCTIONALITY TESTED SUCCESSFULLY");
 });

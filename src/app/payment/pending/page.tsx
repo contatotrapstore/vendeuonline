@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -93,7 +95,7 @@ export default function PaymentPendingPage() {
         }
       }
     } catch (error) {
-      console.error("Erro ao verificar pagamento:", error);
+      logger.error("Erro ao verificar pagamento:", error);
       if (!silent) {
         toast.error("Erro ao verificar status do pagamento");
       }

@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -95,7 +97,7 @@ export default function NewProductPage() {
         setCategories(response.data);
       }
     } catch (error) {
-      console.error("Erro ao carregar categorias:", error);
+      logger.error("Erro ao carregar categorias:", error);
       toast.error("Erro ao carregar categorias");
     } finally {
       setLoadingCategories(false);
@@ -186,7 +188,7 @@ export default function NewProductPage() {
 
       navigate("/seller/products");
     } catch (error) {
-      console.error("Error creating product:", error);
+      logger.error("Error creating product:", error);
     } finally {
       setIsLoading(false);
     }

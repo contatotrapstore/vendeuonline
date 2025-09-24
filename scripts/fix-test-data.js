@@ -1,17 +1,19 @@
 import { createClient } from "@supabase/supabase-js";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
+import { logger } from "../lib/logger.js";
+
 dotenv.config();
 
 // Initialize Supabase client
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 async function fixTestData() {
-  console.log("🔧 Iniciando correção de dados de teste...\n");
+  logger.info("🔧 Iniciando correção de dados de teste...\n");
 
   try {
     // 1. CRIAR USUÁRIOS DE TESTE COM SENHAS CONHECIDAS
-    console.log("📝 Criando usuários de teste...");
+    logger.info("📝 Criando usuários de teste...");
 
     const testPassword = await bcrypt.hash("Test123!@#", 10);
 
@@ -55,14 +57,14 @@ async function fixTestData() {
       const { error } = await supabase.from("users").upsert(user, { onConflict: "email" });
 
       if (error) {
-        console.log(`⚠️ Erro ao criar ${user.email}:`, error.message);
+        logger.info(`⚠️ Erro ao criar ${user.email}:`, error.message);
       } else {
-        console.log(`✅ Usuário ${user.email} criado/atualizado`);
+        logger.info(`✅ Usuário ${user.email} criado/atualizado`);
       }
     }
 
     // 2. CRIAR PERFIS ESPECÍFICOS
-    console.log("\n📝 Criando perfis específicos...");
+    logger.info("\n📝 Criando perfis específicos...");
 
     // Admin profile
     await supabase.from("admins").upsert(
@@ -104,10 +106,10 @@ async function fixTestData() {
       { onConflict: "userId" }
     );
 
-    console.log("✅ Perfis criados");
+    logger.info("✅ Perfis criados");
 
     // 3. CRIAR LOJA PARA O SELLER
-    console.log("\n📝 Criando loja para o vendedor...");
+    logger.info("\n📝 Criando loja para o vendedor...");
 
     await supabase.from("stores").upsert(
       {
@@ -135,10 +137,10 @@ async function fixTestData() {
       { onConflict: "slug" }
     );
 
-    console.log("✅ Loja criada");
+    logger.info("✅ Loja criada");
 
     // 4. POPULAR DADOS TRANSACIONAIS
-    console.log("\n📝 Populando dados transacionais...");
+    logger.info("\n📝 Populando dados transacionais...");
 
     // Buscar produtos existentes
     const { data: products } = await supabase.from("Product").select("id, name, price").limit(3);
@@ -171,7 +173,7 @@ async function fixTestData() {
       const { error: orderError } = await supabase.from("Order").upsert(orderData, { onConflict: "id" });
 
       if (!orderError) {
-        console.log("✅ Pedido criado");
+        logger.info("✅ Pedido criado");
 
         // Criar item do pedido
         await supabase.from("OrderItem").upsert(
@@ -186,7 +188,7 @@ async function fixTestData() {
           { onConflict: "id" }
         );
 
-        console.log("✅ Item do pedido criado");
+        logger.info("✅ Item do pedido criado");
       }
 
       // Adicionar produto ao wishlist
@@ -199,7 +201,7 @@ async function fixTestData() {
         { onConflict: "id" }
       );
 
-      console.log("✅ Item adicionado ao wishlist");
+      logger.info("✅ Item adicionado ao wishlist");
 
       // Criar review
       await supabase.from("reviews").upsert(
@@ -216,7 +218,7 @@ async function fixTestData() {
         { onConflict: "id" }
       );
 
-      console.log("✅ Review criada");
+      logger.info("✅ Review criada");
 
       // Atualizar estatísticas do produto
       await supabase
@@ -230,7 +232,7 @@ async function fixTestData() {
     }
 
     // 5. CRIAR NOTIFICAÇÕES
-    console.log("\n📝 Criando notificações...");
+    logger.info("\n📝 Criando notificações...");
 
     await supabase.from("notifications").insert([
       {
@@ -247,17 +249,17 @@ async function fixTestData() {
       },
     ]);
 
-    console.log("✅ Notificações criadas");
+    logger.info("✅ Notificações criadas");
 
-    console.log("\n🎉 Correção de dados concluída com sucesso!");
-    console.log("\n📋 CREDENCIAIS DE TESTE:");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-    console.log("Admin:  admin@vendeuonline.com  | Senha: Test123!@#");
-    console.log("Seller: seller@vendeuonline.com | Senha: Test123!@#");
-    console.log("Buyer:  buyer@vendeuonline.com  | Senha: Test123!@#");
-    console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    logger.info("\n🎉 Correção de dados concluída com sucesso!");
+    logger.info("\n📋 CREDENCIAIS DE TESTE:");
+    logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    logger.info("Admin:  admin@vendeuonline.com  | Senha: Test123!@#");
+    logger.info("Seller: seller@vendeuonline.com | Senha: Test123!@#");
+    logger.info("Buyer:  buyer@vendeuonline.com  | Senha: Test123!@#");
+    logger.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   } catch (error) {
-    console.error("❌ Erro ao corrigir dados:", error);
+    logger.error("❌ Erro ao corrigir dados:", error);
   }
 }
 

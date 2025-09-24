@@ -1,4 +1,6 @@
 import { AppError, createPrismaError } from "../lib/errors.js";
+import { logger } from "../lib/logger.js";
+
 
 /**
  * Middleware global de tratamento de erros
@@ -42,9 +44,9 @@ export const globalErrorHandler = (error, req, res, next) => {
 
   // Log baseado na severidade
   if (appError.statusCode >= 500) {
-    console.error("🚨 [ERROR]", JSON.stringify(errorLog, null, 2));
+    logger.error("🚨 [ERROR]", JSON.stringify(errorLog, null, 2));
   } else if (appError.statusCode >= 400) {
-    console.warn("⚠️ [WARN]", JSON.stringify(errorLog, null, 2));
+    logger.warn("⚠️ [WARN]", JSON.stringify(errorLog, null, 2));
   } else {
     console.info("ℹ️ [INFO]", JSON.stringify(errorLog, null, 2));
   }
@@ -150,7 +152,7 @@ export const withRetry = (operation, maxRetries = 3, delay = 1000) => {
           break;
         }
 
-        console.warn(`🔄 Retry ${attempt}/${maxRetries} for operation failed:`, error.message);
+        logger.warn(`🔄 Retry ${attempt}/${maxRetries} for operation failed:`, error.message);
 
         // Delay exponencial
         await new Promise((resolve) => setTimeout(resolve, delay * Math.pow(2, attempt - 1)));

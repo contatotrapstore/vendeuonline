@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { apiRequest } from "@/lib/api";
+import { logger } from "@/lib/logger";
+
 
 export interface Banner {
   id: string;
@@ -41,7 +43,7 @@ export const useBannerStore = create<BannerStore>((set, get) => ({
       const response = await apiRequest("/api/admin/banners");
       set({ banners: response.data || [], loading: false });
     } catch (error: any) {
-      console.error("Erro ao buscar banners:", error);
+      logger.error("Erro ao buscar banners:", error);
       set({
         banners: [],
         loading: false,
@@ -64,7 +66,7 @@ export const useBannerStore = create<BannerStore>((set, get) => ({
         loading: false,
       }));
     } catch (error: any) {
-      console.error("Erro ao criar banner:", error);
+      logger.error("Erro ao criar banner:", error);
       set({
         error: error.message || "Erro ao criar banner",
         loading: false,
@@ -87,7 +89,7 @@ export const useBannerStore = create<BannerStore>((set, get) => ({
         loading: false,
       }));
     } catch (error: any) {
-      console.error("Erro ao atualizar banner:", error);
+      logger.error("Erro ao atualizar banner:", error);
       set({
         error: "Erro ao atualizar banner",
         loading: false,
@@ -107,7 +109,7 @@ export const useBannerStore = create<BannerStore>((set, get) => ({
         loading: false,
       }));
     } catch (error: any) {
-      console.error("Erro ao deletar banner:", error);
+      logger.error("Erro ao deletar banner:", error);
       set({
         error: "Erro ao deletar banner",
         loading: false,

@@ -1,33 +1,37 @@
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
+import { logger } from "../lib/logger.js";
+
 
 // Carregar variáveis de ambiente
 dotenv.config();
 
-// URL e Keys do Supabase (aceita NEXT_PUBLIC_* ou VITE_PUBLIC_*)
+// URL e Keys do Supabase - URLs públicas podem usar NEXT_PUBLIC_* ou VITE_PUBLIC_*
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
+
+// 🚨 IMPORTANTE: Service Role Key deve ficar APENAS no backend
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const missingSupabaseEnv = [];
 
 if (!supabaseUrl) {
-  console.error("[WARN] NEXT_PUBLIC_SUPABASE_URL or VITE_PUBLIC_SUPABASE_URL is not defined");
+  logger.error("[WARN] NEXT_PUBLIC_SUPABASE_URL or VITE_PUBLIC_SUPABASE_URL is not defined");
   missingSupabaseEnv.push("NEXT_PUBLIC_SUPABASE_URL / VITE_PUBLIC_SUPABASE_URL");
 }
 if (!supabaseAnonKey) {
-  console.error("[WARN] NEXT_PUBLIC_SUPABASE_ANON_KEY or VITE_PUBLIC_SUPABASE_ANON_KEY is not defined");
+  logger.error("[WARN] NEXT_PUBLIC_SUPABASE_ANON_KEY or VITE_PUBLIC_SUPABASE_ANON_KEY is not defined");
   missingSupabaseEnv.push("NEXT_PUBLIC_SUPABASE_ANON_KEY / VITE_PUBLIC_SUPABASE_ANON_KEY");
 }
 if (!supabaseServiceKey) {
-  console.error("[WARN] SUPABASE_SERVICE_ROLE_KEY or VITE_SUPABASE_SERVICE_ROLE_KEY is not defined");
-  missingSupabaseEnv.push("SUPABASE_SERVICE_ROLE_KEY / VITE_SUPABASE_SERVICE_ROLE_KEY");
+  logger.error("[WARN] SUPABASE_SERVICE_ROLE_KEY is not defined");
+  missingSupabaseEnv.push("SUPABASE_SERVICE_ROLE_KEY");
 }
 
 if (missingSupabaseEnv.length > 0) {
-  console.error("[ERROR] Missing Supabase credentials");
-  console.error("Define the following variables in your .env file:");
-  missingSupabaseEnv.forEach((envVar) => console.error(`- ${envVar}`));
+  logger.error("[ERROR] Missing Supabase credentials");
+  logger.error("Define the following variables in your .env file:");
+  missingSupabaseEnv.forEach((envVar) => logger.error(`- ${envVar}`));
   process.exit(1); // Stop the app if credentials are missing
 }
 
@@ -55,7 +59,7 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   },
 });
 
-console.log("✅ Cliente Supabase inicializado com variáveis de ambiente");
+logger.info("✅ Cliente Supabase inicializado com variáveis de ambiente");
 
 // Função para testar a conexão
 export async function testSupabaseConnection() {
@@ -63,14 +67,14 @@ export async function testSupabaseConnection() {
     const { data, error } = await supabase.from("stores").select("id").limit(1);
 
     if (error) {
-      console.error("❌ Erro de conexão:", error.message);
+      logger.error("❌ Erro de conexão:", error.message);
       return false;
     }
 
-    console.log("✅ Conexão com Supabase funcionando!");
+    logger.info("✅ Conexão com Supabase funcionando!");
     return true;
   } catch (error) {
-    console.error("❌ Erro no cliente Supabase:", error.message);
+    logger.error("❌ Erro no cliente Supabase:", error.message);
     return false;
   }
 }
@@ -90,7 +94,7 @@ export async function getDatabaseStats() {
       products: productsResult.status === "fulfilled" ? productsResult.value.count : 0,
     };
   } catch (error) {
-    console.error("Erro ao obter estatísticas:", error);
+    logger.error("Erro ao obter estatísticas:", error);
     return { users: 0, stores: 0, products: 0 };
   }
 }

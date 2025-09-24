@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+import { logger } from "../lib/logger.js";
+
 
 // Configuração do Supabase - carregando do ambiente
 import dotenv from "dotenv";
@@ -7,13 +9,13 @@ dotenv.config();
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-console.log("🔧 Supabase Direct Configuration:");
-console.log("URL:", supabaseUrl);
-console.log("Service Key exists:", !!supabaseServiceKey);
+logger.info("🔧 Supabase Direct Configuration:");
+logger.info("URL:", supabaseUrl);
+logger.info("Service Key exists:", !!supabaseServiceKey);
 if (supabaseServiceKey) {
-  console.log("Service Key preview:", supabaseServiceKey.substring(0, 50) + "...");
-  console.log("Service Key length:", supabaseServiceKey.length);
-  console.log("Service Key starts with JWT?", supabaseServiceKey.startsWith("eyJ"));
+  logger.info("Service Key preview:", supabaseServiceKey.substring(0, 50) + "...");
+  logger.info("Service Key length:", supabaseServiceKey.length);
+  logger.info("Service Key starts with JWT?", supabaseServiceKey.startsWith("eyJ"));
 }
 
 if (!supabaseUrl || !supabaseServiceKey) {
@@ -33,7 +35,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 // Função para executar SQL diretamente no Supabase
 async function executeSQL(query) {
   try {
-    console.log("Executando SQL:", query);
+    logger.info("Executando SQL:", query);
 
     // Usar a API REST do Supabase para executar SQL
     const response = await fetch(`${supabaseUrl}/rest/v1/rpc/execute_sql`, {
@@ -51,10 +53,10 @@ async function executeSQL(query) {
     }
 
     const data = await response.json();
-    console.log("Resultado SQL:", data);
+    logger.info("Resultado SQL:", data);
     return data;
   } catch (error) {
-    console.error("Erro ao executar SQL:", error);
+    logger.error("Erro ao executar SQL:", error);
     throw error;
   }
 }
@@ -62,7 +64,7 @@ async function executeSQL(query) {
 // Função para obter dados do dashboard admin
 async function getAdminDashboardStats() {
   try {
-    console.log("Buscando estatísticas do dashboard admin...");
+    logger.info("Buscando estatísticas do dashboard admin...");
 
     // Query para obter todas as estatísticas em uma única consulta
     const statsQuery = `
@@ -86,7 +88,7 @@ async function getAdminDashboardStats() {
     const { data, error } = await supabase.rpc("execute_sql", { sql: statsQuery });
 
     if (error) {
-      console.error("Erro na query Supabase:", error);
+      logger.error("Erro na query Supabase:", error);
       // Fallback: buscar dados individualmente
       return await getStatsIndividually();
     }
@@ -111,7 +113,7 @@ async function getAdminDashboardStats() {
       pendingApprovals: parseInt(stats.pending_stores) || 0,
     };
   } catch (error) {
-    console.error("Erro ao buscar estatísticas:", error);
+    logger.error("Erro ao buscar estatísticas:", error);
     // Fallback com dados conhecidos
     return await getStatsIndividually();
   }
@@ -120,7 +122,7 @@ async function getAdminDashboardStats() {
 // Função fallback para buscar dados individualmente
 async function getStatsIndividually() {
   try {
-    console.log("Usando fallback: buscando dados individualmente...");
+    logger.info("Usando fallback: buscando dados individualmente...");
 
     // Buscar dados das tabelas individualmente
     const [users, stores, products, orders, subscriptions] = await Promise.allSettled([
@@ -194,7 +196,7 @@ async function getStatsIndividually() {
       pendingApprovals: pendingStores,
     };
   } catch (error) {
-    console.error("Erro no fallback:", error);
+    logger.error("Erro no fallback:", error);
     // Última tentativa: dados conhecidos do MCP
     return {
       totalUsers: 21,
@@ -219,7 +221,7 @@ async function getStatsIndividually() {
 // Função para obter usuários para o admin
 async function getAdminUsers(filters = {}) {
   try {
-    console.log("Buscando usuários para admin:", filters);
+    logger.info("Buscando usuários para admin:", filters);
 
     let query = supabase.from("users").select(`
         id, name, email, phone, type, city, state, avatar, 
@@ -238,7 +240,7 @@ async function getAdminUsers(filters = {}) {
     const { data, error } = await query.order("createdAt", { ascending: false });
 
     if (error) {
-      console.error("Erro ao buscar usuários:", error);
+      logger.error("Erro ao buscar usuários:", error);
       throw error;
     }
 
@@ -261,10 +263,10 @@ async function getAdminUsers(filters = {}) {
       storeCount: user.type === "SELLER" ? 1 : undefined, // Simplificado
     }));
 
-    console.log(`Encontrados ${users.length} usuários`);
+    logger.info(`Encontrados ${users.length} usuários`);
     return users;
   } catch (error) {
-    console.error("Erro ao buscar usuários:", error);
+    logger.error("Erro ao buscar usuários:", error);
     throw error;
   }
 }
@@ -272,7 +274,7 @@ async function getAdminUsers(filters = {}) {
 // Função para obter lojas para o admin
 async function getAdminStores(filters = {}) {
   try {
-    console.log("Buscando lojas para admin:", filters);
+    logger.info("Buscando lojas para admin:", filters);
 
     let query = supabase.from("stores").select(`
         id, name, sellerId, city, state, phone, email, category,
@@ -296,14 +298,14 @@ async function getAdminStores(filters = {}) {
     const { data, error } = await query.order("createdAt", { ascending: false });
 
     if (error) {
-      console.error("Erro ao buscar lojas:", error);
+      logger.error("Erro ao buscar lojas:", error);
       throw error;
     }
 
-    console.log(`Encontradas ${data.length} lojas`);
+    logger.info(`Encontradas ${data.length} lojas`);
     return data;
   } catch (error) {
-    console.error("Erro ao buscar lojas:", error);
+    logger.error("Erro ao buscar lojas:", error);
     throw error;
   }
 }
@@ -311,7 +313,7 @@ async function getAdminStores(filters = {}) {
 // Função para obter produtos para o admin
 async function getAdminProducts(filters = {}) {
   try {
-    console.log("Buscando produtos para admin:", filters);
+    logger.info("Buscando produtos para admin:", filters);
 
     let query = supabase.from("products").select(`
         id, name, sellerId, storeId, categoryId, price, stock,
@@ -335,14 +337,14 @@ async function getAdminProducts(filters = {}) {
     const { data, error } = await query.order("createdAt", { ascending: false });
 
     if (error) {
-      console.error("Erro ao buscar produtos:", error);
+      logger.error("Erro ao buscar produtos:", error);
       throw error;
     }
 
-    console.log(`Encontrados ${data.length} produtos`);
+    logger.info(`Encontrados ${data.length} produtos`);
     return data;
   } catch (error) {
-    console.error("Erro ao buscar produtos:", error);
+    logger.error("Erro ao buscar produtos:", error);
     throw error;
   }
 }
@@ -350,19 +352,19 @@ async function getAdminProducts(filters = {}) {
 // Função para obter planos para o admin
 async function getAdminPlans() {
   try {
-    console.log("Buscando planos para admin");
+    logger.info("Buscando planos para admin");
 
     const { data, error } = await supabase.from("plans").select("*").order("order", { ascending: true });
 
     if (error) {
-      console.error("Erro ao buscar planos:", error);
+      logger.error("Erro ao buscar planos:", error);
       throw error;
     }
 
-    console.log(`Encontrados ${data.length} planos`);
+    logger.info(`Encontrados ${data.length} planos`);
     return data;
   } catch (error) {
-    console.error("Erro ao buscar planos:", error);
+    logger.error("Erro ao buscar planos:", error);
     throw error;
   }
 }
@@ -370,7 +372,7 @@ async function getAdminPlans() {
 // Função para atualizar plano
 async function updateAdminPlan(planId, updates) {
   try {
-    console.log(`Atualizando plano ${planId}:`, updates);
+    logger.info(`Atualizando plano ${planId}:`, updates);
 
     const { data, error } = await supabase
       .from("plans")
@@ -383,14 +385,14 @@ async function updateAdminPlan(planId, updates) {
       .single();
 
     if (error) {
-      console.error("Erro ao atualizar plano:", error);
+      logger.error("Erro ao atualizar plano:", error);
       throw error;
     }
 
-    console.log("Plano atualizado com sucesso");
+    logger.info("Plano atualizado com sucesso");
     return data;
   } catch (error) {
-    console.error("Erro ao atualizar plano:", error);
+    logger.error("Erro ao atualizar plano:", error);
     throw error;
   }
 }

@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { logger } from "@/lib/logger";
+
 
 export interface Subscription {
   id: string;
@@ -116,7 +118,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
         loading: false,
       });
     } catch (error: any) {
-      console.error("Erro ao buscar assinaturas:", error);
+      logger.error("Erro ao buscar assinaturas:", error);
       set({
         subscriptions: [],
         error: error.message || "Erro ao carregar assinaturas",
@@ -153,7 +155,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
 
       set({ subscriptions: updatedSubscriptions, loading: false });
     } catch (error: any) {
-      console.error("Erro ao atualizar status da assinatura:", error);
+      logger.error("Erro ao atualizar status da assinatura:", error);
       set({
         error: error.message || "Erro ao atualizar status",
         loading: false,
@@ -190,7 +192,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
 
       set({ subscriptions: updatedSubscriptions, loading: false });
     } catch (error: any) {
-      console.error("Erro ao cancelar assinatura:", error);
+      logger.error("Erro ao cancelar assinatura:", error);
       set({
         error: error.message || "Erro ao cancelar assinatura",
         loading: false,
@@ -229,7 +231,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
 
       set({ subscriptions: updatedSubscriptions, loading: false });
     } catch (error: any) {
-      console.error("Erro ao renovar assinatura:", error);
+      logger.error("Erro ao renovar assinatura:", error);
       set({
         error: error.message || "Erro ao renovar assinatura",
         loading: false,

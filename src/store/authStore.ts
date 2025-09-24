@@ -2,6 +2,8 @@ import React from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { apiRequest, post, get as apiGet } from "@/lib/api-client";
+import { logger } from "@/lib/logger";
+
 
 export interface User {
   id: string;
@@ -112,9 +114,9 @@ export const useAuthStore = create<AuthStore>()(
           const response = await post("/api/auth/login", { email, password });
           const { user, token } = response;
 
-          console.log("Login successful - User data:", user);
-          console.log("Login successful - Token:", token);
-          console.log("User type:", user?.userType);
+          logger.info("Login successful - User data:", user);
+          logger.info("Login successful - Token:", token);
+          logger.info("User type:", user?.userType);
 
           // Armazenar token
           setStoredToken(token);

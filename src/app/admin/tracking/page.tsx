@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -99,7 +101,7 @@ export default function AdminTrackingPage() {
         toast.error("Erro ao carregar configurações");
       }
     } catch (error) {
-      console.error("Erro ao carregar configurações:", error);
+      logger.error("Erro ao carregar configurações:", error);
       toast.error("Erro interno do servidor");
     } finally {
       setLoading(false);
@@ -171,7 +173,7 @@ export default function AdminTrackingPage() {
 
       return data.success;
     } catch (error) {
-      console.error(`Erro ao salvar ${key}:`, error);
+      logger.error(`Erro ao salvar ${key}:`, error);
       return false;
     }
   };

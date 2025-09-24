@@ -32,6 +32,8 @@ No dashboard do Vercel:
 
 ### **2. 🔑 VARIÁVEIS DE AMBIENTE OBRIGATÓRIAS**
 
+⚠️ **IMPORTANTE**: Nunca commitar credenciais reais. Use placeholders na documentação.
+
 Configure em **Project Settings > Environment Variables:**
 
 #### **🗃️ BANCO DE DADOS (CRÍTICAS)**
@@ -58,7 +60,7 @@ node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
 #### **💳 PAGAMENTOS (CRÍTICAS PARA PRODUÇÃO)**
 
 ```env
-ASAAS_API_KEY=$aact_prod_000SuaChaveAquiDoAsaas
+ASAAS_API_KEY=$aact_prod_YOUR_ASAAS_KEY_HERE
 ASAAS_BASE_URL=https://api.asaas.com/v3
 ASAAS_WEBHOOK_TOKEN=asaas-webhook-secret-2024
 ASAAS_WEBHOOK_URL=https://seu-projeto.vercel.app/api/payments/webhook

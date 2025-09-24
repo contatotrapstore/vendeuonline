@@ -1,41 +1,22 @@
 import express from "express";
+import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin } from "../middleware/auth.js";
 import jwt from "jsonwebtoken";
 import { supabase } from "../lib/supabase-client.js";
 import { createSubscriptionPayment } from "../lib/asaas.js";
+import { logger } from "../lib/logger.js";
+
 
 const router = express.Router();
 
 // JWT Secret
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET é obrigatório para rotas checkout");
+}
 
 // Middleware de autenticação
-const authenticateUser = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Token de autenticação necessário" });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    // Buscar usuário real do Supabase
-    const { data: user, error } = await supabase.from("users").select("*").eq("id", decoded.userId).single();
-
-    if (error || !user) {
-      return res.status(401).json({ error: "Usuário não encontrado" });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("❌ Erro na autenticação:", error);
-    return res.status(401).json({ error: "Token inválido" });
-  }
-};
+// Middleware removido - usando middleware centralizado
 
 // POST /api/checkout - Iniciar processo de checkout
 router.post("/", authenticateUser, async (req, res) => {
@@ -43,7 +24,7 @@ router.post("/", authenticateUser, async (req, res) => {
     const { shippingAddress, paymentMethod = "PIX" } = req.body;
     const userId = req.user.id;
 
-    console.log("🛒 Iniciando checkout para usuário:", userId);
+    logger.info("🛒 Iniciando checkout para usuário:", userId);
 
     // Validar endereço de entrega
     if (!shippingAddress || !shippingAddress.street || !shippingAddress.city || !shippingAddress.zipCode) {
@@ -80,7 +61,7 @@ router.post("/", authenticateUser, async (req, res) => {
       .eq("userId", userId);
 
     if (cartError) {
-      console.error("❌ Erro ao buscar carrinho:", cartError);
+      logger.error("❌ Erro ao buscar carrinho:", cartError);
       throw new Error(`Erro ao buscar carrinho: ${cartError.message}`);
     }
 
@@ -180,7 +161,7 @@ router.post("/", authenticateUser, async (req, res) => {
         .single();
 
       if (orderError) {
-        console.error("❌ Erro ao criar pedido:", orderError);
+        logger.error("❌ Erro ao criar pedido:", orderError);
         throw new Error(`Erro ao criar pedido: ${orderError.message}`);
       }
 
@@ -195,7 +176,7 @@ router.post("/", authenticateUser, async (req, res) => {
       const { error: itemsError } = await supabase.from("OrderItem").insert(orderItems);
 
       if (itemsError) {
-        console.error("❌ Erro ao criar itens do pedido:", itemsError);
+        logger.error("❌ Erro ao criar itens do pedido:", itemsError);
         throw new Error(`Erro ao criar itens: ${itemsError.message}`);
       }
 
@@ -209,7 +190,7 @@ router.post("/", authenticateUser, async (req, res) => {
           .eq("id", item.productId);
 
         if (stockError) {
-          console.error("❌ Erro ao atualizar estoque:", stockError);
+          logger.error("❌ Erro ao atualizar estoque:", stockError);
           // Não falhar o checkout por erro de estoque, apenas logar
         }
       }
@@ -222,17 +203,17 @@ router.post("/", authenticateUser, async (req, res) => {
         total: orderTotal,
       });
 
-      console.log("✅ Pedido criado:", order.id, "para loja:", sellerOrder.storeName);
+      logger.info("✅ Pedido criado:", order.id, "para loja:", sellerOrder.storeName);
     }
 
     // Limpar carrinho após checkout bem-sucedido
     const { error: clearCartError } = await supabase.from("Cart").delete().eq("userId", userId);
 
     if (clearCartError) {
-      console.error("⚠️ Erro ao limpar carrinho (não crítico):", clearCartError);
+      logger.error("⚠️ Erro ao limpar carrinho (não crítico):", clearCartError);
     }
 
-    console.log("✅ Checkout concluído com sucesso:", createdOrders.length, "pedidos criados");
+    logger.info("✅ Checkout concluído com sucesso:", createdOrders.length, "pedidos criados");
 
     return res.status(201).json({
       success: true,
@@ -258,7 +239,7 @@ router.post("/", authenticateUser, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Erro no checkout:", error);
+    logger.error("❌ Erro no checkout:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao processar checkout",

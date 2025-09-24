@@ -1,45 +1,26 @@
 import express from "express";
+import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin } from "../middleware/auth.js";
 import jwt from "jsonwebtoken";
 import { supabase } from "../lib/supabase-client.js";
+import { logger } from "../lib/logger.js";
+
 
 const router = express.Router();
 
-// JWT Secret
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
+// JWT Secret - OBRIGATÓRIO nas variáveis de ambiente
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET é obrigatório para rotas addresses");
+}
 
 // Middleware de autenticação
-const authenticateUser = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Token de autenticação necessário" });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    // Buscar usuário real do Supabase
-    const { data: user, error } = await supabase.from("users").select("*").eq("id", decoded.userId).single();
-
-    if (error || !user) {
-      return res.status(401).json({ error: "Usuário não encontrado" });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("❌ Erro na autenticação:", error);
-    return res.status(401).json({ error: "Token inválido" });
-  }
-};
+// Middleware removido - usando middleware centralizado
 
 // GET /api/addresses - Listar endereços do usuário
 router.get("/", authenticateUser, async (req, res) => {
   try {
-    console.log("📍 Buscando endereços para usuário:", req.user.id);
+    logger.info("📍 Buscando endereços para usuário:", req.user.id);
 
     // Buscar endereços do usuário no Supabase
     const { data: addresses, error } = await supabase
@@ -50,18 +31,18 @@ router.get("/", authenticateUser, async (req, res) => {
       .order("createdAt", { ascending: false });
 
     if (error) {
-      console.error("❌ Erro ao buscar endereços:", error);
+      logger.error("❌ Erro ao buscar endereços:", error);
       throw new Error(`Erro na consulta: ${error.message}`);
     }
 
-    console.log(`✅ ${addresses?.length || 0} endereços encontrados`);
+    logger.info(`✅ ${addresses?.length || 0} endereços encontrados`);
 
     return res.json({
       success: true,
       data: addresses || [],
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar endereços:", error);
+    logger.error("❌ Erro ao buscar endereços:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao carregar endereços",
@@ -90,7 +71,7 @@ router.post("/", authenticateUser, async (req, res) => {
       });
     }
 
-    console.log("📍 Adicionando endereço para usuário:", req.user.id);
+    logger.info("📍 Adicionando endereço para usuário:", req.user.id);
 
     // Se isDefault é true, remover default de outros endereços
     if (isDefault) {
@@ -100,7 +81,7 @@ router.post("/", authenticateUser, async (req, res) => {
         .eq("userId", req.user.id);
 
       if (updateError) {
-        console.warn("⚠️ Erro ao atualizar endereços existentes:", updateError);
+        logger.warn("⚠️ Erro ao atualizar endereços existentes:", updateError);
       }
     }
 
@@ -123,11 +104,11 @@ router.post("/", authenticateUser, async (req, res) => {
       .single();
 
     if (insertError) {
-      console.error("❌ Erro ao criar endereço:", insertError);
+      logger.error("❌ Erro ao criar endereço:", insertError);
       throw new Error(`Erro ao criar: ${insertError.message}`);
     }
 
-    console.log("✅ Endereço criado:", address.id);
+    logger.info("✅ Endereço criado:", address.id);
 
     return res.status(201).json({
       success: true,
@@ -135,7 +116,7 @@ router.post("/", authenticateUser, async (req, res) => {
       data: address,
     });
   } catch (error) {
-    console.error("❌ Erro ao criar endereço:", error);
+    logger.error("❌ Erro ao criar endereço:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao adicionar endereço",
@@ -150,7 +131,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
     const { id } = req.params;
     const { label, street, number, complement, neighborhood, city, state, zipCode, isDefault } = req.body;
 
-    console.log("📝 Atualizando endereço:", id, "usuário:", req.user.id);
+    logger.info("📝 Atualizando endereço:", id, "usuário:", req.user.id);
 
     // Verificar se endereço existe e pertence ao usuário
     const { data: existingAddress, error: checkError } = await supabase
@@ -199,7 +180,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
         .neq("id", id);
 
       if (updateOthersError) {
-        console.warn("⚠️ Erro ao atualizar outros endereços:", updateOthersError);
+        logger.warn("⚠️ Erro ao atualizar outros endereços:", updateOthersError);
       }
     }
 
@@ -212,11 +193,11 @@ router.put("/:id", authenticateUser, async (req, res) => {
       .single();
 
     if (updateError) {
-      console.error("❌ Erro ao atualizar endereço:", updateError);
+      logger.error("❌ Erro ao atualizar endereço:", updateError);
       throw new Error(`Erro ao atualizar: ${updateError.message}`);
     }
 
-    console.log("✅ Endereço atualizado:", updatedAddress.id);
+    logger.info("✅ Endereço atualizado:", updatedAddress.id);
 
     return res.json({
       success: true,
@@ -224,7 +205,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
       data: updatedAddress,
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar endereço:", error);
+    logger.error("❌ Erro ao atualizar endereço:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao atualizar endereço",
@@ -238,7 +219,7 @@ router.delete("/:id", authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
 
-    console.log("🗑️ Deletando endereço:", id, "usuário:", req.user.id);
+    logger.info("🗑️ Deletando endereço:", id, "usuário:", req.user.id);
 
     // Verificar se endereço existe e pertence ao usuário
     const { data: existingAddress, error: checkError } = await supabase
@@ -259,7 +240,7 @@ router.delete("/:id", authenticateUser, async (req, res) => {
     const { error: deleteError } = await supabase.from("addresses").delete().eq("id", id).eq("userId", req.user.id);
 
     if (deleteError) {
-      console.error("❌ Erro ao deletar endereço:", deleteError);
+      logger.error("❌ Erro ao deletar endereço:", deleteError);
       throw new Error(`Erro ao deletar: ${deleteError.message}`);
     }
 
@@ -274,18 +255,18 @@ router.delete("/:id", authenticateUser, async (req, res) => {
       if (!searchError && otherAddresses && otherAddresses.length > 0) {
         await supabase.from("addresses").update({ isDefault: true }).eq("id", otherAddresses[0].id);
 
-        console.log("✅ Novo endereço padrão definido:", otherAddresses[0].id);
+        logger.info("✅ Novo endereço padrão definido:", otherAddresses[0].id);
       }
     }
 
-    console.log("✅ Endereço deletado:", id);
+    logger.info("✅ Endereço deletado:", id);
 
     return res.json({
       success: true,
       message: "Endereço deletado com sucesso",
     });
   } catch (error) {
-    console.error("❌ Erro ao deletar endereço:", error);
+    logger.error("❌ Erro ao deletar endereço:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao deletar endereço",

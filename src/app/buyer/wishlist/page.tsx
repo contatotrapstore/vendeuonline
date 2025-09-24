@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -75,7 +77,7 @@ export default function WishlistPage() {
         setWishlist(data.wishlist || []);
       } else if (response.status === 401) {
         // Token inválido ou expirado
-        console.log('Sessão expirada ou não autenticado');
+        logger.info('Sessão expirada ou não autenticado');
         setWishlist([]);
       } else {
         // Fallback para dados simulados mínimos
@@ -99,7 +101,7 @@ export default function WishlistPage() {
         ]);
       }
     } catch (err) {
-      console.error("Erro ao buscar lista de desejos:", err);
+      logger.error("Erro ao buscar lista de desejos:", err);
       setWishlist([]);
     } finally {
       setLoading(false);

@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -107,7 +109,7 @@ export default function SellerPlansPage() {
         }
       }
     } catch (error) {
-      console.error("Error loading plans and subscription:", error);
+      logger.error("Error loading plans and subscription:", error);
       toast.error("Erro ao carregar planos. Tente novamente.");
     } finally {
       setIsLoading(false);
@@ -136,7 +138,7 @@ export default function SellerPlansPage() {
         loadPlansAndSubscription();
       }
     } catch (error) {
-      console.error("Error upgrading plan:", error);
+      logger.error("Error upgrading plan:", error);
       toast.error("Erro ao atualizar plano. Tente novamente.");
     } finally {
       setIsUpgrading(null);

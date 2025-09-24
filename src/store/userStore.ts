@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { logger } from "@/lib/logger";
+
 
 export interface User {
   id: string;
@@ -79,7 +81,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
       
       set({ users: mappedUsers, loading: false });
     } catch (error: any) {
-      console.error("Erro ao buscar usuários:", error);
+      logger.error("Erro ao buscar usuários:", error);
       set({
         users: [],
         error: error.message || "Erro ao carregar usuários",
@@ -116,7 +118,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
       set({ users: updatedUsers, loading: false });
     } catch (error: any) {
-      console.error("Erro ao atualizar status do usuário:", error);
+      logger.error("Erro ao atualizar status do usuário:", error);
       set({
         error: error.message || "Erro ao atualizar status do usuário",
         loading: false,
@@ -151,7 +153,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
 
       set({ users: updatedUsers, loading: false });
     } catch (error: any) {
-      console.error("Erro ao excluir usuário:", error);
+      logger.error("Erro ao excluir usuário:", error);
       set({
         error: error.message || "Erro ao excluir usuário",
         loading: false,

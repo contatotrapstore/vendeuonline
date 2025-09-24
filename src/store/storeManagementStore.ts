@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { buildApiUrl, getHeaders } from "@/config/api";
+import { logger } from "@/lib/logger";
+
 
 // Função para mapear approval_status do backend para status do frontend
 const mapApprovalStatusToFrontend = (approvalStatus: string) => {
@@ -137,7 +139,7 @@ export const useStoreManagementStore = create<StoreManagementStore>((set, get) =
         loading: false,
       });
     } catch (error: any) {
-      console.error("Erro ao buscar lojas:", error);
+      logger.error("Erro ao buscar lojas:", error);
       set({
         stores: [],
         error: error.message || "Erro ao carregar lojas",
@@ -172,7 +174,7 @@ export const useStoreManagementStore = create<StoreManagementStore>((set, get) =
 
       set({ stores: updatedStores, loading: false });
     } catch (error: any) {
-      console.error("Erro ao aprovar loja:", error);
+      logger.error("Erro ao aprovar loja:", error);
       set({
         error: error.message || "Erro ao aprovar loja",
         loading: false,
@@ -207,7 +209,7 @@ export const useStoreManagementStore = create<StoreManagementStore>((set, get) =
 
       set({ stores: updatedStores, loading: false });
     } catch (error: any) {
-      console.error("Erro ao rejeitar loja:", error);
+      logger.error("Erro ao rejeitar loja:", error);
       set({
         error: error.message || "Erro ao rejeitar loja",
         loading: false,
@@ -245,7 +247,7 @@ export const useStoreManagementStore = create<StoreManagementStore>((set, get) =
 
       set({ stores: updatedStores, loading: false });
     } catch (error: any) {
-      console.error("Erro ao suspender loja:", error);
+      logger.error("Erro ao suspender loja:", error);
       set({
         error: error.message || "Erro ao suspender loja",
         loading: false,
@@ -282,7 +284,7 @@ export const useStoreManagementStore = create<StoreManagementStore>((set, get) =
 
       set({ stores: updatedStores, loading: false });
     } catch (error: any) {
-      console.error("Erro ao ativar loja:", error);
+      logger.error("Erro ao ativar loja:", error);
       set({
         error: error.message || "Erro ao ativar loja",
         loading: false,
@@ -320,7 +322,7 @@ export const useStoreManagementStore = create<StoreManagementStore>((set, get) =
 
       set({ stores: updatedStores, loading: false });
     } catch (error: any) {
-      console.error("Erro ao atualizar loja:", error);
+      logger.error("Erro ao atualizar loja:", error);
       set({
         error: error.message || "Erro ao atualizar loja",
         loading: false,
@@ -355,7 +357,7 @@ export const useStoreManagementStore = create<StoreManagementStore>((set, get) =
 
       set({ stores: updatedStores, loading: false });
     } catch (error: any) {
-      console.error("Erro ao excluir loja:", error);
+      logger.error("Erro ao excluir loja:", error);
       set({
         error: error.message || "Erro ao excluir loja",
         loading: false,

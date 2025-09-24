@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -95,7 +97,7 @@ export default function SellerDashboard() {
       setRecentOrders(ordersRes?.data || ordersRes || []);
       setTopProducts(productsRes?.data || productsRes || []);
     } catch (error) {
-      console.error("Erro ao carregar dados do dashboard:", error);
+      logger.error("Erro ao carregar dados do dashboard:", error);
       // Manter dados vazios em caso de erro
       setStats({
         totalProducts: 0,
@@ -180,19 +182,19 @@ export default function SellerDashboard() {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => {
-                  console.log("🔍 Debug botão Ver minha loja:");
-                  console.log("- user:", user);
-                  console.log("- seller:", user?.seller);
-                  console.log("- store:", user?.seller?.store);
-                  console.log("- storeId:", storeId);
-                  console.log("- storeSlug:", storeSlug);
-                  console.log("- storeName:", storeName);
+                  logger.info("🔍 Debug botão Ver minha loja:");
+                  logger.info("- user:", user);
+                  logger.info("- seller:", user?.seller);
+                  logger.info("- store:", user?.seller?.store);
+                  logger.info("- storeId:", storeId);
+                  logger.info("- storeSlug:", storeSlug);
+                  logger.info("- storeName:", storeName);
 
                   if (storeId) {
-                    console.log(`✅ Navegando para: /stores/${storeId}`);
+                    logger.info(`✅ Navegando para: /stores/${storeId}`);
                     navigate(`/stores/${storeId}`);
                   } else {
-                    console.log("❌ StoreId não encontrado");
+                    logger.info("❌ StoreId não encontrado");
                     alert("Sua loja ainda não foi criada. Configure sua loja primeiro.");
                   }
                 }}

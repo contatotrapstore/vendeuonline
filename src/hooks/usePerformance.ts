@@ -1,4 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from "react";
+import { logger } from "@/lib/logger";
+
 
 // Hook para debounce
 export const useDebounce = <T>(value: T, delay: number): T => {
@@ -82,7 +84,7 @@ export const usePerformanceMonitor = () => {
 
       // Log para desenvolvimento
       if (import.meta.env.MODE === "development") {
-        console.log(`${componentName} render time: ${renderTime.toFixed(2)}ms`);
+        logger.info(`${componentName} render time: ${renderTime.toFixed(2)}ms`);
       }
     };
   }, []);
@@ -147,7 +149,7 @@ export const useCache = <T>(key: string, ttl = 5 * 60 * 1000) => {
         localStorage.setItem(`cache_${key}`, JSON.stringify(cacheEntry));
         setData(newData);
       } catch (error) {
-        console.warn("Erro ao salvar no cache:", error);
+        logger.warn("Erro ao salvar no cache:", error);
       }
     },
     [key]
@@ -272,7 +274,7 @@ export const useImagePreload = (urls: string[]) => {
 
       setLoadedImages(new Set(successful));
     } catch (error) {
-      console.warn("Erro ao precarregar imagens:", error);
+      logger.warn("Erro ao precarregar imagens:", error);
     } finally {
       setIsLoading(false);
     }
@@ -343,7 +345,7 @@ export const performanceUtils = {
     const end = performance.now();
 
     if (label && import.meta.env.MODE === "development") {
-      console.log(`${label}: ${(end - start).toFixed(2)}ms`);
+      logger.info(`${label}: ${(end - start).toFixed(2)}ms`);
     }
 
     return result;

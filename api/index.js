@@ -1,3 +1,5 @@
+import { logger } from "../lib/logger.js";
+
 // Serverless function for Vercel
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -11,24 +13,27 @@ try {
   const prismaModule = await import("../lib/prisma.js");
   prisma = prismaModule.default;
   safeQuery = prismaModule.safeQuery;
-  console.log("✅ [API] Prisma importado com sucesso");
+  logger.info("✅ [API] Prisma importado com sucesso");
 } catch (error) {
-  console.error("❌ [API] Erro ao importar Prisma:", error.message);
+  logger.error("❌ [API] Erro ao importar Prisma:", error.message);
 }
 
 // Debug - Verificar variáveis de ambiente críticas
-console.log("🔍 [API] Verificando variáveis de ambiente:");
-console.log("DATABASE_URL:", process.env.DATABASE_URL ? "DEFINIDA" : "❌ NÃO DEFINIDA");
-console.log("JWT_SECRET:", process.env.JWT_SECRET ? "DEFINIDA" : "❌ NÃO DEFINIDA");
-console.log("SUPABASE_URL:", process.env.SUPABASE_URL ? "DEFINIDA" : "❌ NÃO DEFINIDA");
-console.log("SUPABASE_ANON_KEY:", process.env.SUPABASE_ANON_KEY ? "DEFINIDA" : "❌ NÃO DEFINIDA");
-console.log("Node Version:", process.version);
-console.log("Platform:", process.platform);
+logger.info("🔍 [API] Verificando variáveis de ambiente:");
+logger.info("DATABASE_URL:", process.env.DATABASE_URL ? "DEFINIDA" : "❌ NÃO DEFINIDA");
+logger.info("JWT_SECRET:", process.env.JWT_SECRET ? "DEFINIDA" : "❌ NÃO DEFINIDA");
+logger.info("SUPABASE_URL:", process.env.SUPABASE_URL ? "DEFINIDA" : "❌ NÃO DEFINIDA");
+logger.info("SUPABASE_ANON_KEY:", process.env.SUPABASE_ANON_KEY ? "DEFINIDA" : "❌ NÃO DEFINIDA");
+logger.info("Node Version:", process.version);
+logger.info("Platform:", process.platform);
 
-// Configurações JWT
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
+// Configurações JWT - OBRIGATÓRIO definir JWT_SECRET nas variáveis de ambiente
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  logger.error("❌ ERRO CRÍTICO: JWT_SECRET não definido nas variáveis de ambiente!");
+  throw new Error("JWT_SECRET é obrigatório para segurança");
+}
 
 // MODO PRODUÇÃO: SEM DADOS MOCK - USAR APENAS BANCO DE DADOS
 // Se o Prisma não conectar, retorna erro 500
@@ -36,7 +41,7 @@ const JWT_SECRET =
 // Serverless function handler
 export default async function handler(req, res) {
   try {
-    console.log(`🚀 [API] Request: ${req.method} ${req.url}`);
+    logger.info(`🚀 [API] Request: ${req.method} ${req.url}`);
 
     // CORS headers
     res.setHeader("Access-Control-Allow-Credentials", true);
@@ -52,7 +57,7 @@ export default async function handler(req, res) {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const pathname = url.pathname;
 
-    console.log(`📍 [API] Rota: ${pathname}`);
+    logger.info(`📍 [API] Rota: ${pathname}`);
 
     // Funções auxiliares
     const hashPassword = async (password) => {
@@ -103,10 +108,10 @@ export default async function handler(req, res) {
 
     // Route: GET /api/plans - APENAS BANCO DE DADOS
     if (req.method === "GET" && pathname === "/api/plans") {
-      console.log("📋 [PLANS] Buscando planos no banco...");
+      logger.info("📋 [PLANS] Buscando planos no banco...");
 
       if (!prisma || !safeQuery) {
-        console.error("❌ [PLANS] Prisma não disponível");
+        logger.error("❌ [PLANS] Prisma não disponível");
         return res.status(500).json({
           success: false,
           error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
@@ -121,7 +126,7 @@ export default async function handler(req, res) {
       });
 
       if (!result.success) {
-        console.error("❌ [PLANS] Erro no banco:", result.error);
+        logger.error("❌ [PLANS] Erro no banco:", result.error);
         return res.status(500).json({
           success: false,
           error: "Erro ao buscar planos no banco de dados",
@@ -129,7 +134,7 @@ export default async function handler(req, res) {
         });
       }
 
-      console.log(`✅ [PLANS] ${result.data.length} planos encontrados`);
+      logger.info(`✅ [PLANS] ${result.data.length} planos encontrados`);
       return res.json({
         success: true,
         plans: result.data,
@@ -138,10 +143,10 @@ export default async function handler(req, res) {
 
     // Route: GET /api/products - APENAS BANCO DE DADOS
     if (req.method === "GET" && pathname === "/api/products") {
-      console.log("🛍️ [PRODUCTS] Buscando produtos no banco...");
+      logger.info("🛍️ [PRODUCTS] Buscando produtos no banco...");
 
       if (!prisma || !safeQuery) {
-        console.error("❌ [PRODUCTS] Prisma não disponível");
+        logger.error("❌ [PRODUCTS] Prisma não disponível");
         return res.status(500).json({
           success: false,
           error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
@@ -164,7 +169,7 @@ export default async function handler(req, res) {
       });
 
       if (!result.success) {
-        console.error("❌ [PRODUCTS] Erro no banco:", result.error);
+        logger.error("❌ [PRODUCTS] Erro no banco:", result.error);
         return res.status(500).json({
           success: false,
           error: "Erro ao buscar produtos no banco de dados",
@@ -172,7 +177,7 @@ export default async function handler(req, res) {
         });
       }
 
-      console.log(`✅ [PRODUCTS] ${result.data.length} produtos encontrados`);
+      logger.info(`✅ [PRODUCTS] ${result.data.length} produtos encontrados`);
       return res.json({
         success: true,
         products: result.data,
@@ -181,10 +186,10 @@ export default async function handler(req, res) {
 
     // Route: GET /api/stores - APENAS BANCO DE DADOS
     if (req.method === "GET" && pathname === "/api/stores") {
-      console.log("🏪 [STORES] Buscando lojas no banco...");
+      logger.info("🏪 [STORES] Buscando lojas no banco...");
 
       if (!prisma || !safeQuery) {
-        console.error("❌ [STORES] Prisma não disponível");
+        logger.error("❌ [STORES] Prisma não disponível");
         return res.status(500).json({
           success: false,
           error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
@@ -201,7 +206,7 @@ export default async function handler(req, res) {
       });
 
       if (!result.success) {
-        console.error("❌ [STORES] Erro no banco:", result.error);
+        logger.error("❌ [STORES] Erro no banco:", result.error);
         return res.status(500).json({
           success: false,
           error: "Erro ao buscar lojas no banco de dados",
@@ -209,7 +214,7 @@ export default async function handler(req, res) {
         });
       }
 
-      console.log(`✅ [STORES] ${result.data.length} lojas encontradas`);
+      logger.info(`✅ [STORES] ${result.data.length} lojas encontradas`);
       return res.json({
         success: true,
         data: result.data,
@@ -227,7 +232,7 @@ export default async function handler(req, res) {
 
     // Route: POST /api/auth/register - APENAS BANCO DE DADOS
     if (req.method === "POST" && pathname === "/api/auth/register") {
-      console.log("👤 [REGISTER] Novo registro...");
+      logger.info("👤 [REGISTER] Novo registro...");
 
       const { name, email, phone, password, userType, city, state } = req.body;
 
@@ -239,7 +244,7 @@ export default async function handler(req, res) {
       }
 
       if (!prisma || !safeQuery) {
-        console.error("❌ [REGISTER] Prisma não disponível");
+        logger.error("❌ [REGISTER] Prisma não disponível");
         return res.status(500).json({
           success: false,
           error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
@@ -252,7 +257,7 @@ export default async function handler(req, res) {
       });
 
       if (!existingResult.success) {
-        console.error("❌ [REGISTER] Erro ao verificar usuário:", existingResult.error);
+        logger.error("❌ [REGISTER] Erro ao verificar usuário:", existingResult.error);
         return res.status(500).json({
           success: false,
           error: "Erro ao verificar usuário no banco de dados",
@@ -284,7 +289,7 @@ export default async function handler(req, res) {
       });
 
       if (!createResult.success) {
-        console.error("❌ [REGISTER] Erro ao criar usuário:", createResult.error);
+        logger.error("❌ [REGISTER] Erro ao criar usuário:", createResult.error);
         return res.status(500).json({
           success: false,
           error: "Erro ao criar usuário no banco de dados",
@@ -303,7 +308,7 @@ export default async function handler(req, res) {
       // Remover password da resposta
       const { password: _, ...userWithoutPassword } = createResult.data;
 
-      console.log("✅ [REGISTER] Usuário criado com sucesso:", userWithoutPassword.id);
+      logger.info("✅ [REGISTER] Usuário criado com sucesso:", userWithoutPassword.id);
       return res.status(201).json({
         success: true,
         message: "Usuário cadastrado com sucesso",
@@ -314,7 +319,7 @@ export default async function handler(req, res) {
 
     // Route: POST /api/auth/login - APENAS BANCO DE DADOS
     if (req.method === "POST" && pathname === "/api/auth/login") {
-      console.log("🔐 [LOGIN] Tentativa de login...");
+      logger.info("🔐 [LOGIN] Tentativa de login...");
 
       const { email, password } = req.body;
 
@@ -323,7 +328,7 @@ export default async function handler(req, res) {
       }
 
       if (!prisma || !safeQuery) {
-        console.error("❌ [LOGIN] Prisma não disponível");
+        logger.error("❌ [LOGIN] Prisma não disponível");
         return res.status(500).json({
           success: false,
           error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
@@ -338,7 +343,7 @@ export default async function handler(req, res) {
       });
 
       if (!result.success) {
-        console.error("❌ [LOGIN] Erro no banco:", result.error);
+        logger.error("❌ [LOGIN] Erro no banco:", result.error);
         return res.status(500).json({
           success: false,
           error: "Erro ao buscar usuário no banco de dados",
@@ -367,7 +372,7 @@ export default async function handler(req, res) {
       // Remover password da resposta
       const { password: _, ...userWithoutPassword } = result.data;
 
-      console.log("✅ [LOGIN] Login realizado com sucesso:", userWithoutPassword.id);
+      logger.info("✅ [LOGIN] Login realizado com sucesso:", userWithoutPassword.id);
       return res.json({
         success: true,
         message: "Login realizado com sucesso",
@@ -378,7 +383,7 @@ export default async function handler(req, res) {
 
     // Route: GET /api/admin/stats - APENAS BANCO DE DADOS (requires auth)
     if (req.method === "GET" && pathname === "/api/admin/stats") {
-      console.log("📊 [ADMIN] Buscando estatísticas...");
+      logger.info("📊 [ADMIN] Buscando estatísticas...");
 
       try {
         const user = requireAuth();
@@ -387,7 +392,7 @@ export default async function handler(req, res) {
         }
 
         if (!prisma || !safeQuery) {
-          console.error("❌ [ADMIN] Prisma não disponível");
+          logger.error("❌ [ADMIN] Prisma não disponível");
           return res.status(500).json({
             success: false,
             error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
@@ -404,7 +409,7 @@ export default async function handler(req, res) {
 
         // Verificar se todas as queries foram bem-sucedidas
         if (!usersResult.success || !productsResult.success || !storesResult.success || !ordersResult.success) {
-          console.error("❌ [ADMIN] Erro ao buscar estatísticas");
+          logger.error("❌ [ADMIN] Erro ao buscar estatísticas");
           return res.status(500).json({
             success: false,
             error: "Erro ao buscar estatísticas no banco de dados",
@@ -418,13 +423,13 @@ export default async function handler(req, res) {
           totalOrders: ordersResult.data,
         };
 
-        console.log("✅ [ADMIN] Estatísticas carregadas:", stats);
+        logger.info("✅ [ADMIN] Estatísticas carregadas:", stats);
         return res.json({
           success: true,
           data: stats,
         });
       } catch (error) {
-        console.error("❌ [ADMIN STATS] Erro:", error.message);
+        logger.error("❌ [ADMIN STATS] Erro:", error.message);
         return res.status(401).json({ error: error.message });
       }
     }
@@ -436,7 +441,7 @@ export default async function handler(req, res) {
       pathname: pathname,
     });
   } catch (error) {
-    console.error("💥 [API] Erro geral:", error);
+    logger.error("💥 [API] Erro geral:", error);
     return res.status(500).json({
       success: false,
       error: error.message,

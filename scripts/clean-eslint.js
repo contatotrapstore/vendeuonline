@@ -1,3 +1,5 @@
+import { logger } from "../lib/logger.js";
+
 #!/usr/bin/env node
 
 /**
@@ -65,10 +67,10 @@ const cleanupPatterns = [
 ];
 
 function cleanFile(filePath) {
-  console.log(`🧹 Limpando: ${filePath}`);
+  logger.info(`🧹 Limpando: ${filePath}`);
 
   if (!fs.existsSync(filePath)) {
-    console.log(`⚠️  Arquivo não encontrado: ${filePath}`);
+    logger.info(`⚠️  Arquivo não encontrado: ${filePath}`);
     return;
   }
 
@@ -105,27 +107,27 @@ function cleanFile(filePath) {
 
   if (changed) {
     fs.writeFileSync(filePath, content, "utf8");
-    console.log(`✅ Arquivo limpo: ${filePath}`);
+    logger.info(`✅ Arquivo limpo: ${filePath}`);
   } else {
-    console.log(`ℹ️  Sem alterações: ${filePath}`);
+    logger.info(`ℹ️  Sem alterações: ${filePath}`);
   }
 }
 
 function main() {
-  console.log("🚀 Iniciando limpeza automática do ESLint...\n");
+  logger.info("🚀 Iniciando limpeza automática do ESLint...\n");
 
   filesToClean.forEach(cleanFile);
 
   // Execute ESLint --fix para correções automáticas
-  console.log("\n🔧 Executando ESLint --fix automático...");
+  logger.info("\n🔧 Executando ESLint --fix automático...");
   try {
     execSync("npm run lint -- --fix", { stdio: "pipe" });
-    console.log("✅ ESLint --fix executado com sucesso");
+    logger.info("✅ ESLint --fix executado com sucesso");
   } catch (error) {
-    console.log("ℹ️  ESLint --fix executado (com warnings restantes)");
+    logger.info("ℹ️  ESLint --fix executado (com warnings restantes)");
   }
 
-  console.log("\n🎉 Limpeza concluída!");
+  logger.info("\n🎉 Limpeza concluída!");
 }
 
 main();

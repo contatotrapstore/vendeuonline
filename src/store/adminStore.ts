@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { logger } from "@/lib/logger";
+
 
 export interface DashboardStats {
   totalUsers: number;
@@ -73,7 +75,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         throw new Error("Dados de estatísticas não disponíveis no servidor");
       }
     } catch (error: any) {
-      console.error("Erro ao buscar estatísticas do dashboard:", error);
+      logger.error("Erro ao buscar estatísticas do dashboard:", error);
       set({
         stats: null,
         error: error.message || "Erro ao carregar estatísticas",

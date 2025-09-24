@@ -1,14 +1,19 @@
 import express from "express";
+import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin } from "../middleware/auth.js";
 import { supabase } from "../lib/supabase-client.js";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import { createSubscriptionPayment, validateWebhookToken, mapAsaasStatus } from "../lib/asaas.js";
+import { logger } from "../lib/logger.js";
+
 
 const router = express.Router();
 
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET é obrigatório para rotas payments");
+}
 
 // ASAAS API configuration
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
@@ -36,30 +41,7 @@ async function asaasRequest(endpoint, options = {}) {
 }
 
 // Middleware de autenticação real
-async function authenticateUser(req, res, next) {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Token de autenticação necessário" });
-    }
-
-    const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    // Buscar usuário real do Supabase
-    const { data: user, error } = await supabase.from("users").select("*").eq("id", decoded.userId).single();
-
-    if (error || !user) {
-      return res.status(401).json({ error: "Usuário não encontrado" });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("❌ Erro na autenticação:", error);
-    return res.status(401).json({ error: "Token inválido" });
-  }
-}
+// Middleware removido - usando middleware centralizado
 
 // POST /api/payments/create - Criar pagamento
 router.post("/create", authenticateUser, async (req, res) => {
@@ -72,7 +54,7 @@ router.post("/create", authenticateUser, async (req, res) => {
       });
     }
 
-    console.log("💳 Criando pagamento para:", req.user.email, "Plano:", planId);
+    logger.info("💳 Criando pagamento para:", req.user.email, "Plano:", planId);
 
     // Buscar plano real no Supabase
     const { data: plan, error: planError } = await supabase.from("Plan").select("*").eq("id", planId).single();
@@ -99,7 +81,7 @@ router.post("/create", authenticateUser, async (req, res) => {
         .single();
 
       if (subError) {
-        console.error("❌ Erro ao criar assinatura gratuita:", subError);
+        logger.error("❌ Erro ao criar assinatura gratuita:", subError);
         throw new Error("Erro ao ativar plano gratuito");
       }
 
@@ -112,7 +94,7 @@ router.post("/create", authenticateUser, async (req, res) => {
 
     // Para planos pagos, integrar com ASAAS
     if (!ASAAS_API_KEY) {
-      console.error("❌ ASAAS_API_KEY não configurada");
+      logger.error("❌ ASAAS_API_KEY não configurada");
       return res.status(500).json({
         error: "Sistema de pagamentos não configurado",
         details: "Configure ASAAS_API_KEY no ambiente",
@@ -121,7 +103,7 @@ router.post("/create", authenticateUser, async (req, res) => {
 
     try {
       // Usar nova integração ASAAS para criar pagamento
-      console.log("💳 Criando pagamento ASAAS usando nova integração...");
+      logger.info("💳 Criando pagamento ASAAS usando nova integração...");
 
       const paymentData = await createSubscriptionPayment(plan, {
         id: req.user.id,
@@ -133,14 +115,14 @@ router.post("/create", authenticateUser, async (req, res) => {
         state: req.user.state || "SP",
       });
 
-      console.log("✅ Pagamento ASAAS criado:", paymentData.id);
+      logger.info("✅ Pagamento ASAAS criado:", paymentData.id);
 
       // Atualizar o banco com dados do pagamento
       // (aqui você pode salvar informações do pagamento se necessário)
 
       // Salvar transação no nosso banco
       const { data: transaction, error: transactionError } = await supabase
-        .from("Payment")
+        .from("payments")
         .insert({
           userId: req.user.id,
           planId: plan.id,
@@ -155,9 +137,9 @@ router.post("/create", authenticateUser, async (req, res) => {
         .single();
 
       if (transactionError) {
-        console.error("❌ Erro ao salvar transação:", transactionError);
+        logger.error("❌ Erro ao salvar transação:", transactionError);
       } else {
-        console.log("✅ Transação salva no banco:", transaction.id);
+        logger.info("✅ Transação salva no banco:", transaction.id);
       }
       // Retornar resposta baseada no método de pagamento
       const response = {
@@ -187,13 +169,13 @@ router.post("/create", authenticateUser, async (req, res) => {
 
       return res.json(response);
     } catch (asaasError) {
-      console.error("Erro na integração ASAAS:", asaasError);
+      logger.error("Erro na integração ASAAS:", asaasError);
       return res.status(500).json({
         error: "Erro ao processar pagamento com ASAAS",
       });
     }
   } catch (error) {
-    console.error("Erro ao criar pagamento:", error);
+    logger.error("Erro ao criar pagamento:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
     });
@@ -206,17 +188,17 @@ router.post("/webhook", (req, res) => {
     const webhookData = req.body;
 
     // Em produção, validar assinatura do webhook
-    console.log("Webhook recebido:", webhookData);
+    logger.info("Webhook recebido:", webhookData);
 
     // Processar eventos de pagamento
     if (webhookData.event === "PAYMENT_RECEIVED") {
-      console.log("Pagamento confirmado:", webhookData.payment);
+      logger.info("Pagamento confirmado:", webhookData.payment);
       // Aqui atualizaria o status da assinatura no banco
     }
 
     res.json({ received: true });
   } catch (error) {
-    console.error("Erro no webhook:", error);
+    logger.error("Erro no webhook:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
@@ -227,7 +209,7 @@ router.get("/:id", authenticateUser, async (req, res) => {
     const { id } = req.params;
     const userId = req.user.id;
 
-    console.log("🔍 Buscando pagamento:", id, "para usuário:", userId);
+    logger.info("🔍 Buscando pagamento:", id, "para usuário:", userId);
 
     // Buscar pagamento no banco de dados
     const { data: payment, error } = await supabase
@@ -257,7 +239,7 @@ router.get("/:id", authenticateUser, async (req, res) => {
       .single();
 
     if (error || !payment) {
-      console.error("❌ Pagamento não encontrado:", error);
+      logger.error("❌ Pagamento não encontrado:", error);
       return res.status(404).json({
         success: false,
         error: "Pagamento não encontrado ou você não tem permissão para acessá-lo",
@@ -269,12 +251,12 @@ router.get("/:id", authenticateUser, async (req, res) => {
     if (ASAAS_API_KEY && payment.asaasPaymentId) {
       try {
         asaasStatus = await asaasRequest(`/payments/${payment.asaasPaymentId}`);
-        console.log("✅ Status ASAAS obtido:", asaasStatus.status);
+        logger.info("✅ Status ASAAS obtido:", asaasStatus.status);
 
         // Atualizar status no banco se diferente
         if (asaasStatus.status !== payment.status) {
           const { error: updateError } = await supabase
-            .from("Payment")
+            .from("payments")
             .update({
               status: asaasStatus.status,
               updatedAt: new Date().toISOString(),
@@ -282,13 +264,13 @@ router.get("/:id", authenticateUser, async (req, res) => {
             .eq("id", id);
 
           if (updateError) {
-            console.warn("⚠️ Erro ao atualizar status:", updateError);
+            logger.warn("⚠️ Erro ao atualizar status:", updateError);
           } else {
-            console.log("✅ Status do pagamento atualizado:", payment.status, "→", asaasStatus.status);
+            logger.info("✅ Status do pagamento atualizado:", payment.status, "→", asaasStatus.status);
           }
         }
       } catch (asaasError) {
-        console.warn("⚠️ Erro ao buscar status no ASAAS:", asaasError.message);
+        logger.warn("⚠️ Erro ao buscar status no ASAAS:", asaasError.message);
       }
     }
 
@@ -320,11 +302,11 @@ router.get("/:id", authenticateUser, async (req, res) => {
       },
     };
 
-    console.log("✅ Pagamento encontrado:", payment.id);
+    logger.info("✅ Pagamento encontrado:", payment.id);
 
     res.json(response);
   } catch (error) {
-    console.error("❌ Erro ao buscar pagamento:", error);
+    logger.error("❌ Erro ao buscar pagamento:", error);
     res.status(500).json({
       success: false,
       error: "Erro interno do servidor",
@@ -336,23 +318,23 @@ router.get("/:id", authenticateUser, async (req, res) => {
 // POST /api/payments/webhook - Webhook ASAAS
 router.post("/webhook", async (req, res) => {
   try {
-    console.log("🔔 Webhook ASAAS recebido:", req.body);
+    logger.info("🔔 Webhook ASAAS recebido:", req.body);
 
     // Validar token do webhook (se configurado)
     const receivedToken = req.headers["asaas-access-token"] || req.body.token;
     if (!validateWebhookToken(receivedToken)) {
-      console.error("❌ Token de webhook inválido");
+      logger.error("❌ Token de webhook inválido");
       return res.status(401).json({ error: "Token inválido" });
     }
 
     const { event, payment } = req.body;
 
     if (!payment || !payment.id) {
-      console.error("❌ Webhook sem dados de pagamento");
+      logger.error("❌ Webhook sem dados de pagamento");
       return res.status(400).json({ error: "Dados de pagamento ausentes" });
     }
 
-    console.log(`🔔 Evento ASAAS: ${event} para pagamento ${payment.id}`);
+    logger.info(`🔔 Evento ASAAS: ${event} para pagamento ${payment.id}`);
 
     // Buscar pagamento no nosso banco
     const { data: localPayment, error: fetchError } = await supabase
@@ -362,13 +344,13 @@ router.post("/webhook", async (req, res) => {
       .single();
 
     if (fetchError || !localPayment) {
-      console.error("❌ Pagamento não encontrado no banco:", payment.id);
+      logger.error("❌ Pagamento não encontrado no banco:", payment.id);
       return res.status(404).json({ error: "Pagamento não encontrado" });
     }
 
     // Mapear status ASAAS para nosso status
     const newStatus = mapAsaasStatus(payment.status);
-    console.log(`📊 Status: ${payment.status} → ${newStatus}`);
+    logger.info(`📊 Status: ${payment.status} → ${newStatus}`);
 
     // Atualizar status do pagamento
     const { error: updateError } = await supabase
@@ -380,13 +362,13 @@ router.post("/webhook", async (req, res) => {
       .eq("id", localPayment.id);
 
     if (updateError) {
-      console.error("❌ Erro ao atualizar pagamento:", updateError);
+      logger.error("❌ Erro ao atualizar pagamento:", updateError);
       return res.status(500).json({ error: "Erro ao atualizar pagamento" });
     }
 
     // Se pagamento foi aprovado, ativar assinatura
     if (newStatus === "paid") {
-      console.log("✅ Pagamento aprovado, ativando assinatura...");
+      logger.info("✅ Pagamento aprovado, ativando assinatura...");
 
       // Criar ou atualizar assinatura
       const { error: subscriptionError } = await supabase.from("Subscription").upsert({
@@ -399,14 +381,14 @@ router.post("/webhook", async (req, res) => {
       });
 
       if (subscriptionError) {
-        console.error("❌ Erro ao ativar assinatura:", subscriptionError);
+        logger.error("❌ Erro ao ativar assinatura:", subscriptionError);
       } else {
-        console.log("✅ Assinatura ativada com sucesso");
+        logger.info("✅ Assinatura ativada com sucesso");
       }
     }
 
     // Log do evento para auditoria
-    console.log("✅ Webhook processado com sucesso:", {
+    logger.info("✅ Webhook processado com sucesso:", {
       event,
       paymentId: payment.id,
       status: newStatus,
@@ -415,7 +397,7 @@ router.post("/webhook", async (req, res) => {
 
     res.json({ success: true, message: "Webhook processado" });
   } catch (error) {
-    console.error("❌ Erro no webhook ASAAS:", error);
+    logger.error("❌ Erro no webhook ASAAS:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 });

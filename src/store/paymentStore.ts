@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { apiRequest } from "@/lib/api";
+import { logger } from "@/lib/logger";
+
 
 export interface PaymentMethod {
   id: string;
@@ -80,7 +82,7 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
       const response = await apiRequest("/api/payment/methods");
       set({ paymentMethods: response.data || [], loading: false });
     } catch (error: any) {
-      console.error("Erro ao buscar métodos de pagamento:", error);
+      logger.error("Erro ao buscar métodos de pagamento:", error);
       set({
         paymentMethods: [],
         loading: false,
@@ -127,7 +129,7 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
 
       return payment;
     } catch (error: any) {
-      console.error("Erro ao criar pagamento:", error);
+      logger.error("Erro ao criar pagamento:", error);
       set({
         error: "Erro ao criar pagamento",
         isProcessing: false,
@@ -157,7 +159,7 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
       set({ isProcessing: false });
       return newStatus === "approved";
     } catch (error: any) {
-      console.error("Erro ao processar pagamento:", error);
+      logger.error("Erro ao processar pagamento:", error);
       set({
         error: "Erro ao processar pagamento. Tente novamente.",
         isProcessing: false,
@@ -194,7 +196,7 @@ export const usePaymentStore = create<PaymentStore>((set, get) => ({
         loading: false,
       }));
     } catch (error: any) {
-      console.error("Erro ao buscar status do pagamento:", error);
+      logger.error("Erro ao buscar status do pagamento:", error);
       set({
         loading: false,
         error: "Erro ao buscar status do pagamento",

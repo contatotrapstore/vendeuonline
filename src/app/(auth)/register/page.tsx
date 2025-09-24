@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState } from "react";
@@ -101,7 +103,7 @@ export default function RegisterPage() {
       navigate("/");
     } catch (error) {
       // O erro já será exibido pelo authStore.error no componente
-      console.error("Erro no registro:", error);
+      logger.error("Erro no registro:", error);
     }
   };
 

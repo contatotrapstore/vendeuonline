@@ -1,69 +1,15 @@
 import express from "express";
-import jwt from "jsonwebtoken";
+import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin, optionalAuth } from "../middleware/auth.js";
 import { supabase } from "../lib/supabase-client.js";
+import { logger } from "../lib/logger.js";
+
 
 const router = express.Router();
 
-// JWT Secret (deve ser o mesmo usado em auth.js)
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
-
 // Middleware de autenticação
-const authenticateUser = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
+// Middleware removido - usando middleware centralizado
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Token de autenticação necessário" });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    // Buscar usuário real do Supabase
-    const { data: user, error } = await supabase.from("users").select("*").eq("id", decoded.userId).single();
-
-    if (error || !user) {
-      return res.status(401).json({ error: "Usuário não encontrado" });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("❌ Erro na autenticação:", error);
-    return res.status(401).json({ error: "Token inválido" });
-  }
-};
-
-// Middleware de autenticação opcional
-const optionalAuth = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    req.user = null;
-    return next();
-  }
-
-  const token = authHeader.substring(7);
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    // Buscar usuário real do Supabase
-    const { data: user, error } = await supabase.from("users").select("*").eq("id", decoded.userId).single();
-
-    if (error || !user) {
-      req.user = null;
-    } else {
-      req.user = user;
-    }
-    next();
-  } catch (error) {
-    req.user = null;
-    next();
-  }
-};
+// Middleware removido - usando middleware centralizado
 
 // GET /api/wishlist - Buscar wishlist do usuário
 router.get("/", optionalAuth, async (req, res) => {
@@ -77,7 +23,7 @@ router.get("/", optionalAuth, async (req, res) => {
       });
     }
 
-    console.log("💝 Buscando wishlist para usuário:", req.user.id);
+    logger.info("💝 Buscando wishlist para usuário:", req.user.id);
 
     // Buscar wishlist real do Supabase com dados dos produtos (sem relacionamento Store)
     const { data: wishlistItems, error } = await supabase
@@ -107,7 +53,7 @@ router.get("/", optionalAuth, async (req, res) => {
       .order("createdAt", { ascending: false });
 
     if (error) {
-      console.error("❌ Erro ao buscar wishlist:", error);
+      logger.error("❌ Erro ao buscar wishlist:", error);
       throw new Error(`Erro na consulta: ${error.message}`);
     }
 
@@ -133,7 +79,7 @@ router.get("/", optionalAuth, async (req, res) => {
       };
     });
 
-    console.log(`✅ ${transformedWishlist.length} itens na wishlist encontrados`);
+    logger.info(`✅ ${transformedWishlist.length} itens na wishlist encontrados`);
 
     return res.json({
       success: true,
@@ -141,7 +87,7 @@ router.get("/", optionalAuth, async (req, res) => {
       count: transformedWishlist.length,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar wishlist:", error);
+    logger.error("❌ Erro ao buscar wishlist:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao carregar lista de desejos",
@@ -162,7 +108,7 @@ router.post("/", authenticateUser, async (req, res) => {
       });
     }
 
-    console.log("💝 Adicionando produto à wishlist:", productId, "usuário:", req.user.id);
+    logger.info("💝 Adicionando produto à wishlist:", productId, "usuário:", req.user.id);
 
     // Verificar se o produto existe e está ativo
     const { data: product, error: productError } = await supabase
@@ -205,11 +151,11 @@ router.post("/", authenticateUser, async (req, res) => {
       .single();
 
     if (insertError) {
-      console.error("❌ Erro ao adicionar à wishlist:", insertError);
+      logger.error("❌ Erro ao adicionar à wishlist:", insertError);
       throw new Error(`Erro ao adicionar: ${insertError.message}`);
     }
 
-    console.log("✅ Produto adicionado à wishlist:", wishlistItem.id);
+    logger.info("✅ Produto adicionado à wishlist:", wishlistItem.id);
 
     return res.json({
       success: true,
@@ -217,7 +163,7 @@ router.post("/", authenticateUser, async (req, res) => {
       data: wishlistItem,
     });
   } catch (error) {
-    console.error("❌ Erro ao adicionar à wishlist:", error);
+    logger.error("❌ Erro ao adicionar à wishlist:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao adicionar produto à lista de desejos",
@@ -238,7 +184,7 @@ router.delete("/:productId", authenticateUser, async (req, res) => {
       });
     }
 
-    console.log("💔 Removendo produto da wishlist:", productId, "usuário:", req.user.id);
+    logger.info("💔 Removendo produto da wishlist:", productId, "usuário:", req.user.id);
 
     // Remover da wishlist
     const { data: deletedItem, error } = await supabase
@@ -256,11 +202,11 @@ router.delete("/:productId", authenticateUser, async (req, res) => {
           error: "Item não encontrado na lista de desejos",
         });
       }
-      console.error("❌ Erro ao remover da wishlist:", error);
+      logger.error("❌ Erro ao remover da wishlist:", error);
       throw new Error(`Erro ao remover: ${error.message}`);
     }
 
-    console.log("✅ Produto removido da wishlist:", deletedItem.id);
+    logger.info("✅ Produto removido da wishlist:", deletedItem.id);
 
     return res.json({
       success: true,
@@ -268,7 +214,7 @@ router.delete("/:productId", authenticateUser, async (req, res) => {
       data: deletedItem,
     });
   } catch (error) {
-    console.error("❌ Erro ao remover da wishlist:", error);
+    logger.error("❌ Erro ao remover da wishlist:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao remover produto da lista de desejos",
@@ -289,7 +235,7 @@ router.post("/toggle", authenticateUser, async (req, res) => {
       });
     }
 
-    console.log("🔄 Alternando produto na wishlist:", productId, "usuário:", req.user.id);
+    logger.info("🔄 Alternando produto na wishlist:", productId, "usuário:", req.user.id);
 
     // Verificar se já está na wishlist
     const { data: existingItem, error: checkError } = await supabase
@@ -307,7 +253,7 @@ router.post("/toggle", authenticateUser, async (req, res) => {
         throw new Error(`Erro ao remover: ${deleteError.message}`);
       }
 
-      console.log("💔 Produto removido da wishlist");
+      logger.info("💔 Produto removido da wishlist");
 
       return res.json({
         success: true,
@@ -345,7 +291,7 @@ router.post("/toggle", authenticateUser, async (req, res) => {
         throw new Error(`Erro ao adicionar: ${insertError.message}`);
       }
 
-      console.log("💝 Produto adicionado à wishlist");
+      logger.info("💝 Produto adicionado à wishlist");
 
       return res.json({
         success: true,
@@ -356,7 +302,7 @@ router.post("/toggle", authenticateUser, async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("❌ Erro ao alternar wishlist:", error);
+    logger.error("❌ Erro ao alternar wishlist:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao alterar lista de desejos",
@@ -391,7 +337,7 @@ router.get("/check/:productId", optionalAuth, async (req, res) => {
       itemId: item?.id || null,
     });
   } catch (error) {
-    console.error("❌ Erro ao verificar wishlist:", error);
+    logger.error("❌ Erro ao verificar wishlist:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao verificar lista de desejos",
@@ -424,7 +370,7 @@ router.get("/check/:productId", optionalAuth, async (req, res) => {
       .eq("productId", productId);
 
     if (deleteError) {
-      console.error("❌ Erro ao remover da wishlist:", deleteError);
+      logger.error("❌ Erro ao remover da wishlist:", deleteError);
       return res.status(500).json({
         success: false,
         error: "Erro ao remover produto da wishlist",
@@ -437,7 +383,7 @@ router.get("/check/:productId", optionalAuth, async (req, res) => {
       productId,
     });
   } catch (error) {
-    console.error("❌ Erro ao remover da wishlist:", error);
+    logger.error("❌ Erro ao remover da wishlist:", error);
     return res.status(500).json({
       success: false,
       error: "Erro interno do servidor",

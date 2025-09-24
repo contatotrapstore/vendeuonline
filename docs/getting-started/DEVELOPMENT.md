@@ -300,13 +300,15 @@ DEBUG=* npm run dev
 
 ### **Variáveis de Ambiente (.env)** ✅ **CONFIGURADAS**
 
+⚠️ **IMPORTANTE**: Nunca commitar credenciais reais. Use placeholders na documentação.
+
 ```bash
 # ✅ Todas as variáveis já configuradas corretamente
 
 # Supabase (FUNCIONANDO)
-DATABASE_URL="postgresql://postgres.dycsfnbqgojhttnjbndp:..."
-NEXT_PUBLIC_SUPABASE_URL="https://dycsfnbqgojhttnjbndp.supabase.co"
-VITE_PUBLIC_SUPABASE_URL="https://dycsfnbqgojhttnjbndp.supabase.co"
+DATABASE_URL="postgresql://postgres.YOUR_PROJECT_ID:YOUR_PASSWORD@db.YOUR_PROJECT_ID.supabase.co:5432/postgres"
+NEXT_PUBLIC_SUPABASE_URL="https://YOUR_PROJECT_ID.supabase.co"
+VITE_PUBLIC_SUPABASE_URL="https://YOUR_PROJECT_ID.supabase.co"
 NEXT_PUBLIC_SUPABASE_ANON_KEY="eyJ..."
 VITE_PUBLIC_SUPABASE_ANON_KEY="eyJ..."
 SUPABASE_SERVICE_ROLE_KEY="eyJ..."
@@ -315,7 +317,7 @@ VITE_SUPABASE_SERVICE_ROLE_KEY="eyJ..."
 # API (FUNCIONANDO)
 PORT="3001"
 API_PORT="3001"
-JWT_SECRET="chave-forte-configurada"
+JWT_SECRET="YOUR_STRONG_JWT_SECRET_HERE"
 ```
 
 ### **Status Atual:**

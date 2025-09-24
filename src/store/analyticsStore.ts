@@ -1,4 +1,6 @@
 import { create } from "zustand";
+import { logger } from "@/lib/logger";
+
 
 // Utilitário para gerenciar token no localStorage
 const getStoredToken = () => {
@@ -157,7 +159,7 @@ export const useAnalyticsStore = create<AnalyticsState>((set, get) => ({
         period: currentPeriod,
       });
     } catch (error: any) {
-      console.error("Erro ao carregar estatísticas:", error);
+      logger.error("Erro ao carregar estatísticas:", error);
       set({
         error: error.message || "Erro ao carregar estatísticas",
         isLoading: false,
@@ -242,7 +244,7 @@ export const calculateCategoryData = async (): Promise<CategoryData[]> => {
     if (error?.message?.includes("404") || error?.message?.includes("401")) {
       return [];
     }
-    console.warn("Distribuição de categorias não disponível");
+    logger.warn("Distribuição de categorias não disponível");
     return [];
   }
 };

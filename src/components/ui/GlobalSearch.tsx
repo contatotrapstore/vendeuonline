@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -70,7 +72,7 @@ export function GlobalSearch({
       try {
         setRecentSearches(JSON.parse(saved));
       } catch (error) {
-        console.error("Error loading recent searches:", error);
+        logger.error("Error loading recent searches:", error);
       }
     }
   }, []);
@@ -162,7 +164,7 @@ export function GlobalSearch({
 
       setResults(searchResults);
     } catch (error) {
-      console.error("Search error:", error);
+      logger.error("Search error:", error);
       setResults([]);
     } finally {
       setLoading(false);

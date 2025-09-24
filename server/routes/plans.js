@@ -1,5 +1,7 @@
 import express from "express";
 import { supabase } from "../lib/supabase-client.js";
+import { logger } from "../lib/logger.js";
+
 
 const router = express.Router();
 
@@ -21,7 +23,7 @@ router.get("/", async (req, res) => {
       data: plans || []
     });
   } catch (error) {
-    console.error("Erro ao buscar planos:", error);
+    logger.error("Erro ao buscar planos:", error);
     res.status(500).json({
       error: "Erro interno do servidor"
     });
@@ -53,7 +55,7 @@ router.get("/:id", async (req, res) => {
       data: plan
     });
   } catch (error) {
-    console.error("Erro ao buscar plano:", error);
+    logger.error("Erro ao buscar plano:", error);
     res.status(500).json({
       error: "Erro interno do servidor"
     });

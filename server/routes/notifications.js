@@ -1,5 +1,7 @@
 import { Router } from "express";
 import { supabase, supabaseAdmin } from "../lib/supabase-client.js";
+import { logger } from "../lib/logger.js";
+
 
 const router = Router();
 
@@ -25,7 +27,7 @@ const createNotification = async (userId, title, message, type = "INFO", data = 
     if (error) throw error;
     return notification;
   } catch (error) {
-    console.error("❌ Erro ao criar notificação:", error);
+    logger.error("❌ Erro ao criar notificação:", error);
     return null;
   }
 };
@@ -41,7 +43,7 @@ router.get("/", async (req, res) => {
       .limit(50);
 
     if (error) {
-      console.warn("❌ Erro ao buscar notificações no Supabase:", error);
+      logger.warn("❌ Erro ao buscar notificações no Supabase:", error);
       return res.json({
         success: true,
         notifications: [],
@@ -66,7 +68,7 @@ router.get("/", async (req, res) => {
       notifications: formattedNotifications,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar notificações:", error);
+    logger.error("❌ Erro ao buscar notificações:", error);
     res.json({
       success: true,
       notifications: [],
@@ -98,7 +100,7 @@ router.put("/:id/read", async (req, res) => {
       message: "Notificação marcada como lida",
     });
   } catch (error) {
-    console.error("❌ Erro ao marcar notificação como lida:", error);
+    logger.error("❌ Erro ao marcar notificação como lida:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao marcar notificação como lida",
@@ -116,7 +118,7 @@ router.get("/unread-count", async (req, res) => {
       .eq("is_read", false);
 
     if (error) {
-      console.warn("❌ Erro ao contar notificações no Supabase:", error);
+      logger.warn("❌ Erro ao contar notificações no Supabase:", error);
       return res.json({
         success: true,
         unreadCount: 0,
@@ -128,7 +130,7 @@ router.get("/unread-count", async (req, res) => {
       unreadCount: count || 0,
     });
   } catch (error) {
-    console.error("❌ Erro ao contar notificações:", error);
+    logger.error("❌ Erro ao contar notificações:", error);
     res.json({
       success: true,
       unreadCount: 0,

@@ -1,59 +1,16 @@
 import express from "express";
+import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin } from "../middleware/auth.js";
 import { supabase } from "../lib/supabase-client.js";
 import { protectRoute } from "../middleware/security.js";
 import jwt from "jsonwebtoken";
+import { logger } from "../lib/logger.js";
+import { normalizePagination, createPaginatedResponse, applyPagination, applySorting } from "../lib/pagination.js";
+
 
 const router = express.Router();
 
 // Middleware de autenticação
-const authenticateUser = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Token não fornecido" });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Buscar dados do usuário
-    const { data: user, error } = await supabase
-      .from("users")
-      .select(
-        `
-        *,
-        sellers(id, storeName, storeSlug, plan, isActive),
-        buyers(id, preferences)
-      `
-      )
-      .eq("id", decoded.userId)
-      .single();
-
-    if (error || !user) {
-      return res.status(403).json({ error: "Usuário não encontrado" });
-    }
-
-    req.user = user;
-    req.seller = user.sellers?.[0] || null;
-    req.buyer = user.buyers?.[0] || null;
-
-    // Para buyers, se não existe buyer profile, criar referência fake temporária
-    if (user.type === "BUYER" && !req.buyer) {
-      req.buyer = { id: `buyer_${user.id}` };
-    }
-
-    // Se for seller, adicionar sellerId ao req.user
-    if (user.type === "SELLER" && req.seller) {
-      req.user.sellerId = req.seller.id;
-      // Debug: Seller autenticado
-    }
-
-    next();
-  } catch (error) {
-    console.error("Erro na autenticação:", error);
-    res.status(401).json({ error: "Token inválido" });
-  }
-};
+// Middleware removido - usando middleware centralizado
 
 // GET /api/orders - Listar pedidos
 router.get("/", authenticateUser, async (req, res) => {
@@ -169,7 +126,7 @@ router.get("/", authenticateUser, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Erro ao buscar pedidos:", error);
+    logger.error("Erro ao buscar pedidos:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
     });
@@ -182,7 +139,7 @@ router.get("/:id", authenticateUser, async (req, res) => {
     const { id } = req.params;
     const user = req.user;
 
-    console.log("🔍 Buscando pedido:", id, "usuário:", user.id);
+    logger.info("🔍 Buscando pedido:", id, "usuário:", user.id);
 
     let query = supabase
       .from("Order")
@@ -223,7 +180,7 @@ router.get("/:id", authenticateUser, async (req, res) => {
     const { data: order, error } = await query;
 
     if (error || !order) {
-      console.error("❌ Erro ao buscar pedido ou pedido não encontrado:", error);
+      logger.error("❌ Erro ao buscar pedido ou pedido não encontrado:", error);
       return res.status(404).json({
         success: false,
         error: "Pedido não encontrado",
@@ -277,14 +234,14 @@ router.get("/:id", authenticateUser, async (req, res) => {
       shippingAddress: order.shippingAddress ? JSON.parse(order.shippingAddress) : null,
     };
 
-    console.log("✅ Pedido encontrado:", order.id);
+    logger.info("✅ Pedido encontrado:", order.id);
 
     res.json({
       success: true,
       order: formattedOrder,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar pedido:", error);
+    logger.error("❌ Erro ao buscar pedido:", error);
     res.status(500).json({
       success: false,
       error: "Erro interno do servidor",
@@ -303,7 +260,7 @@ router.put("/:id/status", authenticateUser, async (req, res) => {
       return res.status(400).json({ error: "Status é obrigatório" });
     }
 
-    console.log("🔄 Atualizando status do pedido:", id, "para:", status);
+    logger.info("🔄 Atualizando status do pedido:", id, "para:", status);
 
     // Verificar se o pedido existe e se o usuário tem permissão
     const { data: existingOrder, error: fetchError } = await supabase
@@ -347,11 +304,11 @@ router.put("/:id/status", authenticateUser, async (req, res) => {
       .single();
 
     if (error) {
-      console.error("❌ Erro ao atualizar status:", error);
+      logger.error("❌ Erro ao atualizar status:", error);
       throw error;
     }
 
-    console.log("✅ Status do pedido atualizado:", id, existingOrder.currentStatus, "→", status);
+    logger.info("✅ Status do pedido atualizado:", id, existingOrder.currentStatus, "→", status);
 
     res.json({
       success: true,
@@ -359,7 +316,7 @@ router.put("/:id/status", authenticateUser, async (req, res) => {
       data: order,
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar status do pedido:", error);
+    logger.error("❌ Erro ao atualizar status do pedido:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,
@@ -396,7 +353,7 @@ router.put("/:id/tracking", authenticateUser, async (req, res) => {
       data: order,
     });
   } catch (error) {
-    console.error("Erro ao adicionar código de rastreamento:", error);
+    logger.error("Erro ao adicionar código de rastreamento:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
     });

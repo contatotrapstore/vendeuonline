@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -63,7 +65,7 @@ export default function BannersPage() {
       }
     } catch (err) {
       setError("Erro ao carregar banners");
-      console.error("Erro ao buscar banners:", err);
+      logger.error("Erro ao buscar banners:", err);
     } finally {
       setLoading(false);
     }

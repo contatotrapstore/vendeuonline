@@ -1,3 +1,5 @@
+import { logger } from "../lib/logger.js";
+
 #!/usr/bin/env node
 
 /**
@@ -20,7 +22,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  console.error("❌ Erro: Variáveis SUPABASE não configuradas no .env");
+  logger.error("❌ Erro: Variáveis SUPABASE não configuradas no .env");
   process.exit(1);
 }
 
@@ -48,19 +50,19 @@ function askConfirmation(question) {
  */
 async function clearTable(tableName) {
   try {
-    console.log(`🧹 Limpando tabela: ${tableName}...`);
+    logger.info(`🧹 Limpando tabela: ${tableName}...`);
 
     const { error } = await supabase.from(tableName).delete().neq("id", ""); // Deleta todos os registros
 
     if (error) {
-      console.error(`❌ Erro ao limpar ${tableName}:`, error.message);
+      logger.error(`❌ Erro ao limpar ${tableName}:`, error.message);
       return false;
     }
 
-    console.log(`✅ Tabela ${tableName} limpa com sucesso`);
+    logger.info(`✅ Tabela ${tableName} limpa com sucesso`);
     return true;
   } catch (error) {
-    console.error(`❌ Erro ao limpar ${tableName}:`, error.message);
+    logger.error(`❌ Erro ao limpar ${tableName}:`, error.message);
     return false;
   }
 }
@@ -73,13 +75,13 @@ async function countRecords(tableName) {
     const { count, error } = await supabase.from(tableName).select("*", { count: "exact", head: true });
 
     if (error) {
-      console.error(`❌ Erro ao contar ${tableName}:`, error.message);
+      logger.error(`❌ Erro ao contar ${tableName}:`, error.message);
       return 0;
     }
 
     return count || 0;
   } catch (error) {
-    console.error(`❌ Erro ao contar ${tableName}:`, error.message);
+    logger.error(`❌ Erro ao contar ${tableName}:`, error.message);
     return 0;
   }
 }
@@ -89,7 +91,7 @@ async function countRecords(tableName) {
  */
 async function createDefaultAdmin() {
   try {
-    console.log("🔧 Criando usuário admin padrão...");
+    logger.info("🔧 Criando usuário admin padrão...");
 
     const adminUser = {
       id: "admin-default-001",
@@ -105,14 +107,14 @@ async function createDefaultAdmin() {
     const { error } = await supabase.from("users").insert([adminUser]);
 
     if (error) {
-      console.error("❌ Erro ao criar admin:", error.message);
+      logger.error("❌ Erro ao criar admin:", error.message);
       return false;
     }
 
-    console.log("✅ Usuário admin criado: admin@vendeuonline.com");
+    logger.info("✅ Usuário admin criado: admin@vendeuonline.com");
     return true;
   } catch (error) {
-    console.error("❌ Erro ao criar admin:", error.message);
+    logger.error("❌ Erro ao criar admin:", error.message);
     return false;
   }
 }
@@ -121,14 +123,14 @@ async function createDefaultAdmin() {
  * Função principal
  */
 async function main() {
-  console.log("🗑️  LIMPEZA COMPLETA DO BANCO DE DADOS");
-  console.log("=====================================");
-  console.log("⚠️  ATENÇÃO: Esta operação irá DELETAR TODOS os dados!");
-  console.log("⚠️  Apenas a estrutura das tabelas será mantida.");
-  console.log("");
+  logger.info("🗑️  LIMPEZA COMPLETA DO BANCO DE DADOS");
+  logger.info("=====================================");
+  logger.info("⚠️  ATENÇÃO: Esta operação irá DELETAR TODOS os dados!");
+  logger.info("⚠️  Apenas a estrutura das tabelas será mantida.");
+  logger.info("");
 
   // Listar dados atuais
-  console.log("📊 Dados atuais no banco:");
+  logger.info("📊 Dados atuais no banco:");
 
   const tables = [
     "users",
@@ -153,16 +155,16 @@ async function main() {
   for (const table of tables) {
     const count = await countRecords(table);
     if (count > 0) {
-      console.log(`   ${table}: ${count} registros`);
+      logger.info(`   ${table}: ${count} registros`);
       totalRecords += count;
     }
   }
 
-  console.log(`\n📈 Total: ${totalRecords} registros no banco`);
-  console.log("");
+  logger.info(`\n📈 Total: ${totalRecords} registros no banco`);
+  logger.info("");
 
   if (totalRecords === 0) {
-    console.log("✅ Banco já está limpo! Nenhuma ação necessária.");
+    logger.info("✅ Banco já está limpo! Nenhuma ação necessária.");
     rl.close();
     return;
   }
@@ -171,12 +173,12 @@ async function main() {
   const confirmed = await askConfirmation('❓ Deseja REALMENTE limpar TODOS os dados? Digite "sim" para confirmar: ');
 
   if (!confirmed) {
-    console.log("⏹️  Operação cancelada pelo usuário.");
+    logger.info("⏹️  Operação cancelada pelo usuário.");
     rl.close();
     return;
   }
 
-  console.log("\n🚀 Iniciando limpeza...\n");
+  logger.info("\n🚀 Iniciando limpeza...\n");
 
   // Ordem de limpeza (respeitando foreign keys)
   const cleanupOrder = [
@@ -206,11 +208,11 @@ async function main() {
     if (success) successCount++;
   }
 
-  console.log("\n📊 RESULTADO DA LIMPEZA:");
-  console.log(`✅ ${successCount}/${cleanupOrder.length} tabelas limpas com sucesso`);
+  logger.info("\n📊 RESULTADO DA LIMPEZA:");
+  logger.info(`✅ ${successCount}/${cleanupOrder.length} tabelas limpas com sucesso`);
 
   if (successCount === cleanupOrder.length) {
-    console.log("🎉 Banco limpo completamente!");
+    logger.info("🎉 Banco limpo completamente!");
 
     // Pergunta se quer criar admin padrão
     const createAdmin = await askConfirmation("\n❓ Deseja criar um usuário admin padrão? (sim/não): ");
@@ -219,9 +221,9 @@ async function main() {
       await createDefaultAdmin();
     }
 
-    console.log("\n✅ Limpeza finalizada! Sistema pronto para novos dados.");
+    logger.info("\n✅ Limpeza finalizada! Sistema pronto para novos dados.");
   } else {
-    console.log("⚠️  Alguns erros ocorreram durante a limpeza. Verifique os logs acima.");
+    logger.info("⚠️  Alguns erros ocorreram durante a limpeza. Verifique os logs acima.");
   }
 
   rl.close();
@@ -229,7 +231,7 @@ async function main() {
 
 // Executar script
 main().catch((error) => {
-  console.error("❌ Erro fatal:", error);
+  logger.error("❌ Erro fatal:", error);
   rl.close();
   process.exit(1);
 });

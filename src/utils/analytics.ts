@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 // Declaração de tipos para gtag
 declare global {
   interface Window {
@@ -40,7 +42,7 @@ interface SearchEvent extends BaseEvent {
 // Inicializar Google Analytics
 export const initGA = () => {
   if (typeof window === "undefined" || !GA_MEASUREMENT_ID || GA_MEASUREMENT_ID === "G-XXXXXXXXXX") {
-    console.warn("Google Analytics não configurado ou executando no servidor");
+    logger.warn("Google Analytics não configurado ou executando no servidor");
     return;
   }
 
@@ -248,7 +250,7 @@ declare global {
 // Inicializar Meta Pixel
 export const initMetaPixel = (pixelId: string) => {
   if (typeof window === "undefined" || !pixelId) {
-    console.warn("Meta Pixel não configurado ou executando no servidor");
+    logger.warn("Meta Pixel não configurado ou executando no servidor");
     return;
   }
 
@@ -269,9 +271,9 @@ export const initMetaPixel = (pixelId: string) => {
     `;
     document.head.appendChild(script);
 
-    console.log("✅ Meta Pixel inicializado:", pixelId);
+    logger.info("✅ Meta Pixel inicializado:", pixelId);
   } catch (error) {
-    console.error("❌ Erro ao inicializar Meta Pixel:", error);
+    logger.error("❌ Erro ao inicializar Meta Pixel:", error);
   }
 };
 
@@ -281,9 +283,9 @@ export const trackMetaEvent = (event: string, parameters: any = {}) => {
 
   try {
     window.fbq("track", event, parameters);
-    console.log("📊 Meta Pixel evento:", event, parameters);
+    logger.info("📊 Meta Pixel evento:", event, parameters);
   } catch (error) {
-    console.error("❌ Erro no Meta Pixel:", error);
+    logger.error("❌ Erro no Meta Pixel:", error);
   }
 };
 
@@ -294,7 +296,7 @@ export const trackMetaEvent = (event: string, parameters: any = {}) => {
 // Inicializar TikTok Pixel
 export const initTikTokPixel = (pixelId: string) => {
   if (typeof window === "undefined" || !pixelId) {
-    console.warn("TikTok Pixel não configurado ou executando no servidor");
+    logger.warn("TikTok Pixel não configurado ou executando no servidor");
     return;
   }
 
@@ -309,9 +311,9 @@ export const initTikTokPixel = (pixelId: string) => {
     `;
     document.head.appendChild(script);
 
-    console.log("✅ TikTok Pixel inicializado:", pixelId);
+    logger.info("✅ TikTok Pixel inicializado:", pixelId);
   } catch (error) {
-    console.error("❌ Erro ao inicializar TikTok Pixel:", error);
+    logger.error("❌ Erro ao inicializar TikTok Pixel:", error);
   }
 };
 
@@ -321,9 +323,9 @@ export const trackTikTokEvent = (event: string, parameters: any = {}) => {
 
   try {
     window.ttq.track(event, parameters);
-    console.log("📊 TikTok Pixel evento:", event, parameters);
+    logger.info("📊 TikTok Pixel evento:", event, parameters);
   } catch (error) {
-    console.error("❌ Erro no TikTok Pixel:", error);
+    logger.error("❌ Erro no TikTok Pixel:", error);
   }
 };
 

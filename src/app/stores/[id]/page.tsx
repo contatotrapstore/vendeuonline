@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -51,7 +53,7 @@ export default function StorePage() {
       try {
         await fetchStoreById(params.id!);
       } catch (error) {
-        console.error("Erro ao carregar loja:", error);
+        logger.error("Erro ao carregar loja:", error);
       }
     };
 

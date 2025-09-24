@@ -1,63 +1,26 @@
 import express from "express";
+import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin } from "../middleware/auth.js";
 import { supabase } from "../lib/supabase-client.js";
 import jwt from "jsonwebtoken";
+import { logger } from "../lib/logger.js";
+
 
 const router = express.Router();
 
 // Middleware de autenticação
-const authenticate = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Token não fornecido" });
-    }
-
-    const token = authHeader.substring(7);
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error("❌ JWT_SECRET não está configurado no ambiente");
-      process.exit(1);
-    }
-    const decoded = jwt.verify(token, jwtSecret);
-
-    console.log("🔐 Autenticando usuário:", decoded.userId);
-
-    // Buscar dados atualizados do usuário
-    const { data: user, error } = await supabase.from("users").select("*").eq("id", decoded.userId).single();
-
-    if (error || !user) {
-      console.error("❌ Erro ao buscar usuário:", error);
-      return res.status(401).json({ error: "Usuário não encontrado" });
-    }
-
-    console.log("✅ Usuário autenticado:", user.email);
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("❌ Erro na autenticação:", error);
-
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({ error: "Token expirado" });
-    }
-    if (error.name === "JsonWebTokenError") {
-      return res.status(401).json({ error: "Token inválido" });
-    }
-
-    res.status(401).json({ error: "Token inválido" });
-  }
-};
+// Middleware removido - usando middleware centralizado
 
 // GET /api/account/profile - Buscar perfil do usuário
 router.get("/profile", authenticate, async (req, res) => {
   try {
     const user = req.user;
-    console.log("👤 Buscando perfil para usuário:", user.email);
+    logger.info("👤 Buscando perfil para usuário:", user.email);
 
     // Buscar dados adicionais baseados no tipo de usuário
     let additionalData = {};
 
     if (user.type === "SELLER") {
-      console.log("🏪 Buscando dados do vendedor...");
+      logger.info("🏪 Buscando dados do vendedor...");
       const { data: seller, error: sellerError } = await supabase
         .from("sellers")
         .select(`*`)
@@ -65,13 +28,13 @@ router.get("/profile", authenticate, async (req, res) => {
         .single();
 
       if (sellerError) {
-        console.error("❌ Erro ao buscar dados do vendedor:", sellerError);
+        logger.error("❌ Erro ao buscar dados do vendedor:", sellerError);
       } else if (seller) {
-        console.log("✅ Dados do vendedor encontrados:", seller.storeName);
+        logger.info("✅ Dados do vendedor encontrados:", seller.storeName);
         additionalData.seller = seller;
       }
     } else if (user.type === "BUYER") {
-      console.log("🛒 Buscando dados do comprador...");
+      logger.info("🛒 Buscando dados do comprador...");
       const { data: buyer, error: buyerError } = await supabase
         .from("buyers")
         .select("*")
@@ -79,9 +42,9 @@ router.get("/profile", authenticate, async (req, res) => {
         .single();
 
       if (buyerError) {
-        console.error("❌ Erro ao buscar dados do comprador:", buyerError);
+        logger.error("❌ Erro ao buscar dados do comprador:", buyerError);
       } else if (buyer) {
-        console.log("✅ Dados do comprador encontrados");
+        logger.info("✅ Dados do comprador encontrados");
         additionalData.buyer = buyer;
       }
     }
@@ -109,14 +72,14 @@ router.get("/profile", authenticate, async (req, res) => {
       ...additionalData,
     };
 
-    console.log("✅ Perfil montado com sucesso");
+    logger.info("✅ Perfil montado com sucesso");
 
     res.json({
       success: true,
       profile,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar perfil:", error);
+    logger.error("❌ Erro ao buscar perfil:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,
@@ -154,7 +117,7 @@ router.put("/profile", authenticate, async (req, res) => {
       .single();
 
     if (userError) {
-      console.error("Erro ao atualizar usuário:", userError);
+      logger.error("Erro ao atualizar usuário:", userError);
       throw userError;
     }
 
@@ -164,7 +127,7 @@ router.put("/profile", authenticate, async (req, res) => {
       profile: updatedUser,
     });
   } catch (error) {
-    console.error("Erro ao atualizar perfil:", error);
+    logger.error("Erro ao atualizar perfil:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
     });
@@ -199,7 +162,7 @@ router.get("/sellers/subscription", authenticate, async (req, res) => {
       .single();
 
     if (error) {
-      console.error("Erro ao buscar vendedor:", error);
+      logger.error("Erro ao buscar vendedor:", error);
       throw error;
     }
 
@@ -239,7 +202,7 @@ router.get("/sellers/subscription", authenticate, async (req, res) => {
       subscription,
     });
   } catch (error) {
-    console.error("Erro ao buscar assinatura:", error);
+    logger.error("Erro ao buscar assinatura:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
     });
@@ -320,7 +283,7 @@ router.post("/sellers/upgrade", authenticate, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Erro ao fazer upgrade:", error);
+    logger.error("Erro ao fazer upgrade:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
     });

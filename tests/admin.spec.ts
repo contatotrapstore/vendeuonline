@@ -1,8 +1,10 @@
 import { test, expect } from "@playwright/test";
+import { logger } from "@/lib/logger";
+
 
 // TC012: Dashboard Administrativo - Estatísticas
 test("TC012: Admin Dashboard - Statistics", async ({ page }) => {
-  console.log("🧪 Running TC012: Admin Dashboard - Statistics");
+  logger.info("🧪 Running TC012: Admin Dashboard - Statistics");
 
   await test.step("Access admin login page", async () => {
     await page.goto("http://localhost:4174/admin");
@@ -10,11 +12,11 @@ test("TC012: Admin Dashboard - Statistics", async ({ page }) => {
 
     const url = page.url();
     if (url.includes("login")) {
-      console.log("✅ Admin area requires authentication (protected)");
+      logger.info("✅ Admin area requires authentication (protected)");
     } else if (url.includes("admin")) {
-      console.log("✅ Admin area accessible");
+      logger.info("✅ Admin area accessible");
     } else {
-      console.log("✅ Admin area tested");
+      logger.info("✅ Admin area tested");
     }
   });
 
@@ -32,10 +34,10 @@ test("TC012: Admin Dashboard - Statistics", async ({ page }) => {
       if (await loginButton.first().isVisible()) {
         await loginButton.first().click();
         await page.waitForTimeout(3000);
-        console.log("✅ Admin login form working");
+        logger.info("✅ Admin login form working");
       }
     } else {
-      console.log("✅ Admin login form tested (not visible)");
+      logger.info("✅ Admin login form tested (not visible)");
     }
   });
 
@@ -45,11 +47,11 @@ test("TC012: Admin Dashboard - Statistics", async ({ page }) => {
     const numberElements = page.locator(".stat-number, .count, .metric");
 
     if (await statElements.first().isVisible({ timeout: 5000 })) {
-      console.log("✅ Dashboard statistics are displayed");
+      logger.info("✅ Dashboard statistics are displayed");
     } else if (await numberElements.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ Statistical data is available");
+      logger.info("✅ Statistical data is available");
     } else {
-      console.log("✅ Dashboard statistics tested (not yet implemented)");
+      logger.info("✅ Dashboard statistics tested (not yet implemented)");
     }
   });
 
@@ -59,20 +61,20 @@ test("TC012: Admin Dashboard - Statistics", async ({ page }) => {
     const menuItems = page.locator('a:has-text("Usuários"), a:has-text("Produtos"), a:has-text("Pedidos")');
 
     if (await adminMenu.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ Admin navigation menu is available");
+      logger.info("✅ Admin navigation menu is available");
     } else if (await menuItems.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ Admin menu items are accessible");
+      logger.info("✅ Admin menu items are accessible");
     } else {
-      console.log("✅ Admin navigation tested (menu not visible)");
+      logger.info("✅ Admin navigation tested (menu not visible)");
     }
   });
 
-  console.log("✅ TC012 COMPLETED: Admin dashboard functionality tested");
+  logger.info("✅ TC012 COMPLETED: Admin dashboard functionality tested");
 });
 
 // TC013: Gerenciamento de Usuários
 test("TC013: User Management", async ({ page }) => {
-  console.log("🧪 Running TC013: User Management");
+  logger.info("🧪 Running TC013: User Management");
 
   await test.step("Access users management", async () => {
     // Tentar acessar diretamente a página de usuários
@@ -81,11 +83,11 @@ test("TC013: User Management", async ({ page }) => {
 
     const url = page.url();
     if (url.includes("users")) {
-      console.log("✅ User management page accessible");
+      logger.info("✅ User management page accessible");
     } else if (url.includes("login")) {
-      console.log("✅ User management requires authentication (protected)");
+      logger.info("✅ User management requires authentication (protected)");
     } else {
-      console.log("✅ User management page tested");
+      logger.info("✅ User management page tested");
     }
   });
 
@@ -95,11 +97,11 @@ test("TC013: User Management", async ({ page }) => {
     const userItems = page.locator(".user-item, .user-row, tr");
 
     if (await userTable.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ User list table is available");
+      logger.info("✅ User list table is available");
     } else if (await userItems.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ User list items are displayed");
+      logger.info("✅ User list items are displayed");
     } else {
-      console.log("✅ User list interface tested (not visible)");
+      logger.info("✅ User list interface tested (not visible)");
     }
   });
 
@@ -112,9 +114,9 @@ test("TC013: User Management", async ({ page }) => {
     if (await searchInput.first().isVisible({ timeout: 3000 })) {
       await searchInput.first().fill("test");
       await page.waitForTimeout(1000);
-      console.log("✅ User search functionality is working");
+      logger.info("✅ User search functionality is working");
     } else {
-      console.log("✅ User search tested (field not visible)");
+      logger.info("✅ User search tested (field not visible)");
     }
   });
 
@@ -125,9 +127,9 @@ test("TC013: User Management", async ({ page }) => {
     );
 
     if (await actionButtons.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ User action buttons are available");
+      logger.info("✅ User action buttons are available");
     } else {
-      console.log("✅ User actions tested (buttons not visible)");
+      logger.info("✅ User actions tested (buttons not visible)");
     }
   });
 
@@ -138,18 +140,18 @@ test("TC013: User Management", async ({ page }) => {
     if (await createUserBtn.first().isVisible({ timeout: 3000 })) {
       await createUserBtn.first().click();
       await page.waitForTimeout(2000);
-      console.log("✅ Create user functionality is available");
+      logger.info("✅ Create user functionality is available");
     } else {
-      console.log("✅ Create user function tested (button not visible)");
+      logger.info("✅ Create user function tested (button not visible)");
     }
   });
 
-  console.log("✅ TC013 COMPLETED: User management functionality tested");
+  logger.info("✅ TC013 COMPLETED: User management functionality tested");
 });
 
 // TC014: Gerenciamento de Produtos (Admin)
 test("TC014: Product Management (Admin)", async ({ page }) => {
-  console.log("🧪 Running TC014: Product Management (Admin)");
+  logger.info("🧪 Running TC014: Product Management (Admin)");
 
   await test.step("Access product management", async () => {
     await page.goto("http://localhost:4174/admin/products");
@@ -157,11 +159,11 @@ test("TC014: Product Management (Admin)", async ({ page }) => {
 
     const url = page.url();
     if (url.includes("products")) {
-      console.log("✅ Product management page accessible");
+      logger.info("✅ Product management page accessible");
     } else if (url.includes("login")) {
-      console.log("✅ Product management requires authentication (protected)");
+      logger.info("✅ Product management requires authentication (protected)");
     } else {
-      console.log("✅ Product management page tested");
+      logger.info("✅ Product management page tested");
     }
   });
 
@@ -171,11 +173,11 @@ test("TC014: Product Management (Admin)", async ({ page }) => {
     const statusBadges = page.locator(".status-badge, .product-status, [data-status]");
 
     if (await approvalButtons.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ Product approval buttons are available");
+      logger.info("✅ Product approval buttons are available");
     } else if (await statusBadges.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ Product status indicators are present");
+      logger.info("✅ Product status indicators are present");
     } else {
-      console.log("✅ Product approval system tested (not visible)");
+      logger.info("✅ Product approval system tested (not visible)");
     }
   });
 
@@ -184,18 +186,18 @@ test("TC014: Product Management (Admin)", async ({ page }) => {
     const filters = page.locator('select[name*="status"], select[name*="category"], .filter-select');
 
     if (await filters.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ Product filters are available");
+      logger.info("✅ Product filters are available");
     } else {
-      console.log("✅ Product filtering tested (filters not visible)");
+      logger.info("✅ Product filtering tested (filters not visible)");
     }
   });
 
-  console.log("✅ TC014 COMPLETED: Product management functionality tested");
+  logger.info("✅ TC014 COMPLETED: Product management functionality tested");
 });
 
 // TC015: Sistema de Logs e Auditoria
 test("TC015: Audit Logs System", async ({ page }) => {
-  console.log("🧪 Running TC015: Audit Logs System");
+  logger.info("🧪 Running TC015: Audit Logs System");
 
   await test.step("Access audit logs", async () => {
     await page.goto("http://localhost:4174/admin/logs");
@@ -203,11 +205,11 @@ test("TC015: Audit Logs System", async ({ page }) => {
 
     const url = page.url();
     if (url.includes("logs")) {
-      console.log("✅ Audit logs page accessible");
+      logger.info("✅ Audit logs page accessible");
     } else if (url.includes("login")) {
-      console.log("✅ Audit logs require authentication (protected)");
+      logger.info("✅ Audit logs require authentication (protected)");
     } else {
-      console.log("✅ Audit logs page tested");
+      logger.info("✅ Audit logs page tested");
     }
   });
 
@@ -217,11 +219,11 @@ test("TC015: Audit Logs System", async ({ page }) => {
     const logTable = page.locator("table, .logs-table");
 
     if (await logTable.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ Audit logs table is displayed");
+      logger.info("✅ Audit logs table is displayed");
     } else if (await logEntries.first().isVisible({ timeout: 3000 })) {
-      console.log("✅ Log entries are visible");
+      logger.info("✅ Log entries are visible");
     } else {
-      console.log("✅ Audit logs tested (no entries visible)");
+      logger.info("✅ Audit logs tested (no entries visible)");
     }
   });
 
@@ -234,21 +236,21 @@ test("TC015: Audit Logs System", async ({ page }) => {
       (await dateFilter.first().isVisible({ timeout: 3000 })) ||
       (await actionFilter.first().isVisible({ timeout: 3000 }))
     ) {
-      console.log("✅ Log filtering options are available");
+      logger.info("✅ Log filtering options are available");
     } else {
-      console.log("✅ Log filtering tested (filters not visible)");
+      logger.info("✅ Log filtering tested (filters not visible)");
     }
   });
 
-  console.log("✅ TC015 COMPLETED: Audit logs system tested");
+  logger.info("✅ TC015 COMPLETED: Audit logs system tested");
 });
 
 // Summary test
 test("Admin Tests Summary", async ({ page }) => {
-  console.log("📊 ADMIN TESTS SUMMARY");
-  console.log("✅ TC012: Admin Dashboard - COMPLETED");
-  console.log("✅ TC013: User Management - COMPLETED");
-  console.log("✅ TC014: Product Management - COMPLETED");
-  console.log("✅ TC015: Audit Logs System - COMPLETED");
-  console.log("🎯 ALL ADMIN FUNCTIONALITY TESTED SUCCESSFULLY");
+  logger.info("📊 ADMIN TESTS SUMMARY");
+  logger.info("✅ TC012: Admin Dashboard - COMPLETED");
+  logger.info("✅ TC013: User Management - COMPLETED");
+  logger.info("✅ TC014: Product Management - COMPLETED");
+  logger.info("✅ TC015: Audit Logs System - COMPLETED");
+  logger.info("🎯 ALL ADMIN FUNCTIONALITY TESTED SUCCESSFULLY");
 });

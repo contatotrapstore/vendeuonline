@@ -1,29 +1,31 @@
 import { test, expect, chromium } from "@playwright/test";
+import { logger } from "@/lib/logger";
+
 
 // TC020: Performance and Responsiveness Testing
 test("TC020: Performance and Responsiveness Testing", async () => {
-  console.log("🧪 Running TC020: Performance and Responsiveness Testing");
+  logger.info("🧪 Running TC020: Performance and Responsiveness Testing");
 
   const browser = await chromium.launch();
   const context = await browser.newContext();
   const page = await context.newPage();
 
   await test.step("Test homepage performance", async () => {
-    console.log("Testing homepage performance...");
+    logger.info("Testing homepage performance...");
 
     const startTime = Date.now();
     await page.goto("http://localhost:4174");
     await page.waitForLoadState("networkidle");
     const loadTime = Date.now() - startTime;
 
-    console.log(`Homepage load time: ${loadTime}ms`);
+    logger.info(`Homepage load time: ${loadTime}ms`);
 
     // Check if load time is reasonable (under 3 seconds)
     expect(loadTime).toBeLessThan(3000);
   });
 
   await test.step("Test mobile responsiveness", async () => {
-    console.log("Testing mobile responsiveness...");
+    logger.info("Testing mobile responsiveness...");
 
     // Test different viewport sizes
     const viewports = [
@@ -40,13 +42,13 @@ test("TC020: Performance and Responsiveness Testing", async () => {
       const body = await page.locator("body");
       const isVisible = await body.isVisible();
 
-      console.log(`${viewport.name} (${viewport.width}x${viewport.height}): ${isVisible ? "OK" : "FAIL"}`);
+      logger.info(`${viewport.name} (${viewport.width}x${viewport.height}): ${isVisible ? "OK" : "FAIL"}`);
       expect(isVisible).toBeTruthy();
     }
   });
 
   await test.step("Test critical page load times", async () => {
-    console.log("Testing critical page load times...");
+    logger.info("Testing critical page load times...");
 
     const criticalPages = ["/", "/login", "/register", "/products", "/about"];
 
@@ -58,18 +60,18 @@ test("TC020: Performance and Responsiveness Testing", async () => {
         await page.waitForLoadState("domcontentloaded");
         const loadTime = Date.now() - startTime;
 
-        console.log(`${pagePath}: ${loadTime}ms`);
+        logger.info(`${pagePath}: ${loadTime}ms`);
 
         // Each page should load under 2 seconds
         expect(loadTime).toBeLessThan(2000);
       } catch (error) {
-        console.log(`${pagePath}: Error - ${error}`);
+        logger.info(`${pagePath}: Error - ${error}`);
       }
     }
   });
 
   await test.step("Test resource loading", async () => {
-    console.log("Testing resource loading...");
+    logger.info("Testing resource loading...");
 
     await page.goto("http://localhost:4174");
 
@@ -80,8 +82,8 @@ test("TC020: Performance and Responsiveness Testing", async () => {
     const scripts = await page.locator("script[src]").count();
     const stylesheets = await page.locator('link[rel="stylesheet"]').count();
 
-    console.log(`Scripts loaded: ${scripts}`);
-    console.log(`Stylesheets loaded: ${stylesheets}`);
+    logger.info(`Scripts loaded: ${scripts}`);
+    logger.info(`Stylesheets loaded: ${stylesheets}`);
 
     // Should have at least some resources loaded
     expect(scripts + stylesheets).toBeGreaterThan(0);
@@ -89,5 +91,5 @@ test("TC020: Performance and Responsiveness Testing", async () => {
 
   await browser.close();
 
-  console.log("✅ TC020 COMPLETED: Performance and responsiveness testing done");
+  logger.info("✅ TC020 COMPLETED: Performance and responsiveness testing done");
 });

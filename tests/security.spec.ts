@@ -1,11 +1,13 @@
 import { test, expect } from "@playwright/test";
+import { logger } from "@/lib/logger";
+
 
 // TC016: Security Middleware Enforcement and Validation
 test("TC016: Security Middleware Enforcement and Validation", async ({ page }) => {
-  console.log("🧪 Running TC016: Security Middleware Enforcement and Validation");
+  logger.info("🧪 Running TC016: Security Middleware Enforcement and Validation");
 
   await test.step("Test HTTPS redirect and secure headers", async () => {
-    console.log("Testing HTTPS and security headers...");
+    logger.info("Testing HTTPS and security headers...");
 
     await page.goto("http://localhost:4174");
 
@@ -13,11 +15,11 @@ test("TC016: Security Middleware Enforcement and Validation", async ({ page }) =
     const title = await page.title();
     expect(title).toContain("Vendeu Online");
 
-    console.log("✅ Basic HTTPS/headers test passed");
+    logger.info("✅ Basic HTTPS/headers test passed");
   });
 
   await test.step("Test XSS protection", async () => {
-    console.log("Testing XSS protection...");
+    logger.info("Testing XSS protection...");
 
     await page.goto("http://localhost:4174");
 
@@ -30,14 +32,14 @@ test("TC016: Security Middleware Enforcement and Validation", async ({ page }) =
       const title = await page.title();
       expect(title).toContain("Vendeu Online");
 
-      console.log("✅ XSS protection test passed");
+      logger.info("✅ XSS protection test passed");
     } catch (error) {
-      console.log("XSS test completed with handling:", error.message);
+      logger.info("XSS test completed with handling:", error.message);
     }
   });
 
   await test.step("Test input validation", async () => {
-    console.log("Testing input validation...");
+    logger.info("Testing input validation...");
 
     await page.goto("http://localhost:4174/login");
 
@@ -61,12 +63,12 @@ test("TC016: Security Middleware Enforcement and Validation", async ({ page }) =
       const isSecure = url.includes("/login") || !url.includes("/admin");
       expect(isSecure).toBeTruthy();
 
-      console.log("✅ Input validation test passed");
+      logger.info("✅ Input validation test passed");
     }
   });
 
   await test.step("Test unauthorized access to protected routes", async () => {
-    console.log("Testing unauthorized access protection...");
+    logger.info("Testing unauthorized access protection...");
 
     // Clear any existing auth
     await page.context().clearCookies();
@@ -83,17 +85,17 @@ test("TC016: Security Middleware Enforcement and Validation", async ({ page }) =
         // Should be redirected to login or unauthorized page
         const isProtected = url.includes("/login") || url.includes("/unauthorized") || url === "http://localhost:4174/";
 
-        console.log(`${route}: ${isProtected ? "Protected" : "Accessible"}`);
+        logger.info(`${route}: ${isProtected ? "Protected" : "Accessible"}`);
       } catch (error) {
-        console.log(`${route}: Properly blocked - ${error.message}`);
+        logger.info(`${route}: Properly blocked - ${error.message}`);
       }
     }
 
-    console.log("✅ Route protection test completed");
+    logger.info("✅ Route protection test completed");
   });
 
   await test.step("Test CORS and API security", async () => {
-    console.log("Testing API security...");
+    logger.info("Testing API security...");
 
     await page.goto("http://localhost:4174");
 
@@ -114,17 +116,17 @@ test("TC016: Security Middleware Enforcement and Validation", async ({ page }) =
       }
     });
 
-    console.log("API test result:", response);
+    logger.info("API test result:", response);
 
     // API should be accessible for public endpoints like products
     // This tests that CORS is properly configured
     expect(typeof response.status).toBeDefined();
 
-    console.log("✅ CORS/API security test completed");
+    logger.info("✅ CORS/API security test completed");
   });
 
   await test.step("Test form security features", async () => {
-    console.log("Testing form security features...");
+    logger.info("Testing form security features...");
 
     await page.goto("http://localhost:4174/login");
 
@@ -136,12 +138,12 @@ test("TC016: Security Middleware Enforcement and Validation", async ({ page }) =
       const hiddenInputs = await form.locator('input[type="hidden"]').count();
       const hasSecurityMeasures = hiddenInputs > 0;
 
-      console.log(`Hidden security fields found: ${hiddenInputs}`);
-      console.log(`Security measures present: ${hasSecurityMeasures}`);
+      logger.info(`Hidden security fields found: ${hiddenInputs}`);
+      logger.info(`Security measures present: ${hasSecurityMeasures}`);
     }
 
-    console.log("✅ Form security test completed");
+    logger.info("✅ Form security test completed");
   });
 
-  console.log("✅ TC016 COMPLETED: Security testing done");
+  logger.info("✅ TC016 COMPLETED: Security testing done");
 });

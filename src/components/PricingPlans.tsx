@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -84,7 +86,7 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
         toast.error("Erro ao carregar planos");
       }
     } catch (error) {
-      console.error("Erro ao buscar planos:", error);
+      logger.error("Erro ao buscar planos:", error);
       toast.error("Erro ao carregar planos");
     } finally {
       setLoading(false);
@@ -123,7 +125,7 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
         toast.error(data.error || "Erro ao assinar plano");
       }
     } catch (error) {
-      console.error("Erro ao assinar plano:", error);
+      logger.error("Erro ao assinar plano:", error);
       toast.error("Erro ao assinar plano");
     } finally {
       setSubscribing(null);

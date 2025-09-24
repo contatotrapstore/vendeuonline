@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -112,7 +114,7 @@ export default function BuyerSettings() {
         });
       }
     } catch (error) {
-      console.error("Error loading settings:", error);
+      logger.error("Error loading settings:", error);
     } finally {
       setIsLoading(false);
     }
@@ -151,7 +153,7 @@ export default function BuyerSettings() {
         alert(error.message || "Erro ao alterar senha");
       }
     } catch (error) {
-      console.error("Error changing password:", error);
+      logger.error("Error changing password:", error);
       alert("Erro ao alterar senha");
     } finally {
       setIsLoading(false);
@@ -181,7 +183,7 @@ export default function BuyerSettings() {
         alert("Configurações de notificação salvas!");
       }
     } catch (error) {
-      console.error("Error saving notifications:", error);
+      logger.error("Error saving notifications:", error);
       alert("Erro ao salvar configurações");
     } finally {
       setIsLoading(false);
@@ -208,7 +210,7 @@ export default function BuyerSettings() {
         alert("Configurações de privacidade salvas!");
       }
     } catch (error) {
-      console.error("Error saving privacy:", error);
+      logger.error("Error saving privacy:", error);
       alert("Erro ao salvar configurações");
     } finally {
       setIsLoading(false);
@@ -244,7 +246,7 @@ export default function BuyerSettings() {
         alert("Erro ao excluir conta");
       }
     } catch (error) {
-      console.error("Error deleting account:", error);
+      logger.error("Error deleting account:", error);
       alert("Erro ao excluir conta");
     } finally {
       setIsLoading(false);

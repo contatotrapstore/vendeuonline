@@ -28,6 +28,8 @@ node scripts/clear-database.js
 
 ### ✅ **2. CONFIGURAÇÃO DO AMBIENTE**
 
+⚠️ **IMPORTANTE**: Nunca commitar credenciais reais. Use placeholders na documentação.
+
 **Variáveis obrigatórias para produção:**
 
 ```env
@@ -41,7 +43,7 @@ SUPABASE_SERVICE_ROLE_KEY="eyJhbGciOi..."
 JWT_SECRET="[GERAR NOVA CHAVE FORTE]"
 
 # ===== PAGAMENTOS (CRÍTICO) =====
-ASAAS_API_KEY="$aact_prod_xxx"  # OBRIGATÓRIO para produção
+ASAAS_API_KEY="$aact_prod_YOUR_ASAAS_KEY_HERE"  # OBRIGATÓRIO para produção
 ASAAS_BASE_URL="https://api.asaas.com/v3"
 ASAAS_WEBHOOK_TOKEN="[TOKEN_SEGURO]"
 ASAAS_WEBHOOK_URL="https://seudominio.com/api/payments/webhook"

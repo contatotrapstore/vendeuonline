@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -69,7 +71,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlanId, showPayment
 
       setPlans(response.data || response.plans || response);
     } catch (error) {
-      console.error("Erro ao buscar planos:", error);
+      logger.error("Erro ao buscar planos:", error);
       toast.error("Erro ao carregar planos");
     } finally {
       setLoading(false);
@@ -126,7 +128,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlanId, showPayment
         toast.error(response.error || "Erro ao processar pagamento");
       }
     } catch (error) {
-      console.error("Erro ao processar pagamento:", error);
+      logger.error("Erro ao processar pagamento:", error);
       toast.error("Erro ao processar pagamento");
     } finally {
       setProcessingPayment(false);
@@ -438,7 +440,7 @@ export default function PlanSelector({ onPlanSelect, selectedPlanId, showPayment
                       className="w-48 h-48"
                       style={{ imageRendering: "pixelated" }}
                       onError={(e) => {
-                        console.error("Erro ao carregar QR Code:", e);
+                        logger.error("Erro ao carregar QR Code:", e);
                       }}
                     />
                   </div>

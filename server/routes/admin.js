@@ -1,53 +1,13 @@
 import { Router } from "express";
-import jwt from "jsonwebtoken";
+import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin } from "../middleware/auth.js";
 import { supabase, supabaseAdmin } from "../lib/supabase-client.js";
 import { securityHeaders, adminRateLimit, protectRoute, validateInput, sanitizeInput } from "../middleware/security.js";
+import { logger } from "../lib/logger.js";
+
 
 const router = Router();
 
-// JWT Secret
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
-
-// Middleware de autenticação admin
-const authenticateAdmin = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Token de autenticação necessário" });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    // Buscar usuário real do Supabase
-    const { data: user, error } = await supabase.from("users").select("*").eq("id", decoded.userId).single();
-
-    if (error || !user) {
-      return res.status(401).json({ error: "Usuário não encontrado" });
-    }
-
-    // Verificar se é admin
-    if (user.type !== "ADMIN") {
-      return res.status(403).json({ error: "Acesso negado. Apenas administradores." });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("❌ Erro na autenticação admin:", error);
-
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({ error: "Token expirado" });
-    }
-    if (error.name === "JsonWebTokenError") {
-      return res.status(401).json({ error: "Token inválido" });
-    }
-
-    return res.status(401).json({ error: "Falha na autenticação" });
-  }
-};
+// Middleware removido - usando middleware centralizado
 
 // Middleware para todas as rotas admin
 // PRODUÇÃO: Aplicar autenticação em todas as rotas
@@ -58,17 +18,17 @@ router.use(authenticateAdmin);
 // ==== DASHBOARD STATS ====
 router.get("/stats", async (req, res) => {
   try {
-    console.log("📊 Admin stats endpoint called");
+    logger.info("📊 Admin stats endpoint called");
 
     try {
       // Buscar dados reais do Supabase para usuários
-      console.log("📊 Buscando dados reais do Supabase...");
+      logger.info("📊 Buscando dados reais do Supabase...");
 
       // Query para contagem de usuários por tipo
       const { data: usersData, error: usersError } = await supabase.from("users").select("type");
 
       if (usersError) {
-        console.warn("⚠️ Erro ao buscar usuários do Supabase, usando dados simulados:", usersError.message);
+        logger.warn("⚠️ Erro ao buscar usuários do Supabase, usando dados simulados:", usersError.message);
         // Fallback para dados simulados
         const stats = {
           totalUsers: 28,
@@ -89,7 +49,7 @@ router.get("/stats", async (req, res) => {
           conversionRate: 18,
         };
 
-        console.log("✅ Admin stats retornadas (fallback simulado):", stats);
+        logger.info("✅ Admin stats retornadas (fallback simulado):", stats);
         return res.json({ success: true, data: stats });
       }
 
@@ -119,10 +79,10 @@ router.get("/stats", async (req, res) => {
         conversionRate: totalUsers > 0 ? Math.round((sellersCount / totalUsers) * 100) : 0,
       };
 
-      console.log("✅ Admin stats retrieved successfully (híbrido real/simulado):", stats);
+      logger.info("✅ Admin stats retrieved successfully (híbrido real/simulado):", stats);
       res.json({ success: true, data: stats });
     } catch (supabaseError) {
-      console.error("❌ Erro no Supabase:", supabaseError);
+      logger.error("❌ Erro no Supabase:", supabaseError);
 
       // Fallback completo para dados simulados
       const stats = {
@@ -144,11 +104,11 @@ router.get("/stats", async (req, res) => {
         conversionRate: 18,
       };
 
-      console.log("✅ Admin stats retornadas (fallback completo):", stats);
+      logger.info("✅ Admin stats retornadas (fallback completo):", stats);
       res.json({ success: true, data: stats });
     }
   } catch (error) {
-    console.error("❌ Erro fatal ao buscar estatísticas admin:", error);
+    logger.error("❌ Erro fatal ao buscar estatísticas admin:", error);
     res.status(500).json({
       success: false,
       error: "Erro interno do servidor",
@@ -162,10 +122,10 @@ router.get("/users", async (req, res) => {
   try {
     const { page = 1, limit = 10, type, search } = req.query;
 
-    console.log("👥 GET /api/admin/users - Buscando usuários...");
+    logger.info("👥 GET /api/admin/users - Buscando usuários...");
 
     // Buscar dados reais do Supabase
-    console.log("🔍 Buscando usuários do Supabase com filtros:", { search, type, page, limit });
+    logger.info("🔍 Buscando usuários do Supabase com filtros:", { search, type, page, limit });
 
     let query = supabase
       .from("users")
@@ -186,7 +146,7 @@ router.get("/users", async (req, res) => {
       .select("*", { count: "exact", head: true });
 
     if (countError) {
-      console.error("❌ Erro ao contar usuários:", countError);
+      logger.error("❌ Erro ao contar usuários:", countError);
       throw countError;
     }
 
@@ -197,7 +157,7 @@ router.get("/users", async (req, res) => {
     const { data: userData, error: userError } = await query;
 
     if (userError) {
-      console.error("❌ Erro ao buscar usuários:", userError);
+      logger.error("❌ Erro ao buscar usuários:", userError);
       throw userError;
     }
 
@@ -223,7 +183,7 @@ router.get("/users", async (req, res) => {
       storeCount: user.type === "seller" ? 1 : undefined,
     }));
 
-    console.log(`✅ ${users.length}/${total} usuários retornados do Supabase`);
+    logger.info(`✅ ${users.length}/${total} usuários retornados do Supabase`);
 
     res.json({
       success: true,
@@ -236,7 +196,7 @@ router.get("/users", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar usuários:", error);
+    logger.error("❌ Erro ao buscar usuários:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao conectar com banco de dados. Verifique a configuração do Supabase.",
@@ -252,7 +212,7 @@ router.get("/stores", async (req, res) => {
   try {
     const { page = 1, limit = 10, status, search } = req.query;
 
-    console.log("🏪 GET /api/admin/stores - Buscando lojas REAIS do Supabase...");
+    logger.info("🏪 GET /api/admin/stores - Buscando lojas REAIS do Supabase...");
 
     // Query base para buscar stores com dados do seller, reviews e products
     let query = supabase.from("stores").select(`
@@ -303,7 +263,7 @@ router.get("/stores", async (req, res) => {
     const { data: stores, error, count } = await query;
 
     if (error) {
-      console.error("❌ Erro ao buscar stores:", error);
+      logger.error("❌ Erro ao buscar stores:", error);
       throw new Error(`Erro na consulta: ${error.message}`);
     }
 
@@ -336,7 +296,7 @@ router.get("/stores", async (req, res) => {
     // Calcular total de lojas
     const total = transformedStores.length;
 
-    console.log(`✅ ${transformedStores.length} lojas retornadas do Supabase REAL`);
+    logger.info(`✅ ${transformedStores.length} lojas retornadas do Supabase REAL`);
 
     res.json({
       success: true,
@@ -349,7 +309,7 @@ router.get("/stores", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar lojas:", error);
+    logger.error("❌ Erro ao buscar lojas:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao conectar com banco de dados. Verifique a configuração do Supabase.",
@@ -365,7 +325,7 @@ router.get("/products", async (req, res) => {
   try {
     const { page = 1, limit = 10, status, category, search } = req.query;
 
-    console.log("📦 GET /api/admin/products - Buscando produtos REAIS do Supabase...");
+    logger.info("📦 GET /api/admin/products - Buscando produtos REAIS do Supabase...");
 
     // Query base para buscar produtos com joins de stores e sellers
     let query = supabase.from("products").select(`
@@ -420,7 +380,7 @@ router.get("/products", async (req, res) => {
     const { data: products, error } = await query;
 
     if (error) {
-      console.error("❌ Erro ao buscar products:", error);
+      logger.error("❌ Erro ao buscar products:", error);
       throw new Error(`Erro na consulta: ${error.message}`);
     }
 
@@ -441,7 +401,7 @@ router.get("/products", async (req, res) => {
             return acc;
           }, {}) || {};
       } catch (error) {
-        console.log(`⚠️ Could not read reviews (RLS policy):`, error.message);
+        logger.info(`⚠️ Could not read reviews (RLS policy):`, error.message);
         // Fallback to existing data - in production, proper RLS policies would be configured
       }
     }
@@ -462,7 +422,7 @@ router.get("/products", async (req, res) => {
             return acc;
           }, {}) || {};
       } catch (error) {
-        console.log(`⚠️ Could not read OrderItem (RLS policy):`, error.message);
+        logger.info(`⚠️ Could not read OrderItem (RLS policy):`, error.message);
         // Fallback to existing salesCount from product data
       }
     }
@@ -497,7 +457,7 @@ router.get("/products", async (req, res) => {
     const paginatedProducts = transformedProducts.slice(paginationOffset, paginationOffset + parseInt(limit));
     const total = transformedProducts.length;
 
-    console.log(`✅ ${paginatedProducts.length}/${total} produtos retornados com contagens REAIS (reviews, vendas)`);
+    logger.info(`✅ ${paginatedProducts.length}/${total} produtos retornados com contagens REAIS (reviews, vendas)`);
 
     res.json({
       success: true,
@@ -510,7 +470,7 @@ router.get("/products", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar produtos:", error);
+    logger.error("❌ Erro ao buscar produtos:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao conectar com banco de dados. Verifique a configuração do Supabase.",
@@ -524,19 +484,19 @@ router.get("/products", async (req, res) => {
 // ==== PLANS MANAGEMENT ====
 router.get("/plans", async (req, res) => {
   try {
-    console.log("💰 GET /api/admin/plans - Buscando planos REAIS do Supabase...");
+    logger.info("💰 GET /api/admin/plans - Buscando planos REAIS do Supabase...");
 
     // Buscar planos reais do Supabase
     const { data: plans, error } = await supabase.from("plans").select("*").order("order", { ascending: true });
 
     if (error) {
-      console.error("❌ Erro ao buscar plans:", error);
+      logger.error("❌ Erro ao buscar plans:", error);
       throw new Error(`Erro na consulta: ${error.message}`);
     }
 
     // Se não há planos no banco, criar planos padrão
     if (!plans || plans.length === 0) {
-      console.log("⚠️ Nenhum plano encontrado, criando planos padrão...");
+      logger.info("⚠️ Nenhum plano encontrado, criando planos padrão...");
 
       const defaultPlans = [
         {
@@ -593,7 +553,7 @@ router.get("/plans", async (req, res) => {
       const { data: createdPlans, error: createError } = await supabase.from("plans").insert(defaultPlans).select();
 
       if (createError) {
-        console.error("❌ Erro ao criar planos padrão:", createError);
+        logger.error("❌ Erro ao criar planos padrão:", createError);
         // Retornar planos hardcoded se falhar a criação
         return res.json({
           success: true,
@@ -602,21 +562,21 @@ router.get("/plans", async (req, res) => {
         });
       }
 
-      console.log(`✅ ${createdPlans.length} planos padrão criados no banco`);
+      logger.info(`✅ ${createdPlans.length} planos padrão criados no banco`);
       return res.json({
         success: true,
         data: createdPlans,
       });
     }
 
-    console.log(`✅ ${plans.length} planos retornados do Supabase REAL`);
+    logger.info(`✅ ${plans.length} planos retornados do Supabase REAL`);
 
     res.json({
       success: true,
       data: plans,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar planos:", error);
+    logger.error("❌ Erro ao buscar planos:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao conectar com banco de dados. Verifique a configuração do Supabase.",
@@ -632,7 +592,7 @@ router.put("/plans/:id", authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     const planData = req.body;
 
-    console.log(`💰 PUT /api/admin/plans/${id} - Atualizando plano via MCP:`, planData);
+    logger.info(`💰 PUT /api/admin/plans/${id} - Atualizando plano via MCP:`, planData);
 
     // Atualizar o plano usando helper MCP
     const updateData = {
@@ -658,11 +618,11 @@ router.put("/plans/:id", authenticateAdmin, async (req, res) => {
       .single();
 
     if (updateError) {
-      console.error("❌ Erro ao atualizar plano:", updateError);
+      logger.error("❌ Erro ao atualizar plano:", updateError);
       throw updateError;
     }
 
-    console.log("✅ Plano atualizado com sucesso");
+    logger.info("✅ Plano atualizado com sucesso");
 
     res.json({
       success: true,
@@ -670,7 +630,7 @@ router.put("/plans/:id", authenticateAdmin, async (req, res) => {
       data: updatedPlan,
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar plano:", error);
+    logger.error("❌ Erro ao atualizar plano:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao conectar com banco de dados. Verifique a configuração do Supabase.",
@@ -684,7 +644,7 @@ router.post("/plans", authenticateAdmin, async (req, res) => {
   try {
     const planData = req.body;
 
-    console.log(`💰 POST /api/admin/plans - Criando novo plano:`, planData);
+    logger.info(`💰 POST /api/admin/plans - Criando novo plano:`, planData);
 
     // Validar dados obrigatórios
     if (!planData.name || !planData.description || planData.price === undefined) {
@@ -748,11 +708,11 @@ router.post("/plans", authenticateAdmin, async (req, res) => {
       .single();
 
     if (error) {
-      console.error("❌ Erro ao criar plano:", error);
+      logger.error("❌ Erro ao criar plano:", error);
       throw error;
     }
 
-    console.log("✅ Plano criado com sucesso:", newPlan.id);
+    logger.info("✅ Plano criado com sucesso:", newPlan.id);
 
     res.status(201).json({
       success: true,
@@ -760,7 +720,7 @@ router.post("/plans", authenticateAdmin, async (req, res) => {
       data: newPlan,
     });
   } catch (error) {
-    console.error("❌ Erro ao criar plano:", error);
+    logger.error("❌ Erro ao criar plano:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao criar plano",
@@ -774,7 +734,7 @@ router.delete("/plans/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    console.log(`💰 DELETE /api/admin/plans/${id} - Deletando plano`);
+    logger.info(`💰 DELETE /api/admin/plans/${id} - Deletando plano`);
 
     // Verificar se o plano existe
     const { data: plan, error: fetchError } = await supabase.from("plans").select("id, name").eq("id", id).single();
@@ -794,7 +754,7 @@ router.delete("/plans/:id", async (req, res) => {
       .eq("status", "ACTIVE");
 
     if (countError) {
-      console.error("❌ Erro ao verificar assinaturas:", countError);
+      logger.error("❌ Erro ao verificar assinaturas:", countError);
       return res.status(500).json({
         success: false,
         error: "Erro ao verificar assinaturas ativas",
@@ -816,18 +776,18 @@ router.delete("/plans/:id", async (req, res) => {
     const { error: deleteError } = await supabaseAdmin.from("plans").delete().eq("id", id);
 
     if (deleteError) {
-      console.error("❌ Erro ao deletar plano:", deleteError);
+      logger.error("❌ Erro ao deletar plano:", deleteError);
       throw deleteError;
     }
 
-    console.log("✅ Plano deletado com sucesso");
+    logger.info("✅ Plano deletado com sucesso");
 
     res.json({
       success: true,
       message: `Plano ${plan.name} deletado com sucesso`,
     });
   } catch (error) {
-    console.error("❌ Erro ao deletar plano:", error);
+    logger.error("❌ Erro ao deletar plano:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao deletar plano",
@@ -841,7 +801,7 @@ router.get("/subscriptions", authenticateAdmin, async (req, res) => {
   try {
     const { page = 1, limit = 10, status } = req.query;
 
-    console.log("💳 GET /api/admin/subscriptions - Buscando subscriptions REAIS do Supabase...");
+    logger.info("💳 GET /api/admin/subscriptions - Buscando subscriptions REAIS do Supabase...");
 
     // Buscar subscriptions reais do Supabase
     let query = supabase.from("subscriptions").select(`
@@ -879,7 +839,7 @@ router.get("/subscriptions", authenticateAdmin, async (req, res) => {
     const { data: subscriptions, error } = await query;
 
     if (error) {
-      console.error("❌ Erro ao buscar subscriptions:", error);
+      logger.error("❌ Erro ao buscar subscriptions:", error);
       throw new Error(`Erro na consulta: ${error.message}`);
     }
 
@@ -919,7 +879,7 @@ router.get("/subscriptions", authenticateAdmin, async (req, res) => {
     // Total já obtido da query count
     const subscriptionsTotal = total || 0;
 
-    console.log(`✅ ${transformedSubscriptions.length}/${subscriptionsTotal} assinaturas retornadas do Supabase`);
+    logger.info(`✅ ${transformedSubscriptions.length}/${subscriptionsTotal} assinaturas retornadas do Supabase`);
 
     res.json({
       success: true,
@@ -932,7 +892,7 @@ router.get("/subscriptions", authenticateAdmin, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar assinaturas:", error);
+    logger.error("❌ Erro ao buscar assinaturas:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao conectar com banco de dados. Verifique a configuração do Supabase.",
@@ -957,7 +917,7 @@ router.post("/stores/:id/approve", async (req, res) => {
 
     res.json({ success: true, data: store });
   } catch (error) {
-    console.error("❌ Erro ao aprovar loja:", error);
+    logger.error("❌ Erro ao aprovar loja:", error);
     res.status(500).json({ success: false, error: "Erro ao aprovar loja" });
   }
 });
@@ -977,7 +937,7 @@ router.post("/stores/:id/reject", async (req, res) => {
 
     res.json({ success: true, data: store });
   } catch (error) {
-    console.error("❌ Erro ao rejeitar loja:", error);
+    logger.error("❌ Erro ao rejeitar loja:", error);
     res.status(500).json({ success: false, error: "Erro ao rejeitar loja" });
   }
 });
@@ -997,7 +957,7 @@ router.post("/stores/:id/suspend", async (req, res) => {
 
     res.json({ success: true, data: store });
   } catch (error) {
-    console.error("❌ Erro ao suspender loja:", error);
+    logger.error("❌ Erro ao suspender loja:", error);
     res.status(500).json({ success: false, error: "Erro ao suspender loja" });
   }
 });
@@ -1015,7 +975,7 @@ router.post("/stores/:id/activate", async (req, res) => {
 
     res.json({ success: true, data: store });
   } catch (error) {
-    console.error("❌ Erro ao ativar loja:", error);
+    logger.error("❌ Erro ao ativar loja:", error);
     res.status(500).json({ success: false, error: "Erro ao ativar loja" });
   }
 });
@@ -1026,7 +986,7 @@ router.patch("/users/:id/status", async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
 
-    console.log(`👤 PATCH /api/admin/users/${id}/status - Atualizando status para: ${status}`);
+    logger.info(`👤 PATCH /api/admin/users/${id}/status - Atualizando status para: ${status}`);
 
     // Buscar usuário atual
     const { data: user, error: fetchError } = await supabase
@@ -1036,7 +996,7 @@ router.patch("/users/:id/status", async (req, res) => {
       .single();
 
     if (fetchError || !user) {
-      console.error("❌ Usuário não encontrado:", fetchError);
+      logger.error("❌ Usuário não encontrado:", fetchError);
       return res.status(404).json({ success: false, error: "Usuário não encontrado" });
     }
 
@@ -1051,11 +1011,11 @@ router.patch("/users/:id/status", async (req, res) => {
       .single();
 
     if (updateError) {
-      console.error("❌ Erro ao atualizar usuário:", updateError);
+      logger.error("❌ Erro ao atualizar usuário:", updateError);
       throw updateError;
     }
 
-    console.log(`✅ Status do usuário ${user.name} atualizado para: ${status}`);
+    logger.info(`✅ Status do usuário ${user.name} atualizado para: ${status}`);
 
     res.json({
       success: true,
@@ -1063,7 +1023,7 @@ router.patch("/users/:id/status", async (req, res) => {
       message: `Status do usuário atualizado para ${status}`,
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar status do usuário:", error);
+    logger.error("❌ Erro ao atualizar status do usuário:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao atualizar status do usuário",
@@ -1076,7 +1036,7 @@ router.delete("/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
 
-    console.log(`🗑️ DELETE /api/admin/users/${id} - Excluindo usuário...`);
+    logger.info(`🗑️ DELETE /api/admin/users/${id} - Excluindo usuário...`);
 
     // Verificar se usuário existe
     const { data: user, error: fetchError } = await supabase
@@ -1086,7 +1046,7 @@ router.delete("/users/:id", async (req, res) => {
       .single();
 
     if (fetchError || !user) {
-      console.error("❌ Usuário não encontrado:", fetchError);
+      logger.error("❌ Usuário não encontrado:", fetchError);
       return res.status(404).json({ success: false, error: "Usuário não encontrado" });
     }
 
@@ -1102,18 +1062,18 @@ router.delete("/users/:id", async (req, res) => {
     const { error: deleteError } = await supabase.from("users").delete().eq("id", id);
 
     if (deleteError) {
-      console.error("❌ Erro ao excluir usuário:", deleteError);
+      logger.error("❌ Erro ao excluir usuário:", deleteError);
       throw deleteError;
     }
 
-    console.log(`✅ Usuário ${user.name} excluído com sucesso`);
+    logger.info(`✅ Usuário ${user.name} excluído com sucesso`);
 
     res.json({
       success: true,
       message: `Usuário ${user.name} excluído com sucesso`,
     });
   } catch (error) {
-    console.error("❌ Erro ao excluir usuário:", error);
+    logger.error("❌ Erro ao excluir usuário:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao excluir usuário",
@@ -1127,7 +1087,7 @@ router.get("/orders", async (req, res) => {
   try {
     const { page = 1, limit = 10, status } = req.query;
 
-    console.log("🛒 GET /api/admin/orders - Buscando pedidos REAIS do Supabase...");
+    logger.info("🛒 GET /api/admin/orders - Buscando pedidos REAIS do Supabase...");
 
     // Query base para buscar orders com dados do buyer, store e items
     let query = supabase.from("orders").select(`
@@ -1167,7 +1127,7 @@ router.get("/orders", async (req, res) => {
     const { data: orders, error } = await query;
 
     if (error) {
-      console.error("❌ Erro ao buscar orders:", error);
+      logger.error("❌ Erro ao buscar orders:", error);
       throw new Error(`Erro na consulta: ${error.message}`);
     }
 
@@ -1205,7 +1165,7 @@ router.get("/orders", async (req, res) => {
 
     const total = totalCount || 0;
 
-    console.log(`✅ ${transformedOrders.length}/${total} pedidos retornados do Supabase REAL`);
+    logger.info(`✅ ${transformedOrders.length}/${total} pedidos retornados do Supabase REAL`);
 
     res.json({
       success: true,
@@ -1218,7 +1178,7 @@ router.get("/orders", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar pedidos:", error);
+    logger.error("❌ Erro ao buscar pedidos:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao conectar com banco de dados. Verifique a configuração do Supabase.",
@@ -1232,7 +1192,7 @@ router.get("/orders", async (req, res) => {
 // ==== BANNERS MANAGEMENT ====
 router.get("/banners", async (req, res) => {
   try {
-    console.log("🎨 GET /api/admin/banners - Buscando banners...");
+    logger.info("🎨 GET /api/admin/banners - Buscando banners...");
 
     // Por enquanto retornar dados simulados até implementar na base
     const banners = [
@@ -1266,14 +1226,14 @@ router.get("/banners", async (req, res) => {
       },
     ];
 
-    console.log(`✅ ${banners.length} banners retornados (dados simulados)`);
+    logger.info(`✅ ${banners.length} banners retornados (dados simulados)`);
 
     res.json({
       success: true,
       banners,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar banners:", error);
+    logger.error("❌ Erro ao buscar banners:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao buscar banners",
@@ -1285,7 +1245,7 @@ router.get("/banners", async (req, res) => {
 router.post("/banners", async (req, res) => {
   try {
     const bannerData = req.body;
-    console.log("🎨 POST /api/admin/banners - Criando banner:", bannerData);
+    logger.info("🎨 POST /api/admin/banners - Criando banner:", bannerData);
 
     // Simular criação
     const newBanner = {
@@ -1296,7 +1256,7 @@ router.post("/banners", async (req, res) => {
       createdAt: new Date().toISOString(),
     };
 
-    console.log("✅ Banner criado com sucesso");
+    logger.info("✅ Banner criado com sucesso");
 
     res.json({
       success: true,
@@ -1304,7 +1264,7 @@ router.post("/banners", async (req, res) => {
       banner: newBanner,
     });
   } catch (error) {
-    console.error("❌ Erro ao criar banner:", error);
+    logger.error("❌ Erro ao criar banner:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao criar banner",
@@ -1317,7 +1277,7 @@ router.put("/banners/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const bannerData = req.body;
-    console.log(`🎨 PUT /api/admin/banners/${id} - Atualizando banner:`, bannerData);
+    logger.info(`🎨 PUT /api/admin/banners/${id} - Atualizando banner:`, bannerData);
 
     // Simular atualização
     const updatedBanner = {
@@ -1326,7 +1286,7 @@ router.put("/banners/:id", async (req, res) => {
       updatedAt: new Date().toISOString(),
     };
 
-    console.log("✅ Banner atualizado com sucesso");
+    logger.info("✅ Banner atualizado com sucesso");
 
     res.json({
       success: true,
@@ -1334,7 +1294,7 @@ router.put("/banners/:id", async (req, res) => {
       banner: updatedBanner,
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar banner:", error);
+    logger.error("❌ Erro ao atualizar banner:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao atualizar banner",
@@ -1346,17 +1306,17 @@ router.put("/banners/:id", async (req, res) => {
 router.delete("/banners/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    console.log(`🗑️ DELETE /api/admin/banners/${id} - Excluindo banner...`);
+    logger.info(`🗑️ DELETE /api/admin/banners/${id} - Excluindo banner...`);
 
     // Simular exclusão
-    console.log("✅ Banner excluído com sucesso");
+    logger.info("✅ Banner excluído com sucesso");
 
     res.json({
       success: true,
       message: "Banner excluído com sucesso",
     });
   } catch (error) {
-    console.error("❌ Erro ao excluir banner:", error);
+    logger.error("❌ Erro ao excluir banner:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao excluir banner",
@@ -1371,7 +1331,7 @@ router.put("/subscriptions/:id", authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     const { status, notes } = req.body;
 
-    console.log(`💳 PUT /api/admin/subscriptions/${id} - Atualizando status para: ${status}`);
+    logger.info(`💳 PUT /api/admin/subscriptions/${id} - Atualizando status para: ${status}`);
 
     // Validar status
     const validStatuses = ["ACTIVE", "CANCELLED", "EXPIRED", "PENDING"];
@@ -1438,11 +1398,11 @@ router.put("/subscriptions/:id", authenticateAdmin, async (req, res) => {
       .single();
 
     if (updateError) {
-      console.error("❌ Erro ao atualizar assinatura:", updateError);
+      logger.error("❌ Erro ao atualizar assinatura:", updateError);
       throw updateError;
     }
 
-    console.log("✅ Assinatura atualizada com sucesso");
+    logger.info("✅ Assinatura atualizada com sucesso");
 
     res.json({
       success: true,
@@ -1454,7 +1414,7 @@ router.put("/subscriptions/:id", authenticateAdmin, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar assinatura:", error);
+    logger.error("❌ Erro ao atualizar assinatura:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao atualizar assinatura",
@@ -1469,7 +1429,7 @@ router.post("/subscriptions/:id/cancel", authenticateAdmin, async (req, res) => 
     const { id } = req.params;
     const { reason, refund = false } = req.body;
 
-    console.log(`💳 POST /api/admin/subscriptions/${id}/cancel - Cancelando assinatura`);
+    logger.info(`💳 POST /api/admin/subscriptions/${id}/cancel - Cancelando assinatura`);
 
     // Verificar se a assinatura existe e está ativa
     const { data: subscription, error: fetchError } = await supabaseAdmin
@@ -1525,7 +1485,7 @@ router.post("/subscriptions/:id/cancel", authenticateAdmin, async (req, res) => 
       .single();
 
     if (cancelError) {
-      console.error("❌ Erro ao cancelar assinatura:", cancelError);
+      logger.error("❌ Erro ao cancelar assinatura:", cancelError);
       throw cancelError;
     }
 
@@ -1550,15 +1510,15 @@ router.post("/subscriptions/:id/cancel", authenticateAdmin, async (req, res) => 
             }),
           });
 
-          console.log("✅ Reembolso processado:", refundResult.id);
+          logger.info("✅ Reembolso processado:", refundResult.id);
         }
       } catch (refundError) {
-        console.error("⚠️ Erro ao processar reembolso:", refundError);
+        logger.error("⚠️ Erro ao processar reembolso:", refundError);
         // Não falhar o cancelamento se o reembolso der erro
       }
     }
 
-    console.log("✅ Assinatura cancelada com sucesso");
+    logger.info("✅ Assinatura cancelada com sucesso");
 
     res.json({
       success: true,
@@ -1571,7 +1531,7 @@ router.post("/subscriptions/:id/cancel", authenticateAdmin, async (req, res) => 
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao cancelar assinatura:", error);
+    logger.error("❌ Erro ao cancelar assinatura:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao cancelar assinatura",
@@ -1586,7 +1546,7 @@ router.post("/subscriptions/:id/renew", authenticateAdmin, async (req, res) => {
     const { id } = req.params;
     const { months = 1, notes } = req.body;
 
-    console.log(`💳 POST /api/admin/subscriptions/${id}/renew - Renovando por ${months} mês(es)`);
+    logger.info(`💳 POST /api/admin/subscriptions/${id}/renew - Renovando por ${months} mês(es)`);
 
     // Verificar se a assinatura existe
     const { data: subscription, error: fetchError } = await supabaseAdmin
@@ -1642,11 +1602,11 @@ router.post("/subscriptions/:id/renew", authenticateAdmin, async (req, res) => {
       .single();
 
     if (renewError) {
-      console.error("❌ Erro ao renovar assinatura:", renewError);
+      logger.error("❌ Erro ao renovar assinatura:", renewError);
       throw renewError;
     }
 
-    console.log("✅ Assinatura renovada com sucesso");
+    logger.info("✅ Assinatura renovada com sucesso");
 
     res.json({
       success: true,
@@ -1660,7 +1620,7 @@ router.post("/subscriptions/:id/renew", authenticateAdmin, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao renovar assinatura:", error);
+    logger.error("❌ Erro ao renovar assinatura:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao renovar assinatura",

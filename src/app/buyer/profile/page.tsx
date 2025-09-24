@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -46,26 +48,26 @@ export default function BuyerProfile() {
   useEffect(() => {
     // Verificar autenticação
     if (!user) {
-      console.log('Usuário não autenticado, redirecionando para home');
+      logger.info('Usuário não autenticado, redirecionando para home');
       navigate("/");
       return;
     }
 
     // Redirecionamento inteligente por tipo de usuário
     if (user.userType === "seller") {
-      console.log('Vendedor tentando acessar perfil de buyer, redirecionando para perfil de seller');
+      logger.info('Vendedor tentando acessar perfil de buyer, redirecionando para perfil de seller');
       navigate("/seller/profile");
       return;
     }
     
     if (user.userType === "admin") {
-      console.log('Admin tentando acessar perfil de buyer, redirecionando para admin dashboard');
+      logger.info('Admin tentando acessar perfil de buyer, redirecionando para admin dashboard');
       navigate("/admin");
       return;
     }
 
     if (user.userType !== "buyer") {
-      console.log('Tipo de usuário não reconhecido, redirecionando para home');
+      logger.info('Tipo de usuário não reconhecido, redirecionando para home');
       navigate("/");
       return;
     }
@@ -108,10 +110,10 @@ export default function BuyerProfile() {
 
         setProfile(profileData.profile);
       } else {
-        console.error("Error loading profile");
+        logger.error("Error loading profile");
       }
     } catch (error) {
-      console.error("Error loading profile:", error);
+      logger.error("Error loading profile:", error);
     } finally {
       setIsLoading(false);
     }
@@ -147,7 +149,7 @@ export default function BuyerProfile() {
         // });
       }
     } catch (error) {
-      console.error("Error saving profile:", error);
+      logger.error("Error saving profile:", error);
     } finally {
       setIsSaving(false);
     }
@@ -174,10 +176,10 @@ export default function BuyerProfile() {
         setProfile((prev) => (prev ? { ...prev, avatar: data.avatarUrl } : null));
       } else {
         const errorData = await response.json();
-        console.error("Erro no upload:", errorData.error);
+        logger.error("Erro no upload:", errorData.error);
       }
     } catch (error) {
-      console.error("Error uploading avatar:", error);
+      logger.error("Error uploading avatar:", error);
     }
   };
 

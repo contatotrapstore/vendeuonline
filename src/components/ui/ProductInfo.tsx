@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState } from "react";
@@ -71,7 +73,7 @@ export function ProductInfo({ product, className = "" }: ProductInfoProps) {
           url: window.location.href,
         });
       } catch (error) {
-        console.log("Erro ao compartilhar:", error);
+        logger.info("Erro ao compartilhar:", error);
       }
     } else {
       // Fallback para copiar URL

@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -46,7 +48,7 @@ export default function TrackingScripts() {
         if (extensionErrors.some(errorText => message.includes(errorText))) {
           event.preventDefault(); // Silenciar o erro
           if (process.env.NODE_ENV === 'development') {
-            console.debug("Extension error silenciado:", message);
+            logger.debug("Extension error silenciado:", message);
           }
           return;
         }
@@ -66,7 +68,7 @@ export default function TrackingScripts() {
       if (extensionErrors.some(errorText => message.includes(errorText))) {
         event.preventDefault(); // Silenciar o erro
         if (process.env.NODE_ENV === 'development') {
-          console.debug("Extension error silenciado:", message);
+          logger.debug("Extension error silenciado:", message);
         }
         return;
       }
@@ -109,7 +111,7 @@ export default function TrackingScripts() {
         }
       }
     } catch (error) {
-      console.error("Erro ao carregar configurações de tracking:", error);
+      logger.error("Erro ao carregar configurações de tracking:", error);
       setIsLoaded(true);
     }
   };
@@ -133,7 +135,7 @@ export default function TrackingScripts() {
     } catch (error) {
       // Silenciar erros de inicialização de pixels
       if (process.env.NODE_ENV === 'development') {
-        console.warn("Pixel initialization error (ignorado):", error);
+        logger.warn("Pixel initialization error (ignorado):", error);
       }
     }
 
@@ -142,7 +144,7 @@ export default function TrackingScripts() {
     setTimeout(() => {
       try {
         if (process.env.NODE_ENV === 'development') {
-          console.log("📊 Disparando PageView inicial para todos os pixels");
+          logger.info("📊 Disparando PageView inicial para todos os pixels");
         }
 
         // Google Analytics PageView já é disparado automaticamente na configuração
@@ -154,14 +156,14 @@ export default function TrackingScripts() {
           } catch (pixelError) {
             // Silenciar erros de pixel - pode ser bloqueado por adblockers
             if (process.env.NODE_ENV === 'development') {
-              console.warn("Meta Pixel error (ignorado):", pixelError);
+              logger.warn("Meta Pixel error (ignorado):", pixelError);
             }
           }
         }
       } catch (error) {
         // Silenciar erros de tracking em geral
         if (process.env.NODE_ENV === 'development') {
-          console.warn("Tracking initialization error (ignorado):", error);
+          logger.warn("Tracking initialization error (ignorado):", error);
         }
       }
     }, 1000);
@@ -190,9 +192,9 @@ export default function TrackingScripts() {
         },
       });
 
-      console.log("✅ Google Analytics inicializado:", gaId);
+      logger.info("✅ Google Analytics inicializado:", gaId);
     } catch (error) {
-      console.error("❌ Erro ao inicializar Google Analytics:", error);
+      logger.error("❌ Erro ao inicializar Google Analytics:", error);
     }
   };
 
@@ -217,9 +219,9 @@ export default function TrackingScripts() {
       `;
       document.body.appendChild(noscript);
 
-      console.log("✅ Google Tag Manager inicializado:", gtmId);
+      logger.info("✅ Google Tag Manager inicializado:", gtmId);
     } catch (error) {
-      console.error("❌ Erro ao inicializar Google Tag Manager:", error);
+      logger.error("❌ Erro ao inicializar Google Tag Manager:", error);
     }
   };
 
@@ -249,9 +251,9 @@ export default function TrackingScripts() {
       `;
       document.body.appendChild(noscript);
 
-      console.log("✅ Meta Pixel inicializado:", pixelId);
+      logger.info("✅ Meta Pixel inicializado:", pixelId);
     } catch (error) {
-      console.error("❌ Erro ao inicializar Meta Pixel:", error);
+      logger.error("❌ Erro ao inicializar Meta Pixel:", error);
     }
   };
 
@@ -299,7 +301,7 @@ export const useTracking = () => {
         } catch (gtErr: any) {
           // Silenciar completamente erros de extensão
           if (!isExtensionError(gtErr)) {
-            console.warn("⚠️ Google Analytics erro:", gtErr);
+            logger.warn("⚠️ Google Analytics erro:", gtErr);
           }
         }
       }
@@ -310,21 +312,21 @@ export const useTracking = () => {
           const metaEventName = mapToMetaEvent(eventName);
           const metaParams = mapToMetaParams(parameters);
           window.fbq("track", metaEventName, metaParams);
-          console.log("📊 Meta Pixel evento:", metaEventName, metaParams);
+          logger.info("📊 Meta Pixel evento:", metaEventName, metaParams);
         } catch (fbErr: any) {
           // Silenciar completamente erros de extensão
           if (!isExtensionError(fbErr)) {
-            console.warn("⚠️ Meta Pixel erro:", fbErr);
+            logger.warn("⚠️ Meta Pixel erro:", fbErr);
           }
         }
       }
 
 
-      console.log("📊 Evento rastreado:", eventName, parameters);
+      logger.info("📊 Evento rastreado:", eventName, parameters);
     } catch (error: any) {
       // Silenciar completamente erros de extensão, logar apenas outros erros
       if (!isExtensionError(error)) {
-        console.error("❌ Erro ao rastrear evento:", error);
+        logger.error("❌ Erro ao rastrear evento:", error);
       }
     }
   };

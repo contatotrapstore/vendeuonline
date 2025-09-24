@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { apiRequest } from "@/lib/api";
+import { logger } from "@/lib/logger";
+
 
 export interface ViewHistoryItem {
   id: string;
@@ -43,7 +45,7 @@ export const useHistoryStore = create<HistoryState & HistoryActions>((set, get) 
       const response = await apiRequest("/api/buyer/history");
       set({ items: response.data || [], loading: false });
     } catch (error: any) {
-      console.error("Erro ao buscar histórico:", error);
+      logger.error("Erro ao buscar histórico:", error);
       set({
         items: [],
         loading: false,
@@ -61,7 +63,7 @@ export const useHistoryStore = create<HistoryState & HistoryActions>((set, get) 
       // Recarregar histórico após adicionar
       get().fetchHistory();
     } catch (error: any) {
-      console.error("Erro ao adicionar ao histórico:", error);
+      logger.error("Erro ao adicionar ao histórico:", error);
     }
   },
 
@@ -76,7 +78,7 @@ export const useHistoryStore = create<HistoryState & HistoryActions>((set, get) 
         loading: false,
       });
     } catch (error: any) {
-      console.error("Erro ao remover do histórico:", error);
+      logger.error("Erro ao remover do histórico:", error);
       set({
         error: "Erro ao remover do histórico",
         loading: false,
@@ -92,7 +94,7 @@ export const useHistoryStore = create<HistoryState & HistoryActions>((set, get) 
       });
       set({ items: [], loading: false });
     } catch (error: any) {
-      console.error("Erro ao limpar histórico:", error);
+      logger.error("Erro ao limpar histórico:", error);
       set({
         error: "Erro ao limpar histórico",
         loading: false,

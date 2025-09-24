@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 /**
  * Sistema de cache inteligente para dados da aplicação
  */
@@ -20,6 +22,8 @@ class Cache {
   private defaultTTL = 5 * 60 * 1000; // 5 minutos
   private maxSize = 100;
   private persistToLocalStorage = true;
+  private hits = 0;
+  private misses = 0;
 
   constructor(options: CacheOptions = {}) {
     this.defaultTTL = options.ttl || this.defaultTTL;
@@ -64,7 +68,7 @@ class Cache {
         });
       }
     } catch (error) {
-      console.warn("Failed to load cache from localStorage:", error);
+      logger.warn("Failed to load cache from localStorage:", error);
     }
   }
 
@@ -78,7 +82,7 @@ class Cache {
       });
       localStorage.setItem("app-cache", JSON.stringify(data));
     } catch (error) {
-      console.warn("Failed to save cache to localStorage:", error);
+      logger.warn("Failed to save cache to localStorage:", error);
     }
   }
 
@@ -94,7 +98,7 @@ class Cache {
     });
 
     if (cleaned > 0) {
-      console.log(`Cache cleanup: removed ${cleaned} expired entries`);
+      logger.info(`Cache cleanup: removed ${cleaned} expired entries`);
       this.saveToLocalStorage();
     }
   }
@@ -139,6 +143,7 @@ class Cache {
     const entry = this.cache.get(key);
 
     if (!entry) {
+      this.misses++;
       return null;
     }
 
@@ -146,9 +151,11 @@ class Cache {
     if (entry.expiresAt <= Date.now()) {
       this.cache.delete(key);
       this.saveToLocalStorage();
+      this.misses++;
       return null;
     }
 
+    this.hits++;
     return entry.data as T;
   }
 
@@ -255,10 +262,13 @@ class Cache {
       }
     });
 
+    const totalRequests = this.hits + this.misses;
+    const hitRate = totalRequests > 0 ? (this.hits / totalRequests) * 100 : 0;
+
     return {
       size: this.cache.size,
       maxSize: this.maxSize,
-      hitRate: 0, // TODO: Implementar tracking de hit rate
+      hitRate: Number(hitRate.toFixed(2)), // Percentual de hit rate com 2 casas decimais
       oldestEntry: oldest?.key || null,
       newestEntry: newest?.key || null,
     };

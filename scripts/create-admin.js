@@ -1,14 +1,16 @@
 import bcrypt from 'bcryptjs';
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import { logger } from "../lib/logger.js";
+
 
 dotenv.config();
 
-console.log('🔧 Criando/atualizando usuário admin...');
+logger.info('🔧 Criando/atualizando usuário admin...');
 
-console.log('🔍 Verificando variáveis de ambiente...');
-console.log('SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅' : '❌');
-console.log('SERVICE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅' : '❌');
+logger.info('🔍 Verificando variáveis de ambiente...');
+logger.info('SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅' : '❌');
+logger.info('SERVICE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅' : '❌');
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -17,11 +19,11 @@ const supabase = createClient(
 
 async function createAdmin() {
   try {
-    console.log('📊 Gerando hash da senha...');
+    logger.info('📊 Gerando hash da senha...');
     const hashedPassword = await bcrypt.hash('admin123', 10);
-    console.log('✅ Senha hasheada com sucesso');
+    logger.info('✅ Senha hasheada com sucesso');
 
-    console.log('📡 Conectando ao Supabase...');
+    logger.info('📡 Conectando ao Supabase...');
     const { data, error } = await supabase
       .from('users')
       .upsert({
@@ -37,18 +39,18 @@ async function createAdmin() {
       });
 
     if (error) {
-      console.error('❌ Erro ao criar/atualizar admin:', error);
+      logger.error('❌ Erro ao criar/atualizar admin:', error);
       process.exit(1);
     } else {
-      console.log('✅ Usuário admin criado/atualizado com sucesso!');
-      console.log('📧 Email: admin@test.com');
-      console.log('🔑 Senha: admin123');
-      console.log('👤 Tipo: ADMIN');
-      console.log('');
-      console.log('🎉 Agora você pode fazer login no sistema!');
+      logger.info('✅ Usuário admin criado/atualizado com sucesso!');
+      logger.info('📧 Email: admin@test.com');
+      logger.info('🔑 Senha: admin123');
+      logger.info('👤 Tipo: ADMIN');
+      logger.info('');
+      logger.info('🎉 Agora você pode fazer login no sistema!');
     }
   } catch (err) {
-    console.error('❌ Erro inesperado:', err);
+    logger.error('❌ Erro inesperado:', err);
     process.exit(1);
   }
 }

@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState } from "react";
@@ -134,7 +136,7 @@ export default function CheckoutForm({ items, onPaymentSuccess, onPaymentError }
 
       onPaymentSuccess?.(result);
     } catch (error) {
-      console.error("Erro no pagamento:", error);
+      logger.error("Erro no pagamento:", error);
       toast.error(error instanceof Error ? error.message : "Erro ao processar pagamento");
       onPaymentError?.(error);
     } finally {

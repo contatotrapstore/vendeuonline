@@ -1,4 +1,6 @@
 import fetch from "node-fetch";
+import { logger } from "../lib/logger.js";
+
 
 // Configuração ASAAS
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY;
@@ -6,7 +8,7 @@ const ASAAS_BASE_URL = process.env.ASAAS_BASE_URL || "https://api.asaas.com/v3";
 const ASAAS_WEBHOOK_TOKEN = process.env.ASAAS_WEBHOOK_TOKEN;
 
 if (!ASAAS_API_KEY) {
-  console.warn("⚠️ ASAAS_API_KEY não configurada - Pagamentos não funcionarão");
+  logger.warn("⚠️ ASAAS_API_KEY não configurada - Pagamentos não funcionarão");
 }
 
 // Cliente para requisições ASAAS
@@ -31,13 +33,13 @@ export async function asaasRequest(endpoint, options = {}) {
     const responseText = await response.text();
 
     if (!response.ok) {
-      console.error(`❌ ASAAS API Error: ${response.status} - ${responseText}`);
+      logger.error(`❌ ASAAS API Error: ${response.status} - ${responseText}`);
       throw new Error(`ASAAS API Error: ${response.status} - ${responseText}`);
     }
 
     return JSON.parse(responseText);
   } catch (error) {
-    console.error("❌ Erro na requisição ASAAS:", error);
+    logger.error("❌ Erro na requisição ASAAS:", error);
     throw error;
   }
 }
@@ -49,7 +51,7 @@ export async function createOrGetCustomer(userData) {
     const searchResponse = await asaasRequest(`/customers?email=${encodeURIComponent(userData.email)}`);
 
     if (searchResponse.data && searchResponse.data.length > 0) {
-      console.log("✅ Cliente ASAAS encontrado:", searchResponse.data[0].id);
+      logger.info("✅ Cliente ASAAS encontrado:", searchResponse.data[0].id);
       return searchResponse.data[0];
     }
 
@@ -76,10 +78,10 @@ export async function createOrGetCustomer(userData) {
       body: JSON.stringify(customerData),
     });
 
-    console.log("✅ Cliente ASAAS criado:", response.id);
+    logger.info("✅ Cliente ASAAS criado:", response.id);
     return response;
   } catch (error) {
-    console.error("❌ Erro ao criar/buscar cliente ASAAS:", error);
+    logger.error("❌ Erro ao criar/buscar cliente ASAAS:", error);
     throw error;
   }
 }
@@ -92,10 +94,10 @@ export async function createCharge(chargeData) {
       body: JSON.stringify(chargeData),
     });
 
-    console.log("✅ Cobrança ASAAS criada:", response.id);
+    logger.info("✅ Cobrança ASAAS criada:", response.id);
     return response;
   } catch (error) {
-    console.error("❌ Erro ao criar cobrança ASAAS:", error);
+    logger.error("❌ Erro ao criar cobrança ASAAS:", error);
     throw error;
   }
 }
@@ -106,7 +108,7 @@ export async function getCharge(chargeId) {
     const response = await asaasRequest(`/payments/${chargeId}`);
     return response;
   } catch (error) {
-    console.error("❌ Erro ao buscar cobrança ASAAS:", error);
+    logger.error("❌ Erro ao buscar cobrança ASAAS:", error);
     throw error;
   }
 }
@@ -114,7 +116,7 @@ export async function getCharge(chargeId) {
 // Validar webhook ASAAS
 export function validateWebhookToken(receivedToken) {
   if (!ASAAS_WEBHOOK_TOKEN) {
-    console.warn("⚠️ ASAAS_WEBHOOK_TOKEN não configurado - Webhooks não validados");
+    logger.warn("⚠️ ASAAS_WEBHOOK_TOKEN não configurado - Webhooks não validados");
     return true; // Aceitar em desenvolvimento
   }
 
@@ -210,7 +212,7 @@ export async function createSubscriptionPayment(planData, customerData) {
       pixQrCode: charge.pix?.qrCode?.encodedImage,
     };
   } catch (error) {
-    console.error("❌ Erro ao criar pagamento de assinatura:", error);
+    logger.error("❌ Erro ao criar pagamento de assinatura:", error);
     throw error;
   }
 }

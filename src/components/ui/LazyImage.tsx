@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ImageIcon, Loader2 } from "lucide-react";
+import { logger } from "@/lib/logger";
+
 
 interface LazyImageProps {
   src: string;
@@ -144,7 +146,7 @@ export const useImagePreloader = () => {
     try {
       await Promise.all(srcs.map((src) => preloadImage(src)));
     } catch (error) {
-      console.warn("Some images failed to preload:", error);
+      logger.warn("Some images failed to preload:", error);
     }
   };
 

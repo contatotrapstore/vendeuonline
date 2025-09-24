@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -83,7 +85,7 @@ export default function SellerAccountPage() {
         });
       }
     } catch (error) {
-      console.error("Error loading account data:", error);
+      logger.error("Error loading account data:", error);
       // Usar dados do usuário como fallback
       setAccountData({
         name: user?.name || "",
@@ -143,7 +145,7 @@ export default function SellerAccountPage() {
         toast.error("Erro ao salvar dados. Tente novamente.");
       }
     } catch (error) {
-      console.error("Error saving account data:", error);
+      logger.error("Error saving account data:", error);
       toast.error("Erro interno. Tente novamente mais tarde.");
     } finally {
       setIsSaving(false);

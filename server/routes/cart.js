@@ -1,13 +1,15 @@
 import express from "express";
+import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin } from "../middleware/auth.js";
 import { supabase } from "../lib/supabase-client.js";
-import { authenticateUser } from "../middleware/auth.js";
+import { logger } from "../lib/logger.js";
+
 
 const router = express.Router();
 
 // GET /api/cart - Buscar carrinho do usuário
 router.get("/", authenticateUser, async (req, res) => {
   try {
-    console.log("🛒 Buscando carrinho para usuário:", req.user.id);
+    logger.info("🛒 Buscando carrinho para usuário:", req.user.id);
 
     // Buscar itens do carrinho no Supabase
     const { data: cartItems, error } = await supabase
@@ -40,7 +42,7 @@ router.get("/", authenticateUser, async (req, res) => {
       .order("createdAt", { ascending: false });
 
     if (error) {
-      console.error("❌ Erro ao buscar carrinho:", error);
+      logger.error("❌ Erro ao buscar carrinho:", error);
       throw new Error(`Erro na consulta: ${error.message}`);
     }
 
@@ -74,7 +76,7 @@ router.get("/", authenticateUser, async (req, res) => {
     const shipping = subtotal > 100 ? 0 : 15; // Frete grátis acima de R$ 100
     const total = subtotal + shipping;
 
-    console.log(`✅ ${transformedCart.length} itens no carrinho encontrados`);
+    logger.info(`✅ ${transformedCart.length} itens no carrinho encontrados`);
 
     return res.json({
       success: true,
@@ -90,7 +92,7 @@ router.get("/", authenticateUser, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar carrinho:", error);
+    logger.error("❌ Erro ao buscar carrinho:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao carregar carrinho",
@@ -118,7 +120,7 @@ router.post("/", authenticateUser, async (req, res) => {
       });
     }
 
-    console.log("🛒 Adicionando produto ao carrinho:", productId, "quantidade:", quantity, "usuário:", req.user.id);
+    logger.info("🛒 Adicionando produto ao carrinho:", productId, "quantidade:", quantity, "usuário:", req.user.id);
 
     // Verificar se o produto existe e está ativo
     const { data: product, error: productError } = await supabase
@@ -180,11 +182,11 @@ router.post("/", authenticateUser, async (req, res) => {
         .single();
 
       if (updateError) {
-        console.error("❌ Erro ao atualizar carrinho:", updateError);
+        logger.error("❌ Erro ao atualizar carrinho:", updateError);
         throw new Error(`Erro ao atualizar: ${updateError.message}`);
       }
 
-      console.log("✅ Quantidade atualizada no carrinho:", updatedItem.id);
+      logger.info("✅ Quantidade atualizada no carrinho:", updatedItem.id);
 
       return res.json({
         success: true,
@@ -204,11 +206,11 @@ router.post("/", authenticateUser, async (req, res) => {
         .single();
 
       if (insertError) {
-        console.error("❌ Erro ao adicionar ao carrinho:", insertError);
+        logger.error("❌ Erro ao adicionar ao carrinho:", insertError);
         throw new Error(`Erro ao adicionar: ${insertError.message}`);
       }
 
-      console.log("✅ Produto adicionado ao carrinho:", cartItem.id);
+      logger.info("✅ Produto adicionado ao carrinho:", cartItem.id);
 
       return res.json({
         success: true,
@@ -217,7 +219,7 @@ router.post("/", authenticateUser, async (req, res) => {
       });
     }
   } catch (error) {
-    console.error("❌ Erro ao adicionar ao carrinho:", error);
+    logger.error("❌ Erro ao adicionar ao carrinho:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao adicionar produto ao carrinho",
@@ -239,7 +241,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
       });
     }
 
-    console.log("🔄 Atualizando quantidade no carrinho:", id, "nova quantidade:", quantity);
+    logger.info("🔄 Atualizando quantidade no carrinho:", id, "nova quantidade:", quantity);
 
     // Verificar se o item existe e pertence ao usuário
     const { data: cartItem, error: cartError } = await supabase
@@ -299,11 +301,11 @@ router.put("/:id", authenticateUser, async (req, res) => {
       .single();
 
     if (updateError) {
-      console.error("❌ Erro ao atualizar quantidade:", updateError);
+      logger.error("❌ Erro ao atualizar quantidade:", updateError);
       throw new Error(`Erro ao atualizar: ${updateError.message}`);
     }
 
-    console.log("✅ Quantidade atualizada:", updatedItem.id);
+    logger.info("✅ Quantidade atualizada:", updatedItem.id);
 
     return res.json({
       success: true,
@@ -311,7 +313,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
       data: updatedItem,
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar quantidade:", error);
+    logger.error("❌ Erro ao atualizar quantidade:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao atualizar quantidade no carrinho",
@@ -325,7 +327,7 @@ router.delete("/:id", authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
 
-    console.log("🗑️ Removendo item do carrinho:", id, "usuário:", req.user.id);
+    logger.info("🗑️ Removendo item do carrinho:", id, "usuário:", req.user.id);
 
     // Verificar se o item existe e pertence ao usuário
     const { data: cartItem, error: checkError } = await supabase
@@ -351,18 +353,18 @@ router.delete("/:id", authenticateUser, async (req, res) => {
     const { error: deleteError } = await supabase.from("carts").delete().eq("id", id).eq("userId", req.user.id);
 
     if (deleteError) {
-      console.error("❌ Erro ao remover do carrinho:", deleteError);
+      logger.error("❌ Erro ao remover do carrinho:", deleteError);
       throw new Error(`Erro ao remover: ${deleteError.message}`);
     }
 
-    console.log("✅ Item removido do carrinho:", id);
+    logger.info("✅ Item removido do carrinho:", id);
 
     return res.json({
       success: true,
       message: `${cartItem.products.name} removido do carrinho`,
     });
   } catch (error) {
-    console.error("❌ Erro ao remover do carrinho:", error);
+    logger.error("❌ Erro ao remover do carrinho:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao remover produto do carrinho",
@@ -374,24 +376,24 @@ router.delete("/:id", authenticateUser, async (req, res) => {
 // DELETE /api/cart - Limpar carrinho completo
 router.delete("/", authenticateUser, async (req, res) => {
   try {
-    console.log("🧹 Limpando carrinho para usuário:", req.user.id);
+    logger.info("🧹 Limpando carrinho para usuário:", req.user.id);
 
     // Remover todos os itens do carrinho do usuário
     const { error } = await supabase.from("carts").delete().eq("userId", req.user.id);
 
     if (error) {
-      console.error("❌ Erro ao limpar carrinho:", error);
+      logger.error("❌ Erro ao limpar carrinho:", error);
       throw new Error(`Erro ao limpar: ${error.message}`);
     }
 
-    console.log("✅ Carrinho limpo com sucesso");
+    logger.info("✅ Carrinho limpo com sucesso");
 
     return res.json({
       success: true,
       message: "Carrinho limpo com sucesso",
     });
   } catch (error) {
-    console.error("❌ Erro ao limpar carrinho:", error);
+    logger.error("❌ Erro ao limpar carrinho:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao limpar carrinho",

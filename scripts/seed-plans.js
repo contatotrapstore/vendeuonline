@@ -1,3 +1,5 @@
+import { logger } from "../lib/logger.js";
+
 // Script para popular banco com os 4 planos corretos
 import { PrismaClient } from "@prisma/client";
 
@@ -105,23 +107,23 @@ const plans = [
 
 async function seedPlans() {
   try {
-    console.log("🌱 Iniciando seed dos planos...");
+    logger.info("🌱 Iniciando seed dos planos...");
 
     // Limpar planos existentes
     await prisma.plan.deleteMany();
-    console.log("✅ Planos existentes removidos");
+    logger.info("✅ Planos existentes removidos");
 
     // Inserir novos planos
     for (const plan of plans) {
       await prisma.plan.create({
         data: plan,
       });
-      console.log(`✅ Plano criado: ${plan.name} - R$ ${plan.price}`);
+      logger.info(`✅ Plano criado: ${plan.name} - R$ ${plan.price}`);
     }
 
-    console.log(`🎉 Seed concluído! ${plans.length} planos criados com sucesso.`);
+    logger.info(`🎉 Seed concluído! ${plans.length} planos criados com sucesso.`);
   } catch (error) {
-    console.error("❌ Erro no seed:", error);
+    logger.error("❌ Erro no seed:", error);
   } finally {
     await prisma.$disconnect();
   }

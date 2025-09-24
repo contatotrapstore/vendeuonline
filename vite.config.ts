@@ -2,6 +2,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tsconfigPaths from "vite-tsconfig-paths";
 import { VitePWA } from "vite-plugin-pwa";
+import { logger } from "@/lib/logger";
+
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -18,18 +20,18 @@ export default defineConfig({
         rewrite: (path) => path, // Manter /api no path
         // Fallback para portas dinâmicas caso 3000 não esteja disponível
         onError: (err, req, res) => {
-          console.log("❌ Proxy error, tentando porta alternativa:", err.message);
+          logger.info("❌ Proxy error, tentando porta alternativa:", err.message);
           // Em caso de erro, o frontend pode tentar outras portas
         },
         configure: (proxy, _options) => {
           proxy.on("error", (err, _req, _res) => {
-            console.log("❌ Proxy error:", err);
+            logger.info("❌ Proxy error:", err);
           });
           proxy.on("proxyReq", (proxyReq, req, _res) => {
-            console.log("🔄 Sending Request to the Target:", req.method, req.url);
+            logger.info("🔄 Sending Request to the Target:", req.method, req.url);
           });
           proxy.on("proxyRes", (proxyRes, req, _res) => {
-            console.log("✅ Received Response from the Target:", proxyRes.statusCode, req.url);
+            logger.info("✅ Received Response from the Target:", proxyRes.statusCode, req.url);
           });
         },
       },

@@ -70,6 +70,7 @@
     "lucide-react": "^0.511.0",
     "mercadopago": "^2.8.0",
     "multer": "^2.0.2",
+    "node-cache": "^5.1.2",
     "node-fetch": "^3.3.2",
     "pg": "^8.13.0",
     "prisma": "^6.12.0",

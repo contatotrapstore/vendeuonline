@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -116,7 +118,7 @@ export default function AdminProductsPage() {
         pageSize: data.pagination?.limit || 20,
       });
     } catch (error: any) {
-      console.error("Erro ao buscar produtos:", error);
+      logger.error("Erro ao buscar produtos:", error);
       setError(error.message || "Erro ao carregar produtos");
       setProducts([]);
     } finally {

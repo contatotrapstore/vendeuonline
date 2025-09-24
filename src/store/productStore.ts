@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { Product } from "@/types";
 import { apiRequest, get as apiGet, post, put, del } from "@/lib/api-client";
 import { appCache } from "@/lib/cache";
+import { logger } from "@/lib/logger";
+
 
 export interface ProductFilters {
   search: string;
@@ -371,7 +373,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
       const response = await apiGet(`/api/products?storeId=${storeId}`);
       return response.products;
     } catch (error) {
-      console.error("Erro ao carregar produtos da loja:", error);
+      logger.error("Erro ao carregar produtos da loja:", error);
       return [];
     }
   },
@@ -381,7 +383,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
       const response = await apiGet("/api/products?featured=true&limit=8");
       return response.products;
     } catch (error) {
-      console.error("Erro ao carregar produtos em destaque:", error);
+      logger.error("Erro ao carregar produtos em destaque:", error);
       return [];
     }
   },
@@ -391,7 +393,7 @@ export const useProductStore = create<ProductStore>((set, get) => ({
       const response = await apiGet(`/api/products/${productId}/related?limit=${limit}`);
       return response.products;
     } catch (error) {
-      console.error("Erro ao carregar produtos relacionados:", error);
+      logger.error("Erro ao carregar produtos relacionados:", error);
       return [];
     }
   },

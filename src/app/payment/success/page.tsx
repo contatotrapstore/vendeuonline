@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -57,7 +59,7 @@ export default function PaymentSuccessPage() {
         toast.error("Erro ao verificar status do pagamento");
       }
     } catch (error) {
-      console.error("Erro ao verificar pagamento:", error);
+      logger.error("Erro ao verificar pagamento:", error);
       toast.error("Erro ao verificar status do pagamento");
     } finally {
       setLoading(false);

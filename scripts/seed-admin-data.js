@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { logger } from "../lib/logger.js";
+
 
 const prisma = new PrismaClient();
 
@@ -92,7 +94,7 @@ function generateDescription(productName, brand, category) {
 }
 
 async function createSeedData() {
-  console.log("🌱 Iniciando seed de dados para admin...");
+  logger.info("🌱 Iniciando seed de dados para admin...");
 
   try {
     // Buscar sellers existentes
@@ -104,17 +106,17 @@ async function createSeedData() {
     });
 
     if (sellers.length === 0) {
-      console.log("❌ Nenhum seller encontrado. Execute o seed principal primeiro.");
+      logger.info("❌ Nenhum seller encontrado. Execute o seed principal primeiro.");
       return;
     }
 
-    console.log(`✅ Encontrados ${sellers.length} sellers`);
+    logger.info(`✅ Encontrados ${sellers.length} sellers`);
 
     // Buscar categorias existentes
     let categories = await prisma.category.findMany();
 
     if (categories.length === 0) {
-      console.log("📦 Criando categorias...");
+      logger.info("📦 Criando categorias...");
       for (let i = 0; i < CATEGORIES.length; i++) {
         const category = CATEGORIES[i];
         const slug = category
@@ -132,11 +134,11 @@ async function createSeedData() {
         });
       }
       categories = await prisma.category.findMany();
-      console.log(`✅ ${categories.length} categorias criadas`);
+      logger.info(`✅ ${categories.length} categorias criadas`);
     }
 
     // Criar produtos variados para cada seller
-    console.log("🛍️ Criando produtos...");
+    logger.info("🛍️ Criando produtos...");
     const totalProducts = 50; // Total de produtos para criar
     let createdCount = 0;
 
@@ -145,7 +147,7 @@ async function createSeedData() {
       const store = seller.store; // Use singular store relation
 
       if (!store) {
-        console.log(`⚠️ Seller ${seller.user.name} não possui loja, pulando produto ${i + 1}`);
+        logger.info(`⚠️ Seller ${seller.user.name} não possui loja, pulando produto ${i + 1}`);
         continue;
       }
 
@@ -211,15 +213,15 @@ async function createSeedData() {
 
         createdCount++;
         if (createdCount % 10 === 0) {
-          console.log(`  📦 ${createdCount}/${totalProducts} produtos criados...`);
+          logger.info(`  📦 ${createdCount}/${totalProducts} produtos criados...`);
         }
       } catch (error) {
-        console.error(`Erro ao criar produto ${i + 1}:`, error.message);
+        logger.error(`Erro ao criar produto ${i + 1}:`, error.message);
       }
     }
 
     // Criar algumas lojas com diferentes status
-    console.log("🏪 Atualizando status das lojas...");
+    logger.info("🏪 Atualizando status das lojas...");
     const stores = await prisma.store.findMany();
 
     for (let i = 0; i < stores.length; i++) {
@@ -256,17 +258,17 @@ async function createSeedData() {
       prisma.store.count({ where: { isActive: true } }),
     ]);
 
-    console.log("\n🎉 Seed de dados admin concluído!");
-    console.log("📊 Estatísticas:");
-    console.log(`  📦 Total de produtos: ${stats[0]}`);
-    console.log(`  ⏳ Produtos pendentes: ${stats[1]}`);
-    console.log(`  ✅ Produtos aprovados: ${stats[2]}`);
-    console.log(`  ❌ Produtos rejeitados: ${stats[3]}`);
-    console.log(`  🏪 Total de lojas: ${stats[4]}`);
-    console.log(`  ✅ Lojas verificadas: ${stats[5]}`);
-    console.log(`  🟢 Lojas ativas: ${stats[6]}`);
+    logger.info("\n🎉 Seed de dados admin concluído!");
+    logger.info("📊 Estatísticas:");
+    logger.info(`  📦 Total de produtos: ${stats[0]}`);
+    logger.info(`  ⏳ Produtos pendentes: ${stats[1]}`);
+    logger.info(`  ✅ Produtos aprovados: ${stats[2]}`);
+    logger.info(`  ❌ Produtos rejeitados: ${stats[3]}`);
+    logger.info(`  🏪 Total de lojas: ${stats[4]}`);
+    logger.info(`  ✅ Lojas verificadas: ${stats[5]}`);
+    logger.info(`  🟢 Lojas ativas: ${stats[6]}`);
   } catch (error) {
-    console.error("❌ Erro durante o seed:", error);
+    logger.error("❌ Erro durante o seed:", error);
     throw error;
   }
 }
@@ -274,7 +276,7 @@ async function createSeedData() {
 // Executar o seed
 createSeedData()
   .catch((e) => {
-    console.error("❌ Falha no seed:", e);
+    logger.error("❌ Falha no seed:", e);
     process.exit(1);
   })
   .finally(async () => {

@@ -1,3 +1,5 @@
+import { logger } from "../lib/logger.js";
+
 // Função de diagnóstico completa para identificar problemas no Vercel
 export default async function handler(req, res) {
   const diagnostics = {
@@ -7,7 +9,7 @@ export default async function handler(req, res) {
   };
 
   try {
-    console.log("🩺 [DIAGNOSTICS] Iniciando diagnóstico completo...");
+    logger.info("🩺 [DIAGNOSTICS] Iniciando diagnóstico completo...");
 
     // 1. Testar variáveis de ambiente
     diagnostics.tests.environmentVariables = {
@@ -42,7 +44,7 @@ export default async function handler(req, res) {
 
         // 4. Testar conexão com banco
         try {
-          console.log("🩺 [DIAGNOSTICS] Tentando conectar ao banco...");
+          logger.info("🩺 [DIAGNOSTICS] Tentando conectar ao banco...");
           await prisma.$connect();
           diagnostics.tests.databaseConnection = {
             status: "success",
@@ -51,7 +53,7 @@ export default async function handler(req, res) {
 
           // 5. Testar query simples
           try {
-            console.log("🩺 [DIAGNOSTICS] Tentando query de teste...");
+            logger.info("🩺 [DIAGNOSTICS] Tentando query de teste...");
             const result = await prisma.$queryRaw`SELECT 1 as test`;
             diagnostics.tests.simpleQuery = {
               status: "success",
@@ -138,13 +140,13 @@ export default async function handler(req, res) {
       };
     }
 
-    console.log("🩺 [DIAGNOSTICS] Diagnóstico concluído");
+    logger.info("🩺 [DIAGNOSTICS] Diagnóstico concluído");
     res.status(200).json({
       success: true,
       diagnostics,
     });
   } catch (error) {
-    console.error("❌ [DIAGNOSTICS] Erro geral:", error);
+    logger.error("❌ [DIAGNOSTICS] Erro geral:", error);
     res.status(500).json({
       success: false,
       error: error.message,

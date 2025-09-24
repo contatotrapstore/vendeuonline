@@ -1,5 +1,7 @@
 import React, { useState, useCallback, useRef } from "react";
 import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
+import { logger } from "@/lib/logger";
+
 
 export interface UploadedImage {
   url: string;
@@ -54,7 +56,7 @@ export default function ImageUploader({
         file,
       };
     } catch (error) {
-      console.error("Erro no upload:", error);
+      logger.error("Erro no upload:", error);
       alert(`Erro ao fazer upload de ${file.name}: ${error}`);
       return null;
     }
@@ -138,7 +140,7 @@ export default function ImageUploader({
         method: "DELETE",
       });
     } catch (error) {
-      console.error("Erro ao deletar imagem:", error);
+      logger.error("Erro ao deletar imagem:", error);
     }
 
     // Remover da lista

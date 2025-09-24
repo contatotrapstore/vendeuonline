@@ -1,4 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
+import { logger } from "@/lib/logger";
+
 
 // Configuração do Cloudinary
 cloudinary.config({
@@ -48,7 +50,7 @@ export const deleteFromCloudinary = async (publicId: string): Promise<void> => {
   try {
     await cloudinary.uploader.destroy(publicId);
   } catch (error) {
-    console.error("Error deleting image from Cloudinary:", error);
+    logger.error("Error deleting image from Cloudinary:", error);
     throw error;
   }
 };

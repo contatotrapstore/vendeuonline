@@ -1,91 +1,21 @@
 import express from "express";
+import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin } from "../middleware/auth.js";
 import { z } from "zod";
-import prisma from "../lib/prisma.js";
 import { supabase } from "../lib/supabase-client.js";
 import { protectRoute, validateInput, commonValidations } from "../middleware/security.js";
+import { validateProduct, validateUUIDParam, validatePagination, validateSearchFilters } from "../middleware/validation.js";
+import { cache, CACHE_KEYS, CACHE_TTL, cacheMiddleware } from "../lib/cache.js";
+import { OPTIMIZED_SELECTS, createOptimizedQuery, applyCommonFilters, applyTextSearch, withQueryMetrics } from "../lib/query-optimizer.js";
 import jwt from "jsonwebtoken";
+import { logger } from "../lib/logger.js";
+
 
 const router = express.Router();
 
-console.log("📦 Products routes loaded - PUT/DELETE should be available");
+logger.info("📦 Products routes loaded - PUT/DELETE should be available");
 
 // Middleware de autenticação
-const authenticate = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({
-        error: "Acesso negado. Faça login primeiro.",
-        code: "AUTHENTICATION_REQUIRED",
-      });
-    }
-
-    const token = authHeader.substring(7);
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error("❌ JWT_SECRET não está configurado no ambiente");
-      process.exit(1);
-    }
-    const decoded = jwt.verify(token, jwtSecret);
-
-    // Buscar dados atualizados do usuário
-    const { data: user, error } = await supabase.from("users").select("*").eq("id", decoded.userId).single();
-
-    if (error || !user) {
-      console.error("❌ Erro ao buscar usuário:", error);
-      return res.status(401).json({
-        error: "Usuário não encontrado",
-        code: "USER_NOT_FOUND",
-      });
-    }
-
-    req.user = {
-      userId: user.id,
-      email: user.email,
-      type: user.type,
-      name: user.name,
-      ...user,
-    };
-
-    // Se for seller, buscar sellerId
-    if (user.type === "SELLER") {
-      const { data: seller, error: sellerError } = await supabase
-        .from("sellers")
-        .select("id")
-        .eq("userId", user.id)
-        .single();
-
-      if (!sellerError && seller) {
-        req.user.sellerId = seller.id;
-        // Debug: Seller autenticado
-      } else {
-        console.warn("⚠️ Seller não encontrado para usuário:", user.id);
-      }
-    }
-
-    next();
-  } catch (error) {
-    console.error("❌ Erro na autenticação:", error);
-
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({
-        error: "Token expirado",
-        code: "TOKEN_EXPIRED",
-      });
-    }
-    if (error.name === "JsonWebTokenError") {
-      return res.status(401).json({
-        error: "Token inválido",
-        code: "TOKEN_INVALID",
-      });
-    }
-
-    res.status(401).json({
-      error: "Falha na autenticação",
-      code: "AUTHENTICATION_FAILED",
-    });
-  }
-};
+// Middleware removido - usando middleware centralizado
 
 // Função para processar query parameters
 const processQuery = (query) => {
@@ -134,39 +64,37 @@ const createProductSchema = z.object({
 });
 
 // GET /api/products - Listar produtos
-router.get("/", async (req, res) => {
+router.get("/", validatePagination, validateSearchFilters,
+  cacheMiddleware((req) =>
+    CACHE_KEYS.PRODUCTS_LIST(req.query.page || 1, req.query.limit || 12, req.query),
+    CACHE_TTL.MEDIUM
+  ),
+  async (req, res) => {
   try {
     const query = processQuery(req.query);
 
-    // Usar Supabase diretamente para evitar problemas do Prisma
-    let supabaseQuery = supabase
-      .from("Product")
-      .select(
-        `
-        *,
-        images:ProductImage(*),
-        specifications:ProductSpecification(*),
-        category:categories(*),
-        store:stores(id, name, slug, isVerified)
-      `
-      )
-      .eq("isActive", true);
+    // Query otimizada com campos específicos
+    let supabaseQuery = createOptimizedQuery(
+      supabase,
+      "Product",
+      `${OPTIMIZED_SELECTS.PRODUCTS_LIST},
+       images:ProductImage(*),
+       specifications:ProductSpecification(*),
+       category:categories(id, name),
+       store:stores(id, name, slug, isVerified)`
+    ).eq("isActive", true);
 
-    // Aplicar filtros
+    // Aplicar filtros otimizados
+    supabaseQuery = applyCommonFilters(supabaseQuery, {
+      category: query.category,
+      minPrice: query.minPrice,
+      maxPrice: query.maxPrice,
+      storeId: query.storeId
+    });
+
+    // Aplicar busca de texto otimizada
     if (query.search) {
-      supabaseQuery = supabaseQuery.or(`name.ilike.%${query.search}%,description.ilike.%${query.search}%`);
-    }
-
-    if (query.category) {
-      supabaseQuery = supabaseQuery.eq("category.name", query.category);
-    }
-
-    if (query.minPrice) {
-      supabaseQuery = supabaseQuery.gte("price", query.minPrice);
-    }
-
-    if (query.maxPrice) {
-      supabaseQuery = supabaseQuery.lte("price", query.maxPrice);
+      supabaseQuery = applyTextSearch(supabaseQuery, query.search, ['name', 'description']);
     }
 
     if (query.featured) {
@@ -196,7 +124,7 @@ router.get("/", async (req, res) => {
     const { data: products, error, count } = await supabaseQuery;
 
     if (error) {
-      console.error("Erro ao buscar produtos no Supabase:", error);
+      logger.error("Erro ao buscar produtos no Supabase:", error);
       throw error;
     }
 
@@ -231,7 +159,7 @@ router.get("/", async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Erro ao buscar produtos:", error);
+    logger.error("Erro ao buscar produtos:", error);
 
     // Se um sellerId específico foi solicitado, retornar lista vazia
     if (req.query.sellerId) {
@@ -275,39 +203,48 @@ router.get("/test", async (req, res) => {
 });
 
 // GET /api/products/:id - Buscar produto por ID
-router.get("/:id", async (req, res) => {
+router.get("/:id", validateUUIDParam,
+  cacheMiddleware((req) => CACHE_KEYS.PRODUCT_DETAIL(req.params.id), CACHE_TTL.LONG),
+  async (req, res) => {
   try {
     const { id } = req.params;
 
-    const product = await prisma.product.findUnique({
-      where: { id },
-      include: {
-        images: {
-          orderBy: { order: "asc" },
-        },
-        specifications: true,
-        category: true,
-        store: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            isVerified: true,
-          },
-        },
-        seller: {
-          include: {
-            user: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
+    // Query otimizada para detalhes do produto
+    const productQuery = withQueryMetrics('product-detail', async () => {
+      return await createOptimizedQuery(
+        supabase,
+        "Product",
+        `${OPTIMIZED_SELECTS.PRODUCTS_DETAIL},
+         images:ProductImage(id, url, alt, order),
+         specifications:ProductSpecification(id, name,
+          value
+        ),
+        category:categories(
+          id,
+          name,
+          slug
+        ),
+        store:stores(
+          id,
+          name,
+          slug,
+          isVerified
+        ),
+        seller:sellers(
+          id,
+          user:users(
+            name
+          )
+        )`
+      ).eq("id", id)
+       .eq("isActive", true)
+       .single();
     });
 
-    if (!product) {
+    const { data: product, error } = await productQuery();
+
+    if (error || !product) {
+      logger.error("Erro ao buscar produto:", error);
       return res.status(404).json({
         error: "Produto não encontrado",
       });
@@ -337,7 +274,7 @@ router.get("/:id", async (req, res) => {
 
     res.json(formattedProduct);
   } catch (error) {
-    console.error("Erro ao buscar produto:", error);
+    logger.error("Erro ao buscar produto:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
     });
@@ -388,7 +325,7 @@ router.get("/:id/related", async (req, res) => {
       products: relatedProducts || [],
     });
   } catch (error) {
-    console.error("Erro ao buscar produtos relacionados:", error);
+    logger.error("Erro ao buscar produtos relacionados:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
     });
@@ -400,10 +337,11 @@ router.post(
   "/",
   authenticate,
   protectRoute(["SELLER", "ADMIN"]),
+  validateProduct,
   validateInput([commonValidations.name, commonValidations.price]),
   async (req, res) => {
     try {
-      console.log("🛍️ Criação de produto requisitada:", req.body);
+      logger.info("🛍️ Criação de produto requisitada:", req.body);
 
       // Validar dados de entrada
       const productData = createProductSchema.parse(req.body);
@@ -431,7 +369,7 @@ router.post(
           .single();
 
         if (sellerError || !seller) {
-          console.error("❌ Erro ao buscar seller:", sellerError);
+          logger.error("❌ Erro ao buscar seller:", sellerError);
           return res.status(400).json({
             error: "Seller não encontrado",
             code: "SELLER_NOT_FOUND",
@@ -446,7 +384,7 @@ router.post(
           });
         }
 
-        console.log(`📊 Validando limites - Plano: ${sellerPlan.name}, Max Produtos: ${sellerPlan.maxProducts}`);
+        logger.info(`📊 Validando limites - Plano: ${sellerPlan.name}, Max Produtos: ${sellerPlan.maxProducts}`);
 
         // 2. Contar produtos atuais do seller
         if (sellerPlan.maxProducts !== -1) {
@@ -458,14 +396,14 @@ router.post(
             .eq("isActive", true);
 
           if (countError) {
-            console.error("❌ Erro ao contar produtos:", countError);
+            logger.error("❌ Erro ao contar produtos:", countError);
             return res.status(500).json({
               error: "Erro interno ao validar limites",
               code: "COUNT_ERROR",
             });
           }
 
-          console.log(`🔢 Produtos atuais: ${currentProducts}/${sellerPlan.maxProducts}`);
+          logger.info(`🔢 Produtos atuais: ${currentProducts}/${sellerPlan.maxProducts}`);
 
           // 3. Verificar se excede o limite
           if (currentProducts >= sellerPlan.maxProducts) {
@@ -498,8 +436,8 @@ router.post(
             comparePrice: productData.comparePrice || null,
             stock: productData.stock,
             categoryId: productData.categoryId,
-            sellerId: req.user.sellerId || req.user.userId,
-            storeId: req.user.type === "SELLER" ? `store_${req.user.userId}` : "store_1",
+            sellerId: req.user.sellerId,
+            storeId: req.user.storeId,
             isActive: productData.isActive,
             isFeatured: req.user.type === "ADMIN" ? productData.isFeatured : false,
             viewCount: 0,
@@ -513,47 +451,15 @@ router.post(
         .single();
 
       if (error) {
-        console.error("❌ Erro ao criar produto no Supabase:", error);
+        logger.error("❌ Erro ao criar produto no Supabase:", error);
 
-        // Para demonstração, retornar produto mock em caso de erro
-        const mockProduct = {
-          id: productId,
-          name: productData.name,
-          description: productData.description,
-          price: productData.price,
-          comparePrice: productData.comparePrice || null,
-          stock: productData.stock,
-          categoryId: productData.categoryId,
-          sellerId: req.user.userId,
-          storeId: req.user.type === "SELLER" ? `store_${req.user.userId}` : "store_1",
-          isActive: productData.isActive,
-          isFeatured: req.user.type === "ADMIN" ? productData.isFeatured : false,
-          viewCount: 0,
-          salesCount: 0,
-          averageRating: 0,
-          reviewCount: 0,
-          createdAt: new Date().toISOString(),
-          images: productData.images || [],
-          specifications: productData.specifications || [],
-          category: {
-            id: productData.categoryId,
-            name: "Categoria Teste",
-            slug: "categoria-teste",
-          },
-          store: {
-            id: req.user.type === "SELLER" ? `store_${req.user.userId}` : "store_1",
-            name: `${req.user.name} Store`,
-            slug: "store-slug",
-            rating: 4.8,
-            isVerified: true,
-          },
-        };
-
-        console.log("✅ Produto criado (modo mock):", productId);
-        return res.status(201).json({
-          success: true,
-          message: "Produto criado com sucesso (modo demonstração)",
-          product: mockProduct,
+        // ❌ REMOVIDO: Mock que dava falso sucesso
+        // Agora retorna erro real para o usuário
+        return res.status(500).json({
+          success: false,
+          error: "Falha ao criar produto",
+          details: error.message,
+          code: "PRODUCT_CREATION_FAILED"
         });
       }
 
@@ -590,7 +496,7 @@ router.post(
         await Promise.all(specPromises);
       }
 
-      console.log("✅ Produto criado com sucesso:", productId);
+      logger.info("✅ Produto criado com sucesso:", productId);
 
       // Buscar produto completo com relacionamentos
       const { data: fullProduct, error: fetchError } = await supabase
@@ -607,13 +513,17 @@ router.post(
         .eq("id", productId)
         .single();
 
+      // Invalidar cache de produtos após criação
+      await cache.invalidatePattern('products:*');
+      await cache.invalidatePattern('categories:*');
+
       res.status(201).json({
         success: true,
         message: "Produto criado com sucesso",
         product: fullProduct || product,
       });
     } catch (error) {
-      console.error("❌ Erro ao criar produto:", error);
+      logger.error("❌ Erro ao criar produto:", error);
 
       if (error instanceof z.ZodError) {
         return res.status(400).json({
@@ -642,8 +552,8 @@ router.put("/:id", authenticate, protectRoute(["SELLER", "ADMIN"]), async (req, 
     const productId = req.params.id;
     const updateData = req.body;
 
-    console.log("🚀 PUT route called for product:", productId);
-    console.log("🔄 Atualizando produto:", productId, updateData);
+    logger.info("🚀 PUT route called for product:", productId);
+    logger.info("🔄 Atualizando produto:", productId, updateData);
 
     // Verificar se o produto existe e se o seller tem permissão
     const { data: existingProduct, error: fetchError } = await supabase
@@ -679,14 +589,14 @@ router.put("/:id", authenticate, protectRoute(["SELLER", "ADMIN"]), async (req, 
       .single();
 
     if (updateError) {
-      console.error("❌ Erro ao atualizar produto:", updateError);
+      logger.error("❌ Erro ao atualizar produto:", updateError);
       return res.status(500).json({
         success: false,
         error: "Erro ao atualizar produto",
       });
     }
 
-    console.log("✅ Produto atualizado:", productId);
+    logger.info("✅ Produto atualizado:", productId);
 
     res.json({
       success: true,
@@ -694,7 +604,7 @@ router.put("/:id", authenticate, protectRoute(["SELLER", "ADMIN"]), async (req, 
       product: updatedProduct,
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar produto:", error);
+    logger.error("❌ Erro ao atualizar produto:", error);
     res.status(500).json({
       success: false,
       error: "Erro interno do servidor",
@@ -707,7 +617,7 @@ router.delete("/:id", authenticate, protectRoute(["SELLER", "ADMIN"]), async (re
   try {
     const productId = req.params.id;
 
-    console.log("🗑️ Deletando produto:", productId);
+    logger.info("🗑️ Deletando produto:", productId);
 
     // Verificar se o produto existe e se o seller tem permissão
     const { data: existingProduct, error: fetchError } = await supabase
@@ -741,21 +651,21 @@ router.delete("/:id", authenticate, protectRoute(["SELLER", "ADMIN"]), async (re
       .eq("id", productId);
 
     if (deleteError) {
-      console.error("❌ Erro ao deletar produto:", deleteError);
+      logger.error("❌ Erro ao deletar produto:", deleteError);
       return res.status(500).json({
         success: false,
         error: "Erro ao deletar produto",
       });
     }
 
-    console.log("✅ Produto deletado (soft delete):", productId);
+    logger.info("✅ Produto deletado (soft delete):", productId);
 
     res.json({
       success: true,
       message: `Produto "${existingProduct.name}" removido com sucesso`,
     });
   } catch (error) {
-    console.error("❌ Erro ao deletar produto:", error);
+    logger.error("❌ Erro ao deletar produto:", error);
     res.status(500).json({
       success: false,
       error: "Erro interno do servidor",

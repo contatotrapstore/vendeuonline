@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -21,20 +23,6 @@ import {
   Star,
 } from "lucide-react";
 
-interface PaymentSettings {
-  pixKey: string;
-  bankAccount: {
-    bank: string;
-    agency: string;
-    account: string;
-    accountType: "checking" | "savings";
-  };
-  paymentMethods: {
-    pix: boolean;
-    boleto: boolean;
-    creditCard: boolean;
-  };
-}
 
 interface ShippingSettings {
   freeShippingMinValue: number;
@@ -49,6 +37,22 @@ interface ShippingSettings {
   };
 }
 
+interface PaymentSettings {
+  pixKey: string;
+  bankAccount: {
+    bank: string;
+    agency: string;
+    account: string;
+    accountType: "checking" | "savings";
+  };
+  paymentMethods: {
+    pix: boolean;
+    boleto: boolean;
+    creditCard: boolean;
+  };
+  freeShippingMinValue?: number;
+}
+
 interface NotificationSettings {
   newOrders: boolean;
   lowStock: boolean;
@@ -60,12 +64,15 @@ interface NotificationSettings {
 
 interface PlanInfo {
   current: {
+    id?: string;
     name: string;
     price: number;
     features: string[];
-    productsLimit: number;
-    photosPerProduct: number;
-  };
+    productsLimit?: number;
+    photosPerProduct?: number;
+    maxProducts?: number;
+    maxPhotos?: number;
+  } | null;
   usage: {
     productsUsed: number;
     photosUsed: number;
@@ -178,14 +185,43 @@ export default function SellerSettings() {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setPayment(data.payment || payment);
-        setShipping(data.shipping || shipping);
-        setNotifications(data.notifications || notifications);
-        setPlanInfo(data.plan || planInfo);
+        const result = await response.json();
+        if (result.success && result.data) {
+          const data = result.data;
+          // Map backend format to frontend format
+          setPayment({
+            pixKey: data.pixKey || payment.pixKey,
+            bankAccount: data.bankAccount || payment.bankAccount,
+            paymentMethods: {
+              pix: data.paymentMethods?.pix ?? payment.paymentMethods.pix,
+              boleto: data.paymentMethods?.boleto ?? payment.paymentMethods.boleto,
+              creditCard: data.paymentMethods?.creditCard ?? payment.paymentMethods.creditCard,
+            },
+          });
+          setShipping({
+            freeShippingMinValue: data.shippingOptions?.freeShippingMin ?? shipping.freeShippingMinValue,
+            shippingTime: {
+              min: data.shippingOptions?.deliveryDays ? Math.max(1, Math.floor(data.shippingOptions.deliveryDays / 2)) : shipping.shippingTime.min,
+              max: data.shippingOptions?.deliveryDays ?? shipping.shippingTime.max,
+            },
+            shippingMethods: {
+              correios: true, // Default enabled
+              localDelivery: data.shippingOptions?.pickupAvailable ?? shipping.shippingMethods.localDelivery,
+              pickup: data.shippingOptions?.pickupAvailable ?? shipping.shippingMethods.pickup,
+            },
+          });
+          setNotifications({
+            newOrders: data.notifications?.emailNotifications ?? notifications.newOrders,
+            lowStock: notifications.lowStock,
+            paymentReceived: data.notifications?.emailNotifications ?? notifications.paymentReceived,
+            customerMessages: notifications.customerMessages,
+            weeklyReport: notifications.weeklyReport,
+            monthlyReport: notifications.monthlyReport,
+          });
+        }
       }
     } catch (error) {
-      console.error("Error loading settings:", error);
+      logger.error("Error loading settings:", error);
     } finally {
       setIsLoading(false);
     }
@@ -200,14 +236,24 @@ export default function SellerSettings() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ payment }),
+        body: JSON.stringify({
+          paymentMethods: {
+            pix: payment.paymentMethods.pix,
+            creditCard: payment.paymentMethods.creditCard,
+            debitCard: payment.paymentMethods.creditCard, // Map creditCard to debitCard for backend
+            boleto: payment.paymentMethods.boleto,
+          },
+          // Add other payment fields if backend supports them
+          pixKey: payment.pixKey,
+          bankAccount: payment.bankAccount,
+        }),
       });
 
       if (response.ok) {
         alert("Configurações de pagamento salvas!");
       }
     } catch (error) {
-      console.error("Error saving payment settings:", error);
+      logger.error("Error saving payment settings:", error);
       alert("Erro ao salvar configurações");
     } finally {
       setIsLoading(false);
@@ -223,14 +269,21 @@ export default function SellerSettings() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ shipping }),
+        body: JSON.stringify({
+          shippingOptions: {
+            freeShippingMin: shipping.freeShippingMinValue,
+            shippingFee: 10.0, // Default shipping fee
+            deliveryDays: shipping.shippingTime.max,
+            pickupAvailable: shipping.shippingMethods.pickup,
+          },
+        }),
       });
 
       if (response.ok) {
         alert("Configurações de envio salvas!");
       }
     } catch (error) {
-      console.error("Error saving shipping settings:", error);
+      logger.error("Error saving shipping settings:", error);
       alert("Erro ao salvar configurações");
     } finally {
       setIsLoading(false);
@@ -246,11 +299,11 @@ export default function SellerSettings() {
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setPlans(data.plans || []);
+        const result = await response.json();
+        setPlans(result.plans || []);
       }
     } catch (error) {
-      console.error("Erro ao carregar planos:", error);
+      logger.error("Erro ao carregar planos:", error);
     }
   };
 
@@ -258,7 +311,7 @@ export default function SellerSettings() {
     try {
       // Buscar dados reais de uso do vendedor
       const [productsRes, subscriptionRes] = await Promise.all([
-        fetch("/api/products?sellerId=" + user?.id, {
+        fetch("/api/seller/products", {
           headers: { Authorization: `Bearer ${token}` },
         }),
         fetch("/api/seller/subscription", {
@@ -266,21 +319,21 @@ export default function SellerSettings() {
         }),
       ]);
 
-      const productsData = productsRes.ok ? await productsRes.json() : { products: [] };
+      const productsData = productsRes.ok ? await productsRes.json() : { data: [] };
       const subData = subscriptionRes.ok ? await subscriptionRes.json() : null;
 
-      if (subData?.data && plans.length > 0) {
+      if (subData?.success && subData.data && plans.length > 0) {
         const currentPlan = plans.find((p) => p.id === subData.data.planId) || plans[0];
         setPlanInfo({
           current: currentPlan,
           usage: {
-            productsUsed: productsData.products?.length || 0,
-            photosUsed: productsData.products?.reduce((acc, p) => acc + (p.images?.length || 0), 0) || 0,
+            productsUsed: productsData.data?.length || 0,
+            photosUsed: productsData.data?.reduce((acc, p) => acc + (p.images?.length || 0), 0) || 0,
           },
         });
       }
     } catch (error) {
-      console.error("Erro ao carregar dados de uso:", error);
+      logger.error("Erro ao carregar dados de uso:", error);
     }
   };
 
@@ -293,14 +346,19 @@ export default function SellerSettings() {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ notifications }),
+        body: JSON.stringify({
+          notifications: {
+            emailNotifications: notifications.newOrders || notifications.paymentReceived,
+            smsNotifications: false, // Not supported in frontend yet
+          },
+        }),
       });
 
       if (response.ok) {
         alert("Configurações de notificação salvas!");
       }
     } catch (error) {
-      console.error("Error saving notification settings:", error);
+      logger.error("Error saving notification settings:", error);
       alert("Erro ao salvar configurações");
     } finally {
       setIsLoading(false);
@@ -340,7 +398,7 @@ export default function SellerSettings() {
         alert(error.message || "Erro ao alterar senha");
       }
     } catch (error) {
-      console.error("Error changing password:", error);
+      logger.error("Error changing password:", error);
       alert("Erro ao alterar senha");
     } finally {
       setIsLoading(false);
@@ -360,19 +418,25 @@ export default function SellerSettings() {
       });
 
       if (response.ok) {
-        const newPlan = plans.find((p) => p.id === planId);
-        if (newPlan) {
-          setPlanInfo((prev) => ({
-            ...prev,
-            current: newPlan,
-          }));
-          alert("Plano atualizado com sucesso!");
+        const result = await response.json();
+        if (result.success) {
+          const newPlan = plans.find((p) => p.id === planId);
+          if (newPlan) {
+            setPlanInfo((prev) => ({
+              ...prev,
+              current: newPlan,
+            }));
+            alert(result.message || "Plano atualizado com sucesso!");
+          }
+        } else {
+          alert(result.error || "Erro ao atualizar plano");
         }
       } else {
-        alert("Erro ao atualizar plano");
+        const error = await response.json().catch(() => ({}));
+        alert(error.error || "Erro ao atualizar plano");
       }
     } catch (error) {
-      console.error("Error upgrading plan:", error);
+      logger.error("Error upgrading plan:", error);
       alert("Erro ao atualizar plano");
     } finally {
       setIsLoading(false);
@@ -847,13 +911,13 @@ export default function SellerSettings() {
                             <div
                               className="bg-blue-600 h-2 rounded-full"
                               style={{
-                                width: `${(planInfo.usage.productsUsed / planInfo.current.productsLimit) * 100}%`,
+                                width: `${(planInfo.usage.productsUsed / (planInfo.current?.maxProducts || planInfo.current?.productsLimit || 1)) * 100}%`,
                               }}
                             ></div>
                           </div>
                           <p className="text-xs text-blue-600 mt-1">
                             {planInfo.usage.productsUsed} de{" "}
-                            {planInfo.current.productsLimit === 999999 ? "∞" : planInfo.current.productsLimit}
+                            {(planInfo.current?.maxProducts || planInfo.current?.productsLimit) === 999999 ? "∞" : (planInfo.current?.maxProducts || planInfo.current?.productsLimit)}
                           </p>
                         </div>
 
@@ -863,7 +927,7 @@ export default function SellerSettings() {
                             <div
                               className="bg-blue-600 h-2 rounded-full"
                               style={{
-                                width: `${(planInfo.usage.photosUsed / (planInfo.current.photosPerProduct * planInfo.current.productsLimit)) * 100}%`,
+                                width: `${(planInfo.usage.photosUsed / ((planInfo.current?.maxPhotos || planInfo.current?.photosPerProduct || 1) * (planInfo.current?.maxProducts || planInfo.current?.productsLimit || 1))) * 100}%`,
                               }}
                             ></div>
                           </div>
@@ -872,7 +936,18 @@ export default function SellerSettings() {
                       </div>
 
                       <ul className="text-sm text-blue-700">
-                        {planInfo.current.features.map((feature, index) => (
+                        {(Array.isArray(planInfo.current?.features)
+                          ? planInfo.current.features
+                          : typeof planInfo.current?.features === 'string'
+                            ? (() => {
+                                try {
+                                  return JSON.parse(planInfo.current.features || '[]');
+                                } catch {
+                                  return [];
+                                }
+                              })()
+                            : []
+                        ).map((feature, index) => (
                           <li key={index} className="flex items-center mb-1">
                             <Star className="h-3 w-3 mr-2" />
                             {feature}
@@ -889,7 +964,7 @@ export default function SellerSettings() {
                           <div
                             key={plan.id}
                             className={`border rounded-lg p-4 relative ${
-                              plan.id === planInfo.current?.name?.toLowerCase().replace(" ", "")
+                              plan.id === planInfo.current?.id
                                 ? "border-blue-500 bg-blue-50"
                                 : "border-gray-200"
                             } ${plan.popular ? "ring-2 ring-yellow-400" : ""}`}
@@ -911,7 +986,18 @@ export default function SellerSettings() {
                             </div>
 
                             <ul className="text-sm text-gray-600 mb-4 space-y-1">
-                              {plan.features.map((feature, index) => (
+                              {(Array.isArray(plan.features)
+                                ? plan.features
+                                : typeof plan.features === 'string'
+                                  ? (() => {
+                                      try {
+                                        return JSON.parse(plan.features || '[]');
+                                      } catch {
+                                        return [];
+                                      }
+                                    })()
+                                  : []
+                              ).map((feature, index) => (
                                 <li key={index} className="flex items-center">
                                   <Star className="h-3 w-3 mr-2 text-green-500" />
                                   {feature}
@@ -919,17 +1005,17 @@ export default function SellerSettings() {
                               ))}
                             </ul>
 
-                            {plan.id !== planInfo.current?.name?.toLowerCase().replace(" ", "") && (
+                            {plan.id !== planInfo.current?.id && (
                               <button
                                 onClick={() => handlePlanUpgrade(plan.id)}
                                 disabled={isLoading}
                                 className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors disabled:opacity-50"
                               >
-                                {plan.price > planInfo.current.price ? "Fazer Upgrade" : "Escolher Plano"}
+                                {plan.price > (planInfo.current?.price || 0) ? "Fazer Upgrade" : "Escolher Plano"}
                               </button>
                             )}
 
-                            {plan.id === planInfo.current?.name?.toLowerCase().replace(" ", "") && (
+                            {plan.id === planInfo.current?.id && (
                               <div className="w-full bg-gray-100 text-gray-600 py-2 px-4 rounded text-center">
                                 Plano Atual
                               </div>

@@ -1,13 +1,16 @@
 import express from "express";
+import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin } from "../middleware/auth.js";
 import { z } from "zod";
 import { supabase } from "../lib/supabase-client.js";
 import { protectRoute, validateInput, commonValidations } from "../middleware/security.js";
 import jwt from "jsonwebtoken";
+import { logger } from "../lib/logger.js";
+
 
 const router = express.Router();
 
-// Middleware de autenticação específico para vendedores
-const authenticateSeller = async (req, res, next) => {
+// Middleware de autenticação específico para vendedores (com funcionalidades extras)
+const authenticateSellerWithExtras = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -15,12 +18,14 @@ const authenticateSeller = async (req, res, next) => {
     }
 
     const token = authHeader.substring(7);
-    const jwtSecret =
-      process.env.JWT_SECRET ||
-      "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
+    const jwtSecret = process.env.JWT_SECRET;
+
+    if (!jwtSecret) {
+      throw new Error("JWT_SECRET é obrigatório para rotas seller");
+    }
 
     const decoded = jwt.verify(token, jwtSecret);
-    console.log("🔐 Autenticando vendedor NOVO:", decoded.userId);
+    logger.info("🔐 Autenticando vendedor NOVO:", decoded.userId);
 
     // Buscar usuário primeiro (apenas campos básicos)
     const { data: user, error: userError } = await supabase
@@ -31,7 +36,7 @@ const authenticateSeller = async (req, res, next) => {
       .single();
 
     if (userError || !user) {
-      console.log("❌ Usuário não encontrado ou não é seller:", userError);
+      logger.info("❌ Usuário não encontrado ou não é seller:", userError);
       return res.status(403).json({ error: "Acesso negado" });
     }
 
@@ -43,7 +48,7 @@ const authenticateSeller = async (req, res, next) => {
       .single();
 
     if (sellerError || !sellers) {
-      console.log("❌ Dados de seller não encontrados:", sellerError);
+      logger.info("❌ Dados de seller não encontrados:", sellerError);
       return res.status(403).json({ error: "Dados de vendedor não encontrados" });
     }
 
@@ -61,10 +66,10 @@ const authenticateSeller = async (req, res, next) => {
     req.user.storeSlug = stores?.slug || null;
     req.user.storeName = stores?.name || null;
 
-    console.log("✅ Vendedor autenticado (NOVO):", stores?.name || sellers.id);
+    logger.info("✅ Vendedor autenticado (NOVO):", stores?.name || sellers.id);
     next();
   } catch (error) {
-    console.error("❌ Erro na autenticação do vendedor (NOVO):", error);
+    logger.error("❌ Erro na autenticação do vendedor (NOVO):", error);
 
     if (error.name === "TokenExpiredError") {
       return res.status(401).json({ error: "Token expirado" });
@@ -78,19 +83,46 @@ const authenticateSeller = async (req, res, next) => {
 };
 
 // GET /api/seller/categories - Distribuição de categorias (rota simplificada)
-router.get("/categories", authenticateSeller, async (req, res) => {
+router.get("/categories", authenticateSellerWithExtras, async (req, res) => {
   try {
     const sellerId = req.seller.id;
-    console.log("📊 Buscando categorias para vendedor:", sellerId);
+    logger.info("📊 Buscando categorias para vendedor:", sellerId);
 
-    // Retornar dados mockados temporariamente até resolver schema
-    const categoriesData = [
-      { name: "Eletrônicos", count: 3 },
-      { name: "Informática", count: 1 },
-      { name: "Acessórios", count: 2 },
-    ];
+    // Buscar categorias reais baseado nos produtos do vendedor
+    const { data: categoryStats, error } = await supabase
+      .from("products")
+      .select(`
+        categories!inner (
+          id,
+          name
+        )
+      `)
+      .eq("sellerId", sellerId)
+      .eq("isActive", true);
 
-    console.log("✅ Categorias encontradas (mockadas):", categoriesData.length);
+    if (error) {
+      logger.error("❌ Erro ao buscar categorias:", error);
+      throw new Error(`Erro no banco de dados: ${error.message}`);
+    }
+
+    // Contar produtos por categoria
+    const categoryCount = {};
+    if (categoryStats && Array.isArray(categoryStats)) {
+      categoryStats.forEach(product => {
+        if (product.categories) {
+          const categoryName = product.categories.name;
+          categoryCount[categoryName] = (categoryCount[categoryName] || 0) + 1;
+        }
+      });
+    }
+
+    // Converter para o formato esperado
+    const categoriesData = Object.entries(categoryCount).map(([name, count]) => ({
+      name,
+      count
+    }));
+
+    logger.info("✅ Categorias encontradas (reais):", categoriesData.length);
 
     res.json({
       success: true,
@@ -98,7 +130,7 @@ router.get("/categories", authenticateSeller, async (req, res) => {
       total: categoriesData.length,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar categorias:", error);
+    logger.error("❌ Erro ao buscar categorias:", error);
     res.status(500).json({
       error: "Erro interno",
       details: error.message,
@@ -107,10 +139,10 @@ router.get("/categories", authenticateSeller, async (req, res) => {
 });
 
 // GET /api/seller/stats - Estatísticas do vendedor
-router.get("/stats", authenticateSeller, async (req, res) => {
+router.get("/stats", authenticateSellerWithExtras, async (req, res) => {
   try {
     const sellerId = req.seller.id;
-    console.log("📊 Buscando stats para vendedor:", sellerId);
+    logger.info("📊 Buscando stats para vendedor:", sellerId);
 
     // Buscar estatísticas dos produtos com tratamento de erro
     const { data: productStats, error: productError } = await supabase
@@ -119,7 +151,7 @@ router.get("/stats", authenticateSeller, async (req, res) => {
       .eq("sellerId", sellerId);
 
     if (productError) {
-      console.error("❌ Erro ao buscar produtos:", productError);
+      logger.error("❌ Erro ao buscar produtos:", productError);
     }
 
     // Buscar estatísticas dos pedidos com tratamento de erro
@@ -129,7 +161,7 @@ router.get("/stats", authenticateSeller, async (req, res) => {
       .eq("sellerId", sellerId);
 
     if (orderError) {
-      console.error("❌ Erro ao buscar pedidos:", orderError);
+      logger.error("❌ Erro ao buscar pedidos:", orderError);
     }
 
     // Garantir arrays vazios se não houver dados
@@ -146,7 +178,7 @@ router.get("/stats", authenticateSeller, async (req, res) => {
         .in("productId", productIds);
 
       if (reviewError) {
-        console.error("❌ Erro ao buscar reviews:", reviewError);
+        logger.error("❌ Erro ao buscar reviews:", reviewError);
       } else {
         reviewStats = reviews || [];
       }
@@ -191,14 +223,14 @@ router.get("/stats", authenticateSeller, async (req, res) => {
       lowStockProducts,
     };
 
-    console.log("✅ Stats calculadas:", stats);
+    logger.info("✅ Stats calculadas:", stats);
 
     res.json({
       success: true,
       data: stats,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar estatísticas do vendedor:", error);
+    logger.error("❌ Erro ao buscar estatísticas do vendedor:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,
@@ -207,11 +239,11 @@ router.get("/stats", authenticateSeller, async (req, res) => {
 });
 
 // GET /api/seller/recent-orders - Pedidos recentes
-router.get("/recent-orders", authenticateSeller, async (req, res) => {
+router.get("/recent-orders", authenticateSellerWithExtras, async (req, res) => {
   try {
     const sellerId = req.seller.id;
     const limit = parseInt(req.query.limit) || 10;
-    console.log("📦 Buscando pedidos recentes para vendedor:", sellerId, "limit:", limit);
+    logger.info("📦 Buscando pedidos recentes para vendedor:", sellerId, "limit:", limit);
 
     // Buscar pedidos com dados básicos primeiro
     const { data: orders, error } = await supabase
@@ -222,7 +254,7 @@ router.get("/recent-orders", authenticateSeller, async (req, res) => {
       .limit(limit);
 
     if (error) {
-      console.error("❌ Erro ao buscar pedidos:", error);
+      logger.error("❌ Erro ao buscar pedidos:", error);
       // Retornar array vazio em caso de erro ao invés de falhar
       return res.json({
         success: true,
@@ -232,7 +264,7 @@ router.get("/recent-orders", authenticateSeller, async (req, res) => {
 
     // Se não há pedidos, retornar array vazio
     if (!orders || orders.length === 0) {
-      console.log("ℹ️ Nenhum pedido encontrado para o vendedor");
+      logger.info("ℹ️ Nenhum pedido encontrado para o vendedor");
       return res.json({
         success: true,
         data: [],
@@ -255,7 +287,7 @@ router.get("/recent-orders", authenticateSeller, async (req, res) => {
         .in("id", buyerIds);
 
       if (buyerError) {
-        console.error("❌ Erro ao buscar compradores:", buyerError);
+        logger.error("❌ Erro ao buscar compradores:", buyerError);
       } else {
         buyerData = buyers || [];
       }
@@ -279,7 +311,7 @@ router.get("/recent-orders", authenticateSeller, async (req, res) => {
         .in("orderId", orderIds);
 
       if (itemError) {
-        console.error("❌ Erro ao buscar itens dos pedidos:", itemError);
+        logger.error("❌ Erro ao buscar itens dos pedidos:", itemError);
       } else {
         orderItems = items || [];
       }
@@ -303,14 +335,14 @@ router.get("/recent-orders", authenticateSeller, async (req, res) => {
       };
     });
 
-    console.log("✅ Pedidos formatados:", formattedOrders.length);
+    logger.info("✅ Pedidos formatados:", formattedOrders.length);
 
     res.json({
       success: true,
       data: formattedOrders,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar pedidos recentes:", error);
+    logger.error("❌ Erro ao buscar pedidos recentes:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,
@@ -319,11 +351,11 @@ router.get("/recent-orders", authenticateSeller, async (req, res) => {
 });
 
 // GET /api/seller/top-products - Produtos mais vendidos
-router.get("/top-products", authenticateSeller, async (req, res) => {
+router.get("/top-products", authenticateSellerWithExtras, async (req, res) => {
   try {
     const sellerId = req.seller.id;
     const limit = parseInt(req.query.limit) || 5;
-    console.log("🏆 Buscando produtos mais vendidos para vendedor:", sellerId, "limit:", limit);
+    logger.info("🏆 Buscando produtos mais vendidos para vendedor:", sellerId, "limit:", limit);
 
     const { data: products, error } = await supabase
       .from("Product")
@@ -333,7 +365,7 @@ router.get("/top-products", authenticateSeller, async (req, res) => {
       .limit(limit);
 
     if (error) {
-      console.error("❌ Erro ao buscar produtos:", error);
+      logger.error("❌ Erro ao buscar produtos:", error);
       return res.json({
         success: true,
         data: [],
@@ -342,7 +374,7 @@ router.get("/top-products", authenticateSeller, async (req, res) => {
 
     // Se não há produtos, retornar array vazio
     if (!products || products.length === 0) {
-      console.log("ℹ️ Nenhum produto encontrado para o vendedor");
+      logger.info("ℹ️ Nenhum produto encontrado para o vendedor");
       return res.json({
         success: true,
         data: [],
@@ -363,14 +395,14 @@ router.get("/top-products", authenticateSeller, async (req, res) => {
       };
     });
 
-    console.log("✅ Produtos formatados:", formattedProducts.length);
+    logger.info("✅ Produtos formatados:", formattedProducts.length);
 
     res.json({
       success: true,
       data: formattedProducts,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar produtos mais vendidos:", error);
+    logger.error("❌ Erro ao buscar produtos mais vendidos:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,
@@ -379,11 +411,11 @@ router.get("/top-products", authenticateSeller, async (req, res) => {
 });
 
 // GET /api/seller/analytics - Análise detalhada com comparações
-router.get("/analytics", authenticateSeller, async (req, res) => {
+router.get("/analytics", authenticateSellerWithExtras, async (req, res) => {
   try {
     const sellerId = req.seller.id;
     const period = req.query.period || "30"; // dias
-    console.log("📈 Buscando analytics para vendedor:", sellerId, "período:", period, "dias");
+    logger.info("📈 Buscando analytics para vendedor:", sellerId, "período:", period, "dias");
 
     const periodDays = parseInt(period);
     const currentStartDate = new Date();
@@ -415,7 +447,7 @@ router.get("/analytics", authenticateSeller, async (req, res) => {
         .lt("createdAt", previousEndDate.toISOString());
 
       if (analyticsError) {
-        console.error("❌ Erro ao buscar analytics:", analyticsError);
+        logger.error("❌ Erro ao buscar analytics:", analyticsError);
         analyticsData = [];
       } else {
         // Dados já filtrados por sellerId na query
@@ -423,7 +455,7 @@ router.get("/analytics", authenticateSeller, async (req, res) => {
         previousAnalyticsData = previousData || [];
       }
     } catch (error) {
-      console.error("❌ Erro ao processar analytics:", error);
+      logger.error("❌ Erro ao processar analytics:", error);
       analyticsData = [];
       previousAnalyticsData = [];
     }
@@ -444,7 +476,7 @@ router.get("/analytics", authenticateSeller, async (req, res) => {
       .lt("createdAt", previousEndDate.toISOString());
 
     if (ordersError) {
-      console.error("❌ Erro ao buscar pedidos do período:", ordersError);
+      logger.error("❌ Erro ao buscar pedidos do período:", ordersError);
     }
 
     // Garantir arrays vazios se não houver dados
@@ -503,14 +535,14 @@ router.get("/analytics", authenticateSeller, async (req, res) => {
       },
     };
 
-    console.log("✅ Analytics calculadas com comparações:", analyticsResult);
+    logger.info("✅ Analytics calculadas com comparações:", analyticsResult);
 
     res.json({
       success: true,
       data: analyticsResult,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar analytics:", error);
+    logger.error("❌ Erro ao buscar analytics:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,
@@ -531,10 +563,10 @@ function getTimeAgo(dateString) {
 }
 
 // GET /api/seller/store - Buscar dados da loja do vendedor autenticado
-router.get("/store", authenticateSeller, async (req, res) => {
+router.get("/store", authenticateSellerWithExtras, async (req, res) => {
   try {
     const user = req.user;
-    console.log("🔍 Debug API Store - user:", {
+    logger.info("🔍 Debug API Store - user:", {
       sellerId: user.sellerId,
       storeId: user.storeId,
       storeName: user.storeName,
@@ -542,13 +574,13 @@ router.get("/store", authenticateSeller, async (req, res) => {
     });
 
     if (!user.sellerId) {
-      console.log("❌ API Store - sellerId não encontrado");
+      logger.info("❌ API Store - sellerId não encontrado");
       return res.status(404).json({
         error: "Dados do vendedor não encontrados",
       });
     }
 
-    console.log("🏪 Buscando dados da loja para vendedor:", user.sellerId);
+    logger.info("🏪 Buscando dados da loja para vendedor:", user.sellerId);
 
     // Buscar dados completos do seller e da store correspondente
     const { data: seller, error: sellerError } = await supabase
@@ -558,7 +590,7 @@ router.get("/store", authenticateSeller, async (req, res) => {
       .single();
 
     if (sellerError || !seller) {
-      console.error("❌ Erro ao buscar seller:", sellerError);
+      logger.error("❌ Erro ao buscar seller:", sellerError);
       return res.status(404).json({
         error: "Vendedor não encontrado",
       });
@@ -572,7 +604,7 @@ router.get("/store", authenticateSeller, async (req, res) => {
       .single();
 
     if (storeError) {
-      console.error("⚠️ Store não encontrada para seller:", seller.id, storeError);
+      logger.error("⚠️ Store não encontrada para seller:", seller.id, storeError);
       // Se não há store, criar uma baseada nos dados do seller
       const { data: newStore, error: createError } = await supabase
         .from("stores")
@@ -603,13 +635,13 @@ router.get("/store", authenticateSeller, async (req, res) => {
         .single();
 
       if (createError) {
-        console.error("❌ Erro ao criar store:", createError);
+        logger.error("❌ Erro ao criar store:", createError);
         return res.status(500).json({
           error: "Erro ao criar loja",
         });
       }
 
-      console.log("✅ Store criada automaticamente:", newStore.id);
+      logger.info("✅ Store criada automaticamente:", newStore.id);
 
       // Estruturar dados usando a store recém-criada
       const storeData = {
@@ -667,14 +699,14 @@ router.get("/store", authenticateSeller, async (req, res) => {
       },
     };
 
-    console.log("✅ Dados da loja encontrados - Store ID:", store.id, "Nome:", store.name);
+    logger.info("✅ Dados da loja encontrados - Store ID:", store.id, "Nome:", store.name);
 
     res.json({
       success: true,
       data: storeData,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar dados da loja:", error);
+    logger.error("❌ Erro ao buscar dados da loja:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,
@@ -683,17 +715,17 @@ router.get("/store", authenticateSeller, async (req, res) => {
 });
 
 // GET /api/seller/analytics/categories - Buscar distribuição de categorias dos produtos
-router.get("/analytics/categories", authenticateSeller, async (req, res) => {
+router.get("/analytics/categories", authenticateSellerWithExtras, async (req, res) => {
   try {
     const sellerId = req.seller.id;
 
-    console.log("📊 Buscando distribuição de categorias para vendedor:", sellerId);
+    logger.info("📊 Buscando distribuição de categorias para vendedor:", sellerId);
 
     // Buscar produtos agrupados por categoria
     const { data: products, error } = await supabase.from("Product").select("categoryId").eq("sellerId", sellerId);
 
     if (error) {
-      console.error("❌ Erro ao buscar produtos:", error);
+      logger.error("❌ Erro ao buscar produtos:", error);
       throw new Error(error.message);
     }
 
@@ -711,7 +743,7 @@ router.get("/analytics/categories", authenticateSeller, async (req, res) => {
       percentage: products.length > 0 ? Math.round((count / products.length) * 100) : 0,
     })).sort((a, b) => b.count - a.count); // Ordenar por quantidade
 
-    console.log(`✅ ${categories.length} categorias encontradas`);
+    logger.info(`✅ ${categories.length} categorias encontradas`);
 
     res.json({
       success: true,
@@ -719,7 +751,7 @@ router.get("/analytics/categories", authenticateSeller, async (req, res) => {
       total: products.length,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar distribuição de categorias:", error);
+    logger.error("❌ Erro ao buscar distribuição de categorias:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,
@@ -728,7 +760,7 @@ router.get("/analytics/categories", authenticateSeller, async (req, res) => {
 });
 
 // PUT /api/seller/store - Atualizar dados da loja do vendedor autenticado
-router.put("/store", authenticateSeller, async (req, res) => {
+router.put("/store", authenticateSellerWithExtras, async (req, res) => {
   try {
     const user = req.user;
     const seller = req.seller;
@@ -749,9 +781,9 @@ router.put("/store", authenticateSeller, async (req, res) => {
       storeDescription,
     } = req.body;
 
-    console.log("🏪 PUT /api/seller/store - Atualizando dados da loja");
-    console.log("📦 Dados recebidos:", { name, description, category, address, logo, banner });
-    console.log("📞 Dados de contato recebidos:", { contact, phone, whatsapp, website, email });
+    logger.info("🏪 PUT /api/seller/store - Atualizando dados da loja");
+    logger.info("📦 Dados recebidos:", { name, description, category, address, logo, banner });
+    logger.info("📞 Dados de contato recebidos:", { contact, phone, whatsapp, website, email });
 
     // Buscar store correspondente ao seller
     let { data: store, error: storeError } = await supabase
@@ -762,7 +794,7 @@ router.put("/store", authenticateSeller, async (req, res) => {
 
     // Se não existe store, criar uma
     if (storeError && storeError.code === "PGRST116") {
-      console.log("🆕 Criando nova store para seller:", seller.id);
+      logger.info("🆕 Criando nova store para seller:", seller.id);
 
       const { data: newStore, error: createError } = await supabase
         .from("stores")
@@ -787,7 +819,7 @@ router.put("/store", authenticateSeller, async (req, res) => {
         .single();
 
       if (createError) {
-        console.error("❌ Erro ao criar store:", createError);
+        logger.error("❌ Erro ao criar store:", createError);
         return res.status(500).json({
           error: "Erro ao criar loja",
           details: createError.message,
@@ -795,9 +827,9 @@ router.put("/store", authenticateSeller, async (req, res) => {
       }
 
       store = newStore;
-      console.log("✅ Store criada:", store.id);
+      logger.info("✅ Store criada:", store.id);
     } else if (storeError) {
-      console.error("❌ Erro ao buscar store:", storeError);
+      logger.error("❌ Erro ao buscar store:", storeError);
       return res.status(500).json({
         error: "Erro ao buscar loja",
         details: storeError.message,
@@ -853,7 +885,7 @@ router.put("/store", authenticateSeller, async (req, res) => {
       .single();
 
     if (updateError) {
-      console.error("❌ Erro ao atualizar store:", updateError);
+      logger.error("❌ Erro ao atualizar store:", updateError);
       return res.status(500).json({
         error: "Erro ao atualizar loja",
         details: updateError.message,
@@ -876,7 +908,7 @@ router.put("/store", authenticateSeller, async (req, res) => {
     const { error: sellerUpdateError } = await supabase.from("sellers").update(sellerUpdateData).eq("id", seller.id);
 
     if (sellerUpdateError) {
-      console.warn("⚠️ Aviso ao atualizar seller:", sellerUpdateError);
+      logger.warn("⚠️ Aviso ao atualizar seller:", sellerUpdateError);
       // Não falhar se apenas o seller não foi atualizado
     }
 
@@ -945,7 +977,7 @@ router.put("/store", authenticateSeller, async (req, res) => {
       },
     };
 
-    console.log("✅ Loja atualizada com sucesso:", updatedStore.id);
+    logger.info("✅ Loja atualizada com sucesso:", updatedStore.id);
 
     res.json({
       success: true,
@@ -953,7 +985,7 @@ router.put("/store", authenticateSeller, async (req, res) => {
       message: "Loja atualizada com sucesso",
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar loja:", error);
+    logger.error("❌ Erro ao atualizar loja:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,
@@ -962,60 +994,145 @@ router.put("/store", authenticateSeller, async (req, res) => {
 });
 
 // GET /api/sellers/settings - Buscar configurações do vendedor
-router.get("/settings", authenticateSeller, async (req, res) => {
+router.get("/settings", authenticateSellerWithExtras, async (req, res) => {
   try {
     const sellerId = req.seller.id;
-    console.log("⚙️ Buscando configurações para vendedor:", sellerId);
+    logger.info("⚙️ Buscando configurações para vendedor:", sellerId);
 
-    // Usar configurações baseadas na loja existente + padrões
-    console.log("⚙️ Gerando configurações padrão para seller:", sellerId);
+    // Buscar configurações do vendedor no banco de dados
+    const { data: settings, error: settingsError } = await supabase
+      .from("seller_settings")
+      .select("*")
+      .eq("sellerId", sellerId)
+      .single();
 
-    // Sempre retornar configurações padrão (não há tabela seller_settings)
-    const settings = null;
-
-    if (!settings) {
-      const defaultSettings = {
-        sellerId,
-        paymentMethods: {
-          pix: true,
-          creditCard: true,
-          boleto: false,
-          paypal: false,
-        },
-        shippingOptions: {
-          sedex: true,
-          pac: true,
-          freeShipping: false,
-          expressDelivery: false,
-        },
-        notifications: {
-          emailOrders: true,
-          emailPromotions: false,
-          smsOrders: false,
-          pushNotifications: true,
-        },
-        storePolicies: {
-          returnPolicy: "7 dias para devolução",
-          shippingPolicy: "Envio em até 2 dias úteis",
-          privacyPolicy: "Seus dados estão seguros conosco",
-        },
-      };
-
-      // Retornar configurações padrão (sem persistir em tabela inexistente)
-      console.log("✅ Retornando configurações padrão");
-      return res.json({
-        success: true,
-        data: defaultSettings,
+    if (settingsError && settingsError.code !== "PGRST116") {
+      logger.error("❌ Erro ao buscar configurações:", settingsError);
+      return res.status(500).json({
+        error: "Erro ao buscar configurações",
+        details: settingsError.message,
       });
     }
 
-    console.log("✅ Configurações encontradas");
+    // Se não há configurações, criar configurações padrão
+    if (!settings || settingsError?.code === "PGRST116") {
+      logger.info("📝 Criando configurações padrão para seller:", sellerId);
+
+      const defaultSettingsData = {
+        sellerId,
+        acceptsCreditCard: true,
+        acceptsDebitCard: true,
+        acceptsPix: true,
+        acceptsBoleto: false,
+        acceptsWhatsapp: true,
+        freeShippingMin: null,
+        shippingFee: 10.0,
+        deliveryDays: 7,
+        pickupAvailable: false,
+        workingDays: JSON.stringify(["monday", "tuesday", "wednesday", "thursday", "friday"]),
+        workingHours: JSON.stringify({ start: "08:00", end: "18:00" }),
+        autoApproveOrders: false,
+        returnPolicy: "7 dias para devolução",
+        privacyPolicy: "Seus dados estão seguros conosco",
+        terms: "Termos e condições padrão",
+        emailNotifications: true,
+        smsNotifications: false,
+      };
+
+      // Inserir configurações padrão no banco
+      const { data: newSettings, error: createError } = await supabase
+        .from("seller_settings")
+        .insert(defaultSettingsData)
+        .select()
+        .single();
+
+      if (createError) {
+        logger.error("❌ Erro ao criar configurações padrão:", createError);
+        return res.status(500).json({
+          error: "Erro ao criar configurações",
+          details: createError.message,
+        });
+      }
+
+      logger.info("✅ Configurações padrão criadas");
+
+      // Formatar configurações para o frontend
+      const formattedSettings = {
+        sellerId: newSettings.sellerId,
+        paymentMethods: {
+          pix: newSettings.acceptsPix,
+          creditCard: newSettings.acceptsCreditCard,
+          debitCard: newSettings.acceptsDebitCard,
+          boleto: newSettings.acceptsBoleto,
+          whatsapp: newSettings.acceptsWhatsapp,
+        },
+        shippingOptions: {
+          freeShippingMin: newSettings.freeShippingMin,
+          shippingFee: newSettings.shippingFee,
+          deliveryDays: newSettings.deliveryDays,
+          pickupAvailable: newSettings.pickupAvailable,
+        },
+        notifications: {
+          emailNotifications: newSettings.emailNotifications,
+          smsNotifications: newSettings.smsNotifications,
+        },
+        storePolicies: {
+          returnPolicy: newSettings.returnPolicy,
+          privacyPolicy: newSettings.privacyPolicy,
+          terms: newSettings.terms,
+        },
+        storeConfig: {
+          workingDays: JSON.parse(newSettings.workingDays || "[]"),
+          workingHours: JSON.parse(newSettings.workingHours || '{"start": "08:00", "end": "18:00"}'),
+          autoApproveOrders: newSettings.autoApproveOrders,
+        },
+      };
+
+      return res.json({
+        success: true,
+        data: formattedSettings,
+      });
+    }
+
+    // Formatar configurações existentes para o frontend
+    const formattedSettings = {
+      sellerId: settings.sellerId,
+      paymentMethods: {
+        pix: settings.acceptsPix,
+        creditCard: settings.acceptsCreditCard,
+        debitCard: settings.acceptsDebitCard,
+        boleto: settings.acceptsBoleto,
+        whatsapp: settings.acceptsWhatsapp,
+      },
+      shippingOptions: {
+        freeShippingMin: settings.freeShippingMin,
+        shippingFee: settings.shippingFee,
+        deliveryDays: settings.deliveryDays,
+        pickupAvailable: settings.pickupAvailable,
+      },
+      notifications: {
+        emailNotifications: settings.emailNotifications,
+        smsNotifications: settings.smsNotifications,
+      },
+      storePolicies: {
+        returnPolicy: settings.returnPolicy,
+        privacyPolicy: settings.privacyPolicy,
+        terms: settings.terms,
+      },
+      storeConfig: {
+        workingDays: JSON.parse(settings.workingDays || "[]"),
+        workingHours: JSON.parse(settings.workingHours || '{"start": "08:00", "end": "18:00"}'),
+        autoApproveOrders: settings.autoApproveOrders,
+      },
+    };
+
+    logger.info("✅ Configurações encontradas");
     res.json({
       success: true,
-      data: settings,
+      data: formattedSettings,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar configurações do vendedor:", error);
+    logger.error("❌ Erro ao buscar configurações do vendedor:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,
@@ -1024,34 +1141,169 @@ router.get("/settings", authenticateSeller, async (req, res) => {
 });
 
 // PUT /api/sellers/settings - Atualizar configurações do vendedor
-router.put("/settings", authenticateSeller, async (req, res) => {
+router.put("/settings", authenticateSellerWithExtras, async (req, res) => {
   try {
     const sellerId = req.seller.id;
-    const { paymentMethods, shippingOptions, notifications, storePolicies } = req.body;
+    const { paymentMethods, shippingOptions, notifications, storePolicies, storeConfig } = req.body;
 
-    console.log("⚙️ Atualizando configurações para vendedor:", sellerId);
+    logger.info("⚙️ Atualizando configurações para vendedor:", sellerId);
+    logger.info("📦 Dados recebidos:", { paymentMethods, shippingOptions, notifications, storePolicies, storeConfig });
 
-    // Simular save de configurações (não persistir em tabela inexistente)
-    const mockResult = {
-      id: `settings_${sellerId}_${Date.now()}`,
-      sellerId,
-      paymentMethods: paymentMethods || {},
-      shippingOptions: shippingOptions || {},
-      notifications: notifications || {},
-      storePolicies: storePolicies || {},
+    // Preparar dados para atualização no formato da tabela seller_settings
+    const updateData = {
+      // Métodos de pagamento
+      acceptsCreditCard: paymentMethods?.creditCard ?? true,
+      acceptsDebitCard: paymentMethods?.debitCard ?? true,
+      acceptsPix: paymentMethods?.pix ?? true,
+      acceptsBoleto: paymentMethods?.boleto ?? false,
+      acceptsWhatsapp: paymentMethods?.whatsapp ?? true,
+
+      // Opções de entrega
+      freeShippingMin: shippingOptions?.freeShippingMin || null,
+      shippingFee: shippingOptions?.shippingFee ?? 10.0,
+      deliveryDays: shippingOptions?.deliveryDays ?? 7,
+      pickupAvailable: shippingOptions?.pickupAvailable ?? false,
+
+      // Notificações
+      emailNotifications: notifications?.emailNotifications ?? true,
+      smsNotifications: notifications?.smsNotifications ?? false,
+
+      // Políticas da loja
+      returnPolicy: storePolicies?.returnPolicy || "7 dias para devolução",
+      privacyPolicy: storePolicies?.privacyPolicy || "Seus dados estão seguros conosco",
+      terms: storePolicies?.terms || "Termos e condições padrão",
+
+      // Configurações da loja
+      workingDays: storeConfig?.workingDays ? JSON.stringify(storeConfig.workingDays) : JSON.stringify(["monday", "tuesday", "wednesday", "thursday", "friday"]),
+      workingHours: storeConfig?.workingHours ? JSON.stringify(storeConfig.workingHours) : JSON.stringify({ start: "08:00", end: "18:00" }),
+      autoApproveOrders: storeConfig?.autoApproveOrders ?? false,
+
       updatedAt: new Date().toISOString(),
     };
 
-    console.log("✅ Configurações 'salvas' (simulação):", mockResult);
-    const result = mockResult;
+    // Tentar atualizar as configurações existentes
+    const { data: updatedSettings, error: updateError } = await supabase
+      .from("seller_settings")
+      .update(updateData)
+      .eq("sellerId", sellerId)
+      .select()
+      .single();
 
-    console.log("✅ Configurações atualizadas com sucesso");
+    // Se não existe, criar novas configurações
+    if (updateError && updateError.code === "PGRST116") {
+      logger.info("📝 Configurações não existem, criando novas para seller:", sellerId);
+
+      const createData = {
+        sellerId,
+        ...updateData,
+      };
+
+      const { data: newSettings, error: createError } = await supabase
+        .from("seller_settings")
+        .insert(createData)
+        .select()
+        .single();
+
+      if (createError) {
+        logger.error("❌ Erro ao criar configurações:", createError);
+        return res.status(500).json({
+          error: "Erro ao criar configurações",
+          details: createError.message,
+        });
+      }
+
+      logger.info("✅ Novas configurações criadas");
+
+      // Formatar resposta com as configurações criadas
+      const formattedResult = {
+        sellerId: newSettings.sellerId,
+        paymentMethods: {
+          pix: newSettings.acceptsPix,
+          creditCard: newSettings.acceptsCreditCard,
+          debitCard: newSettings.acceptsDebitCard,
+          boleto: newSettings.acceptsBoleto,
+          whatsapp: newSettings.acceptsWhatsapp,
+        },
+        shippingOptions: {
+          freeShippingMin: newSettings.freeShippingMin,
+          shippingFee: newSettings.shippingFee,
+          deliveryDays: newSettings.deliveryDays,
+          pickupAvailable: newSettings.pickupAvailable,
+        },
+        notifications: {
+          emailNotifications: newSettings.emailNotifications,
+          smsNotifications: newSettings.smsNotifications,
+        },
+        storePolicies: {
+          returnPolicy: newSettings.returnPolicy,
+          privacyPolicy: newSettings.privacyPolicy,
+          terms: newSettings.terms,
+        },
+        storeConfig: {
+          workingDays: JSON.parse(newSettings.workingDays || "[]"),
+          workingHours: JSON.parse(newSettings.workingHours || '{"start": "08:00", "end": "18:00"}'),
+          autoApproveOrders: newSettings.autoApproveOrders,
+        },
+        updatedAt: newSettings.updatedAt,
+      };
+
+      return res.json({
+        success: true,
+        data: formattedResult,
+        message: "Configurações criadas com sucesso",
+      });
+    }
+
+    if (updateError) {
+      logger.error("❌ Erro ao atualizar configurações:", updateError);
+      return res.status(500).json({
+        error: "Erro ao atualizar configurações",
+        details: updateError.message,
+      });
+    }
+
+    logger.info("✅ Configurações atualizadas com sucesso");
+
+    // Formatar resposta com as configurações atualizadas
+    const formattedResult = {
+      sellerId: updatedSettings.sellerId,
+      paymentMethods: {
+        pix: updatedSettings.acceptsPix,
+        creditCard: updatedSettings.acceptsCreditCard,
+        debitCard: updatedSettings.acceptsDebitCard,
+        boleto: updatedSettings.acceptsBoleto,
+        whatsapp: updatedSettings.acceptsWhatsapp,
+      },
+      shippingOptions: {
+        freeShippingMin: updatedSettings.freeShippingMin,
+        shippingFee: updatedSettings.shippingFee,
+        deliveryDays: updatedSettings.deliveryDays,
+        pickupAvailable: updatedSettings.pickupAvailable,
+      },
+      notifications: {
+        emailNotifications: updatedSettings.emailNotifications,
+        smsNotifications: updatedSettings.smsNotifications,
+      },
+      storePolicies: {
+        returnPolicy: updatedSettings.returnPolicy,
+        privacyPolicy: updatedSettings.privacyPolicy,
+        terms: updatedSettings.terms,
+      },
+      storeConfig: {
+        workingDays: JSON.parse(updatedSettings.workingDays || "[]"),
+        workingHours: JSON.parse(updatedSettings.workingHours || '{"start": "08:00", "end": "18:00"}'),
+        autoApproveOrders: updatedSettings.autoApproveOrders,
+      },
+      updatedAt: updatedSettings.updatedAt,
+    };
+
     res.json({
       success: true,
-      data: result,
+      data: formattedResult,
+      message: "Configurações atualizadas com sucesso",
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar configurações:", error);
+    logger.error("❌ Erro ao atualizar configurações:", error);
     res.status(500).json({
       error: "Erro ao atualizar configurações",
       details: error.message,
@@ -1060,10 +1312,10 @@ router.put("/settings", authenticateSeller, async (req, res) => {
 });
 
 // GET /api/sellers/subscription - Buscar assinatura atual do vendedor
-router.get("/subscription", authenticateSeller, async (req, res) => {
+router.get("/subscription", authenticateSellerWithExtras, async (req, res) => {
   try {
     const sellerId = req.seller.id;
-    console.log("💳 Buscando assinatura para vendedor:", sellerId);
+    logger.info("💳 Buscando assinatura para vendedor:", sellerId);
 
     // Buscar assinatura ativa do vendedor
     const { data: subscription, error: subError } = await supabase
@@ -1074,7 +1326,7 @@ router.get("/subscription", authenticateSeller, async (req, res) => {
       .single();
 
     if (subError && subError.code !== "PGRST116") {
-      console.error("❌ Erro ao buscar assinatura:", subError);
+      logger.error("❌ Erro ao buscar assinatura:", subError);
       return res.status(500).json({
         error: "Erro ao buscar assinatura",
         details: subError.message,
@@ -1083,14 +1335,14 @@ router.get("/subscription", authenticateSeller, async (req, res) => {
 
     // Se não tem assinatura, criar uma padrão para o plano gratuito
     if (!subscription) {
-      console.log("📝 Criando assinatura padrão para plano gratuito");
+      logger.info("📝 Criando assinatura padrão para plano gratuito");
 
       // Buscar plano gratuito ou criar um mock
       let freePlan = null;
       const { data: planData, error: planError } = await supabase.from("Plan").select("*").eq("price", 0).single();
 
       if (planError || !planData) {
-        console.log("💡 Nenhum plano gratuito no banco, criando plano mock");
+        logger.info("💡 Nenhum plano gratuito no banco, criando plano mock");
         // Criar plano mock se não existir
         freePlan = {
           id: "plan-free-mock",
@@ -1125,7 +1377,7 @@ router.get("/subscription", authenticateSeller, async (req, res) => {
         paymentMethod: "Gratuito",
       };
 
-      console.log("✅ Assinatura padrão criada");
+      logger.info("✅ Assinatura padrão criada");
       return res.json({
         success: true,
         data: defaultSubscription,
@@ -1147,13 +1399,13 @@ router.get("/subscription", authenticateSeller, async (req, res) => {
       paymentMethod: subscription.paymentMethod || "Não informado",
     };
 
-    console.log("✅ Assinatura encontrada:", subscriptionData.plan?.name || "Plano não identificado");
+    logger.info("✅ Assinatura encontrada:", subscriptionData.plan?.name || "Plano não identificado");
     res.json({
       success: true,
       data: subscriptionData,
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar assinatura:", error);
+    logger.error("❌ Erro ao buscar assinatura:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,
@@ -1162,7 +1414,7 @@ router.get("/subscription", authenticateSeller, async (req, res) => {
 });
 
 // POST /api/sellers/upgrade - Fazer upgrade do plano
-router.post("/upgrade", authenticateSeller, async (req, res) => {
+router.post("/upgrade", authenticateSellerWithExtras, async (req, res) => {
   try {
     const sellerId = req.seller.id;
     const { planId } = req.body;
@@ -1173,13 +1425,13 @@ router.post("/upgrade", authenticateSeller, async (req, res) => {
       });
     }
 
-    console.log("🚀 Processando upgrade de plano:", { sellerId, planId });
+    logger.info("🚀 Processando upgrade de plano:", { sellerId, planId });
 
     // Buscar dados do plano
     const { data: plan, error: planError } = await supabase.from("Plan").select("*").eq("id", planId).single();
 
     if (planError || !plan) {
-      console.error("❌ Plano não encontrado:", planError);
+      logger.error("❌ Plano não encontrado:", planError);
       return res.status(404).json({
         error: "Plano não encontrado",
       });
@@ -1187,7 +1439,7 @@ router.post("/upgrade", authenticateSeller, async (req, res) => {
 
     // Verificar se é upgrade, downgrade ou mudança de plano
     const currentPlan = req.seller.plan;
-    console.log("📊 Plano atual:", currentPlan, "-> Novo plano:", plan.slug);
+    logger.info("📊 Plano atual:", currentPlan, "-> Novo plano:", plan.slug);
 
     // Buscar dados do plano atual para comparação
     const { data: currentPlanData } = await supabase
@@ -1207,7 +1459,7 @@ router.post("/upgrade", authenticateSeller, async (req, res) => {
       }
     }
 
-    console.log(`📈 Tipo de mudança: ${changeType} (${currentPlanData?.name || "N/A"} -> ${plan.name})`);
+    logger.info(`📈 Tipo de mudança: ${changeType} (${currentPlanData?.name || "N/A"} -> ${plan.name})`);
 
     // Se for o mesmo plano, retornar erro
     if (changeType === "same") {
@@ -1247,13 +1499,13 @@ router.post("/upgrade", authenticateSeller, async (req, res) => {
         .eq("id", sellerId);
 
       if (updateError) {
-        console.error("❌ Erro ao atualizar plano do seller:", updateError);
+        logger.error("❌ Erro ao atualizar plano do seller:", updateError);
         return res.status(500).json({
           error: "Erro ao atualizar plano",
         });
       }
 
-      console.log(
+      logger.info(
         `✅ ${changeType === "upgrade" ? "Upgrade" : changeType === "downgrade" ? "Downgrade" : "Mudança"} para plano gratuito realizado`
       );
       return res.json({
@@ -1272,7 +1524,7 @@ router.post("/upgrade", authenticateSeller, async (req, res) => {
     // Para planos pagos, usar nossa própria API de pagamentos
     const paymentUrl = `${process.env.APP_URL}/seller/checkout?planId=${plan.id}`;
 
-    console.log("💳 Redirecionando para checkout interno:", paymentUrl);
+    logger.info("💳 Redirecionando para checkout interno:", paymentUrl);
 
     res.json({
       success: true,
@@ -1287,7 +1539,7 @@ router.post("/upgrade", authenticateSeller, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Erro no upgrade do plano:", error);
+    logger.error("❌ Erro no upgrade do plano:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,
@@ -1296,12 +1548,12 @@ router.post("/upgrade", authenticateSeller, async (req, res) => {
 });
 
 // GET /api/seller/orders - Listar pedidos do vendedor
-router.get("/orders", authenticateSeller, async (req, res) => {
+router.get("/orders", authenticateSellerWithExtras, async (req, res) => {
   try {
     const sellerId = req.seller.id;
     const { status, limit = 50, offset = 0 } = req.query;
 
-    console.log("📦 Buscando pedidos do seller:", sellerId, { status, limit, offset });
+    logger.info("📦 Buscando pedidos do seller:", sellerId, { status, limit, offset });
 
     // Simplificar query - buscar apenas dados básicos dos pedidos
     let query = supabase
@@ -1318,8 +1570,8 @@ router.get("/orders", authenticateSeller, async (req, res) => {
     const { data: orders, error } = await query;
 
     if (error) {
-      console.error("❌ Erro ao buscar pedidos:", error);
-      console.error("❌ Detalhes do erro:", error.message, error.code, error.details);
+      logger.error("❌ Erro ao buscar pedidos:", error);
+      logger.error("❌ Detalhes do erro:", error.message, error.code, error.details);
       return res.status(500).json({
         error: "Erro ao buscar pedidos",
         details: error.message,
@@ -1328,7 +1580,7 @@ router.get("/orders", authenticateSeller, async (req, res) => {
 
     // Se não há pedidos, retornar array vazio
     if (!orders || orders.length === 0) {
-      console.log("ℹ️ Nenhum pedido encontrado para o vendedor");
+      logger.info("ℹ️ Nenhum pedido encontrado para o vendedor");
       return res.json({
         success: true,
         orders: [],
@@ -1362,7 +1614,7 @@ router.get("/orders", authenticateSeller, async (req, res) => {
       cancelled: stats?.filter((o) => o.status === "cancelled").length || 0,
     };
 
-    console.log("✅ Pedidos encontrados:", orders?.length);
+    logger.info("✅ Pedidos encontrados:", orders?.length);
 
     res.json({
       success: true,
@@ -1375,7 +1627,7 @@ router.get("/orders", authenticateSeller, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar pedidos do seller:", error);
+    logger.error("❌ Erro ao buscar pedidos do seller:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,
@@ -1384,13 +1636,13 @@ router.get("/orders", authenticateSeller, async (req, res) => {
 });
 
 // GET /api/seller/products - Listar produtos do vendedor
-router.get("/products", authenticateSeller, async (req, res) => {
+router.get("/products", authenticateSellerWithExtras, async (req, res) => {
   try {
     const { page = 1, limit = 10, search, category, status } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const sellerId = req.user.sellerId;
 
-    console.log("🔍 Buscando produtos do seller:", sellerId);
+    logger.info("🔍 Buscando produtos do seller:", sellerId);
 
     // Query base para produtos do vendedor (sem imagens por enquanto)
     let query = supabase
@@ -1436,7 +1688,7 @@ router.get("/products", authenticateSeller, async (req, res) => {
     const { data: products, error } = await query;
 
     if (error) {
-      console.error("❌ Erro ao buscar produtos:", error);
+      logger.error("❌ Erro ao buscar produtos:", error);
       throw error;
     }
 
@@ -1478,7 +1730,7 @@ router.get("/products", authenticateSeller, async (req, res) => {
 
     const totalPages = Math.ceil((totalCount || 0) / parseInt(limit));
 
-    console.log(`✅ Produtos encontrados: ${formattedProducts.length}/${totalCount}`);
+    logger.info(`✅ Produtos encontrados: ${formattedProducts.length}/${totalCount}`);
 
     res.json({
       success: true,
@@ -1498,7 +1750,7 @@ router.get("/products", authenticateSeller, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao listar produtos do seller:", error);
+    logger.error("❌ Erro ao listar produtos do seller:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,

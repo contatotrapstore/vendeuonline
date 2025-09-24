@@ -1,34 +1,12 @@
 import express from "express";
-import { PrismaClient } from "@prisma/client";
-import jwt from "jsonwebtoken";
+import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin } from "../middleware/auth.js";
+import { supabase } from "../lib/supabase-client.js";
+import { logger } from "../lib/logger.js";
 
 const router = express.Router();
-const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) {
-  console.error("❌ JWT_SECRET não está configurado no ambiente");
-  process.exit(1);
-}
 
 // Middleware de autenticação admin
-const authenticateAdmin = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({ error: "Token de autorização requerido" });
-  }
-
-  const token = authHeader.substring(7);
-  try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    if (payload.type !== "ADMIN") {
-      return res.status(403).json({ error: "Acesso negado. Apenas administradores." });
-    }
-    req.admin = payload;
-    next();
-  } catch (error) {
-    return res.status(401).json({ error: "Token inválido" });
-  }
-};
+// Middleware removido - usando middleware centralizado
 
 // Validar IDs de pixels
 const validatePixelId = (type, value) => {
@@ -85,36 +63,48 @@ const TRACKING_CONFIGS = {
 // ROTA PÚBLICA: Buscar configurações de tracking ativas
 router.get("/configs", async (req, res) => {
   try {
-    // Simular configurações para teste (já que não temos banco)
-    const mockConfigs = {
-      google_analytics_id: {
-        value: "",
-        isActive: true,
-        isConfigured: false,
-      },
-      meta_pixel_id: {
-        value: "",
-        isActive: true,
-        isConfigured: false,
-      },
-      tiktok_pixel_id: {
-        value: "",
-        isActive: true,
-        isConfigured: false,
-      },
-      custom_head_scripts: {
-        value: "",
-        isActive: true,
-        isConfigured: false,
-      },
-    };
+    const trackingKeys = Object.keys(TRACKING_CONFIGS);
+    const configs = {};
+
+    // Buscar todas as configurações de uma vez
+    const { data: systemConfigs, error } = await supabase
+      .from("system_configs")
+      .select("key, value, isActive")
+      .in("key", trackingKeys);
+
+    if (error) {
+      // Se a tabela não existe ou erro, usar valores padrão
+      logger.info("ℹ️ Tabela system_configs não encontrada, usando valores padrão");
+
+      for (const key of trackingKeys) {
+        configs[key] = {
+          value: "",
+          isActive: false,
+          isConfigured: false,
+          description: TRACKING_CONFIGS[key].description
+        };
+      }
+    } else {
+      // Mapear configurações existentes
+      const configMap = new Map(systemConfigs.map(c => [c.key, c]));
+
+      for (const key of trackingKeys) {
+        const config = configMap.get(key);
+        configs[key] = {
+          value: config?.value || "",
+          isActive: config?.isActive || false,
+          isConfigured: !!config?.value && config?.isActive,
+          description: TRACKING_CONFIGS[key].description
+        };
+      }
+    }
 
     return res.json({
       success: true,
-      configs: mockConfigs,
+      configs,
     });
   } catch (error) {
-    console.error("Erro ao buscar configurações de tracking:", error);
+    logger.error("Erro ao buscar configurações de tracking:", error);
     return res.status(500).json({
       success: false,
       error: "Erro interno do servidor",
@@ -125,18 +115,46 @@ router.get("/configs", async (req, res) => {
 // ROTA ADMIN: Buscar configurações (autenticada)
 router.get("/admin", authenticateAdmin, async (req, res) => {
   try {
-    // Simular configurações para teste
-    const configMap = {};
+    const trackingKeys = Object.keys(TRACKING_CONFIGS);
 
-    // Garantir que todas as configurações existam
-    Object.keys(TRACKING_CONFIGS).forEach((key) => {
-      configMap[key] = {
-        key,
-        value: "",
-        description: TRACKING_CONFIGS[key].description,
-        isActive: true,
-        isConfigured: false,
+    // Buscar todas as configurações de tracking
+    const { data: configs, error } = await supabase
+      .from("system_configs")
+      .select("key, value, isActive, category")
+      .eq("category", "tracking")
+      .in("key", trackingKeys);
+
+    if (error) {
+      logger.error("Erro ao buscar configurações admin:", error);
+      return res.status(500).json({
+        success: false,
+        error: "Erro ao buscar configurações"
+      });
+    }
+
+    // Create a map of existing configs
+    const configMap = {};
+    (configs || []).forEach(config => {
+      configMap[config.key] = {
+        key: config.key,
+        value: config.value || "",
+        description: TRACKING_CONFIGS[config.key].description,
+        isActive: config.isActive,
+        isConfigured: !!config.value && config.isActive,
       };
+    });
+
+    // Fill in missing configs with defaults
+    Object.keys(TRACKING_CONFIGS).forEach((key) => {
+      if (!configMap[key]) {
+        configMap[key] = {
+          key,
+          value: "",
+          description: TRACKING_CONFIGS[key].description,
+          isActive: false,
+          isConfigured: false,
+        };
+      }
     });
 
     return res.json({
@@ -145,7 +163,7 @@ router.get("/admin", authenticateAdmin, async (req, res) => {
       supportedConfigs: TRACKING_CONFIGS,
     });
   } catch (error) {
-    console.error("Erro ao buscar configurações:", error);
+    logger.error("Erro ao buscar configurações:", error);
     return res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
@@ -171,21 +189,43 @@ router.post("/admin", authenticateAdmin, async (req, res) => {
       });
     }
 
-    // Simular salvamento (sem banco)
-    console.log(`💾 Salvando configuração: ${key} = ${value ? "[CONFIGURADO]" : "[VAZIO]"}`);
+    // Implementar upsert com Supabase
+    const configData = {
+      key,
+      value: value || "",
+      isActive,
+      category: 'tracking',
+      description: TRACKING_CONFIGS[key].description,
+      updatedBy: req.admin.userId,
+      updatedAt: new Date().toISOString()
+    };
+
+    const { data: config, error } = await supabase
+      .from("system_configs")
+      .upsert(configData, { onConflict: 'key' })
+      .select()
+      .single();
+
+    if (error) {
+      logger.error("Erro ao salvar configuração:", error);
+      return res.status(500).json({ error: "Erro ao salvar configuração" });
+    }
+
+    logger.info(`💾 Configuração salva no banco: ${key} = ${value ? "[CONFIGURADO]" : "[VAZIO]"}`);
 
     return res.json({
       success: true,
       message: "Configuração salva com sucesso",
       config: {
-        key,
-        value: value || "",
+        key: config.key,
+        value: config.value || "",
         description: TRACKING_CONFIGS[key].description,
-        isActive,
+        isActive: config.isActive,
+        isConfigured: !!config.value && config.isActive,
       },
     });
   } catch (error) {
-    console.error("Erro ao salvar configuração:", error);
+    logger.error("Erro ao salvar configuração:", error);
     return res.status(500).json({ error: "Erro interno do servidor" });
   }
 });

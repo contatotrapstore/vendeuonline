@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
+
 
 // Definição dos limites de cada plano
 export const PLAN_LIMITS = {
@@ -108,7 +110,7 @@ export class PlanLimitValidator {
         limit: planLimits.maxProducts,
       };
     } catch (error) {
-      console.error("Erro ao validar criação de produto:", error);
+      logger.error("Erro ao validar criação de produto:", error);
       return { valid: false, error: "Erro interno na validação" };
     }
   }
@@ -193,7 +195,7 @@ export class PlanLimitValidator {
         features: planLimits.features,
       };
     } catch (error) {
-      console.error("Erro ao buscar uso do plano:", error);
+      logger.error("Erro ao buscar uso do plano:", error);
       throw error;
     }
   }
@@ -219,7 +221,7 @@ export class PlanLimitValidator {
       if (!planLimits) return false;
       return (planLimits.features as readonly FeatureType[]).includes(feature);
     } catch (error) {
-      console.error("Erro ao verificar acesso à funcionalidade:", error);
+      logger.error("Erro ao verificar acesso à funcionalidade:", error);
       return false;
     }
   }

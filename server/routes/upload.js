@@ -1,7 +1,10 @@
 import express from "express";
+import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin } from "../middleware/auth.js";
 import multer from "multer";
 import jwt from "jsonwebtoken";
 import { supabase, supabaseAdmin } from "../lib/supabase-client.js";
+import { logger } from "../lib/logger.js";
+
 
 const router = express.Router();
 
@@ -22,44 +25,7 @@ const upload = multer({
 });
 
 // Middleware de autenticação para upload
-const authenticate = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Token não fornecido" });
-    }
-
-    const token = authHeader.substring(7);
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error("❌ JWT_SECRET não está configurado no ambiente");
-      process.exit(1);
-    }
-    const decoded = jwt.verify(token, jwtSecret);
-
-    // Buscar dados atualizados do usuário
-    const { data: user, error } = await supabase.from("users").select("*").eq("id", decoded.userId).single();
-
-    if (error || !user) {
-      console.error("❌ Erro ao buscar usuário:", error);
-      return res.status(401).json({ error: "Usuário não encontrado" });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("❌ Erro na autenticação:", error);
-
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({ error: "Token expirado" });
-    }
-    if (error.name === "JsonWebTokenError") {
-      return res.status(401).json({ error: "Token inválido" });
-    }
-
-    res.status(401).json({ error: "Token inválido" });
-  }
-};
+// Middleware removido - usando middleware centralizado
 
 // Helper function para upload no Supabase Storage
 const uploadToSupabase = async (
@@ -71,10 +37,10 @@ const uploadToSupabase = async (
 ) => {
   const filePath = folder ? `${folder}/${fileName}` : fileName;
 
-  console.log(`🔧 [UPLOAD] Iniciando upload para Supabase Storage`);
-  console.log(`📁 [UPLOAD] Destino: ${bucket}/${filePath}`);
-  console.log(`📄 [UPLOAD] Tamanho do arquivo: ${fileBuffer.length} bytes`);
-  console.log(`🎭 [UPLOAD] Content-Type: ${mimeType}`);
+  logger.info(`🔧 [UPLOAD] Iniciando upload para Supabase Storage`);
+  logger.info(`📁 [UPLOAD] Destino: ${bucket}/${filePath}`);
+  logger.info(`📄 [UPLOAD] Tamanho do arquivo: ${fileBuffer.length} bytes`);
+  logger.info(`🎭 [UPLOAD] Content-Type: ${mimeType}`);
 
   // Upload do arquivo para Supabase Storage usando cliente normal
   const { data, error } = await supabase.storage.from(bucket).upload(filePath, fileBuffer, {
@@ -83,15 +49,15 @@ const uploadToSupabase = async (
   });
 
   if (error) {
-    console.error("❌ [UPLOAD] Erro no upload Supabase Storage:", error);
-    console.error("🔍 [UPLOAD] Detalhes do erro:", {
+    logger.error("❌ [UPLOAD] Erro no upload Supabase Storage:", error);
+    logger.error("🔍 [UPLOAD] Detalhes do erro:", {
       message: error.message,
       statusCode: error.statusCode,
       error: error.error,
     });
 
     // Se falhar com cliente normal, tentar com admin
-    console.log("🔄 [UPLOAD] Tentando com cliente admin...");
+    logger.info("🔄 [UPLOAD] Tentando com cliente admin...");
     const { data: adminData, error: adminError } = await supabaseAdmin.storage
       .from(bucket)
       .upload(filePath, fileBuffer, {
@@ -100,16 +66,16 @@ const uploadToSupabase = async (
       });
 
     if (adminError) {
-      console.error("❌ [UPLOAD] Erro também com cliente admin:", adminError);
+      logger.error("❌ [UPLOAD] Erro também com cliente admin:", adminError);
       throw new Error(`Falha no upload: ${adminError.message}`);
     }
 
-    console.log(`✅ [UPLOAD] Upload realizado com sucesso via admin: ${adminData.path}`);
+    logger.info(`✅ [UPLOAD] Upload realizado com sucesso via admin: ${adminData.path}`);
 
     // Obter URL pública usando cliente admin
     const { data: urlData } = supabaseAdmin.storage.from(bucket).getPublicUrl(adminData.path);
 
-    console.log(`🔗 [UPLOAD] URL pública gerada: ${urlData.publicUrl}`);
+    logger.info(`🔗 [UPLOAD] URL pública gerada: ${urlData.publicUrl}`);
 
     return {
       publicUrl: urlData.publicUrl,
@@ -117,12 +83,12 @@ const uploadToSupabase = async (
     };
   }
 
-  console.log(`✅ [UPLOAD] Upload realizado com sucesso: ${data.path}`);
+  logger.info(`✅ [UPLOAD] Upload realizado com sucesso: ${data.path}`);
 
   // Obter URL pública usando cliente normal
   const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(data.path);
 
-  console.log(`🔗 [UPLOAD] URL pública gerada: ${urlData.publicUrl}`);
+  logger.info(`🔗 [UPLOAD] URL pública gerada: ${urlData.publicUrl}`);
 
   return {
     publicUrl: urlData.publicUrl,
@@ -133,7 +99,7 @@ const uploadToSupabase = async (
 // POST /api/upload - Upload de imagens
 router.post("/", authenticate, upload.single("file"), async (req, res) => {
   try {
-    console.log("📤 Upload de imagem solicitado pelo usuário:", req.user.email);
+    logger.info("📤 Upload de imagem solicitado pelo usuário:", req.user.email);
 
     if (!req.file) {
       return res.status(400).json({ error: "Nenhum arquivo enviado" });
@@ -159,13 +125,13 @@ router.post("/", authenticate, upload.single("file"), async (req, res) => {
       folder = "products";
     }
 
-    console.log(`📁 Fazendo upload para ${bucket}/${folder}/${fileName}`);
-    console.log(`🎭 Tipo de arquivo detectado: ${req.file.mimetype}`);
+    logger.info(`📁 Fazendo upload para ${bucket}/${folder}/${fileName}`);
+    logger.info(`🎭 Tipo de arquivo detectado: ${req.file.mimetype}`);
 
     // Upload para Supabase Storage com tipo correto
     const uploadResult = await uploadToSupabase(req.file.buffer, fileName, bucket, folder, req.file.mimetype);
 
-    console.log("✅ Upload realizado com sucesso:", uploadResult.publicUrl);
+    logger.info("✅ Upload realizado com sucesso:", uploadResult.publicUrl);
 
     res.json({
       success: true,
@@ -175,7 +141,7 @@ router.post("/", authenticate, upload.single("file"), async (req, res) => {
       fileName: fileName,
     });
   } catch (error) {
-    console.error("❌ Erro no upload:", error);
+    logger.error("❌ Erro no upload:", error);
 
     if (error.message.includes("Apenas arquivos de imagem")) {
       return res.status(400).json({ error: "Apenas arquivos de imagem são permitidos" });

@@ -60,22 +60,24 @@ npx vercel --prod
 
 ## 🔑 VARIÁVEIS DE AMBIENTE
 
+⚠️ **IMPORTANTE**: Nunca commitar credenciais reais. Use placeholders na documentação.
+
 ### Essenciais (OBRIGATÓRIAS)
 
 #### Database & Backend
 
 | Variável       | Valor                                                                                                                              | Sensível? |
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| `DATABASE_URL` | `postgresql://postgres.dycsfnbqgojhttnjbndp:...`                                                                                   | ✅        |
-| `JWT_SECRET`   | `cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac` | ✅        |
+| `DATABASE_URL` | `postgresql://postgres.YOUR_PROJECT_ID:YOUR_PASSWORD@db.YOUR_PROJECT_ID.supabase.co:5432/postgres` | ✅        |
+| `JWT_SECRET`   | `YOUR_STRONG_JWT_SECRET_HERE` | ✅        |
 
 #### Supabase Configuration
 
 | Variável                        | Valor                                      | Sensível? |
 | ------------------------------- | ------------------------------------------ | --------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | `https://dycsfnbqgojhttnjbndp.supabase.co` | ❌        |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`  | ❌        |
-| `SUPABASE_SERVICE_ROLE_KEY`     | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`  | ✅        |
+| `NEXT_PUBLIC_SUPABASE_URL`      | `https://YOUR_PROJECT_ID.supabase.co` | ❌        |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.YOUR_ANON_KEY_HERE`  | ❌        |
+| `SUPABASE_SERVICE_ROLE_KEY`     | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.YOUR_SERVICE_ROLE_KEY_HERE`  | ✅        |
 
 #### App Configuration
 
@@ -89,7 +91,7 @@ npx vercel --prod
 
 | Variável              | Valor                                                          | Sensível? |
 | --------------------- | -------------------------------------------------------------- | --------- |
-| `ASAAS_API_KEY`       | `$aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY...` | ✅        |
+| `ASAAS_API_KEY`       | `$aact_prod_YOUR_ASAAS_KEY_HERE` | ✅        |
 | `ASAAS_BASE_URL`      | `https://api.asaas.com/v3`                                     | ❌        |
 | `ASAAS_WEBHOOK_TOKEN` | `asaas-webhook-secret-2024`                                    | ✅        |
 | `ASAAS_WEBHOOK_URL`   | `https://www.vendeu.online/api/payments/webhook`               | ❌        |

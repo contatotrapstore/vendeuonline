@@ -1,4 +1,6 @@
 import { getUserFromToken } from "./auth";
+import { logger } from "@/lib/logger";
+
 
 export interface AuthenticatedRequest extends Request {
   user?: any;
@@ -33,7 +35,7 @@ export async function withAuth(
 
       return handler(authenticatedRequest);
     } catch (error) {
-      console.error("Erro no middleware de autenticação:", error);
+      logger.error("Erro no middleware de autenticação:", error);
       return new Response(JSON.stringify({ error: "Erro interno do servidor" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -65,7 +67,7 @@ export async function authMiddleware(request: Request) {
       user,
     };
   } catch (error) {
-    console.error("Erro no middleware de autenticação:", error);
+    logger.error("Erro no middleware de autenticação:", error);
     return {
       success: false,
       error: "Token inválido",

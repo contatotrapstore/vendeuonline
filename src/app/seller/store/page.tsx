@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -75,7 +77,7 @@ export default function SellerStorePage() {
         setSettings(data.data);
       }
     } catch (error: any) {
-      console.error("Erro ao carregar dados da loja:", error);
+      logger.error("Erro ao carregar dados da loja:", error);
       toast.error("Erro ao carregar dados da loja: " + error.message);
     } finally {
       setIsInitialLoading(false);
@@ -101,7 +103,7 @@ export default function SellerStorePage() {
         }
       }
     } catch (error: any) {
-      console.error("Erro ao salvar:", error);
+      logger.error("Erro ao salvar:", error);
       toast.error("Erro ao salvar: " + error.message);
     } finally {
       setIsLoading(false);
@@ -145,7 +147,7 @@ export default function SellerStorePage() {
         toast.success("Imagem enviada com sucesso!");
       }
     } catch (error: any) {
-      console.error("Erro no upload:", error);
+      logger.error("Erro no upload:", error);
       toast.error("Erro no upload: " + error.message);
     }
   };

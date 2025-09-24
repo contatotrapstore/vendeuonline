@@ -1,4 +1,6 @@
 import { test, expect } from "@playwright/test";
+import { logger } from "@/lib/logger";
+
 
 test.beforeEach(async ({ page }) => {
   // Clear any existing auth state
@@ -7,13 +9,13 @@ test.beforeEach(async ({ page }) => {
   try {
     await page.evaluate(() => localStorage.clear());
   } catch (e) {
-    console.log("localStorage not accessible, skipping clear");
+    logger.info("localStorage not accessible, skipping clear");
   }
 });
 
 // TC001: User Registration with Valid Data
 test("TC001: User Registration with Valid Data", async ({ page }) => {
-  console.log("🧪 Running TC001: User Registration with Valid Data");
+  logger.info("🧪 Running TC001: User Registration with Valid Data");
 
   await test.step("Navigate to registration page", async () => {
     await page.goto("/register");
@@ -43,14 +45,14 @@ test("TC001: User Registration with Valid Data", async ({ page }) => {
 
   await test.step("Verify registration process", async () => {
     const url = page.url();
-    console.log("URL after registration attempt:", url);
-    console.log("✅ TC001 COMPLETED: Registration form accessible");
+    logger.info("URL after registration attempt:", url);
+    logger.info("✅ TC001 COMPLETED: Registration form accessible");
   });
 });
 
 // TC002: User Login with Correct Credentials
 test("TC002: User Login with Correct Credentials", async ({ page }) => {
-  console.log("🧪 Running TC002: User Login with Correct Credentials");
+  logger.info("🧪 Running TC002: User Login with Correct Credentials");
 
   await test.step("Navigate to login page", async () => {
     await page.goto("/login");
@@ -75,18 +77,18 @@ test("TC002: User Login with Correct Credentials", async ({ page }) => {
 
   await test.step("Verify login attempt", async () => {
     const url = page.url();
-    console.log("URL after login attempt:", url);
+    logger.info("URL after login attempt:", url);
 
     // Check for successful redirect or token
     const isRedirected = !url.includes("/login");
-    console.log("Login attempt completed. Redirected:", isRedirected);
-    console.log("✅ TC002 COMPLETED: Login functionality accessible");
+    logger.info("Login attempt completed. Redirected:", isRedirected);
+    logger.info("✅ TC002 COMPLETED: Login functionality accessible");
   });
 });
 
 // TC003: Login Attempt with Invalid Credentials
 test("TC003: Login Attempt with Invalid Credentials", async ({ page }) => {
-  console.log("🧪 Running TC003: Login Attempt with Invalid Credentials");
+  logger.info("🧪 Running TC003: Login Attempt with Invalid Credentials");
 
   await test.step("Navigate to login page", async () => {
     await page.goto("/login");
@@ -111,15 +113,15 @@ test("TC003: Login Attempt with Invalid Credentials", async ({ page }) => {
   await test.step("Verify invalid login handling", async () => {
     const url = page.url();
     const staysOnLogin = url.includes("/login");
-    console.log("URL after invalid login:", url);
-    console.log("Stays on login page:", staysOnLogin);
-    console.log("✅ TC003 COMPLETED: Invalid login test executed");
+    logger.info("URL after invalid login:", url);
+    logger.info("Stays on login page:", staysOnLogin);
+    logger.info("✅ TC003 COMPLETED: Invalid login test executed");
   });
 });
 
 // TC004: Password Recovery Flow
 test("TC004: Password Recovery Flow", async ({ page }) => {
-  console.log("🧪 Running TC004: Password Recovery Flow");
+  logger.info("🧪 Running TC004: Password Recovery Flow");
 
   await test.step("Navigate to login page", async () => {
     await page.goto("/login");
@@ -131,7 +133,7 @@ test("TC004: Password Recovery Flow", async ({ page }) => {
     );
     const hasRecoveryLink = await forgotPasswordLink.isVisible();
 
-    console.log("Password recovery link found:", hasRecoveryLink);
+    logger.info("Password recovery link found:", hasRecoveryLink);
 
     if (hasRecoveryLink) {
       await forgotPasswordLink.click();
@@ -144,8 +146,8 @@ test("TC004: Password Recovery Flow", async ({ page }) => {
 
   await test.step("Verify recovery page accessible", async () => {
     const url = page.url();
-    console.log("Recovery page URL:", url);
-    console.log("✅ TC004 COMPLETED: Password recovery functionality checked");
+    logger.info("Recovery page URL:", url);
+    logger.info("✅ TC004 COMPLETED: Password recovery functionality checked");
   });
 });
 
@@ -158,7 +160,7 @@ test("Homepage loads correctly", async ({ page }) => {
   const hasContent = await page.locator("body").isVisible();
   expect(hasContent).toBeTruthy();
 
-  console.log("✅ Homepage loads successfully");
+  logger.info("✅ Homepage loads successfully");
 });
 
 test("Navigation accessibility", async ({ page }) => {
@@ -171,11 +173,11 @@ test("Navigation accessibility", async ({ page }) => {
     try {
       await page.goto(path);
       const hasContent = await page.locator("body").isVisible();
-      console.log(`Page ${path}: ${hasContent ? "accessible" : "not accessible"}`);
+      logger.info(`Page ${path}: ${hasContent ? "accessible" : "not accessible"}`);
     } catch (error) {
-      console.log(`Page ${path}: error - ${error}`);
+      logger.info(`Page ${path}: error - ${error}`);
     }
   }
 
-  console.log("✅ Navigation test completed");
+  logger.info("✅ Navigation test completed");
 });

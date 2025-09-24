@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -71,13 +73,13 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     // In a real app, this would add to cart store
-    console.log("Added to cart:", { productId: product.id, quantity });
+    logger.info("Added to cart:", { productId: product.id, quantity });
     // Show success message or redirect to cart
   };
 
   const handleBuyNow = () => {
     // In a real app, this would redirect to checkout
-    console.log("Buy now:", { productId: product.id, quantity });
+    logger.info("Buy now:", { productId: product.id, quantity });
     navigate("/checkout");
   };
 
@@ -90,7 +92,7 @@ export default function ProductDetailPage() {
           url: window.location.href,
         });
       } catch (error) {
-        console.log("Error sharing:", error);
+        logger.info("Error sharing:", error);
       }
     } else {
       // Fallback: copy to clipboard

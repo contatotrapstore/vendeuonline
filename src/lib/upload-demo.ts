@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 // Upload simulado para modo demo
 // Em produção, use src/lib/supabase.ts
 
@@ -15,13 +17,13 @@ export async function uploadDemo(file: File, bucket: string = "uploads"): Promis
   const fileName = `${timestamp}_${file.name}`;
   const publicUrl = `https://demo-storage.vendeuonline.com/${bucket}/${fileName}`;
 
-  console.log(`📸 Upload simulado: ${file.name} → ${publicUrl}`);
+  logger.info(`📸 Upload simulado: ${file.name} → ${publicUrl}`);
 
   return { publicUrl };
 }
 
 export async function deleteDemo(url: string): Promise<{ error?: string }> {
-  console.log(`🗑️ Exclusão simulada: ${url}`);
+  logger.info(`🗑️ Exclusão simulada: ${url}`);
   return {};
 }
 

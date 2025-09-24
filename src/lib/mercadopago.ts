@@ -1,4 +1,6 @@
 import { MercadoPagoConfig, Payment, Preference } from "mercadopago";
+import { logger } from "@/lib/logger";
+
 
 // Configuração do Mercado Pago
 const client = new MercadoPagoConfig({
@@ -81,7 +83,7 @@ export const createPayment = async (paymentData: PaymentData) => {
     });
     return response;
   } catch (error) {
-    console.error("Erro ao criar pagamento:", error);
+    logger.error("Erro ao criar pagamento:", error);
     throw error;
   }
 };
@@ -93,7 +95,7 @@ export const createPreference = async (preferenceData: PreferenceData) => {
     });
     return response;
   } catch (error) {
-    console.error("Erro ao criar preferência:", error);
+    logger.error("Erro ao criar preferência:", error);
     throw error;
   }
 };
@@ -103,7 +105,7 @@ export const getPayment = async (paymentId: string) => {
     const response = await payment.get({ id: paymentId });
     return response;
   } catch (error) {
-    console.error("Erro ao buscar pagamento:", error);
+    logger.error("Erro ao buscar pagamento:", error);
     throw error;
   }
 };

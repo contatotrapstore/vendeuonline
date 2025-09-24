@@ -1,6 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw, Home } from "lucide-react";
 import { Link } from "react-router-dom";
+import { logger } from "@/lib/logger";
+
 
 interface Props {
   children: ReactNode;
@@ -48,7 +50,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     // Log error to console in development
     if (import.meta.env.MODE === "development") {
-      console.error("ErrorBoundary caught an error:", error, errorInfo);
+      logger.error("ErrorBoundary caught an error:", error, errorInfo);
     }
 
     // Here you could send error to analytics service
@@ -69,7 +71,7 @@ export class ErrorBoundary extends Component<Props, State> {
       };
 
       // In a real app, send to your error tracking service
-      console.error("Error logged:", errorData);
+      logger.error("Error logged:", errorData);
 
       // Store in localStorage for debugging
       const errorLogs = JSON.parse(localStorage.getItem("error-logs") || "[]");
@@ -77,7 +79,7 @@ export class ErrorBoundary extends Component<Props, State> {
       if (errorLogs.length > 10) errorLogs.shift(); // Keep only last 10 errors
       localStorage.setItem("error-logs", JSON.stringify(errorLogs));
     } catch (loggingError) {
-      console.error("Failed to log error:", loggingError);
+      logger.error("Failed to log error:", loggingError);
     }
   };
 
@@ -158,7 +160,7 @@ export class ErrorBoundary extends Component<Props, State> {
 // Hook for functional components to report errors
 export const useErrorHandler = () => {
   const handleError = React.useCallback((error: Error, errorInfo?: string) => {
-    console.error("Manual error report:", error);
+    logger.error("Manual error report:", error);
 
     // You could trigger error boundary or report to service here
     const errorData = {

@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -66,7 +68,7 @@ export default function HistoryPage() {
         ]);
       }
     } catch (err) {
-      console.error("Erro ao buscar histórico:", err);
+      logger.error("Erro ao buscar histórico:", err);
       setHistory([]);
     } finally {
       setLoading(false);

@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 // Rate Limiting
 interface RateLimitConfig {
   windowMs: number; // Janela de tempo em ms
@@ -291,7 +293,7 @@ export const securityMonitor = {
     };
 
     // Em produção, enviar para serviço de monitoramento
-    console.warn("Atividade suspeita detectada:", logEntry);
+    logger.warn("Atividade suspeita detectada:", logEntry);
 
     // Armazenar localmente para análise
     const logs = JSON.parse(localStorage.getItem("security_logs") || "[]");

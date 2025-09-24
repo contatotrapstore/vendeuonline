@@ -54,6 +54,8 @@ Your application will be running at:
 
 ### Essential Variables
 
+⚠️ **IMPORTANTE**: Nunca commitar credenciais reais. Use placeholders na documentação.
+
 ```env
 # Database (Supabase)
 DATABASE_URL="your-postgres-connection-string"

@@ -17,6 +17,8 @@
 
 ## ⚡ **CONFIGURAÇÃO DE VARIÁVEIS DE AMBIENTE**
 
+⚠️ **IMPORTANTE**: Nunca commitar credenciais reais. Use placeholders na documentação.
+
 ### **PASSO 1: Configurar Supabase**
 
 1. Acesse [supabase.com](https://supabase.com) e crie um novo projeto
@@ -61,7 +63,7 @@ APP_ENV=production
 #### 💳 **PAGAMENTOS ASAAS (OPCIONAL)**
 
 ```bash
-ASAAS_API_KEY=$aact_prod_000SuaChaveAquiDoAsaas
+ASAAS_API_KEY=$aact_prod_YOUR_ASAAS_KEY_HERE
 ASAAS_BASE_URL=https://api.asaas.com/v3
 ASAAS_WEBHOOK_TOKEN=asaas-webhook-secret-2024
 ASAAS_WEBHOOK_URL=https://SEU-PROJETO.vercel.app/api/payments/webhook

@@ -1,10 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { logger } from "../lib/logger.js";
+
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Iniciando seed do banco de dados...");
+  logger.info("🌱 Iniciando seed do banco de dados...");
 
   // Limpar dados existentes na ordem correta (dependências primeiro)
   await prisma.seller.deleteMany({});
@@ -15,7 +17,7 @@ async function main() {
   await prisma.plan.deleteMany({});
   await prisma.category.deleteMany({});
 
-  console.log("🗑️  Dados existentes removidos");
+  logger.info("🗑️  Dados existentes removidos");
 
   // Seed de Planos
   const plans = [
@@ -138,14 +140,14 @@ async function main() {
     },
   ];
 
-  console.log("📋 Criando planos...");
+  logger.info("📋 Criando planos...");
   const createdPlans = [];
   for (const plan of plans) {
     const created = await prisma.plan.create({
       data: plan,
     });
     createdPlans.push(created);
-    console.log(`✅ Plano "${created.name}" criado`);
+    logger.info(`✅ Plano "${created.name}" criado`);
   }
 
   // Seed de Categorias
@@ -186,16 +188,16 @@ async function main() {
     { name: "Outros", slug: "outros", description: "Produtos diversos", isActive: true, order: 10 },
   ];
 
-  console.log("📂 Criando categorias...");
+  logger.info("📂 Criando categorias...");
   for (const category of categories) {
     const created = await prisma.category.create({
       data: category,
     });
-    console.log(`✅ Categoria "${created.name}" criada`);
+    logger.info(`✅ Categoria "${created.name}" criada`);
   }
 
   // Seed de Usuários de teste
-  console.log("👤 Criando usuários de teste...");
+  logger.info("👤 Criando usuários de teste...");
 
   const hashedPassword = await bcrypt.hash("123456", 12);
 
@@ -236,7 +238,7 @@ async function main() {
       },
     });
 
-    console.log(`✅ Buyer "${user.name}" criado`);
+    logger.info(`✅ Buyer "${user.name}" criado`);
   }
 
   const sellers = [
@@ -303,7 +305,7 @@ async function main() {
       },
     });
 
-    console.log(`✅ Seller "${user.name}" criado com loja "${storeName}"`);
+    logger.info(`✅ Seller "${user.name}" criado com loja "${storeName}"`);
   }
 
   // Admin real do sistema
@@ -331,24 +333,24 @@ async function main() {
     },
   });
 
-  console.log(`✅ Admin "${adminUser.name}" criado`);
+  logger.info(`✅ Admin "${adminUser.name}" criado`);
 
-  console.log("");
-  console.log("📋 Usuários de teste criados:");
-  console.log("🔹 Buyers: joao@teste.com, maria@teste.com (senha: 123456)");
-  console.log("🔹 Sellers: pedro@teste.com, ana@teste.com (senha: 123456)");
-  console.log("🔹 Admin: admin@vendeuonline.com (senha: Admin123!@#)");
-  console.log("");
-  console.log("⚡ CREDENCIAIS DO ADMINISTRADOR:");
-  console.log(`📧 Email: admin@vendeuonline.com`);
-  console.log(`🔑 Senha: ${adminPassword}`);
-  console.log("");
-  console.log("✨ Seed concluído com sucesso!");
+  logger.info("");
+  logger.info("📋 Usuários de teste criados:");
+  logger.info("🔹 Buyers: joao@teste.com, maria@teste.com (senha: 123456)");
+  logger.info("🔹 Sellers: pedro@teste.com, ana@teste.com (senha: 123456)");
+  logger.info("🔹 Admin: admin@vendeuonline.com (senha: Admin123!@#)");
+  logger.info("");
+  logger.info("⚡ CREDENCIAIS DO ADMINISTRADOR:");
+  logger.info(`📧 Email: admin@vendeuonline.com`);
+  logger.info(`🔑 Senha: ${adminPassword}`);
+  logger.info("");
+  logger.info("✨ Seed concluído com sucesso!");
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Erro durante o seed:", e);
+    logger.error("❌ Erro durante o seed:", e);
     process.exit(1);
   })
   .finally(async () => {

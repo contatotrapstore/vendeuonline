@@ -1,4 +1,6 @@
 import crypto from "crypto";
+import { logger } from "@/lib/logger";
+
 
 // Configuração da API ASAAS
 const ASAAS_API_KEY = process.env.ASAAS_API_KEY!;
@@ -198,7 +200,7 @@ class AsaasClient {
         const qrCode = await this.request<any>(`/payments/${response.id}/pixQrCode`);
         response.qrCode = qrCode;
       } catch (error) {
-        console.warn("Erro ao buscar QR Code PIX:", error);
+        logger.warn("Erro ao buscar QR Code PIX:", error);
       }
     }
 

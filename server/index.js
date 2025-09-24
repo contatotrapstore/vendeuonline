@@ -3,6 +3,8 @@ import cors from "cors";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import dotenv from "dotenv";
+import { logger } from "../lib/logger.js";
+
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -81,7 +83,7 @@ app.get("/", (req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error("Error:", err);
+  logger.error("Error:", err);
   res.status(err.status || 500).json({
     error: err.message || "Erro interno do servidor",
   });

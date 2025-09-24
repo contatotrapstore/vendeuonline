@@ -1,6 +1,8 @@
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import { body, validationResult } from "express-validator";
+import { logger } from "../lib/logger.js";
+
 
 // ==== RATE LIMITING ====
 export const createRateLimit = (options = {}) => {
@@ -266,7 +268,7 @@ export const ipWhitelist = (allowedIPs = []) => {
     const clientIP = req.ip || req.connection.remoteAddress;
 
     if (allowedIPs.length > 0 && !allowedIPs.includes(clientIP)) {
-      console.warn(`[SECURITY] IP não autorizado tentou acesso: ${clientIP}`);
+      logger.warn(`[SECURITY] IP não autorizado tentou acesso: ${clientIP}`);
       return res.status(403).json({
         error: "Acesso negado para este IP",
         code: "IP_NOT_ALLOWED",
@@ -317,7 +319,7 @@ export const securityLogger = (req, res, next) => {
 
     // Log apenas eventos de segurança importantes
     if (res.statusCode === 401 || res.statusCode === 403 || res.statusCode === 429) {
-      console.warn(
+      logger.warn(
         `[SECURITY] ${req.method} ${req.path} - ${res.statusCode} - IP: ${req.ip} - User: ${req.user?.email || "Anonymous"} - Time: ${responseTime}ms`
       );
     }
@@ -349,6 +351,43 @@ export const protectRoute = (requiredRoles = []) => {
 
     next();
   };
+};
+
+// Proteção contra HTTP Parameter Pollution
+export const preventHPP = (req, res, next) => {
+  // Prevenir poluição de parâmetros em query strings críticas
+  const protectedParams = ['page', 'limit', 'sort', 'order', 'id', 'email'];
+
+  for (const param of protectedParams) {
+    if (req.query[param] && Array.isArray(req.query[param])) {
+      req.query[param] = req.query[param][0]; // Usar apenas o primeiro valor
+    }
+  }
+  next();
+};
+
+// Detectar tentativas de bypass de autenticação
+export const detectAuthBypass = (req, res, next) => {
+  const suspiciousHeaders = [
+    'x-forwarded-user',
+    'x-remote-user',
+    'x-user',
+    'x-admin',
+    'x-role'
+  ];
+
+  for (const header of suspiciousHeaders) {
+    if (req.headers[header]) {
+      logger.warn(`Tentativa suspeita de bypass de autenticação via header: ${header}`, {
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+        header: header,
+        value: req.headers[header]
+      });
+      delete req.headers[header];
+    }
+  }
+  next();
 };
 
 // Cleanup de tokens expirados (executar periodicamente)

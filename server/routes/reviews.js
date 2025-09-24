@@ -1,69 +1,15 @@
 import express from "express";
-import jwt from "jsonwebtoken";
+import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin, optionalAuth } from "../middleware/auth.js";
 import { supabase } from "../lib/supabase-client.js";
+import { logger } from "../lib/logger.js";
+
 
 const router = express.Router();
 
-// JWT Secret
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
-
 // Middleware de autenticação
-const authenticateUser = async (req, res, next) => {
-  try {
-    const authHeader = req.headers.authorization;
+// Middleware removido - usando middleware centralizado
 
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Token de autenticação necessário" });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    // Buscar usuário real do Supabase
-    const { data: user, error } = await supabase.from("users").select("*").eq("id", decoded.userId).single();
-
-    if (error || !user) {
-      return res.status(401).json({ error: "Usuário não encontrado" });
-    }
-
-    req.user = user;
-    next();
-  } catch (error) {
-    console.error("❌ Erro na autenticação:", error);
-    return res.status(401).json({ error: "Token inválido" });
-  }
-};
-
-// Middleware de autenticação opcional
-const optionalAuth = async (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    req.user = null;
-    return next();
-  }
-
-  const token = authHeader.substring(7);
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-
-    // Buscar usuário real do Supabase
-    const { data: user, error } = await supabase.from("users").select("*").eq("id", decoded.userId).single();
-
-    if (error || !user) {
-      req.user = null;
-    } else {
-      req.user = user;
-    }
-    next();
-  } catch (error) {
-    req.user = null;
-    next();
-  }
-};
+// Middleware removido - usando middleware centralizado
 
 // GET /api/reviews - Listar reviews (público com opções de filtro)
 router.get("/", optionalAuth, async (req, res) => {
@@ -71,7 +17,7 @@ router.get("/", optionalAuth, async (req, res) => {
     const { productId, userId, rating, page = 1, limit = 20 } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    console.log("⭐ Buscando reviews com filtros:", { productId, userId, rating });
+    logger.info("⭐ Buscando reviews com filtros:", { productId, userId, rating });
 
     // Construir query base
     let query = supabase
@@ -117,7 +63,7 @@ router.get("/", optionalAuth, async (req, res) => {
     const { data: reviews, error } = await query;
 
     if (error) {
-      console.error("❌ Erro ao buscar reviews:", error);
+      logger.error("❌ Erro ao buscar reviews:", error);
       throw new Error(`Erro na consulta: ${error.message}`);
     }
 
@@ -160,7 +106,7 @@ router.get("/", optionalAuth, async (req, res) => {
       }
     }
 
-    console.log(`✅ ${transformedReviews.length} reviews encontrados`);
+    logger.info(`✅ ${transformedReviews.length} reviews encontrados`);
 
     return res.json({
       success: true,
@@ -173,7 +119,7 @@ router.get("/", optionalAuth, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar reviews:", error);
+    logger.error("❌ Erro ao buscar reviews:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao carregar reviews",
@@ -208,7 +154,7 @@ router.post("/", authenticateUser, async (req, res) => {
       });
     }
 
-    console.log("⭐ Criando review:", { productId, rating, userId: req.user.id });
+    logger.info("⭐ Criando review:", { productId, rating, userId: req.user.id });
 
     // Verificar se o produto existe
     const { data: product, error: productError } = await supabase
@@ -278,11 +224,11 @@ router.post("/", authenticateUser, async (req, res) => {
       .single();
 
     if (insertError) {
-      console.error("❌ Erro ao criar review:", insertError);
+      logger.error("❌ Erro ao criar review:", insertError);
       throw new Error(`Erro ao criar: ${insertError.message}`);
     }
 
-    console.log("✅ Review criado:", review.id);
+    logger.info("✅ Review criado:", review.id);
 
     return res.status(201).json({
       success: true,
@@ -290,7 +236,7 @@ router.post("/", authenticateUser, async (req, res) => {
       data: review,
     });
   } catch (error) {
-    console.error("❌ Erro ao criar review:", error);
+    logger.error("❌ Erro ao criar review:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao criar review",
@@ -319,7 +265,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
       });
     }
 
-    console.log("📝 Atualizando review:", id, "usuário:", req.user.id);
+    logger.info("📝 Atualizando review:", id, "usuário:", req.user.id);
 
     // Verificar se review existe e pertence ao usuário
     const { data: review, error: reviewError } = await supabase
@@ -353,11 +299,11 @@ router.put("/:id", authenticateUser, async (req, res) => {
       .single();
 
     if (updateError) {
-      console.error("❌ Erro ao atualizar review:", updateError);
+      logger.error("❌ Erro ao atualizar review:", updateError);
       throw new Error(`Erro ao atualizar: ${updateError.message}`);
     }
 
-    console.log("✅ Review atualizado:", updatedReview.id);
+    logger.info("✅ Review atualizado:", updatedReview.id);
 
     const message = "Review atualizado com sucesso";
 
@@ -367,7 +313,7 @@ router.put("/:id", authenticateUser, async (req, res) => {
       data: updatedReview,
     });
   } catch (error) {
-    console.error("❌ Erro ao atualizar review:", error);
+    logger.error("❌ Erro ao atualizar review:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao atualizar review",
@@ -381,7 +327,7 @@ router.delete("/:id", authenticateUser, async (req, res) => {
   try {
     const { id } = req.params;
 
-    console.log("🗑️ Deletando review:", id, "usuário:", req.user.id);
+    logger.info("🗑️ Deletando review:", id, "usuário:", req.user.id);
 
     // Verificar se review existe e pertence ao usuário
     const { data: review, error: reviewError } = await supabase
@@ -402,18 +348,18 @@ router.delete("/:id", authenticateUser, async (req, res) => {
     const { error: deleteError } = await supabase.from("reviews").delete().eq("id", id).eq("userId", req.user.id);
 
     if (deleteError) {
-      console.error("❌ Erro ao deletar review:", deleteError);
+      logger.error("❌ Erro ao deletar review:", deleteError);
       throw new Error(`Erro ao deletar: ${deleteError.message}`);
     }
 
-    console.log("✅ Review deletado:", id);
+    logger.info("✅ Review deletado:", id);
 
     return res.json({
       success: true,
       message: "Review deletado com sucesso",
     });
   } catch (error) {
-    console.error("❌ Erro ao deletar review:", error);
+    logger.error("❌ Erro ao deletar review:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao deletar review",
@@ -428,7 +374,7 @@ router.get("/my", authenticateUser, async (req, res) => {
     const { page = 1, limit = 20 } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    console.log("👤 Buscando reviews do usuário:", req.user.id);
+    logger.info("👤 Buscando reviews do usuário:", req.user.id);
 
     const { data: reviews, error } = await supabase
       .from("reviews")
@@ -456,7 +402,7 @@ router.get("/my", authenticateUser, async (req, res) => {
       .range(offset, offset + parseInt(limit) - 1);
 
     if (error) {
-      console.error("❌ Erro ao buscar reviews do usuário:", error);
+      logger.error("❌ Erro ao buscar reviews do usuário:", error);
       throw new Error(`Erro na consulta: ${error.message}`);
     }
 
@@ -477,7 +423,7 @@ router.get("/my", authenticateUser, async (req, res) => {
       };
     });
 
-    console.log(`✅ ${transformedReviews.length} reviews do usuário encontrados`);
+    logger.info(`✅ ${transformedReviews.length} reviews do usuário encontrados`);
 
     return res.json({
       success: true,
@@ -489,7 +435,7 @@ router.get("/my", authenticateUser, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("❌ Erro ao buscar reviews do usuário:", error);
+    logger.error("❌ Erro ao buscar reviews do usuário:", error);
     res.status(500).json({
       success: false,
       error: "Erro ao carregar seus reviews",

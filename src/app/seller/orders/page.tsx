@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -125,7 +127,7 @@ export default function SellerOrdersPage() {
           error: null,
         });
       } catch (err) {
-        console.error("Erro ao buscar pedidos:", err);
+        logger.error("Erro ao buscar pedidos:", err);
         const errorMessage = err instanceof Error ? err.message : "Erro ao carregar pedidos do vendedor";
         useOrderStore.setState({
           orders: [],

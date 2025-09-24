@@ -1,5 +1,7 @@
 import { apiRateLimiter, authRateLimiter, searchRateLimiter, securityMonitor } from "@/utils/security";
 import { applyCorsHeaders, handlePreflight } from "@/lib/cors";
+import { logger } from "@/lib/logger";
+
 
 // Função para obter IP do cliente
 function getClientIP(request: Request): string {
@@ -58,7 +60,7 @@ export function withRateLimit(
     const result = limiter.check(identifier);
 
     if (!result.allowed) {
-      console.warn(`Rate limit exceeded for ${identifier} on ${request.url}`);
+      logger.warn(`Rate limit exceeded for ${identifier} on ${request.url}`);
 
       return new Response(
         JSON.stringify({
@@ -123,7 +125,7 @@ export function withInputValidation(handler: (request: Request) => Promise<Respo
               if (typeof value === "string") {
                 // Detectar XSS
                 if (securityMonitor.detectXSS(value)) {
-                  console.warn(`XSS attempt detected in ${currentPath}:`, value);
+                  logger.warn(`XSS attempt detected in ${currentPath}:`, value);
                   securityMonitor.logSuspiciousActivity("XSS_ATTEMPT", {
                     field: currentPath,
                     value,
@@ -136,7 +138,7 @@ export function withInputValidation(handler: (request: Request) => Promise<Respo
 
                 // Detectar SQL Injection
                 if (securityMonitor.detectSQLInjection(value)) {
-                  console.warn(`SQL injection attempt detected in ${currentPath}:`, value);
+                  logger.warn(`SQL injection attempt detected in ${currentPath}:`, value);
                   securityMonitor.logSuspiciousActivity("SQL_INJECTION_ATTEMPT", {
                     field: currentPath,
                     value,
@@ -175,7 +177,7 @@ export function withInputValidation(handler: (request: Request) => Promise<Respo
 
       return handler(request);
     } catch (error) {
-      console.error("Erro na validação de entrada:", error);
+      logger.error("Erro na validação de entrada:", error);
       return new Response(JSON.stringify({ error: "Erro na validação da requisição" }), {
         status: 400,
         headers: { "Content-Type": "application/json" },
@@ -197,7 +199,7 @@ export function withSecurityLogging(handler: (request: Request) => Promise<Respo
 
       // Log requisições suspeitas (muito lentas ou com status de erro)
       if (duration > 5000 || response.status >= 400) {
-        console.warn("Requisição suspeita:", {
+        logger.warn("Requisição suspeita:", {
           method: request.method,
           url: request.url,
           status: response.status,
@@ -209,7 +211,7 @@ export function withSecurityLogging(handler: (request: Request) => Promise<Respo
 
       return response;
     } catch (error) {
-      console.error("Erro na requisição:", {
+      logger.error("Erro na requisição:", {
         method: request.method,
         url: request.url,
         error: error instanceof Error ? error.message : "Unknown error",

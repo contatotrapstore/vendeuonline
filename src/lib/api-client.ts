@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 /**
  * Cliente de API centralizado para todas as requisições
  */
@@ -132,7 +134,7 @@ export const apiRequest = async <T = any>(endpoint: string, options: ApiRequestO
 
         // Se é erro 5xx e ainda temos tentativas, tentar novamente
         if (response.status >= 500 && attempt < retryAttempts) {
-          console.warn(`API request failed (attempt ${attempt}/${retryAttempts}):`, error.message);
+          logger.warn(`API request failed (attempt ${attempt}/${retryAttempts}):`, error.message);
           await sleep(retryDelay * Math.pow(2, attempt - 1)); // Exponential backoff
           return makeRequest(attempt + 1);
         }
@@ -155,7 +157,7 @@ export const apiRequest = async <T = any>(endpoint: string, options: ApiRequestO
       if (error instanceof Error) {
         // Se é erro de timeout/network e ainda temos tentativas
         if (isRetryableError(error) && attempt < retryAttempts) {
-          console.warn(`API request failed (attempt ${attempt}/${retryAttempts}):`, error.message);
+          logger.warn(`API request failed (attempt ${attempt}/${retryAttempts}):`, error.message);
           await sleep(retryDelay * Math.pow(2, attempt - 1)); // Exponential backoff
           return makeRequest(attempt + 1);
         }

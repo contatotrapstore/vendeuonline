@@ -1,5 +1,7 @@
 import express from "express";
 import { supabase } from "../lib/supabase-client.js";
+import { logger } from "../lib/logger.js";
+
 
 const router = express.Router();
 
@@ -21,7 +23,7 @@ router.get("/", async (req, res) => {
       data: categories || []
     });
   } catch (error) {
-    console.error("Erro ao buscar categorias:", error);
+    logger.error("Erro ao buscar categorias:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
@@ -51,7 +53,7 @@ router.get("/:slug", async (req, res) => {
       data: category
     });
   } catch (error) {
-    console.error("Erro ao buscar categoria:", error);
+    logger.error("Erro ao buscar categoria:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 });

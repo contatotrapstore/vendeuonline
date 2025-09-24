@@ -1,5 +1,7 @@
 # 🔐 Variáveis de Ambiente para Vercel
 
+⚠️ **IMPORTANTE**: Nunca commitar credenciais reais. Use placeholders na documentação.
+
 Para o deploy em produção no Vercel, você precisa configurar as seguintes variáveis secretas no painel do Vercel:
 
 ## 📋 Variáveis Obrigatórias
@@ -29,7 +31,7 @@ JWT_SECRET=sua-chave-jwt-muito-forte-aqui-64-caracteres-ou-mais
 ### 🏦 ASAAS Production
 
 ```bash
-ASAAS_API_KEY=$aact_prod_SuaChaveAquiDoAsaas
+ASAAS_API_KEY=$aact_prod_YOUR_ASAAS_KEY_HERE
 ASAAS_BASE_URL=https://api.asaas.com/v3
 ASAAS_WEBHOOK_TOKEN=asaas-webhook-secret-2024
 ASAAS_WEBHOOK_URL=https://seu-dominio.vercel.app/api/payments/webhook
@@ -38,7 +40,7 @@ ASAAS_WEBHOOK_URL=https://seu-dominio.vercel.app/api/payments/webhook
 ### 🧪 ASAAS Sandbox (Desenvolvimento)
 
 ```bash
-ASAAS_API_KEY=$aact_YTU5YTE0M2M2N2I4MTliNzk0YTI5N2U5MzQwNWVkNDQ6OjAwMDAwMDAwMDAwMDAwODI4MTI6OiRhYWNoXzJlMDE5NDg3LWQyMjQtNDQ1Yy04NDUyLWI0ZDEzMmJiNmY1OA==
+ASAAS_API_KEY=$aact_YOUR_SANDBOX_KEY_HERE
 ASAAS_BASE_URL=https://sandbox.asaas.com/api/v3
 ```
 

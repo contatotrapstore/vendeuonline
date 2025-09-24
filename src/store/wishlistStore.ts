@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { apiRequest } from "@/lib/api";
 import { useAuthStore } from "./authStore";
+import { logger } from "@/lib/logger";
+
 
 export interface WishlistItem {
   id: string;
@@ -51,7 +53,7 @@ export const useWishlistStore = create<WishlistStore>()(
           });
           set({ items: response.data || [], loading: false });
         } catch (error: any) {
-          console.error("Erro ao buscar wishlist:", error);
+          logger.error("Erro ao buscar wishlist:", error);
           set({
             items: [],
             loading: false,
@@ -78,7 +80,7 @@ export const useWishlistStore = create<WishlistStore>()(
             loading: false,
           }));
         } catch (error: any) {
-          console.error("Erro ao adicionar à wishlist:", error);
+          logger.error("Erro ao adicionar à wishlist:", error);
           set({
             error: "Erro ao adicionar produto à lista de desejos",
             loading: false,
@@ -103,7 +105,7 @@ export const useWishlistStore = create<WishlistStore>()(
             loading: false,
           }));
         } catch (error: any) {
-          console.error("Erro ao remover da wishlist:", error);
+          logger.error("Erro ao remover da wishlist:", error);
           set({
             error: "Erro ao remover produto da lista de desejos",
             loading: false,

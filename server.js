@@ -8,6 +8,8 @@ import { v4 as uuidv4 } from "uuid";
 import { body } from "express-validator";
 import { fixEncodingMiddleware } from "./server/middleware/encoding.js";
 import { testSupabaseConnection, getDatabaseStats, supabase } from "./server/lib/supabase-client.js";
+import { logger } from "./server/lib/logger.js";
+
 
 // Importar novos utilitários de erro e middleware
 import {
@@ -44,6 +46,8 @@ import {
   securityLogger,
   protectRoute,
   cleanupExpiredTokens,
+  preventHPP,
+  detectAuthBypass,
 } from "./server/middleware/security.js";
 
 // Importar rotas
@@ -66,14 +70,22 @@ import usersRouter from "./server/routes/users.js";
 import cartRouter from "./server/routes/cart.js";
 import checkoutRouter from "./server/routes/checkout.js";
 import addressesRouter from "./server/routes/addresses.js";
+import cacheRouter from "./server/routes/cache.js";
+import { standardizeResponses } from "./server/lib/response-standards.js";
+import { monitoring } from "./server/lib/monitoring.js";
+import healthRouter from "./server/routes/health.js";
 
 // Carregar variáveis de ambiente
 dotenv.config();
 
-// Configurações JWT
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "cc59dcad7b4e400792f5a7b2d060f34f93b8eec2cf540878c9bd20c0bb05eaef1dd9e348f0c680ceec145368285c6173e028988f5988cf5fe411939861a8f9ac";
+// Configurações JWT - OBRIGATÓRIO definir JWT_SECRET nas variáveis de ambiente
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  logger.error("❌ ERRO CRÍTICO: JWT_SECRET não definido nas variáveis de ambiente!");
+  logger.error("💡 Gere uma chave forte com: node -e \"logger.info(require('crypto').randomBytes(64).toString('hex'))\"");
+  process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -93,8 +105,18 @@ app.use(securityHeaders);
 // Logger de segurança
 app.use(securityLogger);
 
+// Proteções adicionais de segurança
+app.use(preventHPP);
+app.use(detectAuthBypass);
+
 // Sanitização de entrada
 app.use(sanitizeInput);
+
+// Padronizar respostas de todas as APIs
+app.use(standardizeResponses());
+
+// Monitoramento de requisições
+app.use(monitoring.requestMonitoring());
 
 // CORS configurado de forma segura
 const corsOptions = {
@@ -147,7 +169,7 @@ cleanupExpiredTokens();
 // ==== VALIDAÇÃO E TESTE DO SUPABASE ====
 // Testar conexão na inicialização
 (async () => {
-  console.log("🔍 Validando configuração do Supabase...");
+  logger.info("🔍 Validando configuração do Supabase...");
 
   // Validar variáveis de ambiente críticas
   const requiredEnvVars = {
@@ -164,17 +186,17 @@ cleanupExpiredTokens();
   }
 
   if (missingVars.length > 0) {
-    console.error("❌ ERRO CRÍTICO: Variáveis de ambiente obrigatórias ausentes:");
-    missingVars.forEach((varName) => console.error(`   - ${varName}`));
+    logger.error("❌ ERRO CRÍTICO: Variáveis de ambiente obrigatórias ausentes:");
+    missingVars.forEach((varName) => logger.error(`   - ${varName}`));
 
     if (process.env.NODE_ENV === "production") {
-      console.error("🚨 Aplicação não pode iniciar em produção sem essas variáveis!");
+      logger.error("🚨 Aplicação não pode iniciar em produção sem essas variáveis!");
       process.exit(1);
     } else {
-      console.warn("⚠️ Aplicação rodando em modo desenvolvimento com configuração incompleta");
+      logger.warn("⚠️ Aplicação rodando em modo desenvolvimento com configuração incompleta");
     }
   } else {
-    console.log("✅ Todas as variáveis de ambiente estão configuradas");
+    logger.info("✅ Todas as variáveis de ambiente estão configuradas");
   }
 
   // Testar conexão com Supabase
@@ -182,7 +204,7 @@ cleanupExpiredTokens();
   if (connectionOk) {
     // Obter estatísticas básicas
     const stats = await getDatabaseStats();
-    console.log("📊 Estatísticas do banco:", stats);
+    logger.info("📊 Estatísticas do banco:", stats);
   }
 })();
 
@@ -305,6 +327,8 @@ app.use("/api/checkout", checkoutRouter);
 
 // Rotas de endereços (requer autenticação)
 app.use("/api/addresses", addressesRouter);
+app.use("/api/cache", cacheRouter);
+app.use("/api/health", healthRouter);
 
 // Funções de Auditoria
 const createAuditLog = async (
@@ -334,7 +358,7 @@ const createAuditLog = async (
       },
     });
   } catch (error) {
-    console.error("Erro ao criar log de auditoria:", error);
+    logger.error("Erro ao criar log de auditoria:", error);
   }
 };
 
@@ -435,7 +459,7 @@ app.get("/api/security-status", authenticate, protectRoute(["ADMIN"]), (req, res
 /*
 app.post('/api/auth/login', async (req, res) => {
   try {
-    console.log('Login request:', req.body);
+    logger.info('Login request:', req.body);
     
     const { email, password, userType } = req.body;
 
@@ -467,7 +491,7 @@ app.post('/api/auth/login', async (req, res) => {
       }
     });
 
-    console.log('User found:', user ? 'Yes' : 'No');
+    logger.info('User found:', user ? 'Yes' : 'No');
 
     if (!user) {
       return res.status(401).json({ error: 'Credenciais inválidas' });
@@ -499,7 +523,7 @@ app.post('/api/auth/login', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro no login:', error);
+    logger.error('Erro no login:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
@@ -511,7 +535,7 @@ app.post('/api/auth/login', async (req, res) => {
 /*
 app.get('/api/products', async (req, res) => {
   try {
-    console.log('Products request:', req.query);
+    logger.info('Products request:', req.query);
     
     const {
       page = 1,
@@ -610,7 +634,7 @@ app.get('/api/products', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Erro na API de produtos:', error);
+    logger.error('Erro na API de produtos:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
@@ -622,7 +646,7 @@ app.get(
   "/api/users/profile",
   authenticate,
   asyncHandler(async (req, res) => {
-    console.log("Profile request for user:", req.user);
+    logger.info("Profile request for user:", req.user);
 
     const userId = req.user.userId;
     const userType = req.user.type;
@@ -658,7 +682,7 @@ app.get(
         return res.json({ profile });
       }
     } catch (error) {
-      console.warn("Falha ao buscar dados reais, usando mock:", error.message);
+      logger.warn("Falha ao buscar dados reais, usando mock:", error.message);
     }
 
     // Fallback para dados mock se a base de dados falhar
@@ -743,7 +767,7 @@ app.put(
         user: updatedUser,
       });
     } catch (error) {
-      console.error("Erro ao atualizar perfil:", error);
+      logger.error("Erro ao atualizar perfil:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
@@ -799,14 +823,14 @@ app.put(
           return res.json({ message: "Senha alterada com sucesso" });
         }
       } catch (dbError) {
-        console.warn("❌ Erro na base de dados para password change, usando fallback:", dbError.message);
+        logger.warn("❌ Erro na base de dados para password change, usando fallback:", dbError.message);
       }
 
       // Usuário não encontrado em nenhum sistema
-      console.log("❌ Usuário não encontrado para alterar senha:", req.user.email);
+      logger.info("❌ Usuário não encontrado para alterar senha:", req.user.email);
       return res.status(404).json({ error: "Usuário não encontrado" });
     } catch (error) {
-      console.error("Erro ao alterar senha:", error);
+      logger.error("Erro ao alterar senha:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
@@ -841,7 +865,7 @@ app.post(
         avatarUrl: updatedUser.avatar,
       });
     } catch (error) {
-      console.error("Erro no upload do avatar:", error);
+      logger.error("Erro no upload do avatar:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
@@ -859,7 +883,7 @@ app.get("/api/addresses", authenticate, async (req, res) => {
 
     res.json({ addresses: addresses || [] });
   } catch (error) {
-    console.error("Erro na API de endereços:", error);
+    logger.error("Erro na API de endereços:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
@@ -917,11 +941,11 @@ app.post(
           address,
         });
       } catch (dbError) {
-        console.warn("❌ Erro na base de dados para address creation, usando fallback:", dbError.message);
+        logger.warn("❌ Erro na base de dados para address creation, usando fallback:", dbError.message);
       }
 
       // Fallback para sistema mock - simular criação de endereço bem-sucedida
-      console.log("🔄 Simulando criação de endereço para usuário mock:", req.user.email);
+      logger.info("🔄 Simulando criação de endereço para usuário mock:", req.user.email);
 
       const mockAddress = {
         id: `addr_${Date.now()}`,
@@ -944,7 +968,7 @@ app.post(
         address: mockAddress,
       });
     } catch (error) {
-      console.error("Erro ao adicionar endereço:", error);
+      logger.error("Erro ao adicionar endereço:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
@@ -1013,7 +1037,7 @@ app.put(
         address,
       });
     } catch (error) {
-      console.error("Erro ao atualizar endereço:", error);
+      logger.error("Erro ao atualizar endereço:", error);
       res.status(500).json({ error: "Erro ao atualizar endereço" });
     }
   }
@@ -1033,7 +1057,7 @@ app.delete("/api/addresses/:id", authenticate, csrfProtection, async (req, res) 
 
     res.json({ message: "Endereço removido com sucesso" });
   } catch (error) {
-    console.error("Erro ao deletar endereço:", error);
+    logger.error("Erro ao deletar endereço:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
@@ -1057,7 +1081,7 @@ app.get("/api/users/stats", authenticate, async (req, res) => {
         },
       });
     } catch (prismaError) {
-      console.log("Erro ao buscar pedidos:", prismaError.message);
+      logger.info("Erro ao buscar pedidos:", prismaError.message);
       // Fallback para Supabase
       const { data: supabaseOrders, error: ordersError } = await supabase
         .from("Order")
@@ -1080,7 +1104,7 @@ app.get("/api/users/stats", authenticate, async (req, res) => {
         select: { id: true },
       });
     } catch (prismaError) {
-      console.log("Erro ao buscar wishlist:", prismaError.message);
+      logger.info("Erro ao buscar wishlist:", prismaError.message);
       // Fallback para Supabase
       const { data: supabaseWishlist, error: wishlistError } = await supabase
         .from("wishlist")
@@ -1113,7 +1137,7 @@ app.get("/api/users/stats", authenticate, async (req, res) => {
 
     res.json({ stats });
   } catch (error) {
-    console.error("Erro ao buscar estatísticas:", error);
+    logger.error("Erro ao buscar estatísticas:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
@@ -1161,7 +1185,7 @@ app.delete(
 
       res.json({ message: "Conta deletada com sucesso" });
     } catch (error) {
-      console.error("Erro ao deletar conta:", error);
+      logger.error("Erro ao deletar conta:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
@@ -1206,7 +1230,7 @@ app.get(
         },
       });
     } catch (dbError) {
-      console.warn("Erro ao buscar pedidos:", dbError.message);
+      logger.warn("Erro ao buscar pedidos:", dbError.message);
 
       // Tentar fallback com Supabase
       try {
@@ -1233,7 +1257,7 @@ app.get(
           orders = [];
         }
       } catch (supabaseError) {
-        console.warn("Fallback Supabase também falhou:", supabaseError.message);
+        logger.warn("Fallback Supabase também falhou:", supabaseError.message);
         orders = [];
       }
     }
@@ -1274,7 +1298,7 @@ app.get('/api/stores', async (req, res) => {
 
     res.json({ data: stores });
   } catch (error) {
-    console.error('Erro ao buscar lojas:', error);
+    logger.error('Erro ao buscar lojas:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
@@ -1317,7 +1341,7 @@ app.get("/api/wishlist", authenticate, async (req, res) => {
         orderBy: { createdAt: "desc" },
       });
     } catch (dbError) {
-      console.error("Erro ao buscar wishlist:", dbError.message);
+      logger.error("Erro ao buscar wishlist:", dbError.message);
       // Retornar lista vazia se falhar a conexão
       wishlist = [];
     }
@@ -1328,7 +1352,7 @@ app.get("/api/wishlist", authenticate, async (req, res) => {
       total: wishlist.length,
     });
   } catch (error) {
-    console.error("Erro ao buscar wishlist:", error);
+    logger.error("Erro ao buscar wishlist:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
@@ -1367,7 +1391,7 @@ app.get(
         orderBy: { createdAt: "desc" },
       });
     } catch (dbError) {
-      console.warn("Erro ao buscar wishlist do buyer:", dbError.message);
+      logger.warn("Erro ao buscar wishlist do buyer:", dbError.message);
       // Retornar lista vazia se falhar a conexão
       wishlist = [];
     }
@@ -1384,14 +1408,14 @@ app.get(
 // Get All Banners
 app.get("/api/admin/banners", authenticate, adminRateLimit, protectRoute(["ADMIN"]), async (req, res) => {
   try {
-    console.log("Admin banners endpoint called");
+    logger.info("Admin banners endpoint called");
     const banners = await prisma.banner.findMany({
       orderBy: { createdAt: "desc" },
     });
 
     res.json({ data: banners });
   } catch (error) {
-    console.error("Erro ao buscar banners:", error);
+    logger.error("Erro ao buscar banners:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
@@ -1431,10 +1455,10 @@ app.post(
         },
       });
 
-      console.log(`Banner "${title}" criado com sucesso`);
+      logger.info(`Banner "${title}" criado com sucesso`);
       res.status(201).json({ data: banner, message: "Banner criado com sucesso" });
     } catch (error) {
-      console.error("Erro ao criar banner:", error);
+      logger.error("Erro ao criar banner:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
@@ -1486,10 +1510,10 @@ app.put(
         },
       });
 
-      console.log(`Banner "${title}" atualizado com sucesso`);
+      logger.info(`Banner "${title}" atualizado com sucesso`);
       res.json({ data: updatedBanner, message: "Banner atualizado com sucesso" });
     } catch (error) {
-      console.error("Erro ao atualizar banner:", error);
+      logger.error("Erro ao atualizar banner:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
@@ -1521,10 +1545,10 @@ app.patch(
         data: { isActive },
       });
 
-      console.log(`Banner status alterado para ${isActive ? "ativo" : "inativo"}`);
+      logger.info(`Banner status alterado para ${isActive ? "ativo" : "inativo"}`);
       res.json({ data: updatedBanner, message: "Status do banner atualizado" });
     } catch (error) {
-      console.error("Erro ao alterar status do banner:", error);
+      logger.error("Erro ao alterar status do banner:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
@@ -1555,10 +1579,10 @@ app.delete(
         where: { id },
       });
 
-      console.log(`Banner "${banner.title}" excluído com sucesso`);
+      logger.info(`Banner "${banner.title}" excluído com sucesso`);
       res.json({ message: "Banner excluído com sucesso" });
     } catch (error) {
-      console.error("Erro ao excluir banner:", error);
+      logger.error("Erro ao excluir banner:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
@@ -1580,7 +1604,7 @@ app.post("/api/admin/banners/:id/click", authenticate, adminRateLimit, protectRo
 
     res.json({ message: "Click registrado" });
   } catch (error) {
-    console.error("Erro ao registrar click:", error);
+    logger.error("Erro ao registrar click:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
@@ -1606,7 +1630,7 @@ app.post(
 
       res.json({ message: "Impressão registrada" });
     } catch (error) {
-      console.error("Erro ao registrar impressão:", error);
+      logger.error("Erro ao registrar impressão:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
@@ -1616,7 +1640,7 @@ app.post(
 // Get All Plans for Admin
 app.get("/api/admin/plans", authenticate, adminRateLimit, protectRoute(["ADMIN"]), async (req, res) => {
   try {
-    console.log("Admin plans endpoint called");
+    logger.info("Admin plans endpoint called");
     const plans = await prisma.plan.findMany({
       include: {
         _count: {
@@ -1628,7 +1652,7 @@ app.get("/api/admin/plans", authenticate, adminRateLimit, protectRoute(["ADMIN"]
 
     // Parse features JSON string for each plan
     const formattedPlans = plans.map((plan) => {
-      console.log("Processing plan:", plan.name, "features:", plan.features);
+      logger.info("Processing plan:", plan.name, "features:", plan.features);
       return {
         ...plan,
         features: JSON.parse(plan.features || "[]"),
@@ -1641,7 +1665,7 @@ app.get("/api/admin/plans", authenticate, adminRateLimit, protectRoute(["ADMIN"]
       message: "Planos carregados com sucesso",
     });
   } catch (error) {
-    console.error("Erro ao buscar planos admin:", error);
+    logger.error("Erro ao buscar planos admin:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
@@ -1708,8 +1732,8 @@ app.put(
       });
 
       // Log da alteração
-      console.log(`[ADMIN] Plano ${name} atualizado por admin ${req.user.userId}`);
-      console.log(`Preço: R$ ${price} | Ativo: ${isActive} | Limites: ${maxAds}/${maxProducts}/${maxPhotos}`);
+      logger.info(`[ADMIN] Plano ${name} atualizado por admin ${req.user.userId}`);
+      logger.info(`Preço: R$ ${price} | Ativo: ${isActive} | Limites: ${maxAds}/${maxProducts}/${maxPhotos}`);
 
       res.json({
         plan: {
@@ -1719,7 +1743,7 @@ app.put(
         message: `Plano ${name} atualizado com sucesso`,
       });
     } catch (error) {
-      console.error("Erro ao atualizar plano:", error);
+      logger.error("Erro ao atualizar plano:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
@@ -1771,7 +1795,7 @@ app.get("/api/admin/plans/:id/analytics", authenticate, adminRateLimit, protectR
       },
     });
   } catch (error) {
-    console.error("Erro ao buscar analytics do plano:", error);
+    logger.error("Erro ao buscar analytics do plano:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
@@ -1816,10 +1840,10 @@ app.delete(
         where: { id },
       });
 
-      console.log(`Plano "${plan.name}" excluído com sucesso`);
+      logger.info(`Plano "${plan.name}" excluído com sucesso`);
       res.json({ message: "Plano excluído com sucesso" });
     } catch (error) {
-      console.error("Erro ao excluir plano:", error);
+      logger.error("Erro ao excluir plano:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   }
@@ -1839,24 +1863,24 @@ const startServer = (port) => {
 
   const server = app
     .listen(port, async () => {
-      console.log(`🚀 Servidor API rodando em http://localhost:${port}`);
-      console.log(`📱 Frontend disponível em http://localhost:${process.env.VITE_FRONTEND_PORT || 5173}`);
-      console.log(`🔗 Teste a API: http://localhost:${port}/api/health`);
+      logger.info(`🚀 Servidor API rodando em http://localhost:${port}`);
+      logger.info(`📱 Frontend disponível em http://localhost:${process.env.VITE_FRONTEND_PORT || 5173}`);
+      logger.info(`🔗 Teste a API: http://localhost:${port}/api/health`);
 
       // Salvar a porta atual para o frontend usar
       if (process.env.NODE_ENV !== "production") {
         const fs = await import("fs");
         const portInfo = { apiPort: port, frontendPort: process.env.VITE_FRONTEND_PORT || 5173 };
         fs.writeFileSync(".port-config.json", JSON.stringify(portInfo, null, 2));
-        console.log(`📝 Configuração de portas salva em .port-config.json`);
+        logger.info(`📝 Configuração de portas salva em .port-config.json`);
       }
     })
     .on("error", (err) => {
       if (err.code === "EADDRINUSE") {
-        console.log(`⚠️  Porta ${port} em uso, tentando porta ${port + 1}...`);
+        logger.info(`⚠️  Porta ${port} em uso, tentando porta ${port + 1}...`);
         startServer(port + 1);
       } else {
-        console.error("❌ Erro ao iniciar servidor:", err);
+        logger.error("❌ Erro ao iniciar servidor:", err);
         process.exit(1);
       }
     });

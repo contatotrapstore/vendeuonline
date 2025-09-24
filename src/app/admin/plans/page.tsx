@@ -1,3 +1,5 @@
+import { logger } from "@/lib/logger";
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -67,7 +69,7 @@ export default function AdminPlansPage() {
       }
 
       const data = await response.json();
-      console.log("Plans data received:", data);
+      logger.info("Plans data received:", data);
 
       // Garantir que features seja sempre array
       const processedPlans = (data.data || []).map((plan: any) => ({

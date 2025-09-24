@@ -38,6 +38,7 @@ model User {
   subscriptions Subscription[]
   notifications Notification[]
   cart          Cart[]
+  payments      Payment[]
   
   @@map("users")
 }
@@ -75,6 +76,7 @@ model Seller {
   products      Product[]
   orders        Order[]
   subscriptions Subscription[]
+  settings      SellerSettings?
   
   @@map("sellers")
 }
@@ -383,6 +385,7 @@ model Plan {
   // Relações
   subscriptions   Subscription[]
   sellers         Seller[]
+  payments        Payment[]
   
   @@map("plans")
 }
@@ -511,5 +514,75 @@ enum NotificationType {
   ORDER
   PAYMENT
   SYSTEM
+}
+
+// Modelo de pagamentos para integração com ASAAS
+model Payment {
+  id                  String        @id @default(cuid())
+  userId              String
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId              String?
+  plan                Plan?         @relation(fields: [planId], references: [id])
+
+  asaasPaymentId      String        @unique  // ID do pagamento no ASAAS
+  amount              Float
+  status              PaymentStatus @default(PENDING)
+  paymentMethod       PaymentMethod
+  pixQrCode           String?       // QR Code para PIX
+  pixCopyPaste        String?       // Código PIX copia e cola
+  boletoUrl           String?       // URL do boleto
+  invoiceUrl          String?       // URL da fatura
+  description         String?
+
+  // Webhook data
+  webhookReceived     Boolean       @default(false)
+  webhookData         String?       // JSON com dados do webhook
+
+  // Timestamps
+  paidAt              DateTime?
+  expireAt            DateTime?
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@map("payments")
+}
+
+// Configurações específicas do vendedor
+model SellerSettings {
+  id                String   @id @default(cuid())
+  sellerId          String   @unique
+  seller            Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  // Configurações de pagamento
+  acceptsCreditCard Boolean  @default(true)
+  acceptsDebitCard  Boolean  @default(true)
+  acceptsPix        Boolean  @default(true)
+  acceptsBoleto     Boolean  @default(false)
+  acceptsWhatsapp   Boolean  @default(true)
+
+  // Configurações de entrega
+  freeShippingMin   Float?   // Valor mínimo para frete grátis
+  shippingFee       Float    @default(10.0)
+  deliveryDays      Int      @default(7)
+  pickupAvailable   Boolean  @default(false)
+
+  // Configurações da loja
+  workingDays       String   @default("[]")  // JSON array: ["monday", "tuesday", ...]
+  workingHours      String   @default("{\"start\": \"08:00\", \"end\": \"18:00\"}")  // JSON
+  autoApproveOrders Boolean  @default(false)
+
+  // Políticas
+  returnPolicy      String?
+  privacyPolicy     String?
+  terms             String?
+
+  // Notificações
+  emailNotifications Boolean  @default(true)
+  smsNotifications   Boolean  @default(false)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("seller_settings")
 }
 

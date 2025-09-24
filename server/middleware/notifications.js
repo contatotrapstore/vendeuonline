@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+import { logger } from "../lib/logger.js";
+
 
 // Configurar cliente Supabase
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -11,23 +13,23 @@ export const createNotification = async (userId, title, message, type = 'INFO', 
     const { data: notification, error } = await supabase
       .from('notifications')
       .insert([{
-        user_id: userId,
+        userId: userId,           // ✅ camelCase como no schema Prisma
         title,
         message,
         type: type.toUpperCase(),
         data: data ? JSON.stringify(data) : null,
-        is_read: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        isRead: false,           // ✅ camelCase como no schema Prisma
+        createdAt: new Date().toISOString(),   // ✅ camelCase como no schema Prisma
+        updatedAt: new Date().toISOString()    // ✅ camelCase como no schema Prisma
       }])
       .select()
       .single();
 
     if (error) throw error;
-    console.log('✅ Notificação criada no Supabase:', notification);
+    logger.info('✅ Notificação criada no Supabase:', notification);
     return notification;
   } catch (error) {
-    console.error('❌ Erro ao criar notificação:', error);
+    logger.error('❌ Erro ao criar notificação:', error);
     return null;
   }
 };
@@ -118,7 +120,7 @@ export const autoNotify = {
       const template = notificationTemplates.userLogin(userName);
       return await createNotification(userId, template.title, template.message, template.type);
     } catch (error) {
-      console.warn('⚠️ Falha ao criar notificação de login, continuando sem ela:', error.message);
+      logger.warn('⚠️ Falha ao criar notificação de login, continuando sem ela:', error.message);
       return null;
     }
   },

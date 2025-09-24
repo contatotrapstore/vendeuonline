@@ -1,3 +1,5 @@
+import { logger } from "../lib/logger.js";
+
 // API pública para buscar configurações de tracking (sem autenticação)
 import { PrismaClient } from "@prisma/client";
 
@@ -46,7 +48,7 @@ export default async function handler(req, res) {
       configs: configMap,
     });
   } catch (error) {
-    console.error("Erro ao buscar configurações de tracking:", error);
+    logger.error("Erro ao buscar configurações de tracking:", error);
     return res.status(500).json({
       success: false,
       error: "Erro interno do servidor",
