@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -11,6 +11,10 @@ interface LogoProps {
 }
 
 const Logo: React.FC<LogoProps> = ({ className, size = "md", showText = true, variant = "default" }) => {
+  const [imageError, setImageError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [imageSrc, setImageSrc] = useState("/images/LogoVO.png");
+
   const sizeClasses = {
     sm: "w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14",
     md: "w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 lg:w-24 lg:h-24",
@@ -24,6 +28,12 @@ const Logo: React.FC<LogoProps> = ({ className, size = "md", showText = true, va
     lg: "text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl",
     xl: "text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl",
   };
+
+  // Cache busting timestamp
+  useEffect(() => {
+    const timestamp = Date.now();
+    setImageSrc(`/images/LogoVO.png?v=${timestamp}`);
+  }, []);
 
   const getColors = () => {
     switch (variant) {
@@ -50,10 +60,78 @@ const Logo: React.FC<LogoProps> = ({ className, size = "md", showText = true, va
 
   const colors = getColors();
 
+  const handleImageError = () => {
+    console.warn("🚨 Logo PNG failed to load:", imageSrc);
+    setImageError(true);
+    setIsLoading(false);
+  };
+
+  const handleImageLoad = () => {
+    console.log("✅ Logo PNG loaded successfully:", imageSrc);
+    setIsLoading(false);
+    setImageError(false);
+  };
+
+  // SVG Inline Fallback
+  const SvgLogo = () => (
+    <svg
+      className={cn("object-contain", sizeClasses[size])}
+      viewBox="0 0 100 100"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <rect width="100" height="100" rx="20" fill={colors.primary} />
+      <text x="50" y="35" textAnchor="middle" fill="white" fontSize="12" fontWeight="bold">
+        VO
+      </text>
+      <text x="50" y="70" textAnchor="middle" fill="white" fontSize="8">
+        Online
+      </text>
+    </svg>
+  );
+
+  // Debug logging in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === "development") {
+      console.log("🔍 Logo render - Error:", imageError, "Loading:", isLoading, "Src:", imageSrc);
+    }
+  }, [imageError, isLoading, imageSrc]);
+
   return (
     <div className={cn("flex items-center", className)}>
-      {/* Logo PNG */}
-      <img src="/images/LogoVO.png" alt="Vendeu Online Logo" className={cn("object-contain", sizeClasses[size])} />
+      {!imageError ? (
+        <div className="relative">
+          {/* PNG Logo */}
+          <img
+            src={imageSrc}
+            alt="Vendeu Online Logo"
+            className={cn(
+              "object-contain transition-opacity duration-200",
+              sizeClasses[size],
+              isLoading ? "opacity-0" : "opacity-100"
+            )}
+            onError={handleImageError}
+            onLoad={handleImageLoad}
+          />
+
+          {/* Loading placeholder */}
+          {isLoading && (
+            <div
+              className={cn(
+                "absolute inset-0 flex items-center justify-center bg-gray-100 rounded animate-pulse",
+                sizeClasses[size]
+              )}
+            >
+              <div className="text-xs text-gray-400">VO</div>
+            </div>
+          )}
+        </div>
+      ) : // Fallback chain: SVG → Text → Simple div
+      showText ? (
+        <LogoText variant={variant} size={size} className={className} />
+      ) : (
+        <SvgLogo />
+      )}
     </div>
   );
 };
