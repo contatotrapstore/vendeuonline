@@ -1,6 +1,3 @@
-import { logger } from "../lib/logger.js";
-
-// Serverless function for Vercel
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
@@ -8,14 +5,24 @@ import { v4 as uuidv4 } from "uuid";
 // Import Prisma with error handling
 let prisma = null;
 let safeQuery = null;
+let logger = null;
 
 try {
-  const prismaModule = await import("../lib/prisma.js");
+  const loggerModule = await import("../server/lib/logger.js");
+  logger = loggerModule.logger;
+
+  const prismaModule = await import("../server/lib/prisma.js");
   prisma = prismaModule.default;
   safeQuery = prismaModule.safeQuery;
   logger.info("✅ [API] Prisma importado com sucesso");
 } catch (error) {
-  logger.error("❌ [API] Erro ao importar Prisma:", error.message);
+  console.error("❌ [API] Erro ao importar módulos:", error.message);
+  // Fallback logger
+  logger = {
+    info: console.log,
+    error: console.error,
+    warn: console.warn,
+  };
 }
 
 // Debug - Verificar variáveis de ambiente críticas
