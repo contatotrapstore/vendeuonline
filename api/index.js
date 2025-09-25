@@ -232,7 +232,7 @@ export default async function handler(req, res) {
         );
 
         const { data: testProducts } = await supabaseAnon.from("Product").select("id").limit(1);
-        const { data: testStores } = await supabaseAnon.from("Store").select("id").limit(1);
+        const { data: testStores } = await supabaseAnon.from("stores").select("id").limit(1);
 
         return res.json({
           success: true,
@@ -706,7 +706,11 @@ export default async function handler(req, res) {
           const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
           // Buscar usuário via Supabase
-          const { data: users, error: userError } = await supabase.from("User").select("*").eq("email", email).single();
+          const { data: users, error: userError } = await supabase
+            .from("users")
+            .select("*")
+            .eq("email", email)
+            .single();
 
           if (userError || !users) {
             return res.status(401).json({ error: "Credenciais inválidas" });
