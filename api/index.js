@@ -61,7 +61,10 @@ console.log("NODE_ENV:", process.env.NODE_ENV);
 console.log("Prisma Status:", prisma ? "INICIALIZADO" : "❌ FALHOU");
 
 // Configurações JWT - OBRIGATÓRIO definir JWT_SECRET nas variáveis de ambiente
-const JWT_SECRET = process.env.JWT_SECRET;
+// TEMPORARY HARDCODED para testar se problema são env vars no Vercel
+const JWT_SECRET =
+  process.env.JWT_SECRET ||
+  "7824dc4b9456dd55b73eb7236560b0121cfcb5c96d3dc6dc27c9a2841356ac6762bc9b933477313ff1e56cd022d8284e550ceb8e2778c0403e644ddec35bf653";
 
 if (!JWT_SECRET) {
   logger.error("❌ ERRO CRÍTICO: JWT_SECRET não definido nas variáveis de ambiente!");
