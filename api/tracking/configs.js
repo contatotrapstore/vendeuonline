@@ -37,14 +37,31 @@ export default async function handler(req, res) {
       });
       console.log("✅ [TRACKING] Configurações obtidas via Prisma");
     } catch (prismaError) {
-      console.warn("⚠️ [TRACKING] Prisma falhou, tentando Supabase direto");
+      console.warn("⚠️ [TRACKING] Prisma falhou, tentando fallback...");
 
-      // Fallback para Supabase fetch direto
-      console.log("⚠️ [TRACKING] Tentando fallback com fetch direto...");
-      const { getTrackingConfigs } = await import("../../lib/supabase-fetch.js");
-      configs = await getTrackingConfigs();
-      usedFallback = "supabase-fetch";
-      console.log("✅ [TRACKING] Configurações obtidas via Supabase fetch");
+      // Fallback 1: Supabase com ANON_KEY (WORKING!)
+      try {
+        console.log("✅ [TRACKING] Tentando com ANON_KEY (strategy working)...");
+        const { getTrackingConfigsAnon } = await import("../../lib/supabase-anon.js");
+        configs = await getTrackingConfigsAnon();
+        usedFallback = "supabase-anon";
+        console.log("✅ [TRACKING] Configurações obtidas via ANON_KEY");
+      } catch (anonError) {
+        console.warn("⚠️ [TRACKING] ANON_KEY falhou:", anonError.message);
+
+        // Fallback 2: Supabase com SERVICE_ROLE_KEY
+        try {
+          console.log("⚠️ [TRACKING] Tentando SERVICE_ROLE_KEY...");
+          const { getTrackingConfigs } = await import("../../lib/supabase-fetch.js");
+          configs = await getTrackingConfigs();
+          usedFallback = "supabase-fetch";
+          console.log("✅ [TRACKING] Configurações obtidas via SERVICE_ROLE_KEY");
+        } catch (fetchError) {
+          console.error("❌ [TRACKING] SERVICE_ROLE_KEY falhou:", fetchError.message);
+          // Vai para emergency fallback fora do try/catch
+          throw fetchError;
+        }
+      }
     }
 
     // Converter para formato mais usável

@@ -270,51 +270,59 @@ export default async function handler(req, res) {
         logger.warn("⚠️ [PLANS] Prisma falhou, tentando Supabase direto");
       }
 
-      // Fallback para Supabase fetch direto
+      // Fallback 1: Supabase com ANON_KEY (WORKING!)
       try {
-        console.log("⚠️ [PLANS] Tentando fallback com fetch direto...");
-        console.log("🔍 [PLANS] SUPABASE_URL:", process.env.SUPABASE_URL ? "DEFINIDA" : "❌ VAZIA");
-        console.log(
-          "🔍 [PLANS] SUPABASE_SERVICE_ROLE_KEY:",
-          process.env.SUPABASE_SERVICE_ROLE_KEY ? "DEFINIDA" : "❌ VAZIA"
-        );
+        console.log("✅ [PLANS] Tentando com ANON_KEY (strategy working)...");
+        const { getPlansAnon } = await import("../lib/supabase-anon.js");
+        const plans = await getPlansAnon();
 
-        const { getPlans } = await import("../lib/supabase-fetch.js");
-        const plans = await getPlans();
-
-        console.log(`✅ [PLANS] ${plans.length} planos encontrados via Supabase fetch`);
-        logger.info(`✅ [PLANS] ${plans.length} planos encontrados via Supabase fetch`);
+        console.log(`✅ [PLANS] ${plans.length} planos encontrados via ANON_KEY`);
+        logger.info(`✅ [PLANS] ${plans.length} planos encontrados via ANON_KEY`);
         return res.json({
           success: true,
           plans: plans,
-          fallback: "supabase-fetch",
+          fallback: "supabase-anon",
+          source: "real-data",
         });
-      } catch (error) {
-        console.error("❌ [PLANS] Erro Supabase fetch:", error.message);
-        console.error("❌ [PLANS] Erro stack:", error.stack);
-        logger.error("❌ [PLANS] Erro Supabase fetch:", error.message);
+      } catch (anonError) {
+        console.warn("⚠️ [PLANS] ANON_KEY falhou, tentando SERVICE_ROLE...");
 
-        // EMERGENCY FALLBACK: Mock data
-        console.log("🚨 [PLANS] Usando mock data de emergência...");
+        // Fallback 2: Supabase com SERVICE_ROLE_KEY
         try {
-          const { getMockPlans } = await import("../lib/emergency-mock.js");
-          const plans = getMockPlans();
+          console.log("⚠️ [PLANS] Tentando SERVICE_ROLE_KEY...");
+          const { getPlans } = await import("../lib/supabase-fetch.js");
+          const plans = await getPlans();
 
+          console.log(`✅ [PLANS] ${plans.length} planos encontrados via SERVICE_ROLE`);
           return res.json({
             success: true,
             plans: plans,
-            fallback: "emergency-mock",
-            warning: "Dados temporários - problemas técnicos sendo resolvidos",
+            fallback: "supabase-service",
+            source: "real-data",
           });
-        } catch (mockError) {
-          console.error("💥 [PLANS] Falha total - nem mock funcionou:", mockError.message);
-          return res.status(500).json({
-            success: false,
-            error: "Serviço temporariamente indisponível",
-            details: "Todos os fallbacks falharam",
-            originalError: error.message,
-            mockError: mockError.message,
-          });
+        } catch (serviceError) {
+          console.warn("⚠️ [PLANS] SERVICE_ROLE também falhou, usando mock...");
+
+          // Fallback 3: Mock data
+          try {
+            const { getMockPlans } = await import("../lib/emergency-mock.js");
+            const plans = getMockPlans();
+
+            return res.json({
+              success: true,
+              plans: plans,
+              fallback: "emergency-mock",
+              source: "mock-data",
+              warning: "Dados temporários - problemas técnicos sendo resolvidos",
+            });
+          } catch (mockError) {
+            console.error("💥 [PLANS] Falha total:", mockError.message);
+            return res.status(500).json({
+              success: false,
+              error: "Serviço temporariamente indisponível",
+              details: "Todos os fallbacks falharam",
+            });
+          }
         }
       }
     }
@@ -351,45 +359,58 @@ export default async function handler(req, res) {
         logger.warn("⚠️ [PRODUCTS] Prisma falhou, tentando Supabase direto");
       }
 
-      // Fallback para Supabase fetch direto
+      // Fallback 1: Supabase com ANON_KEY (WORKING!)
       try {
-        console.log("⚠️ [PRODUCTS] Tentando fallback com fetch direto...");
-        const { getProducts } = await import("../lib/supabase-fetch.js");
-        const products = await getProducts();
+        console.log("✅ [PRODUCTS] Tentando com ANON_KEY...");
+        const { getProductsAnon } = await import("../lib/supabase-anon.js");
+        const products = await getProductsAnon();
 
-        console.log(`✅ [PRODUCTS] ${products.length} produtos encontrados via Supabase fetch`);
-        logger.info(`✅ [PRODUCTS] ${products.length} produtos encontrados via Supabase fetch`);
+        console.log(`✅ [PRODUCTS] ${products.length} produtos encontrados via ANON_KEY`);
+        logger.info(`✅ [PRODUCTS] ${products.length} produtos encontrados via ANON_KEY`);
         return res.json({
           success: true,
           products: products,
-          fallback: "supabase-fetch",
+          fallback: "supabase-anon",
+          source: "real-data",
         });
-      } catch (error) {
-        console.error("❌ [PRODUCTS] Erro Supabase fetch:", error.message);
-        console.error("❌ [PRODUCTS] Erro stack:", error.stack);
-        logger.error("❌ [PRODUCTS] Erro Supabase fetch:", error.message);
+      } catch (anonError) {
+        console.warn("⚠️ [PRODUCTS] ANON_KEY falhou, tentando SERVICE_ROLE...");
 
-        // EMERGENCY FALLBACK: Mock data
-        console.log("🚨 [PRODUCTS] Usando mock data de emergência...");
+        // Fallback 2: SERVICE_ROLE_KEY
         try {
-          const { getMockProducts } = await import("../lib/emergency-mock.js");
-          const products = getMockProducts();
+          const { getProducts } = await import("../lib/supabase-fetch.js");
+          const products = await getProducts();
 
+          console.log(`✅ [PRODUCTS] ${products.length} produtos encontrados via SERVICE_ROLE`);
           return res.json({
             success: true,
             products: products,
-            fallback: "emergency-mock",
-            warning: "Dados temporários - problemas técnicos sendo resolvidos",
+            fallback: "supabase-service",
+            source: "real-data",
           });
-        } catch (mockError) {
-          console.error("💥 [PRODUCTS] Falha total:", mockError.message);
-          return res.status(500).json({
-            success: false,
-            error: "Serviço temporariamente indisponível",
-            details: "Todos os fallbacks falharam",
-            originalError: error.message,
-            mockError: mockError.message,
-          });
+        } catch (serviceError) {
+          console.warn("⚠️ [PRODUCTS] SERVICE_ROLE falhou, usando mock...");
+
+          // Fallback 3: Mock data
+          try {
+            const { getMockProducts } = await import("../lib/emergency-mock.js");
+            const products = getMockProducts();
+
+            return res.json({
+              success: true,
+              products: products,
+              fallback: "emergency-mock",
+              source: "mock-data",
+              warning: "Dados temporários - problemas técnicos sendo resolvidos",
+            });
+          } catch (mockError) {
+            console.error("💥 [PRODUCTS] Falha total:", mockError.message);
+            return res.status(500).json({
+              success: false,
+              error: "Serviço temporariamente indisponível",
+              details: "Todos os fallbacks falharam",
+            });
+          }
         }
       }
     }
@@ -429,19 +450,20 @@ export default async function handler(req, res) {
         logger.warn("⚠️ [STORES] Prisma falhou, tentando Supabase direto");
       }
 
-      // Fallback para Supabase fetch direto
+      // Fallback 1: Supabase com ANON_KEY (WORKING!)
       try {
-        console.log("⚠️ [STORES] Tentando fallback com fetch direto...");
-        const { getStores } = await import("../lib/supabase-fetch.js");
-        const stores = await getStores();
+        console.log("✅ [STORES] Tentando com ANON_KEY (strategy working)...");
+        const { getStoresAnon } = await import("../lib/supabase-anon.js");
+        const stores = await getStoresAnon();
 
-        console.log(`✅ [STORES] ${stores.length} lojas encontradas via Supabase fetch`);
-        logger.info(`✅ [STORES] ${stores.length} lojas encontradas via Supabase fetch`);
+        console.log(`✅ [STORES] ${stores.length} lojas encontradas via ANON_KEY`);
+        logger.info(`✅ [STORES] ${stores.length} lojas encontradas via ANON_KEY`);
         return res.json({
           success: true,
           data: stores,
           stores: stores, // Para compatibilidade
-          fallback: "supabase-fetch",
+          fallback: "supabase-anon",
+          source: "real-data",
           pagination: {
             page: 1,
             limit: stores.length,
@@ -451,23 +473,23 @@ export default async function handler(req, res) {
             hasPrev: false,
           },
         });
-      } catch (error) {
-        console.error("❌ [STORES] Erro Supabase fetch:", error.message);
-        console.error("❌ [STORES] Erro stack:", error.stack);
-        logger.error("❌ [STORES] Erro Supabase fetch:", error.message);
+      } catch (anonError) {
+        console.warn("⚠️ [STORES] ANON_KEY falhou:", anonError.message);
 
-        // EMERGENCY FALLBACK: Mock data
-        console.log("🚨 [STORES] Usando mock data de emergência...");
+        // Fallback 2: Supabase com SERVICE_ROLE_KEY
         try {
-          const { getMockStores } = await import("../lib/emergency-mock.js");
-          const stores = getMockStores();
+          console.log("⚠️ [STORES] Tentando SERVICE_ROLE_KEY...");
+          const { getStores } = await import("../lib/supabase-fetch.js");
+          const stores = await getStores();
 
+          console.log(`✅ [STORES] ${stores.length} lojas encontradas via SERVICE_ROLE_KEY`);
+          logger.info(`✅ [STORES] ${stores.length} lojas encontradas via SERVICE_ROLE_KEY`);
           return res.json({
             success: true,
             data: stores,
             stores: stores, // Para compatibilidade
-            fallback: "emergency-mock",
-            warning: "Dados temporários - problemas técnicos sendo resolvidos",
+            fallback: "supabase-fetch",
+            source: "fallback-data",
             pagination: {
               page: 1,
               limit: stores.length,
@@ -477,15 +499,44 @@ export default async function handler(req, res) {
               hasPrev: false,
             },
           });
-        } catch (mockError) {
-          console.error("💥 [STORES] Falha total:", mockError.message);
-          return res.status(500).json({
-            success: false,
-            error: "Serviço temporariamente indisponível",
-            details: "Todos os fallbacks falharam",
-            originalError: error.message,
-            mockError: mockError.message,
-          });
+        } catch (error) {
+          console.error("❌ [STORES] SERVICE_ROLE_KEY falhou:", error.message);
+          console.error("❌ [STORES] Erro stack:", error.stack);
+          logger.error("❌ [STORES] SERVICE_ROLE_KEY falhou:", error.message);
+
+          // Fallback 3: Emergency Mock Data
+          console.log("🚨 [STORES] Usando emergency mock data...");
+          try {
+            const { getMockStores } = await import("../lib/emergency-mock.js");
+            const stores = getMockStores();
+            console.log("🚨 [STORES] Mock data carregado:", stores.length);
+
+            return res.json({
+              success: true,
+              data: stores,
+              stores: stores, // Para compatibilidade
+              fallback: "emergency-mock",
+              source: "mock-data",
+              warning: "Dados temporários - problemas técnicos sendo resolvidos",
+              pagination: {
+                page: 1,
+                limit: stores.length,
+                total: stores.length,
+                totalPages: 1,
+                hasNext: false,
+                hasPrev: false,
+              },
+            });
+          } catch (mockError) {
+            console.error("💥 [STORES] Falha total:", mockError.message);
+            return res.status(500).json({
+              success: false,
+              error: "Serviço temporariamente indisponível",
+              details: "Todos os fallbacks falharam",
+              originalError: anonError.message,
+              mockError: mockError.message,
+            });
+          }
         }
       }
     }
