@@ -444,6 +444,16 @@ export default async function handler(req, res) {
           });
         } catch (serviceError) {
           console.error("❌ [PRODUCTS] SERVICE_ROLE também falhou:", serviceError.message);
+
+          // Diagnóstico final do erro
+          const isRLSError =
+            serviceError.message?.includes("RLS") ||
+            serviceError.message?.includes("policy") ||
+            serviceError.code === "42501" ||
+            anonError.message?.includes("RLS") ||
+            anonError.message?.includes("policy") ||
+            anonError.code === "42501";
+
           console.error("❌ [PRODUCTS] Diagnóstico:", {
             anonError: anonError.message,
             serviceError: serviceError.message,
