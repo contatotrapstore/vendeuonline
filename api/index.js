@@ -192,37 +192,58 @@ export default async function handler(req, res) {
     if (req.method === "GET" && pathname === "/api/test-supabase") {
       console.log("🧪 [TEST-SUPABASE] Iniciando teste direto...");
 
+      const results = {
+        serviceRole: null,
+        anonKey: null,
+        mock: null,
+        environment: {
+          SUPABASE_URL: process.env.SUPABASE_URL ? "DEFINIDA" : "❌ VAZIA",
+          SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? "DEFINIDA" : "❌ VAZIA",
+          SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ? "DEFINIDA" : "❌ VAZIA",
+          NODE_ENV: process.env.NODE_ENV,
+        },
+      };
+
+      // Teste 1: Service Role Key
       try {
-        console.log("🧪 [TEST-SUPABASE] Importando lib/supabase-fetch.js...");
+        console.log("🧪 [TEST-1] Testando com SERVICE_ROLE_KEY...");
         const supabaseFetch = await import("../lib/supabase-fetch.js");
-
-        console.log("🧪 [TEST-SUPABASE] Testando getPlans...");
         const plans = await supabaseFetch.getPlans();
-
-        console.log("🧪 [TEST-SUPABASE] Testando getStores...");
-        const stores = await supabaseFetch.getStores();
-
-        console.log("🧪 [TEST-SUPABASE] Todos os testes passaram!");
-        return res.json({
-          status: "SUCCESS",
-          message: "Supabase fetch funcionando!",
-          data: {
-            plans: plans.length,
-            stores: stores.length,
-          },
-          timestamp: new Date().toISOString(),
-        });
+        results.serviceRole = { success: true, plans: plans.length };
       } catch (error) {
-        console.error("❌ [TEST-SUPABASE] Erro:", error.message);
-        console.error("❌ [TEST-SUPABASE] Stack:", error.stack);
-        return res.status(500).json({
-          status: "ERROR",
-          message: "Erro no teste Supabase",
-          error: error.message,
-          stack: error.stack,
-          timestamp: new Date().toISOString(),
-        });
+        console.error("❌ [TEST-1] SERVICE_ROLE falhou:", error.message);
+        results.serviceRole = { success: false, error: error.message };
       }
+
+      // Teste 2: Anon Key
+      try {
+        console.log("🧪 [TEST-2] Testando com ANON_KEY...");
+        const supabaseAnon = await import("../lib/supabase-anon.js");
+        const plans = await supabaseAnon.getPlansAnon();
+        results.anonKey = { success: true, plans: plans.length };
+      } catch (error) {
+        console.error("❌ [TEST-2] ANON_KEY falhou:", error.message);
+        results.anonKey = { success: false, error: error.message };
+      }
+
+      // Teste 3: Mock Data
+      try {
+        console.log("🧪 [TEST-3] Testando mock data...");
+        const mockData = await import("../lib/emergency-mock.js");
+        const plans = mockData.getMockPlans();
+        results.mock = { success: true, plans: plans.length };
+      } catch (error) {
+        console.error("❌ [TEST-3] MOCK falhou:", error.message);
+        results.mock = { success: false, error: error.message };
+      }
+
+      console.log("🧪 [TEST-SUPABASE] Todos os testes concluídos!");
+      return res.json({
+        status: "DIAGNOSTIC_COMPLETE",
+        message: "Diagnóstico completo de todas as estratégias",
+        results: results,
+        timestamp: new Date().toISOString(),
+      });
     }
 
     // Route: GET /api/plans - BANCO DE DADOS COM FALLBACK SUPABASE
@@ -252,6 +273,12 @@ export default async function handler(req, res) {
       // Fallback para Supabase fetch direto
       try {
         console.log("⚠️ [PLANS] Tentando fallback com fetch direto...");
+        console.log("🔍 [PLANS] SUPABASE_URL:", process.env.SUPABASE_URL ? "DEFINIDA" : "❌ VAZIA");
+        console.log(
+          "🔍 [PLANS] SUPABASE_SERVICE_ROLE_KEY:",
+          process.env.SUPABASE_SERVICE_ROLE_KEY ? "DEFINIDA" : "❌ VAZIA"
+        );
+
         const { getPlans } = await import("../lib/supabase-fetch.js");
         const plans = await getPlans();
 
@@ -264,12 +291,31 @@ export default async function handler(req, res) {
         });
       } catch (error) {
         console.error("❌ [PLANS] Erro Supabase fetch:", error.message);
+        console.error("❌ [PLANS] Erro stack:", error.stack);
         logger.error("❌ [PLANS] Erro Supabase fetch:", error.message);
-        return res.status(500).json({
-          success: false,
-          error: "Erro ao buscar planos no banco de dados",
-          details: error.message,
-        });
+
+        // EMERGENCY FALLBACK: Mock data
+        console.log("🚨 [PLANS] Usando mock data de emergência...");
+        try {
+          const { getMockPlans } = await import("../lib/emergency-mock.js");
+          const plans = getMockPlans();
+
+          return res.json({
+            success: true,
+            plans: plans,
+            fallback: "emergency-mock",
+            warning: "Dados temporários - problemas técnicos sendo resolvidos",
+          });
+        } catch (mockError) {
+          console.error("💥 [PLANS] Falha total - nem mock funcionou:", mockError.message);
+          return res.status(500).json({
+            success: false,
+            error: "Serviço temporariamente indisponível",
+            details: "Todos os fallbacks falharam",
+            originalError: error.message,
+            mockError: mockError.message,
+          });
+        }
       }
     }
 
@@ -320,12 +366,31 @@ export default async function handler(req, res) {
         });
       } catch (error) {
         console.error("❌ [PRODUCTS] Erro Supabase fetch:", error.message);
+        console.error("❌ [PRODUCTS] Erro stack:", error.stack);
         logger.error("❌ [PRODUCTS] Erro Supabase fetch:", error.message);
-        return res.status(500).json({
-          success: false,
-          error: "Erro ao buscar produtos no banco de dados",
-          details: error.message,
-        });
+
+        // EMERGENCY FALLBACK: Mock data
+        console.log("🚨 [PRODUCTS] Usando mock data de emergência...");
+        try {
+          const { getMockProducts } = await import("../lib/emergency-mock.js");
+          const products = getMockProducts();
+
+          return res.json({
+            success: true,
+            products: products,
+            fallback: "emergency-mock",
+            warning: "Dados temporários - problemas técnicos sendo resolvidos",
+          });
+        } catch (mockError) {
+          console.error("💥 [PRODUCTS] Falha total:", mockError.message);
+          return res.status(500).json({
+            success: false,
+            error: "Serviço temporariamente indisponível",
+            details: "Todos os fallbacks falharam",
+            originalError: error.message,
+            mockError: mockError.message,
+          });
+        }
       }
     }
 
@@ -388,12 +453,40 @@ export default async function handler(req, res) {
         });
       } catch (error) {
         console.error("❌ [STORES] Erro Supabase fetch:", error.message);
+        console.error("❌ [STORES] Erro stack:", error.stack);
         logger.error("❌ [STORES] Erro Supabase fetch:", error.message);
-        return res.status(500).json({
-          success: false,
-          error: "Erro ao buscar lojas no banco de dados",
-          details: error.message,
-        });
+
+        // EMERGENCY FALLBACK: Mock data
+        console.log("🚨 [STORES] Usando mock data de emergência...");
+        try {
+          const { getMockStores } = await import("../lib/emergency-mock.js");
+          const stores = getMockStores();
+
+          return res.json({
+            success: true,
+            data: stores,
+            stores: stores, // Para compatibilidade
+            fallback: "emergency-mock",
+            warning: "Dados temporários - problemas técnicos sendo resolvidos",
+            pagination: {
+              page: 1,
+              limit: stores.length,
+              total: stores.length,
+              totalPages: 1,
+              hasNext: false,
+              hasPrev: false,
+            },
+          });
+        } catch (mockError) {
+          console.error("💥 [STORES] Falha total:", mockError.message);
+          return res.status(500).json({
+            success: false,
+            error: "Serviço temporariamente indisponível",
+            details: "Todos os fallbacks falharam",
+            originalError: error.message,
+            mockError: mockError.message,
+          });
+        }
       }
     }
 
