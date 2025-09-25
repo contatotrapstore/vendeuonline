@@ -39,11 +39,12 @@ export default async function handler(req, res) {
     } catch (prismaError) {
       console.warn("⚠️ [TRACKING] Prisma falhou, tentando Supabase direto");
 
-      // Fallback para Supabase direto
-      const { getTrackingConfigs } = await import("../../lib/supabase-direct.js");
+      // Fallback para Supabase fetch direto
+      console.log("⚠️ [TRACKING] Tentando fallback com fetch direto...");
+      const { getTrackingConfigs } = await import("../../lib/supabase-fetch.js");
       configs = await getTrackingConfigs();
-      usedFallback = true;
-      console.log("✅ [TRACKING] Configurações obtidas via Supabase direto");
+      usedFallback = "supabase-fetch";
+      console.log("✅ [TRACKING] Configurações obtidas via Supabase fetch");
     }
 
     // Converter para formato mais usável

@@ -188,6 +188,43 @@ export default async function handler(req, res) {
       return res.json(diagnostics);
     }
 
+    // Route: GET /api/test-supabase - Test endpoint para Supabase fetch direto
+    if (req.method === "GET" && pathname === "/api/test-supabase") {
+      console.log("🧪 [TEST-SUPABASE] Iniciando teste direto...");
+
+      try {
+        console.log("🧪 [TEST-SUPABASE] Importando lib/supabase-fetch.js...");
+        const supabaseFetch = await import("../lib/supabase-fetch.js");
+
+        console.log("🧪 [TEST-SUPABASE] Testando getPlans...");
+        const plans = await supabaseFetch.getPlans();
+
+        console.log("🧪 [TEST-SUPABASE] Testando getStores...");
+        const stores = await supabaseFetch.getStores();
+
+        console.log("🧪 [TEST-SUPABASE] Todos os testes passaram!");
+        return res.json({
+          status: "SUCCESS",
+          message: "Supabase fetch funcionando!",
+          data: {
+            plans: plans.length,
+            stores: stores.length,
+          },
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        console.error("❌ [TEST-SUPABASE] Erro:", error.message);
+        console.error("❌ [TEST-SUPABASE] Stack:", error.stack);
+        return res.status(500).json({
+          status: "ERROR",
+          message: "Erro no teste Supabase",
+          error: error.message,
+          stack: error.stack,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+
     // Route: GET /api/plans - BANCO DE DADOS COM FALLBACK SUPABASE
     if (req.method === "GET" && pathname === "/api/plans") {
       logger.info("📋 [PLANS] Buscando planos no banco...");
@@ -212,19 +249,22 @@ export default async function handler(req, res) {
         logger.warn("⚠️ [PLANS] Prisma falhou, tentando Supabase direto");
       }
 
-      // Fallback para Supabase direto
+      // Fallback para Supabase fetch direto
       try {
-        const { getPlans } = await import("../lib/supabase-direct.js");
+        console.log("⚠️ [PLANS] Tentando fallback com fetch direto...");
+        const { getPlans } = await import("../lib/supabase-fetch.js");
         const plans = await getPlans();
 
-        logger.info(`✅ [PLANS] ${plans.length} planos encontrados via Supabase direto`);
+        console.log(`✅ [PLANS] ${plans.length} planos encontrados via Supabase fetch`);
+        logger.info(`✅ [PLANS] ${plans.length} planos encontrados via Supabase fetch`);
         return res.json({
           success: true,
           plans: plans,
-          fallback: true,
+          fallback: "supabase-fetch",
         });
       } catch (error) {
-        logger.error("❌ [PLANS] Erro Supabase direto:", error.message);
+        console.error("❌ [PLANS] Erro Supabase fetch:", error.message);
+        logger.error("❌ [PLANS] Erro Supabase fetch:", error.message);
         return res.status(500).json({
           success: false,
           error: "Erro ao buscar planos no banco de dados",
@@ -265,19 +305,22 @@ export default async function handler(req, res) {
         logger.warn("⚠️ [PRODUCTS] Prisma falhou, tentando Supabase direto");
       }
 
-      // Fallback para Supabase direto
+      // Fallback para Supabase fetch direto
       try {
-        const { getProducts } = await import("../lib/supabase-direct.js");
+        console.log("⚠️ [PRODUCTS] Tentando fallback com fetch direto...");
+        const { getProducts } = await import("../lib/supabase-fetch.js");
         const products = await getProducts();
 
-        logger.info(`✅ [PRODUCTS] ${products.length} produtos encontrados via Supabase direto`);
+        console.log(`✅ [PRODUCTS] ${products.length} produtos encontrados via Supabase fetch`);
+        logger.info(`✅ [PRODUCTS] ${products.length} produtos encontrados via Supabase fetch`);
         return res.json({
           success: true,
           products: products,
-          fallback: true,
+          fallback: "supabase-fetch",
         });
       } catch (error) {
-        logger.error("❌ [PRODUCTS] Erro Supabase direto:", error.message);
+        console.error("❌ [PRODUCTS] Erro Supabase fetch:", error.message);
+        logger.error("❌ [PRODUCTS] Erro Supabase fetch:", error.message);
         return res.status(500).json({
           success: false,
           error: "Erro ao buscar produtos no banco de dados",
@@ -321,17 +364,19 @@ export default async function handler(req, res) {
         logger.warn("⚠️ [STORES] Prisma falhou, tentando Supabase direto");
       }
 
-      // Fallback para Supabase direto
+      // Fallback para Supabase fetch direto
       try {
-        const { getStores } = await import("../lib/supabase-direct.js");
+        console.log("⚠️ [STORES] Tentando fallback com fetch direto...");
+        const { getStores } = await import("../lib/supabase-fetch.js");
         const stores = await getStores();
 
-        logger.info(`✅ [STORES] ${stores.length} lojas encontradas via Supabase direto`);
+        console.log(`✅ [STORES] ${stores.length} lojas encontradas via Supabase fetch`);
+        logger.info(`✅ [STORES] ${stores.length} lojas encontradas via Supabase fetch`);
         return res.json({
           success: true,
           data: stores,
           stores: stores, // Para compatibilidade
-          fallback: true,
+          fallback: "supabase-fetch",
           pagination: {
             page: 1,
             limit: stores.length,
@@ -342,7 +387,8 @@ export default async function handler(req, res) {
           },
         });
       } catch (error) {
-        logger.error("❌ [STORES] Erro Supabase direto:", error.message);
+        console.error("❌ [STORES] Erro Supabase fetch:", error.message);
+        logger.error("❌ [STORES] Erro Supabase fetch:", error.message);
         return res.status(500).json({
           success: false,
           error: "Erro ao buscar lojas no banco de dados",
