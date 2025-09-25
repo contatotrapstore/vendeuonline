@@ -55,6 +55,10 @@
   },
   "rewrites": [
     {
+      "source": "/api/tracking/configs",
+      "destination": "/api/tracking/configs"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/index"
     }
