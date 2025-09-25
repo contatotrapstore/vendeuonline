@@ -3,9 +3,9 @@
  * Coleta métricas, monitora performance e detecta problemas
  */
 
-import { logger } from './logger.js';
-import { supabase } from './supabase-client.js';
-import { cache } from './cache.js';
+import { logger } from "./logger.js";
+import { supabase } from "./supabase-client.js";
+import { cache } from "./cache.js";
 
 class MonitoringService {
   constructor() {
@@ -14,26 +14,26 @@ class MonitoringService {
         total: 0,
         successful: 0,
         failed: 0,
-        averageResponseTime: 0
+        averageResponseTime: 0,
       },
       database: {
         connections: 0,
         queryTime: 0,
-        errors: 0
+        errors: 0,
       },
       cache: {
         hits: 0,
         misses: 0,
-        hitRate: 0
+        hitRate: 0,
       },
       memory: {
         used: 0,
-        limit: process.memoryUsage().heapTotal
-      }
+        limit: process.memoryUsage().heapTotal,
+      },
     };
 
     this.alerts = [];
-    this.healthStatus = 'healthy';
+    this.healthStatus = "healthy";
 
     // Iniciar coleta de métricas
     this.startMetricsCollection();
@@ -51,7 +51,7 @@ class MonitoringService {
 
       // Interceptar response para coletar métricas
       const originalSend = res.send;
-      res.send = function(body) {
+      res.send = function (body) {
         const responseTime = Date.now() - startTime;
 
         // Atualizar métricas de resposta
@@ -83,8 +83,7 @@ class MonitoringService {
     const currentAvg = this.metrics.requests.averageResponseTime;
     const totalRequests = this.metrics.requests.total;
 
-    this.metrics.requests.averageResponseTime =
-      ((currentAvg * (totalRequests - 1)) + responseTime) / totalRequests;
+    this.metrics.requests.averageResponseTime = (currentAvg * (totalRequests - 1) + responseTime) / totalRequests;
   }
 
   /**
@@ -95,27 +94,23 @@ class MonitoringService {
       const startTime = Date.now();
 
       // Test connection
-      const { data, error } = await supabase
-        .from('users')
-        .select('count(*)', { count: 'exact' })
-        .limit(1);
+      const { data, error, count } = await supabase.from("User").select("id", { count: "exact" }).limit(1);
 
       const queryTime = Date.now() - startTime;
       this.metrics.database.queryTime = queryTime;
 
       if (error) {
         this.metrics.database.errors++;
-        logger.error('Database monitoring error:', error);
+        logger.error("Database monitoring error:", error);
       }
 
       // Database connection status
       if (queryTime > 5000) {
-        this.addAlert('high_db_latency', `Database query time: ${queryTime}ms`);
+        this.addAlert("high_db_latency", `Database query time: ${queryTime}ms`);
       }
-
     } catch (error) {
       this.metrics.database.errors++;
-      logger.error('Database monitoring failed:', error);
+      logger.error("Database monitoring failed:", error);
     }
   }
 
@@ -131,12 +126,11 @@ class MonitoringService {
       this.metrics.cache.hitRate = parseFloat(cacheStats.hitRate) || 0;
 
       // Alert se hit rate for muito baixo
-      if (this.metrics.cache.hitRate < 20 && (cacheStats.hits + cacheStats.misses) > 100) {
-        this.addAlert('low_cache_hit_rate', `Cache hit rate: ${this.metrics.cache.hitRate}%`);
+      if (this.metrics.cache.hitRate < 20 && cacheStats.hits + cacheStats.misses > 100) {
+        this.addAlert("low_cache_hit_rate", `Cache hit rate: ${this.metrics.cache.hitRate}%`);
       }
-
     } catch (error) {
-      logger.error('Cache monitoring failed:', error);
+      logger.error("Cache monitoring failed:", error);
     }
   }
 
@@ -152,7 +146,7 @@ class MonitoringService {
     const memoryUsagePercent = (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100;
 
     if (memoryUsagePercent > 85) {
-      this.addAlert('high_memory_usage', `Memory usage: ${memoryUsagePercent.toFixed(2)}%`);
+      this.addAlert("high_memory_usage", `Memory usage: ${memoryUsagePercent.toFixed(2)}%`);
     }
   }
 
@@ -164,7 +158,7 @@ class MonitoringService {
       type,
       message,
       timestamp: new Date().toISOString(),
-      severity: this.getAlertSeverity(type)
+      severity: this.getAlertSeverity(type),
     };
 
     this.alerts.push(alert);
@@ -175,9 +169,9 @@ class MonitoringService {
     }
 
     // Log critical alerts
-    if (alert.severity === 'critical') {
+    if (alert.severity === "critical") {
       logger.error(`CRITICAL ALERT: ${message}`);
-    } else if (alert.severity === 'warning') {
+    } else if (alert.severity === "warning") {
       logger.warn(`WARNING: ${message}`);
     }
   }
@@ -187,33 +181,32 @@ class MonitoringService {
    */
   getAlertSeverity(type) {
     const severityMap = {
-      high_memory_usage: 'critical',
-      high_db_latency: 'warning',
-      low_cache_hit_rate: 'info',
-      high_error_rate: 'critical'
+      high_memory_usage: "critical",
+      high_db_latency: "warning",
+      low_cache_hit_rate: "info",
+      high_error_rate: "critical",
     };
 
-    return severityMap[type] || 'info';
+    return severityMap[type] || "info";
   }
 
   /**
    * Verificar saúde geral do sistema
    */
   checkSystemHealth() {
-    const criticalAlerts = this.alerts.filter(alert =>
-      alert.severity === 'critical' &&
-      Date.now() - new Date(alert.timestamp).getTime() < 300000 // últimos 5 minutos
+    const criticalAlerts = this.alerts.filter(
+      (alert) => alert.severity === "critical" && Date.now() - new Date(alert.timestamp).getTime() < 300000 // últimos 5 minutos
     );
 
     const memoryUsagePercent = (this.metrics.memory.used / this.metrics.memory.limit) * 100;
     const errorRate = this.metrics.requests.failed / this.metrics.requests.total;
 
     if (criticalAlerts.length > 0 || memoryUsagePercent > 90 || errorRate > 0.1) {
-      this.healthStatus = 'unhealthy';
+      this.healthStatus = "unhealthy";
     } else if (memoryUsagePercent > 70 || errorRate > 0.05) {
-      this.healthStatus = 'degraded';
+      this.healthStatus = "degraded";
     } else {
-      this.healthStatus = 'healthy';
+      this.healthStatus = "healthy";
     }
 
     return this.healthStatus;
@@ -228,30 +221,47 @@ class MonitoringService {
       health: this.checkSystemHealth(),
       alerts: this.alerts.slice(-10), // últimos 10 alerts
       uptime: process.uptime(),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   }
 
   /**
-   * Iniciar coleta automática de métricas
+   * Iniciar coleta automática de métricas (modo otimizado)
    */
   startMetricsCollection() {
-    // Coletar métricas a cada 30 segundos
-    setInterval(() => {
-      this.monitorDatabase();
+    // Coletar métricas menos frequentemente em produção
+    const interval = process.env.NODE_ENV === "production" ? 300000 : 60000; // 5min em prod, 1min em dev
+
+    this.monitoringInterval = setInterval(() => {
       this.monitorCache();
       this.monitorMemory();
-    }, 30000);
+      // Reduzir monitoramento de DB que estava causando problemas
+      if (Math.random() > 0.7) {
+        // Apenas 30% das vezes
+        this.monitorDatabase();
+      }
+    }, interval);
 
-    // Limpar alerts antigos a cada 5 minutos
-    setInterval(() => {
-      const fiveMinutesAgo = Date.now() - 300000;
-      this.alerts = this.alerts.filter(alert =>
-        new Date(alert.timestamp).getTime() > fiveMinutesAgo
-      );
-    }, 300000);
+    // Limpar alerts antigos menos frequentemente
+    this.cleanupInterval = setInterval(() => {
+      const tenMinutesAgo = Date.now() - 600000;
+      this.alerts = this.alerts.filter((alert) => new Date(alert.timestamp).getTime() > tenMinutesAgo);
+    }, 600000); // 10 minutos
 
-    logger.info('Monitoring service started');
+    logger.info("Monitoring service started (optimized mode)");
+  }
+
+  /**
+   * Parar coleta de métricas
+   */
+  stopMetricsCollection() {
+    if (this.monitoringInterval) {
+      clearInterval(this.monitoringInterval);
+    }
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+    logger.info("Monitoring service stopped");
   }
 
   /**
@@ -264,17 +274,17 @@ class MonitoringService {
       status: health,
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      version: process.env.npm_package_version || '1.0.0',
+      version: process.env.npm_package_version || "1.0.0",
       services: {
-        database: this.metrics.database.errors === 0 ? 'healthy' : 'unhealthy',
-        cache: this.metrics.cache.hitRate > 0 ? 'healthy' : 'unknown'
+        database: this.metrics.database.errors === 0 ? "healthy" : "unhealthy",
+        cache: this.metrics.cache.hitRate > 0 ? "healthy" : "unknown",
       },
       metrics: {
         totalRequests: this.metrics.requests.total,
-        errorRate: ((this.metrics.requests.failed / this.metrics.requests.total) * 100).toFixed(2) + '%',
-        averageResponseTime: Math.round(this.metrics.requests.averageResponseTime) + 'ms',
-        memoryUsage: Math.round((this.metrics.memory.used / 1024 / 1024)) + 'MB'
-      }
+        errorRate: ((this.metrics.requests.failed / this.metrics.requests.total) * 100).toFixed(2) + "%",
+        averageResponseTime: Math.round(this.metrics.requests.averageResponseTime) + "ms",
+        memoryUsage: Math.round(this.metrics.memory.used / 1024 / 1024) + "MB",
+      },
     };
   }
 }
@@ -287,15 +297,15 @@ export function healthCheckRoute() {
   return async (req, res) => {
     try {
       const healthData = await monitoring.getHealthCheck();
-      const statusCode = healthData.status === 'healthy' ? 200 : 503;
+      const statusCode = healthData.status === "healthy" ? 200 : 503;
 
       res.status(statusCode).json(healthData);
     } catch (error) {
-      logger.error('Health check failed:', error);
+      logger.error("Health check failed:", error);
       res.status(503).json({
-        status: 'unhealthy',
+        status: "unhealthy",
         error: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   };
@@ -308,10 +318,10 @@ export function metricsRoute() {
       const metrics = monitoring.getMetrics();
       res.json(metrics);
     } catch (error) {
-      logger.error('Metrics collection failed:', error);
+      logger.error("Metrics collection failed:", error);
       res.status(500).json({
-        error: 'Failed to collect metrics',
-        timestamp: new Date().toISOString()
+        error: "Failed to collect metrics",
+        timestamp: new Date().toISOString(),
       });
     }
   };

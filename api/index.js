@@ -301,28 +301,14 @@ export default async function handler(req, res) {
             source: "real-data",
           });
         } catch (serviceError) {
-          console.warn("⚠️ [PLANS] SERVICE_ROLE também falhou, usando mock...");
+          console.error("❌ [PLANS] Todos os fallbacks falharam");
 
-          // Fallback 3: Mock data
-          try {
-            const { getMockPlans } = await import("../lib/emergency-mock.js");
-            const plans = getMockPlans();
-
-            return res.json({
-              success: true,
-              plans: plans,
-              fallback: "emergency-mock",
-              source: "mock-data",
-              warning: "Dados temporários - problemas técnicos sendo resolvidos",
-            });
-          } catch (mockError) {
-            console.error("💥 [PLANS] Falha total:", mockError.message);
-            return res.status(500).json({
-              success: false,
-              error: "Serviço temporariamente indisponível",
-              details: "Todos os fallbacks falharam",
-            });
-          }
+          return res.status(500).json({
+            success: false,
+            error: "Serviço de planos temporariamente indisponível",
+            details: "Erro de conexão com banco de dados",
+            timestamp: new Date().toISOString(),
+          });
         }
       }
     }
@@ -389,28 +375,14 @@ export default async function handler(req, res) {
             source: "real-data",
           });
         } catch (serviceError) {
-          console.warn("⚠️ [PRODUCTS] SERVICE_ROLE falhou, usando mock...");
+          console.error("❌ [PRODUCTS] Todos os fallbacks falharam");
 
-          // Fallback 3: Mock data
-          try {
-            const { getMockProducts } = await import("../lib/emergency-mock.js");
-            const products = getMockProducts();
-
-            return res.json({
-              success: true,
-              products: products,
-              fallback: "emergency-mock",
-              source: "mock-data",
-              warning: "Dados temporários - problemas técnicos sendo resolvidos",
-            });
-          } catch (mockError) {
-            console.error("💥 [PRODUCTS] Falha total:", mockError.message);
-            return res.status(500).json({
-              success: false,
-              error: "Serviço temporariamente indisponível",
-              details: "Todos os fallbacks falharam",
-            });
-          }
+          return res.status(500).json({
+            success: false,
+            error: "Serviço de produtos temporariamente indisponível",
+            details: "Erro de conexão com banco de dados",
+            timestamp: new Date().toISOString(),
+          });
         }
       }
     }
@@ -504,39 +476,14 @@ export default async function handler(req, res) {
           console.error("❌ [STORES] Erro stack:", error.stack);
           logger.error("❌ [STORES] SERVICE_ROLE_KEY falhou:", error.message);
 
-          // Fallback 3: Emergency Mock Data
-          console.log("🚨 [STORES] Usando emergency mock data...");
-          try {
-            const { getMockStores } = await import("../lib/emergency-mock.js");
-            const stores = getMockStores();
-            console.log("🚨 [STORES] Mock data carregado:", stores.length);
+          console.error("❌ [STORES] Todos os fallbacks falharam");
 
-            return res.json({
-              success: true,
-              data: stores,
-              stores: stores, // Para compatibilidade
-              fallback: "emergency-mock",
-              source: "mock-data",
-              warning: "Dados temporários - problemas técnicos sendo resolvidos",
-              pagination: {
-                page: 1,
-                limit: stores.length,
-                total: stores.length,
-                totalPages: 1,
-                hasNext: false,
-                hasPrev: false,
-              },
-            });
-          } catch (mockError) {
-            console.error("💥 [STORES] Falha total:", mockError.message);
-            return res.status(500).json({
-              success: false,
-              error: "Serviço temporariamente indisponível",
-              details: "Todos os fallbacks falharam",
-              originalError: anonError.message,
-              mockError: mockError.message,
-            });
-          }
+          return res.status(500).json({
+            success: false,
+            error: "Serviço de lojas temporariamente indisponível",
+            details: "Erro de conexão com banco de dados",
+            timestamp: new Date().toISOString(),
+          });
         }
       }
     }

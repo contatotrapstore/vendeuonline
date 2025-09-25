@@ -9,71 +9,47 @@ import { logger } from "./logger.js";
  */
 export const OPTIMIZED_SELECTS = {
   // Produtos - campos essenciais para listagem
-  PRODUCTS_LIST: 'id, name, description, price, comparePrice, category, images, storeId, stock, active, salesCount, createdAt, viewCount',
+  PRODUCTS_LIST:
+    "id, name, description, price, comparePrice, categoryId, storeId, stock, isActive, salesCount, createdAt",
 
   // Produtos - campos para detalhes
-  PRODUCTS_DETAIL: 'id, name, description, price, comparePrice, category, images, storeId, stock, active, specifications, tags, seoTitle, seoDescription, salesCount, viewCount, createdAt, updatedAt',
+  PRODUCTS_DETAIL:
+    "id, name, description, price, comparePrice, categoryId, storeId, stock, isActive, tags, seoTitle, seoDescription, salesCount, createdAt, updatedAt",
 
   // Lojas - campos essenciais para listagem
-  STORES_LIST: 'id, name, description, category, logo, isActive, salesCount, rating, createdAt',
+  STORES_LIST: "id, name, description, logo, isActive, createdAt, sellerId",
 
   // Lojas - campos para detalhes
-  STORES_DETAIL: 'id, name, description, category, logo, banner, phone, website, isActive, salesCount, rating, createdAt, updatedAt, sellerId',
+  STORES_DETAIL: "id, name, description, logo, banner, phone, email, isActive, createdAt, updatedAt, sellerId",
 
   // Usuários - campos públicos (sem dados sensíveis)
-  USERS_PUBLIC: 'id, name, email, type, avatar, createdAt, isActive',
+  USERS_PUBLIC: "id, name, email, type, avatar, createdAt, isActive",
 
   // Pedidos - campos essenciais
-  ORDERS_LIST: 'id, total, status, paymentStatus, createdAt, userId, items',
+  ORDERS_LIST: "id, total, status, paymentStatus, createdAt, userId, items",
 
   // Reviews - campos essenciais
-  REVIEWS_LIST: 'id, rating, comment, createdAt, userId, productId',
+  REVIEWS_LIST: "id, rating, comment, createdAt, userId, productId",
 
   // Categorias - campos essenciais
-  CATEGORIES: 'id, name, description, icon, isActive, productCount'
+  CATEGORIES: "id, name, description, icon, isActive, productCount",
 };
 
 /**
  * Índices recomendados para otimização
  */
 export const RECOMMENDED_INDEXES = {
-  products: [
-    'active',
-    'category',
-    'storeId',
-    'price',
-    'createdAt',
-    'salesCount',
-    'viewCount'
-  ],
-  stores: [
-    'isActive',
-    'category',
-    'rating',
-    'salesCount',
-    'sellerId'
-  ],
-  orders: [
-    'userId',
-    'status',
-    'paymentStatus',
-    'createdAt'
-  ],
-  reviews: [
-    'productId',
-    'userId',
-    'rating',
-    'createdAt'
-  ]
+  products: ["isActive", "categoryId", "storeId", "price", "createdAt", "salesCount"],
+  stores: ["isActive", "sellerId"],
+  orders: ["userId", "status", "paymentStatus", "createdAt"],
+  reviews: ["productId", "userId", "rating", "createdAt"],
 };
 
 /**
  * Cria query otimizada com campos específicos
  */
-export function createOptimizedQuery(supabaseClient, table, selectFields = '*') {
-  const query = supabaseClient
-    .from(table)
-    .select(selectFields, { count: 'exact' });
+export function createOptimizedQuery(supabaseClient, table, selectFields = "*") {
+  const query = supabaseClient.from(table).select(selectFields, { count: "exact" });
 
   logger.debug(`Query otimizada: ${table} - campos: ${selectFields}`);
   return query;
@@ -85,35 +61,35 @@ export function createOptimizedQuery(supabaseClient, table, selectFields = '*') 
 export function applyCommonFilters(query, filters = {}) {
   // Filtro de ativo (mais comum)
   if (filters.active !== undefined) {
-    query = query.eq('active', filters.active);
+    query = query.eq("isActive", filters.active);
   }
 
   // Filtro de categoria
   if (filters.category) {
-    query = query.eq('category', filters.category);
+    query = query.eq("categoryId", filters.category);
   }
 
   // Filtro de preço (range)
   if (filters.minPrice !== undefined) {
-    query = query.gte('price', filters.minPrice);
+    query = query.gte("price", filters.minPrice);
   }
   if (filters.maxPrice !== undefined) {
-    query = query.lte('price', filters.maxPrice);
+    query = query.lte("price", filters.maxPrice);
   }
 
   // Filtro de loja
   if (filters.storeId) {
-    query = query.eq('storeId', filters.storeId);
+    query = query.eq("storeId", filters.storeId);
   }
 
   // Filtro de usuário
   if (filters.userId) {
-    query = query.eq('userId', filters.userId);
+    query = query.eq("userId", filters.userId);
   }
 
   // Filtro de status
   if (filters.status) {
-    query = query.eq('status', filters.status);
+    query = query.eq("status", filters.status);
   }
 
   return query;
@@ -122,7 +98,7 @@ export function applyCommonFilters(query, filters = {}) {
 /**
  * Aplica busca de texto otimizada
  */
-export function applyTextSearch(query, searchTerm, searchFields = ['name']) {
+export function applyTextSearch(query, searchTerm, searchFields = ["name"]) {
   if (!searchTerm || searchTerm.trim().length < 2) {
     return query;
   }
@@ -131,15 +107,13 @@ export function applyTextSearch(query, searchTerm, searchFields = ['name']) {
 
   // Para múltiplos campos, usa OR
   if (searchFields.length > 1) {
-    const orConditions = searchFields
-      .map(field => `${field}.ilike.%${cleanTerm}%`)
-      .join(',');
+    const orConditions = searchFields.map((field) => `${field}.ilike.%${cleanTerm}%`).join(",");
     query = query.or(orConditions);
   } else {
     query = query.ilike(searchFields[0], `%${cleanTerm}%`);
   }
 
-  logger.debug(`Busca de texto: ${cleanTerm} em ${searchFields.join(', ')}`);
+  logger.debug(`Busca de texto: ${cleanTerm} em ${searchFields.join(", ")}`);
   return query;
 }
 
@@ -177,7 +151,7 @@ class QueryCache {
     this.cache = new Map();
     this.stats = {
       hits: 0,
-      misses: 0
+      misses: 0,
     };
   }
 
@@ -188,7 +162,8 @@ class QueryCache {
   get(key) {
     if (this.cache.has(key)) {
       const entry = this.cache.get(key);
-      if (Date.now() - entry.timestamp < 300000) { // 5 minutos
+      if (Date.now() - entry.timestamp < 300000) {
+        // 5 minutos
         this.stats.hits++;
         return entry.data;
       } else {
@@ -202,7 +177,7 @@ class QueryCache {
   set(key, data) {
     this.cache.set(key, {
       data,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     // Limitar tamanho do cache
@@ -219,12 +194,12 @@ class QueryCache {
 
   getStats() {
     const total = this.stats.hits + this.stats.misses;
-    const hitRate = total > 0 ? (this.stats.hits / total * 100).toFixed(2) : 0;
+    const hitRate = total > 0 ? ((this.stats.hits / total) * 100).toFixed(2) : 0;
 
     return {
       ...this.stats,
       hitRate: `${hitRate}%`,
-      cacheSize: this.cache.size
+      cacheSize: this.cache.size,
     };
   }
 }

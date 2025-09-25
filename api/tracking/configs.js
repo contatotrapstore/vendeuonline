@@ -84,27 +84,13 @@ export default async function handler(req, res) {
     console.error("❌ [TRACKING] Erro stack:", error.stack);
     logger.error("Erro ao buscar configurações de tracking:", error);
 
-    // EMERGENCY FALLBACK: Mock data
-    console.log("🚨 [TRACKING] Usando mock data de emergência...");
-    try {
-      const { getMockTrackingConfigs } = await import("../../lib/emergency-mock.js");
-      const configMap = getMockTrackingConfigs();
-
-      return res.status(200).json({
-        success: true,
-        configs: configMap,
-        fallback: "emergency-mock",
-        warning: "Dados temporários - problemas técnicos sendo resolvidos",
-      });
-    } catch (mockError) {
-      console.error("💥 [TRACKING] Falha total:", mockError.message);
-      return res.status(500).json({
-        success: false,
-        error: "Serviço temporariamente indisponível",
-        details: "Todos os fallbacks falharam",
-        originalError: error.message,
-        mockError: mockError.message,
-      });
-    }
+    console.error("❌ [TRACKING] Todos os fallbacks falharam");
+    return res.status(500).json({
+      success: false,
+      error: "Serviço de configurações temporariamente indisponível",
+      details: "Erro de conexão com banco de dados",
+      timestamp: new Date().toISOString(),
+      originalError: error.message,
+    });
   }
 }
