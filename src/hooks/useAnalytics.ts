@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import { trackPageView, initGA } from "../utils/analytics";
+import * as analytics from "../utils/analytics";
 
 // Hook para rastrear mudanças de página automaticamente
 export const usePageTracking = () => {
@@ -8,7 +8,7 @@ export const usePageTracking = () => {
 
   useEffect(() => {
     // Inicializar GA na primeira execução
-    initGA();
+    analytics.initGA();
   }, []);
 
   useEffect(() => {
@@ -16,62 +16,42 @@ export const usePageTracking = () => {
     const pageTitle = document.title;
     const pagePath = location.pathname + location.search;
 
-    trackPageView(pageTitle, window.location.origin + pagePath);
+    analytics.trackPageView(pageTitle, window.location.origin + pagePath);
   }, [location]);
 };
 
 // Hook para rastrear eventos de e-commerce
 export const useEcommerceTracking = () => {
-  const {
-    trackViewItem,
-    trackAddToCart,
-    trackRemoveFromCart,
-    trackBeginCheckout,
-    trackPurchase,
-    trackSelectItem,
-  } = require("../utils/analytics");
-
   return {
-    trackViewItem,
-    trackAddToCart,
-    trackRemoveFromCart,
-    trackBeginCheckout,
-    trackPurchase,
-    trackSelectItem,
+    trackViewItem: analytics.trackViewItem,
+    trackAddToCart: analytics.trackAddToCart,
+    trackRemoveFromCart: analytics.trackRemoveFromCart,
+    trackBeginCheckout: analytics.trackBeginCheckout,
+    trackPurchase: analytics.trackPurchase,
+    trackSelectItem: analytics.trackSelectItem,
   };
 };
 
 // Hook para rastrear eventos de engajamento
 export const useEngagementTracking = () => {
-  const { trackSearch, trackShare, trackLogin, trackSignUp, trackCustomEvent } = require("../utils/analytics");
-
   return {
-    trackSearch,
-    trackShare,
-    trackLogin,
-    trackSignUp,
-    trackCustomEvent,
+    trackSearch: analytics.trackSearch,
+    trackShare: analytics.trackShare,
+    trackLogin: analytics.trackLogin,
+    trackSignUp: analytics.trackSignUp,
+    trackCustomEvent: analytics.trackCustomEvent,
   };
 };
 
 // Hook para rastrear eventos específicos do marketplace
 export const useMarketplaceTracking = () => {
-  const {
-    trackViewStore,
-    trackContactSeller,
-    trackFilterProducts,
-    trackViewCategory,
-    trackPaymentError,
-    trackPaymentSuccess,
-  } = require("../utils/analytics");
-
   return {
-    trackViewStore,
-    trackContactSeller,
-    trackFilterProducts,
-    trackViewCategory,
-    trackPaymentError,
-    trackPaymentSuccess,
+    trackViewStore: analytics.trackViewStore,
+    trackContactSeller: analytics.trackContactSeller,
+    trackFilterProducts: analytics.trackFilterProducts,
+    trackViewCategory: analytics.trackViewCategory,
+    trackPaymentError: analytics.trackPaymentError,
+    trackPaymentSuccess: analytics.trackPaymentSuccess,
   };
 };
 
