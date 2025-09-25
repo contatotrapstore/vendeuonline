@@ -2,7 +2,7 @@
   "version": 2,
   "buildCommand": "HUSKY=0 npm run vercel-build",
   "outputDirectory": "dist",
-  "installCommand": "HUSKY=0 npm install && npx prisma generate",
+  "installCommand": "HUSKY=0 npm ci --omit=dev && npx prisma generate",
   "headers": [
     {
       "source": "/api/(.*)",
@@ -49,8 +49,9 @@
   ],
   "functions": {
     "api/*.js": {
-      "maxDuration": 30,
-      "memory": 1024
+      "maxDuration": 60,
+      "memory": 1024,
+      "runtime": "nodejs20.x"
     }
   },
   "rewrites": [
@@ -61,6 +62,10 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/index"
+    },
+    {
+      "source": "/((?!api|_next|_static|favicon.ico).*)",
+      "destination": "/index.html"
     }
   ]
 }

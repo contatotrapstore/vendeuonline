@@ -174,6 +174,7 @@ git push  # Deploy automático via Vercel
 | 📡 [**API Reference**](./docs/api/API_REFERENCE.md)                 | Referência completa da API     |
 | 🧪 [**Testing**](./docs/testing/TESTING.md)                         | Guia completo de testes        |
 | 🚀 [**Deploy Guide**](./docs/deployment/VERCEL_COMPLETE_GUIDE.md)   | Deploy completo no Vercel      |
+| 🔒 [**Security Guide**](./docs/security/RLS_GUIDE.md)               | Configuração RLS e segurança   |
 
 ## 🧪 **CREDENCIAIS DE TESTE**
 

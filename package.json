@@ -10,7 +10,7 @@
     "dev:client": "npx vite",
     "api": "node server.js",
     "build": "prisma generate && npx tsc --noEmit && npx vite build",
-    "vercel-build": "npx tsc --noEmit && npx vite build",
+    "vercel-build": "prisma generate && npx tsc --noEmit && npx vite build",
     "start": "npx vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
@@ -33,7 +33,9 @@
     "debug:seller": "echo 'Testing Seller APIs with MCP...' && node -e \"console.log('Use MCPs Supabase for seller testing')\"",
     "backup:docs": "mkdir -p backup/docs-$(date +%Y%m%d) && cp -r docs backup/docs-$(date +%Y%m%d)/",
     "update:changelog": "echo 'CHANGELOG.md updated with latest changes'",
-    "report:seller": "echo 'Seller test report available at docs/reports/SELLER-TESTS-REPORT-16-09-2025.md'"
+    "report:seller": "echo 'Seller test report available at docs/reports/SELLER-TESTS-REPORT-16-09-2025.md'",
+    "validate:deployment": "node scripts/validate-deployment.js",
+    "deploy:check": "npm run build && npm run validate:deployment"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.0",
