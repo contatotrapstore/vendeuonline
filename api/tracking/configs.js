@@ -84,13 +84,54 @@ export default async function handler(req, res) {
     console.error("❌ [TRACKING] Erro stack:", error.stack);
     logger.error("Erro ao buscar configurações de tracking:", error);
 
-    console.error("❌ [TRACKING] Todos os fallbacks falharam");
-    return res.status(500).json({
-      success: false,
-      error: "Serviço de configurações temporariamente indisponível",
-      details: "Erro de conexão com banco de dados",
+    console.error("❌ [TRACKING] Todos os fallbacks falharam, usando emergency fallback");
+
+    // EMERGENCY FALLBACK: Configurações hardcoded para manter o site funcionando
+    const emergencyConfigs = {
+      google_analytics_id: {
+        value: "",
+        isActive: false,
+        isConfigured: false,
+        description: "Google Analytics 4 Measurement ID (formato: G-XXXXXXXXXX)",
+      },
+      google_tag_manager_id: {
+        value: "",
+        isActive: false,
+        isConfigured: false,
+        description: "Google Tag Manager ID (formato: GTM-XXXXXXX)",
+      },
+      meta_pixel_id: {
+        value: "",
+        isActive: false,
+        isConfigured: false,
+        description: "Meta/Facebook Pixel ID (apenas números)",
+      },
+      tiktok_pixel_id: {
+        value: "",
+        isActive: false,
+        isConfigured: false,
+        description: "TikTok Pixel ID",
+      },
+      custom_head_scripts: {
+        value: "",
+        isActive: false,
+        isConfigured: false,
+        description: "Scripts personalizados para o <head>",
+      },
+      custom_body_scripts: {
+        value: "",
+        isActive: false,
+        isConfigured: false,
+        description: "Scripts personalizados para o <body>",
+      },
+    };
+
+    return res.status(200).json({
+      success: true,
+      configs: emergencyConfigs,
+      fallback: "emergency-hardcoded",
+      message: "Usando configurações de emergência - funcionalidade limitada",
       timestamp: new Date().toISOString(),
-      originalError: error.message,
     });
   }
 }
