@@ -1,6 +1,5 @@
+// API pública para buscar configurações de tracking (sem autenticação) - COM FALLBACK SUPABASE
 import { logger } from "../../lib/logger.js";
-
-// API pública para buscar configurações de tracking (sem autenticação)
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
@@ -20,18 +19,32 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Buscar apenas configurações ativas de tracking
-    const configs = await prisma.systemConfig.findMany({
-      where: {
-        category: "tracking",
-        isActive: true,
-      },
-      select: {
-        key: true,
-        value: true,
-        isActive: true,
-      },
-    });
+    // Tentar Prisma primeiro
+    let configs = null;
+    let usedFallback = false;
+
+    try {
+      configs = await prisma.systemConfig.findMany({
+        where: {
+          category: "tracking",
+          isActive: true,
+        },
+        select: {
+          key: true,
+          value: true,
+          isActive: true,
+        },
+      });
+      console.log("✅ [TRACKING] Configurações obtidas via Prisma");
+    } catch (prismaError) {
+      console.warn("⚠️ [TRACKING] Prisma falhou, tentando Supabase direto");
+
+      // Fallback para Supabase direto
+      const { getTrackingConfigs } = await import("../../lib/supabase-direct.js");
+      configs = await getTrackingConfigs();
+      usedFallback = true;
+      console.log("✅ [TRACKING] Configurações obtidas via Supabase direto");
+    }
 
     // Converter para formato mais usável
     const configMap = {};
@@ -46,12 +59,15 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success: true,
       configs: configMap,
+      fallback: usedFallback,
     });
   } catch (error) {
+    console.error("❌ [TRACKING] Erro ao buscar configurações:", error);
     logger.error("Erro ao buscar configurações de tracking:", error);
     return res.status(500).json({
       success: false,
       error: "Erro interno do servidor",
+      details: error.message,
     });
   }
 }

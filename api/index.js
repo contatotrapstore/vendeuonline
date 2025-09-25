@@ -188,128 +188,167 @@ export default async function handler(req, res) {
       return res.json(diagnostics);
     }
 
-    // Route: GET /api/plans - APENAS BANCO DE DADOS
+    // Route: GET /api/plans - BANCO DE DADOS COM FALLBACK SUPABASE
     if (req.method === "GET" && pathname === "/api/plans") {
       logger.info("📋 [PLANS] Buscando planos no banco...");
 
-      if (!prisma || !safeQuery) {
-        logger.error("❌ [PLANS] Prisma não disponível");
-        return res.status(500).json({
-          success: false,
-          error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
+      // Tentar Prisma primeiro
+      if (prisma && safeQuery) {
+        const result = await safeQuery(async () => {
+          return await prisma.plan.findMany({
+            where: { isActive: true },
+            orderBy: { order: "asc" },
+          });
         });
+
+        if (result.success) {
+          logger.info(`✅ [PLANS] ${result.data.length} planos encontrados via Prisma`);
+          return res.json({
+            success: true,
+            plans: result.data,
+          });
+        }
+
+        logger.warn("⚠️ [PLANS] Prisma falhou, tentando Supabase direto");
       }
 
-      const result = await safeQuery(async () => {
-        return await prisma.plan.findMany({
-          where: { isActive: true },
-          orderBy: { order: "asc" },
-        });
-      });
+      // Fallback para Supabase direto
+      try {
+        const { getPlans } = await import("../lib/supabase-direct.js");
+        const plans = await getPlans();
 
-      if (!result.success) {
-        logger.error("❌ [PLANS] Erro no banco:", result.error);
+        logger.info(`✅ [PLANS] ${plans.length} planos encontrados via Supabase direto`);
+        return res.json({
+          success: true,
+          plans: plans,
+          fallback: true,
+        });
+      } catch (error) {
+        logger.error("❌ [PLANS] Erro Supabase direto:", error.message);
         return res.status(500).json({
           success: false,
           error: "Erro ao buscar planos no banco de dados",
-          details: result.error,
+          details: error.message,
         });
       }
-
-      logger.info(`✅ [PLANS] ${result.data.length} planos encontrados`);
-      return res.json({
-        success: true,
-        plans: result.data,
-      });
     }
 
-    // Route: GET /api/products - APENAS BANCO DE DADOS
+    // Route: GET /api/products - BANCO DE DADOS COM FALLBACK SUPABASE
     if (req.method === "GET" && pathname === "/api/products") {
       logger.info("🛍️ [PRODUCTS] Buscando produtos no banco...");
 
-      if (!prisma || !safeQuery) {
-        logger.error("❌ [PRODUCTS] Prisma não disponível");
-        return res.status(500).json({
-          success: false,
-          error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
-        });
-      }
-
-      const result = await safeQuery(async () => {
-        return await prisma.product.findMany({
-          where: { isActive: true },
-          include: {
-            images: { orderBy: { order: "asc" } },
-            store: {
-              include: {
-                seller: { include: { user: true } },
+      // Tentar Prisma primeiro
+      if (prisma && safeQuery) {
+        const result = await safeQuery(async () => {
+          return await prisma.product.findMany({
+            where: { isActive: true },
+            include: {
+              images: { orderBy: { order: "asc" } },
+              store: {
+                include: {
+                  seller: { include: { user: true } },
+                },
               },
             },
-          },
-          orderBy: { createdAt: "desc" },
+            orderBy: { createdAt: "desc" },
+          });
         });
-      });
 
-      if (!result.success) {
-        logger.error("❌ [PRODUCTS] Erro no banco:", result.error);
+        if (result.success) {
+          logger.info(`✅ [PRODUCTS] ${result.data.length} produtos encontrados via Prisma`);
+          return res.json({
+            success: true,
+            products: result.data,
+          });
+        }
+
+        logger.warn("⚠️ [PRODUCTS] Prisma falhou, tentando Supabase direto");
+      }
+
+      // Fallback para Supabase direto
+      try {
+        const { getProducts } = await import("../lib/supabase-direct.js");
+        const products = await getProducts();
+
+        logger.info(`✅ [PRODUCTS] ${products.length} produtos encontrados via Supabase direto`);
+        return res.json({
+          success: true,
+          products: products,
+          fallback: true,
+        });
+      } catch (error) {
+        logger.error("❌ [PRODUCTS] Erro Supabase direto:", error.message);
         return res.status(500).json({
           success: false,
           error: "Erro ao buscar produtos no banco de dados",
-          details: result.error,
+          details: error.message,
         });
       }
-
-      logger.info(`✅ [PRODUCTS] ${result.data.length} produtos encontrados`);
-      return res.json({
-        success: true,
-        products: result.data,
-      });
     }
 
-    // Route: GET /api/stores - APENAS BANCO DE DADOS
+    // Route: GET /api/stores - BANCO DE DADOS COM FALLBACK SUPABASE
     if (req.method === "GET" && pathname === "/api/stores") {
       logger.info("🏪 [STORES] Buscando lojas no banco...");
 
-      if (!prisma || !safeQuery) {
-        logger.error("❌ [STORES] Prisma não disponível");
-        return res.status(500).json({
-          success: false,
-          error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
+      // Tentar Prisma primeiro
+      if (prisma && safeQuery) {
+        const result = await safeQuery(async () => {
+          return await prisma.store.findMany({
+            where: { isActive: true },
+            include: {
+              seller: { include: { user: true } },
+            },
+          });
         });
+
+        if (result.success) {
+          logger.info(`✅ [STORES] ${result.data.length} lojas encontradas via Prisma`);
+          return res.json({
+            success: true,
+            data: result.data,
+            stores: result.data, // Para compatibilidade
+            pagination: {
+              page: 1,
+              limit: result.data.length,
+              total: result.data.length,
+              totalPages: 1,
+              hasNext: false,
+              hasPrev: false,
+            },
+          });
+        }
+
+        logger.warn("⚠️ [STORES] Prisma falhou, tentando Supabase direto");
       }
 
-      const result = await safeQuery(async () => {
-        return await prisma.store.findMany({
-          where: { isActive: true },
-          include: {
-            seller: { include: { user: true } },
+      // Fallback para Supabase direto
+      try {
+        const { getStores } = await import("../lib/supabase-direct.js");
+        const stores = await getStores();
+
+        logger.info(`✅ [STORES] ${stores.length} lojas encontradas via Supabase direto`);
+        return res.json({
+          success: true,
+          data: stores,
+          stores: stores, // Para compatibilidade
+          fallback: true,
+          pagination: {
+            page: 1,
+            limit: stores.length,
+            total: stores.length,
+            totalPages: 1,
+            hasNext: false,
+            hasPrev: false,
           },
         });
-      });
-
-      if (!result.success) {
-        logger.error("❌ [STORES] Erro no banco:", result.error);
+      } catch (error) {
+        logger.error("❌ [STORES] Erro Supabase direto:", error.message);
         return res.status(500).json({
           success: false,
           error: "Erro ao buscar lojas no banco de dados",
-          details: result.error,
+          details: error.message,
         });
       }
-
-      logger.info(`✅ [STORES] ${result.data.length} lojas encontradas`);
-      return res.json({
-        success: true,
-        data: result.data,
-        stores: result.data, // Para compatibilidade
-        pagination: {
-          page: 1,
-          limit: result.data.length,
-          total: result.data.length,
-          totalPages: 1,
-          hasNext: false,
-          hasPrev: false,
-        },
-      });
     }
 
     // Route: POST /api/auth/register - APENAS BANCO DE DADOS
