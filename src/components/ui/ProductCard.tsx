@@ -77,10 +77,14 @@ export function ProductCard({
             {/* Image */}
             <div className="relative w-32 h-32 flex-shrink-0">
               <ProductImage
-                src={product.images[0]?.url || "/placeholder-image.jpg"}
+                src={product.images?.[0]?.url || "/placeholder-image.jpg"}
                 alt={product.name}
                 className="w-full h-full object-cover rounded-lg"
-                product={{ name: product.name, category: typeof product.category === 'string' ? product.category : product.category.name }}
+                product={{
+                  name: product.name,
+                  category:
+                    typeof product.category === "string" ? product.category : product.category?.name || "Produto",
+                }}
                 onLoad={() => setImageLoaded(true)}
                 onError={() => setImageError(true)}
               />
@@ -177,10 +181,13 @@ export function ProductCard({
         {/* Image */}
         <div className="relative aspect-square overflow-hidden bg-gray-50">
           <ProductImage
-            src={product.images[0]?.url || "/placeholder-image.jpg"}
+            src={product.images?.[0]?.url || "/placeholder-image.jpg"}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-            product={{ name: product.name, category: typeof product.category === 'string' ? product.category : product.category.name }}
+            product={{
+              name: product.name,
+              category: typeof product.category === "string" ? product.category : product.category?.name || "Produto",
+            }}
             onLoad={() => setImageLoaded(true)}
             onError={() => setImageError(true)}
           />
