@@ -1,4 +1,4 @@
-import { logger } from "../lib/logger.js";
+import { logger } from "../../lib/logger.js";
 
 // API pública para buscar configurações de tracking (sem autenticação)
 import { PrismaClient } from "@prisma/client";

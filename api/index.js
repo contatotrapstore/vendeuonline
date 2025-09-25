@@ -8,15 +8,18 @@ let safeQuery = null;
 let logger = null;
 
 try {
-  const loggerModule = await import("../server/lib/logger.js");
+  // Import logger
+  const loggerModule = await import("../lib/logger.js");
   logger = loggerModule.logger;
 
-  const prismaModule = await import("../server/lib/prisma.js");
+  // Import Prisma with correct path
+  const prismaModule = await import("../lib/prisma.js");
   prisma = prismaModule.default;
   safeQuery = prismaModule.safeQuery;
   logger.info("✅ [API] Prisma importado com sucesso");
 } catch (error) {
   console.error("❌ [API] Erro ao importar módulos:", error.message);
+  console.error("❌ [API] Stack trace:", error.stack);
   // Fallback logger
   logger = {
     info: console.log,
