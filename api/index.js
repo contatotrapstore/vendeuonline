@@ -345,43 +345,53 @@ export default async function handler(req, res) {
         logger.warn("⚠️ [PRODUCTS] Prisma falhou, tentando Supabase direto");
       }
 
-      // Fallback 1: Supabase com ANON_KEY (WORKING!)
+      // Fallback 1: SERVICE_ROLE_KEY (BYPASS RLS - PRIORIDADE!)
       try {
-        console.log("✅ [PRODUCTS] Tentando com ANON_KEY...");
-        const { getProductsAnon } = await import("../lib/supabase-anon.js");
-        const products = await getProductsAnon();
+        console.log("🚀 [PRODUCTS] Tentando SERVICE_ROLE_KEY primeiro (bypass RLS)...");
+        const { getProducts } = await import("../lib/supabase-fetch.js");
+        const products = await getProducts();
 
-        console.log(`✅ [PRODUCTS] ${products.length} produtos encontrados via ANON_KEY`);
-        logger.info(`✅ [PRODUCTS] ${products.length} produtos encontrados via ANON_KEY`);
+        console.log(`✅ [PRODUCTS] ${products.length} produtos encontrados via SERVICE_ROLE_KEY`);
+        logger.info(`✅ [PRODUCTS] ${products.length} produtos encontrados via SERVICE_ROLE_KEY`);
         return res.json({
           success: true,
           products: products,
-          fallback: "supabase-anon",
+          fallback: "supabase-service",
           source: "real-data",
         });
-      } catch (anonError) {
-        console.warn("⚠️ [PRODUCTS] ANON_KEY falhou, tentando SERVICE_ROLE...");
+      } catch (serviceError) {
+        console.warn("⚠️ [PRODUCTS] SERVICE_ROLE_KEY falhou:", serviceError.message);
+        console.warn("⚠️ [PRODUCTS] Tentando ANON_KEY como fallback...");
 
-        // Fallback 2: SERVICE_ROLE_KEY
+        // Fallback 2: Supabase com ANON_KEY
         try {
-          const { getProducts } = await import("../lib/supabase-fetch.js");
-          const products = await getProducts();
+          console.log("✅ [PRODUCTS] Tentando com ANON_KEY...");
+          const { getProductsAnon } = await import("../lib/supabase-anon.js");
+          const products = await getProductsAnon();
 
-          console.log(`✅ [PRODUCTS] ${products.length} produtos encontrados via SERVICE_ROLE`);
+          console.log(`✅ [PRODUCTS] ${products.length} produtos encontrados via ANON_KEY`);
           return res.json({
             success: true,
             products: products,
-            fallback: "supabase-service",
+            fallback: "supabase-anon",
             source: "real-data",
           });
         } catch (serviceError) {
-          console.error("❌ [PRODUCTS] Todos os fallbacks falharam");
+          console.error("❌ [PRODUCTS] SERVICE_ROLE também falhou:", serviceError.message);
+          console.error("❌ [PRODUCTS] Diagnóstico:", {
+            anonError: anonError.message,
+            serviceError: serviceError.message,
+            isRLSError,
+          });
 
           return res.status(500).json({
             success: false,
             error: "Serviço de produtos temporariamente indisponível",
-            details: "Erro de conexão com banco de dados",
+            details: isRLSError ? "Configuração de segurança pendente" : "Erro de conexão com banco de dados",
             timestamp: new Date().toISOString(),
+            diagnostic: {
+              probable_cause: isRLSError ? "RLS policies not configured" : "Database connection issue",
+            },
           });
         }
       }
@@ -422,19 +432,19 @@ export default async function handler(req, res) {
         logger.warn("⚠️ [STORES] Prisma falhou, tentando Supabase direto");
       }
 
-      // Fallback 1: Supabase com ANON_KEY (WORKING!)
+      // Fallback 1: SERVICE_ROLE_KEY (BYPASS RLS - PRIORIDADE!)
       try {
-        console.log("✅ [STORES] Tentando com ANON_KEY (strategy working)...");
-        const { getStoresAnon } = await import("../lib/supabase-anon.js");
-        const stores = await getStoresAnon();
+        console.log("🚀 [STORES] Tentando SERVICE_ROLE_KEY primeiro (bypass RLS)...");
+        const { getStores } = await import("../lib/supabase-fetch.js");
+        const stores = await getStores();
 
-        console.log(`✅ [STORES] ${stores.length} lojas encontradas via ANON_KEY`);
-        logger.info(`✅ [STORES] ${stores.length} lojas encontradas via ANON_KEY`);
+        console.log(`✅ [STORES] ${stores.length} lojas encontradas via SERVICE_ROLE_KEY`);
+        logger.info(`✅ [STORES] ${stores.length} lojas encontradas via SERVICE_ROLE_KEY`);
         return res.json({
           success: true,
           data: stores,
           stores: stores, // Para compatibilidade
-          fallback: "supabase-anon",
+          fallback: "supabase-service",
           source: "real-data",
           pagination: {
             page: 1,
@@ -445,23 +455,24 @@ export default async function handler(req, res) {
             hasPrev: false,
           },
         });
-      } catch (anonError) {
-        console.warn("⚠️ [STORES] ANON_KEY falhou:", anonError.message);
+      } catch (serviceError) {
+        console.warn("⚠️ [STORES] SERVICE_ROLE_KEY falhou:", serviceError.message);
+        console.warn("⚠️ [STORES] Tentando ANON_KEY como fallback...");
 
-        // Fallback 2: Supabase com SERVICE_ROLE_KEY
+        // Fallback 2: Supabase com ANON_KEY
         try {
-          console.log("⚠️ [STORES] Tentando SERVICE_ROLE_KEY...");
-          const { getStores } = await import("../lib/supabase-fetch.js");
-          const stores = await getStores();
+          console.log("✅ [STORES] Tentando com ANON_KEY...");
+          const { getStoresAnon } = await import("../lib/supabase-anon.js");
+          const stores = await getStoresAnon();
 
-          console.log(`✅ [STORES] ${stores.length} lojas encontradas via SERVICE_ROLE_KEY`);
-          logger.info(`✅ [STORES] ${stores.length} lojas encontradas via SERVICE_ROLE_KEY`);
+          console.log(`✅ [STORES] ${stores.length} lojas encontradas via ANON_KEY`);
+          logger.info(`✅ [STORES] ${stores.length} lojas encontradas via ANON_KEY`);
           return res.json({
             success: true,
             data: stores,
             stores: stores, // Para compatibilidade
-            fallback: "supabase-fetch",
-            source: "fallback-data",
+            fallback: "supabase-anon",
+            source: "real-data",
             pagination: {
               page: 1,
               limit: stores.length,
@@ -478,11 +489,23 @@ export default async function handler(req, res) {
 
           console.error("❌ [STORES] Todos os fallbacks falharam");
 
+          // Diagnóstico final do erro
+          const isRLSError =
+            error.message?.includes("RLS") ||
+            error.message?.includes("policy") ||
+            error.code === "42501" ||
+            anonError.message?.includes("RLS") ||
+            anonError.message?.includes("policy") ||
+            anonError.code === "42501";
+
           return res.status(500).json({
             success: false,
             error: "Serviço de lojas temporariamente indisponível",
-            details: "Erro de conexão com banco de dados",
+            details: isRLSError ? "Configuração de segurança pendente" : "Erro de conexão com banco de dados",
             timestamp: new Date().toISOString(),
+            diagnostic: {
+              probable_cause: isRLSError ? "RLS policies not configured" : "Database connection issue",
+            },
           });
         }
       }
