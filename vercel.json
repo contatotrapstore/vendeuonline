@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "buildCommand": "npm run vercel-build",
+  "buildCommand": "HUSKY=0 npm run vercel-build",
   "outputDirectory": "dist",
-  "installCommand": "npm install && npx prisma generate",
+  "installCommand": "HUSKY=0 npm install && npx prisma generate",
   "headers": [
     {
       "source": "/api/(.*)",
