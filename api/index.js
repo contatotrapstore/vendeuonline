@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 
-// Import Prisma with error handling
+// Import Prisma with error handling and better serverless support
 let prisma = null;
 let safeQuery = null;
 let logger = null;
@@ -11,31 +11,54 @@ try {
   // Import logger
   const loggerModule = await import("../lib/logger.js");
   logger = loggerModule.logger;
+  console.log("✅ [API] Logger importado com sucesso");
 
   // Import Prisma with correct path
   const prismaModule = await import("../lib/prisma.js");
   prisma = prismaModule.default;
   safeQuery = prismaModule.safeQuery;
-  logger.info("✅ [API] Prisma importado com sucesso");
+
+  // Test Prisma connection immediately
+  if (prisma) {
+    console.log("✅ [API] Prisma importado com sucesso");
+    // Test connection in background
+    prisma
+      .$connect()
+      .then(() => {
+        console.log("✅ [API] Prisma conectado ao banco com sucesso");
+      })
+      .catch((err) => {
+        console.error("❌ [API] Erro na conexão Prisma:", err.message);
+      });
+  } else {
+    throw new Error("Prisma client não inicializado");
+  }
 } catch (error) {
-  console.error("❌ [API] Erro ao importar módulos:", error.message);
+  console.error("❌ [API] Erro CRÍTICO ao importar módulos:", error.message);
   console.error("❌ [API] Stack trace:", error.stack);
+  console.error("❌ [API] Environment check:");
+  console.error("❌ [API] DATABASE_URL:", process.env.DATABASE_URL ? "DEFINIDA" : "NÃO DEFINIDA");
+  console.error("❌ [API] NODE_ENV:", process.env.NODE_ENV);
+
   // Fallback logger
   logger = {
-    info: console.log,
-    error: console.error,
-    warn: console.warn,
+    info: (...args) => console.log("ℹ️", ...args),
+    error: (...args) => console.error("❌", ...args),
+    warn: (...args) => console.warn("⚠️", ...args),
   };
 }
 
-// Debug - Verificar variáveis de ambiente críticas
-logger.info("🔍 [API] Verificando variáveis de ambiente:");
-logger.info("DATABASE_URL:", process.env.DATABASE_URL ? "DEFINIDA" : "❌ NÃO DEFINIDA");
-logger.info("JWT_SECRET:", process.env.JWT_SECRET ? "DEFINIDA" : "❌ NÃO DEFINIDA");
-logger.info("SUPABASE_URL:", process.env.SUPABASE_URL ? "DEFINIDA" : "❌ NÃO DEFINIDA");
-logger.info("SUPABASE_ANON_KEY:", process.env.SUPABASE_ANON_KEY ? "DEFINIDA" : "❌ NÃO DEFINIDA");
-logger.info("Node Version:", process.version);
-logger.info("Platform:", process.platform);
+// Debug - Verificar variáveis de ambiente críticas (força console.log em produção para debug)
+console.log("🔍 [API] Verificando variáveis de ambiente:");
+console.log("DATABASE_URL:", process.env.DATABASE_URL ? "DEFINIDA" : "❌ NÃO DEFINIDA");
+console.log("JWT_SECRET:", process.env.JWT_SECRET ? "DEFINIDA" : "❌ NÃO DEFINIDA");
+console.log("SUPABASE_URL:", process.env.SUPABASE_URL ? "DEFINIDA" : "❌ NÃO DEFINIDA");
+console.log("SUPABASE_ANON_KEY:", process.env.SUPABASE_ANON_KEY ? "DEFINIDA" : "❌ NÃO DEFINIDA");
+console.log("SUPABASE_SERVICE_ROLE_KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "DEFINIDA" : "❌ NÃO DEFINIDA");
+console.log("Node Version:", process.version);
+console.log("Platform:", process.platform);
+console.log("NODE_ENV:", process.env.NODE_ENV);
+console.log("Prisma Status:", prisma ? "INICIALIZADO" : "❌ FALHOU");
 
 // Configurações JWT - OBRIGATÓRIO definir JWT_SECRET nas variáveis de ambiente
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -106,14 +129,63 @@ export default async function handler(req, res) {
       return payload;
     };
 
-    // Route: GET /api/health
+    // Route: GET /api/health - Enhanced diagnostic endpoint
     if (req.method === "GET" && pathname === "/api/health") {
       return res.json({
         status: "OK",
         message: "API funcionando!",
         timestamp: new Date().toISOString(),
         prismaStatus: prisma ? "CONECTADO" : "NÃO CONECTADO",
+        safeQueryStatus: safeQuery ? "DISPONÍVEL" : "NÃO DISPONÍVEL",
+        environment: {
+          nodeEnv: process.env.NODE_ENV,
+          nodeVersion: process.version,
+          platform: process.platform,
+          databaseUrl: process.env.DATABASE_URL ? "CONFIGURADA" : "NÃO CONFIGURADA",
+          jwtSecret: process.env.JWT_SECRET ? "CONFIGURADA" : "NÃO CONFIGURADA",
+          supabaseUrl: process.env.SUPABASE_URL ? "CONFIGURADA" : "NÃO CONFIGURADA",
+          supabaseAnonKey: process.env.SUPABASE_ANON_KEY ? "CONFIGURADA" : "NÃO CONFIGURADA",
+          supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? "CONFIGURADA" : "NÃO CONFIGURADA",
+        },
       });
+    }
+
+    // Route: GET /api/debug - Diagnostic endpoint for troubleshooting
+    if (req.method === "GET" && pathname === "/api/debug") {
+      const diagnostics = {
+        status: "DIAGNOSTIC",
+        timestamp: new Date().toISOString(),
+        modules: {
+          prisma: prisma ? "LOADED" : "FAILED",
+          safeQuery: safeQuery ? "LOADED" : "FAILED",
+          logger: logger ? "LOADED" : "FAILED",
+        },
+        environment: {
+          NODE_ENV: process.env.NODE_ENV,
+          DATABASE_URL: process.env.DATABASE_URL ? `${process.env.DATABASE_URL.slice(0, 20)}...` : "NOT SET",
+          JWT_SECRET: process.env.JWT_SECRET ? "SET" : "NOT SET",
+          SUPABASE_URL: process.env.SUPABASE_URL || "NOT SET",
+          SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ? "SET" : "NOT SET",
+          SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? "SET" : "NOT SET",
+        },
+        prismaConnection: null,
+      };
+
+      // Test Prisma connection if available
+      if (prisma && safeQuery) {
+        try {
+          const connectionTest = await safeQuery(async () => {
+            return await prisma.$queryRaw`SELECT 1 as test`;
+          });
+          diagnostics.prismaConnection = connectionTest.success ? "SUCCESS" : `FAILED: ${connectionTest.error}`;
+        } catch (error) {
+          diagnostics.prismaConnection = `ERROR: ${error.message}`;
+        }
+      } else {
+        diagnostics.prismaConnection = "PRISMA NOT AVAILABLE";
+      }
+
+      return res.json(diagnostics);
     }
 
     // Route: GET /api/plans - APENAS BANCO DE DADOS
