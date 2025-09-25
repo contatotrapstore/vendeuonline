@@ -688,11 +688,60 @@ export default async function handler(req, res) {
       }
 
       if (!prisma || !safeQuery) {
-        logger.error("❌ [LOGIN] Prisma não disponível");
-        return res.status(500).json({
-          success: false,
-          error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
-        });
+        logger.error("❌ [LOGIN] Prisma não disponível - usando fallback Supabase");
+
+        // FALLBACK: Usar Supabase client direto
+        try {
+          const { createClient } = await import("@supabase/supabase-js");
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+          const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+          if (!supabaseUrl || !supabaseServiceKey) {
+            return res.status(500).json({
+              success: false,
+              error: "Configurações Supabase não disponíveis.",
+            });
+          }
+
+          const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+          // Buscar usuário via Supabase
+          const { data: users, error: userError } = await supabase.from("User").select("*").eq("email", email).single();
+
+          if (userError || !users) {
+            return res.status(401).json({ error: "Credenciais inválidas" });
+          }
+
+          // Verificar senha
+          const isValidPassword = await bcrypt.compare(password, users.password);
+          if (!isValidPassword) {
+            return res.status(401).json({ error: "Credenciais inválidas" });
+          }
+
+          // Gerar token JWT
+          const token = jwt.sign({ userId: users.id, email: users.email, type: users.type }, JWT_SECRET, {
+            expiresIn: "7d",
+          });
+
+          // Resposta de sucesso (usando fallback)
+          return res.json({
+            success: true,
+            user: {
+              id: users.id,
+              email: users.email,
+              name: users.name,
+              type: users.type,
+            },
+            token,
+            method: "supabase-fallback",
+          });
+        } catch (fallbackError) {
+          logger.error("❌ [LOGIN] Fallback Supabase também falhou:", fallbackError.message);
+          return res.status(500).json({
+            success: false,
+            error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
+          });
+        }
       }
 
       // Buscar usuário no banco
