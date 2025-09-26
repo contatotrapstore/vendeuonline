@@ -689,8 +689,13 @@ export default async function handler(req, res) {
 
       try {
         const { createClient } = await import("@supabase/supabase-js");
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        const supabaseUrl =
+          process.env.NEXT_PUBLIC_SUPABASE_URL ||
+          process.env.SUPABASE_URL ||
+          "https://dycsfnbqgojhttnjbndp.supabase.co";
+        const supabaseServiceKey =
+          process.env.SUPABASE_SERVICE_ROLE_KEY ||
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw";
 
         console.log("🔍 [TEST-HASH] Environment variables debug:");
         console.log("🔍 [TEST-HASH] supabaseUrl:", supabaseUrl ? `${supabaseUrl.slice(0, 30)}...` : "❌ UNDEFINED");
@@ -837,8 +842,13 @@ export default async function handler(req, res) {
         // FALLBACK: Usar Supabase client direto
         try {
           const { createClient } = await import("@supabase/supabase-js");
-          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-          const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+          const supabaseUrl =
+            process.env.NEXT_PUBLIC_SUPABASE_URL ||
+            process.env.SUPABASE_URL ||
+            "https://dycsfnbqgojhttnjbndp.supabase.co";
+          const supabaseServiceKey =
+            process.env.SUPABASE_SERVICE_ROLE_KEY ||
+            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw";
 
           console.log("🔍 [LOGIN-FALLBACK] Verificando variáveis de ambiente:");
           console.log("🔍 [LOGIN-FALLBACK] supabaseUrl:", supabaseUrl ? "DEFINIDA" : "❌ NÃO DEFINIDA");
