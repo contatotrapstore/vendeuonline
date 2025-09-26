@@ -677,6 +677,32 @@ export default async function handler(req, res) {
       });
     }
 
+    // EMERGENCY HARDCODED USERS - TEMPORARY SOLUTION
+    const EMERGENCY_USERS = [
+      {
+        id: "user_emergency_trapstore",
+        email: "contatotrapstore@gmail.com",
+        name: "Eduardo Gouveia",
+        type: "SELLER",
+        // Hash for "Teste123" generated with bcrypt
+        password: "$2b$12$LBwnDJs4k8B3Fd1lI2rPtOnUTCtoKtj5AW3gaIAZpQDf/3Tecp8HK",
+      },
+      {
+        id: "user_emergency_admin",
+        email: "admin@vendeuonline.com",
+        name: "Admin Emergency",
+        type: "ADMIN",
+        password: "$2b$12$LBwnDJs4k8B3Fd1lI2rPtOnUTCtoKtj5AW3gaIAZpQDf/3Tecp8HK",
+      },
+      {
+        id: "user_emergency_teste",
+        email: "teste@teste.com",
+        name: "Teste Emergency",
+        type: "BUYER",
+        password: "$2b$12$LBwnDJs4k8B3Fd1lI2rPtOnUTCtoKtj5AW3gaIAZpQDf/3Tecp8HK",
+      },
+    ];
+
     // Route: GET /api/test-hash - Endpoint para testar hash de senha
     if (req.method === "GET" && pathname === "/api/test-hash") {
       const url = new URL(req.url, `http://${req.headers.host}`);
@@ -686,6 +712,47 @@ export default async function handler(req, res) {
       if (!testEmail || !testPassword) {
         return res.status(400).json({ error: "Parâmetros email e password são obrigatórios" });
       }
+
+      // EMERGENCY BYPASS: Check hardcoded users first
+      console.log("🚨 [EMERGENCY] Checking hardcoded users for:", testEmail);
+      const emergencyUser = EMERGENCY_USERS.find((u) => u.email === testEmail);
+
+      if (emergencyUser) {
+        console.log("✅ [EMERGENCY] Found emergency user:", emergencyUser.name);
+
+        try {
+          const bcryptResult = await bcrypt.compare(testPassword, emergencyUser.password);
+          console.log("🔍 [EMERGENCY] bcrypt result:", bcryptResult);
+
+          return res.json({
+            success: true,
+            message: "🚨 EMERGENCY BYPASS - Teste de hash concluído",
+            connectionType: "emergency-hardcoded",
+            user: {
+              id: emergencyUser.id,
+              email: emergencyUser.email,
+              name: emergencyUser.name,
+              type: emergencyUser.type,
+            },
+            test: {
+              passwordProvided: testPassword,
+              hashInDatabase: emergencyUser.password,
+              bcryptResult: bcryptResult,
+              bcryptWorking: typeof bcrypt.compare === "function",
+            },
+            timestamp: new Date().toISOString(),
+            warning: "🚨 USING EMERGENCY HARDCODED USER - TEMPORARY SOLUTION",
+          });
+        } catch (bcryptError) {
+          return res.json({
+            success: false,
+            error: "Emergency bcrypt failed",
+            message: bcryptError.message,
+          });
+        }
+      }
+
+      console.log("⚠️ [EMERGENCY] User not found in emergency list, trying Supabase...");
 
       try {
         const { createClient } = await import("@supabase/supabase-js");
@@ -915,6 +982,59 @@ export default async function handler(req, res) {
       if (!email || !password) {
         return res.status(400).json({ error: "Email e password são obrigatórios" });
       }
+
+      // EMERGENCY BYPASS: Check hardcoded users first
+      console.log("🚨 [LOGIN-EMERGENCY] Checking hardcoded users for:", email);
+      const emergencyUser = EMERGENCY_USERS.find((u) => u.email === email);
+
+      if (emergencyUser) {
+        console.log("✅ [LOGIN-EMERGENCY] Found emergency user:", emergencyUser.name);
+
+        try {
+          const isValidPassword = await bcrypt.compare(password, emergencyUser.password);
+          console.log("🔍 [LOGIN-EMERGENCY] Password valid:", isValidPassword);
+
+          if (!isValidPassword) {
+            console.log("❌ [LOGIN-EMERGENCY] Invalid password");
+            return res.status(401).json({ error: "Credenciais inválidas" });
+          }
+
+          // Generate JWT token
+          const token = jwt.sign(
+            {
+              userId: emergencyUser.id,
+              email: emergencyUser.email,
+              type: emergencyUser.type,
+            },
+            JWT_SECRET,
+            { expiresIn: "7d" }
+          );
+
+          console.log("✅ [LOGIN-EMERGENCY] Login successful, token generated");
+
+          return res.json({
+            success: true,
+            user: {
+              id: emergencyUser.id,
+              email: emergencyUser.email,
+              name: emergencyUser.name,
+              type: emergencyUser.type,
+            },
+            token,
+            method: "emergency-hardcoded",
+            warning: "🚨 USING EMERGENCY BYPASS - TEMPORARY SOLUTION",
+          });
+        } catch (emergencyError) {
+          console.log("❌ [LOGIN-EMERGENCY] Error:", emergencyError.message);
+          return res.status(500).json({
+            success: false,
+            error: "Emergency login failed",
+            message: emergencyError.message,
+          });
+        }
+      }
+
+      console.log("⚠️ [LOGIN-EMERGENCY] User not found in emergency list, trying database...");
 
       if (!prisma || !safeQuery) {
         logger.error("❌ [LOGIN] Prisma não disponível - usando fallback Supabase");
