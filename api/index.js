@@ -677,6 +677,67 @@ export default async function handler(req, res) {
       });
     }
 
+    // Route: GET /api/test-hash - Endpoint para testar hash de senha
+    if (req.method === "GET" && pathname === "/api/test-hash") {
+      const url = new URL(req.url, `http://${req.headers.host}`);
+      const testEmail = url.searchParams.get("email");
+      const testPassword = url.searchParams.get("password");
+
+      if (!testEmail || !testPassword) {
+        return res.status(400).json({ error: "Parâmetros email e password são obrigatórios" });
+      }
+
+      try {
+        const { createClient } = await import("@supabase/supabase-js");
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+        // Buscar usuário
+        const { data: user, error } = await supabase
+          .from("users")
+          .select("email, name, type, password")
+          .eq("email", testEmail)
+          .single();
+
+        if (error || !user) {
+          return res.json({
+            success: false,
+            message: "Usuário não encontrado",
+            email: testEmail,
+            error: error?.message,
+          });
+        }
+
+        // Testar senha
+        const bcryptResult = await bcrypt.compare(testPassword, user.password);
+
+        return res.json({
+          success: true,
+          message: "Teste de hash concluído",
+          user: {
+            email: user.email,
+            name: user.name,
+            type: user.type,
+          },
+          test: {
+            passwordProvided: testPassword,
+            hashInDatabase: user.password,
+            bcryptResult: bcryptResult,
+            bcryptWorking: typeof bcrypt.compare === "function",
+          },
+          timestamp: new Date().toISOString(),
+        });
+      } catch (error) {
+        return res.status(500).json({
+          success: false,
+          error: "Erro interno no teste de hash",
+          message: error.message,
+        });
+      }
+    }
+
     // Route: POST /api/auth/login - APENAS BANCO DE DADOS
     if (req.method === "POST" && pathname === "/api/auth/login") {
       logger.info("🔐 [LOGIN] Tentativa de login...");
@@ -689,6 +750,7 @@ export default async function handler(req, res) {
 
       if (!prisma || !safeQuery) {
         logger.error("❌ [LOGIN] Prisma não disponível - usando fallback Supabase");
+        console.log("🔄 [LOGIN-FALLBACK] Iniciando processo de fallback...");
 
         // FALLBACK: Usar Supabase client direto
         try {
@@ -696,7 +758,12 @@ export default async function handler(req, res) {
           const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
           const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+          console.log("🔍 [LOGIN-FALLBACK] Verificando variáveis de ambiente:");
+          console.log("🔍 [LOGIN-FALLBACK] supabaseUrl:", supabaseUrl ? "DEFINIDA" : "❌ NÃO DEFINIDA");
+          console.log("🔍 [LOGIN-FALLBACK] supabaseServiceKey:", supabaseServiceKey ? "DEFINIDA" : "❌ NÃO DEFINIDA");
+
           if (!supabaseUrl || !supabaseServiceKey) {
+            console.log("❌ [LOGIN-FALLBACK] Configurações Supabase não disponíveis");
             return res.status(500).json({
               success: false,
               error: "Configurações Supabase não disponíveis.",
@@ -704,21 +771,43 @@ export default async function handler(req, res) {
           }
 
           const supabase = createClient(supabaseUrl, supabaseServiceKey);
+          console.log("✅ [LOGIN-FALLBACK] Cliente Supabase criado com sucesso");
 
           // Buscar usuário via Supabase
+          console.log("🔍 [LOGIN-FALLBACK] Buscando usuário com email:", email);
           const { data: users, error: userError } = await supabase
             .from("users")
             .select("*")
             .eq("email", email)
             .single();
 
+          console.log("🔍 [LOGIN-FALLBACK] Resultado da busca:");
+          console.log("🔍 [LOGIN-FALLBACK] userError:", userError ? userError.message : "NENHUM");
+          console.log("🔍 [LOGIN-FALLBACK] users encontrado:", users ? "SIM" : "NÃO");
+
+          if (users) {
+            console.log("🔍 [LOGIN-FALLBACK] Dados do usuário encontrado:");
+            console.log("🔍 [LOGIN-FALLBACK] - Email:", users.email);
+            console.log("🔍 [LOGIN-FALLBACK] - Nome:", users.name);
+            console.log("🔍 [LOGIN-FALLBACK] - Tipo:", users.type);
+            console.log("🔍 [LOGIN-FALLBACK] - Hash senha:", users.password ? "PRESENTE" : "AUSENTE");
+          }
+
           if (userError || !users) {
+            console.log("❌ [LOGIN-FALLBACK] Usuário não encontrado, retornando 401");
             return res.status(401).json({ error: "Credenciais inválidas" });
           }
 
           // Verificar senha
+          console.log("🔍 [LOGIN-FALLBACK] Verificando senha com bcrypt...");
+          console.log("🔍 [LOGIN-FALLBACK] Senha fornecida:", password);
+          console.log("🔍 [LOGIN-FALLBACK] Hash no banco:", users.password);
+
           const isValidPassword = await bcrypt.compare(password, users.password);
+          console.log("🔍 [LOGIN-FALLBACK] Resultado bcrypt.compare:", isValidPassword);
+
           if (!isValidPassword) {
+            console.log("❌ [LOGIN-FALLBACK] Senha inválida, retornando 401");
             return res.status(401).json({ error: "Credenciais inválidas" });
           }
 
