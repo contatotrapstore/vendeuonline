@@ -9,8 +9,11 @@ This is a full-stack marketplace application called "Vendeu Online" built with R
 ## Common Development Commands
 
 ```bash
-# Development
-npm run dev          # Start development server (Vite)
+# Development (PRODUCTION MODE)
+npm run dev          # Start development server (PRODUCTION MODE - logs otimizados)
+npm run dev:debug    # Start development server (DEBUG MODE - logs verbose)
+npm run api          # Start API server (PRODUCTION MODE)
+npm run api:debug    # Start API server (DEBUG MODE)
 npm run build        # Build for production (TypeScript + Vite)
 npm run preview      # Preview production build
 npm run check        # TypeScript type checking without emitting files
@@ -190,6 +193,14 @@ The application requires environment variables for:
 
 - **API**: 3000 → 3001 → 3002... até 3011
 - **Frontend**: 5173 → 5174 → 5175... até 5184
+
+🏭 **MODO PRODUÇÃO PERMANENTE**: Sistema configurado para sempre rodar em modo produção
+
+- **NODE_ENV=production** definido no .env e scripts
+- **Logs otimizados** para performance
+- **Segurança máxima** com CSP restritivo
+- **Performance otimizada** com configurações de produção
+- **Script dev:debug** disponível para debugging quando necessário
 
 ✅ **STATUS ATUAL: 100/100 PRODUCTION READY & SISTEMA LIMPO - PRONTO PARA COMMIT**
 
