@@ -692,7 +692,26 @@ export default async function handler(req, res) {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+        console.log("🔍 [TEST-HASH] Environment variables debug:");
+        console.log("🔍 [TEST-HASH] supabaseUrl:", supabaseUrl ? `${supabaseUrl.slice(0, 30)}...` : "❌ UNDEFINED");
+        console.log(
+          "🔍 [TEST-HASH] serviceKey:",
+          supabaseServiceKey ? `${supabaseServiceKey.slice(0, 20)}...` : "❌ UNDEFINED"
+        );
+
+        if (!supabaseUrl || !supabaseServiceKey) {
+          return res.json({
+            success: false,
+            error: "Environment variables missing",
+            debug: {
+              supabaseUrl: supabaseUrl ? "PRESENT" : "MISSING",
+              serviceKey: supabaseServiceKey ? "PRESENT" : "MISSING",
+            },
+          });
+        }
+
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        console.log("✅ [TEST-HASH] Supabase client created successfully");
 
         // Buscar usuário
         const { data: user, error } = await supabase
@@ -716,6 +735,7 @@ export default async function handler(req, res) {
         return res.json({
           success: true,
           message: "Teste de hash concluído",
+          connectionType: "service-role-key",
           user: {
             email: user.email,
             name: user.name,
@@ -730,11 +750,73 @@ export default async function handler(req, res) {
           timestamp: new Date().toISOString(),
         });
       } catch (error) {
-        return res.status(500).json({
-          success: false,
-          error: "Erro interno no teste de hash",
-          message: error.message,
-        });
+        console.log("❌ [TEST-HASH] Service role failed, trying anon key...", error.message);
+
+        // FALLBACK: Tentar com anon key
+        try {
+          const { createClient } = await import("@supabase/supabase-js");
+          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+          console.log("🔍 [TEST-HASH-ANON] Trying anon key fallback...");
+          console.log("🔍 [TEST-HASH-ANON] anonKey:", anonKey ? `${anonKey.slice(0, 20)}...` : "❌ UNDEFINED");
+
+          if (!anonKey) {
+            return res.json({
+              success: false,
+              error: "Both service role and anon keys missing",
+              serviceRoleError: error.message,
+            });
+          }
+
+          const supabaseAnon = createClient(supabaseUrl, anonKey);
+
+          // Buscar usuário com anon key (limitações RLS podem aplicar)
+          const { data: user, error: anonError } = await supabaseAnon
+            .from("users")
+            .select("email, name, type, password")
+            .eq("email", testEmail)
+            .single();
+
+          if (anonError || !user) {
+            return res.json({
+              success: false,
+              error: "User not found with anon key",
+              serviceRoleError: error.message,
+              anonError: anonError?.message,
+              debug: "Both service role and anon key failed",
+            });
+          }
+
+          // Testar senha com anon key
+          const bcryptResult = await bcrypt.compare(testPassword, user.password);
+
+          return res.json({
+            success: true,
+            message: "Teste de hash concluído (anon key fallback)",
+            connectionType: "anon-key-fallback",
+            serviceRoleError: error.message,
+            user: {
+              email: user.email,
+              name: user.name,
+              type: user.type,
+            },
+            test: {
+              passwordProvided: testPassword,
+              hashInDatabase: user.password,
+              bcryptResult: bcryptResult,
+              bcryptWorking: typeof bcrypt.compare === "function",
+            },
+            timestamp: new Date().toISOString(),
+          });
+        } catch (fallbackError) {
+          return res.status(500).json({
+            success: false,
+            error: "Both service role and anon key failed",
+            serviceRoleError: error.message,
+            fallbackError: fallbackError.message,
+          });
+        }
       }
     }
 
