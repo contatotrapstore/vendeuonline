@@ -715,8 +715,89 @@ export default async function handler(req, res) {
           });
         }
 
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
-        console.log("✅ [TEST-HASH] Supabase client created successfully");
+        // FALLBACK: Usar fetch direto se createClient falhar
+        console.log("🔄 [TEST-HASH] Tentando criar cliente Supabase...");
+
+        let supabase;
+        try {
+          supabase = createClient(supabaseUrl, supabaseServiceKey);
+          console.log("✅ [TEST-HASH] Supabase client created successfully");
+        } catch (clientError) {
+          console.log("❌ [TEST-HASH] Supabase client failed, using direct fetch...", clientError.message);
+
+          // DIRECT FETCH FALLBACK
+          const directFetchUrl = `${supabaseUrl}/rest/v1/users?email=eq.${testEmail}&select=*`;
+          const directHeaders = {
+            Authorization: `Bearer ${supabaseServiceKey}`,
+            apikey: supabaseServiceKey,
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          };
+
+          console.log("🔍 [TEST-HASH-DIRECT] Direct fetch URL:", directFetchUrl);
+          console.log("🔍 [TEST-HASH-DIRECT] Headers configured");
+
+          try {
+            const directResponse = await fetch(directFetchUrl, {
+              method: "GET",
+              headers: directHeaders,
+            });
+
+            console.log("🔍 [TEST-HASH-DIRECT] Response status:", directResponse.status);
+
+            if (!directResponse.ok) {
+              const errorText = await directResponse.text();
+              console.log("❌ [TEST-HASH-DIRECT] Response error:", errorText);
+              return res.json({
+                success: false,
+                error: "Direct fetch failed",
+                status: directResponse.status,
+                errorText: errorText,
+                debug: "Both Supabase client and direct fetch failed",
+              });
+            }
+
+            const directData = await directResponse.json();
+            console.log("✅ [TEST-HASH-DIRECT] Direct fetch success:", directData.length, "users found");
+
+            if (!directData || directData.length === 0) {
+              return res.json({
+                success: false,
+                error: "User not found via direct fetch",
+                method: "direct-fetch",
+              });
+            }
+
+            const user = directData[0];
+            const bcryptResult = await bcrypt.compare(testPassword, user.password);
+
+            return res.json({
+              success: true,
+              message: "Teste de hash concluído (direct fetch)",
+              connectionType: "direct-fetch",
+              user: {
+                email: user.email,
+                name: user.name,
+                type: user.type,
+              },
+              test: {
+                passwordProvided: testPassword,
+                hashInDatabase: user.password,
+                bcryptResult: bcryptResult,
+                bcryptWorking: typeof bcrypt.compare === "function",
+              },
+              timestamp: new Date().toISOString(),
+            });
+          } catch (fetchError) {
+            console.log("❌ [TEST-HASH-DIRECT] Direct fetch error:", fetchError.message);
+            return res.json({
+              success: false,
+              error: "Both client and direct fetch failed",
+              clientError: clientError.message,
+              fetchError: fetchError.message,
+            });
+          }
+        }
 
         // Buscar usuário
         const { data: user, error } = await supabase
