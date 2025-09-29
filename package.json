@@ -37,7 +37,9 @@
     "update:changelog": "echo 'CHANGELOG.md updated with latest changes'",
     "report:seller": "echo 'Seller test report available at docs/reports/SELLER-TESTS-REPORT-16-09-2025.md'",
     "validate:deployment": "node scripts/validate-deployment.js",
-    "deploy:check": "npm run build && npm run validate:deployment"
+    "validate:vercel": "node scripts/validate-vercel-deploy.js",
+    "deploy:check": "npm run build && npm run validate:deployment",
+    "deploy:vercel": "npm run build && npm run validate:vercel"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.0",

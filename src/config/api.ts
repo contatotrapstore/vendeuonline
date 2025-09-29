@@ -9,12 +9,12 @@ const isProduction = import.meta.env.MODE === "production";
 const API_URLS = {
   // Em desenvolvimento, usar '' para que requisições passem pelo proxy do Vite
   development: "",
-  // Em produção, usar URL completa
-  production: import.meta.env.VITE_API_URL || window.location.origin,
+  // Em produção, usar caminho relativo (Vercel serverless functions)
+  production: "",
 };
 
-// Current API base URL
-export const API_BASE_URL = isDevelopment ? API_URLS.development : API_URLS.production;
+// Current API base URL (sempre vazio para usar caminhos relativos)
+export const API_BASE_URL = "";
 
 // Timeout padrão para requisições
 export const API_TIMEOUT = 30000; // 30 segundos
@@ -22,7 +22,7 @@ export const API_TIMEOUT = 30000; // 30 segundos
 // Headers padrão com encoding UTF-8
 export const DEFAULT_HEADERS = {
   "Content-Type": "application/json; charset=utf-8",
-  "Accept": "application/json",
+  Accept: "application/json",
   "Accept-Charset": "utf-8",
 };
 
@@ -33,21 +33,13 @@ export const buildApiUrl = (endpoint: string): string => {
     return endpoint;
   }
 
-  // Em desenvolvimento, todas as requisições devem começar com /api para usar o proxy
-  if (isDevelopment) {
-    if (endpoint.startsWith("/api")) {
-      return endpoint; // Já tem /api, usar diretamente
-    }
-    // Adicionar /api/ ao início para usar o proxy
-    return `/api/${endpoint.replace(/^\//, "")}`;
-  }
-
-  // Em produção, usar API_BASE_URL
+  // Para desenvolvimento e produção: sempre usar /api/
   if (endpoint.startsWith("/api")) {
-    return `${API_BASE_URL}${endpoint}`;
+    return endpoint; // Já tem /api, usar diretamente
   }
 
-  return `${API_BASE_URL}/api/${endpoint.replace(/^\//, "")}`;
+  // Adicionar /api/ ao início
+  return `/api/${endpoint.replace(/^\//, "")}`;
 };
 
 // Helper function to get auth headers

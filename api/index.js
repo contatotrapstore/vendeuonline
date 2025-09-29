@@ -9,12 +9,12 @@ let logger = null;
 
 try {
   // Import logger
-  const loggerModule = await import("../lib/logger.js");
+  const loggerModule = await import("./lib/logger.js");
   logger = loggerModule.logger;
   console.log("✅ [API] Logger importado com sucesso");
 
   // Import Prisma with correct path
-  const prismaModule = await import("../lib/prisma.js");
+  const prismaModule = await import("./lib/prisma.js");
   prisma = prismaModule.default;
   safeQuery = prismaModule.safeQuery;
 
@@ -199,7 +199,7 @@ export default async function handler(req, res) {
         const { createClient } = await import("@supabase/supabase-js");
 
         // Usar SERVICE_ROLE_KEY para aplicar policies
-        const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+        const supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
         const policies = [
           `CREATE POLICY IF NOT EXISTS "Enable public select access for products" ON "Product" FOR SELECT USING (true);`,
@@ -226,10 +226,7 @@ export default async function handler(req, res) {
 
         // Testar acesso após policies
         const { createClient: createAnonClient } = await import("@supabase/supabase-js");
-        const supabaseAnon = createAnonClient(
-          process.env.NEXT_PUBLIC_SUPABASE_URL,
-          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-        );
+        const supabaseAnon = createAnonClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
 
         const { data: testProducts } = await supabaseAnon.from("Product").select("id").limit(1);
         const { data: testStores } = await supabaseAnon.from("stores").select("id").limit(1);
@@ -276,7 +273,7 @@ export default async function handler(req, res) {
       // Teste 1: Service Role Key
       try {
         console.log("🧪 [TEST-1] Testando com SERVICE_ROLE_KEY...");
-        const supabaseFetch = await import("../lib/supabase-fetch.js");
+        const supabaseFetch = await import("./lib/supabase-fetch.js");
         const plans = await supabaseFetch.getPlans();
         results.serviceRole = { success: true, plans: plans.length };
       } catch (error) {
@@ -287,7 +284,7 @@ export default async function handler(req, res) {
       // Teste 2: Anon Key
       try {
         console.log("🧪 [TEST-2] Testando com ANON_KEY...");
-        const supabaseAnon = await import("../lib/supabase-anon.js");
+        const supabaseAnon = await import("./lib/supabase-anon.js");
         const plans = await supabaseAnon.getPlansAnon();
         results.anonKey = { success: true, plans: plans.length };
       } catch (error) {
@@ -298,7 +295,7 @@ export default async function handler(req, res) {
       // Teste 3: Mock Data
       try {
         console.log("🧪 [TEST-3] Testando mock data...");
-        const mockData = await import("../lib/emergency-mock.js");
+        const mockData = await import("./lib/emergency-mock.js");
         const plans = mockData.getMockPlans();
         results.mock = { success: true, plans: plans.length };
       } catch (error) {
@@ -342,7 +339,7 @@ export default async function handler(req, res) {
       // Fallback 1: Supabase com ANON_KEY (WORKING!)
       try {
         console.log("✅ [PLANS] Tentando com ANON_KEY (strategy working)...");
-        const { getPlansAnon } = await import("../lib/supabase-anon.js");
+        const { getPlansAnon } = await import("./lib/supabase-anon.js");
         const plans = await getPlansAnon();
 
         console.log(`✅ [PLANS] ${plans.length} planos encontrados via ANON_KEY`);
@@ -359,7 +356,7 @@ export default async function handler(req, res) {
         // Fallback 2: Supabase com SERVICE_ROLE_KEY
         try {
           console.log("⚠️ [PLANS] Tentando SERVICE_ROLE_KEY...");
-          const { getPlans } = await import("../lib/supabase-fetch.js");
+          const { getPlans } = await import("./lib/supabase-fetch.js");
           const plans = await getPlans();
 
           console.log(`✅ [PLANS] ${plans.length} planos encontrados via SERVICE_ROLE`);
@@ -417,7 +414,7 @@ export default async function handler(req, res) {
       // Fallback 1: Supabase com ANON_KEY (WORKING!)
       try {
         console.log("✅ [PRODUCTS] Tentando com ANON_KEY (strategy working)...");
-        const { getProductsAnon } = await import("../lib/supabase-anon.js");
+        const { getProductsAnon } = await import("./lib/supabase-anon.js");
         const products = await getProductsAnon();
 
         console.log(`✅ [PRODUCTS] ${products.length} produtos encontrados via ANON_KEY`);
@@ -435,7 +432,7 @@ export default async function handler(req, res) {
         // Fallback 2: Supabase com SERVICE_ROLE_KEY
         try {
           console.log("⚠️ [PRODUCTS] Tentando SERVICE_ROLE_KEY...");
-          const { getProducts } = await import("../lib/supabase-fetch.js");
+          const { getProducts } = await import("./lib/supabase-fetch.js");
           const products = await getProducts();
 
           console.log(`✅ [PRODUCTS] ${products.length} produtos encontrados via SERVICE_ROLE_KEY`);
@@ -514,7 +511,7 @@ export default async function handler(req, res) {
       // Fallback 1: Supabase com ANON_KEY (WORKING!)
       try {
         console.log("✅ [STORES] Tentando com ANON_KEY (strategy working)...");
-        const { getStoresAnon } = await import("../lib/supabase-anon.js");
+        const { getStoresAnon } = await import("./lib/supabase-anon.js");
         const stores = await getStoresAnon();
 
         console.log(`✅ [STORES] ${stores.length} lojas encontradas via ANON_KEY`);
@@ -541,7 +538,7 @@ export default async function handler(req, res) {
         // Fallback 2: Supabase com SERVICE_ROLE_KEY
         try {
           console.log("⚠️ [STORES] Tentando SERVICE_ROLE_KEY...");
-          const { getStores } = await import("../lib/supabase-fetch.js");
+          const { getStores } = await import("./lib/supabase-fetch.js");
           const stores = await getStores();
 
           console.log(`✅ [STORES] ${stores.length} lojas encontradas via SERVICE_ROLE_KEY`);
@@ -756,10 +753,7 @@ export default async function handler(req, res) {
 
       try {
         const { createClient } = await import("@supabase/supabase-js");
-        const supabaseUrl =
-          process.env.NEXT_PUBLIC_SUPABASE_URL ||
-          process.env.SUPABASE_URL ||
-          "https://dycsfnbqgojhttnjbndp.supabase.co";
+        const supabaseUrl = process.env.SUPABASE_URL || "https://dycsfnbqgojhttnjbndp.supabase.co";
         const supabaseServiceKey =
           process.env.SUPABASE_SERVICE_ROLE_KEY ||
           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw";
@@ -908,8 +902,8 @@ export default async function handler(req, res) {
         // FALLBACK: Tentar com anon key
         try {
           const { createClient } = await import("@supabase/supabase-js");
-          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-          const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+          const supabaseUrl = process.env.SUPABASE_URL;
+          const anonKey = process.env.SUPABASE_ANON_KEY;
 
           console.log("🔍 [TEST-HASH-ANON] Trying anon key fallback...");
           console.log("🔍 [TEST-HASH-ANON] anonKey:", anonKey ? `${anonKey.slice(0, 20)}...` : "❌ UNDEFINED");
@@ -1043,10 +1037,7 @@ export default async function handler(req, res) {
         // FALLBACK: Usar Supabase client direto
         try {
           const { createClient } = await import("@supabase/supabase-js");
-          const supabaseUrl =
-            process.env.NEXT_PUBLIC_SUPABASE_URL ||
-            process.env.SUPABASE_URL ||
-            "https://dycsfnbqgojhttnjbndp.supabase.co";
+          const supabaseUrl = process.env.SUPABASE_URL || "https://dycsfnbqgojhttnjbndp.supabase.co";
           const supabaseServiceKey =
             process.env.SUPABASE_SERVICE_ROLE_KEY ||
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw";
