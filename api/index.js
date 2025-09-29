@@ -153,6 +153,48 @@ export default async function handler(req, res) {
       });
     }
 
+    // Route: GET /api/health/check - Production readiness check
+    if (req.method === "GET" && pathname === "/api/health/check") {
+      const requiredVars = [
+        "DATABASE_URL",
+        "JWT_SECRET",
+        "NEXT_PUBLIC_SUPABASE_URL",
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+        "SUPABASE_SERVICE_ROLE_KEY",
+      ];
+
+      const config = {};
+      const missing = [];
+
+      requiredVars.forEach((varName) => {
+        const value = process.env[varName];
+        if (value) {
+          config[varName] = "✅ CONFIGURADA";
+        } else {
+          config[varName] = "❌ FALTANDO";
+          missing.push(varName);
+        }
+      });
+
+      const isReady = missing.length === 0 && prisma && safeQuery;
+
+      return res.status(isReady ? 200 : 500).json({
+        status: isReady ? "READY" : "NOT_READY",
+        message: isReady ? "Sistema pronto para produção" : "Configuração incompleta",
+        timestamp: new Date().toISOString(),
+        database: {
+          prisma: prisma ? "✅ CONECTADO" : "❌ NÃO CONECTADO",
+          safeQuery: safeQuery ? "✅ DISPONÍVEL" : "❌ NÃO DISPONÍVEL",
+        },
+        configuration: config,
+        missing_variables: missing,
+        help:
+          missing.length > 0
+            ? "Configure as variáveis faltantes no Vercel Dashboard → Project Settings → Environment Variables"
+            : null,
+      });
+    }
+
     // Route: GET /api/debug - Diagnostic endpoint for troubleshooting
     if (req.method === "GET" && pathname === "/api/debug") {
       const diagnostics = {
@@ -605,6 +647,10 @@ export default async function handler(req, res) {
         return res.status(500).json({
           success: false,
           error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
+          details: "DATABASE_URL não configurada no Vercel. Configure as variáveis de ambiente.",
+          help: "Acesse Vercel Dashboard → Project Settings → Environment Variables",
+          timestamp: new Date().toISOString(),
+          required_vars: ["DATABASE_URL", "JWT_SECRET", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"],
         });
       }
 
