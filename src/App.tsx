@@ -20,8 +20,6 @@ const PrivacyPage = lazy(() => import("@/app/privacy/page"));
 const TermsPage = lazy(() => import("@/app/terms/page"));
 const LoginPage = lazy(() => import("@/app/(auth)/login/page"));
 const RegisterPage = lazy(() => import("@/app/(auth)/register/page"));
-const CartPage = lazy(() => import("@/app/cart/page"));
-const CheckoutPage = lazy(() => import("@/app/checkout/page"));
 
 // Dynamic pages
 const ProductPage = lazy(() => import("@/app/produto/[id]/page"));
@@ -100,8 +98,6 @@ function AppContent() {
               <Route path="/register" element={<RegisterPage />} />
 
               {/* Shopping Routes */}
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/checkout" element={<CheckoutPage />} />
 
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminDashboard />} />

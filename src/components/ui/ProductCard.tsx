@@ -1,32 +1,40 @@
 "use client";
 
 import { useState } from "react";
-import { Heart, Star, MapPin, Truck, ShoppingCart } from "lucide-react";
+import { Heart, Star, MapPin, Truck, MessageCircle } from "lucide-react";
 import { Product } from "@/types";
 import { Link } from "react-router-dom";
 import { ProductImage } from "@/components/ui/LazyImage";
 import { useTracking } from "@/components/TrackingScripts";
+import { WhatsAppProductButton } from "@/components/ui/WhatsAppButton";
+
+interface Store {
+  id: string;
+  name: string;
+  whatsapp?: string | null;
+  phone?: string | null;
+}
 
 interface ProductCardProps {
   product: Product;
+  store: Store;
   viewMode?: "grid" | "list";
-  showAddToCart?: boolean;
-  onAddToCart?: (product: Product) => void;
+  showWhatsAppButton?: boolean;
   onToggleWishlist?: (product: Product) => void;
   isInWishlist?: boolean;
 }
 
 export function ProductCard({
   product,
+  store,
   viewMode = "grid",
-  showAddToCart = true,
-  onAddToCart,
+  showWhatsAppButton = true,
   onToggleWishlist,
   isInWishlist = false,
 }: ProductCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const { trackViewContent, trackAddToCart: trackAddToCartEvent } = useTracking();
+  const { trackViewContent } = useTracking();
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -42,18 +50,6 @@ export function ProductCard({
         className={`h-4 w-4 ${i < Math.floor(rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
       />
     ));
-  };
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    // Track add to cart event
-    trackAddToCartEvent(product.id, product.name, product.price);
-
-    if (onAddToCart) {
-      onAddToCart(product);
-    }
   };
 
   const handleToggleWishlist = (e: React.MouseEvent) => {
@@ -128,7 +124,7 @@ export function ProductCard({
 
               {/* Store Info */}
               <div className="flex items-center gap-4 mb-3 text-sm text-gray-500">
-                <span className="font-medium">Loja Online</span>
+                <span className="font-medium">{store.name}</span>
               </div>
 
               {/* Rating and Reviews */}
@@ -151,20 +147,16 @@ export function ProductCard({
 
                   {/* Shipping */}
                   <div className="flex items-center gap-1 text-sm">
-                    <Truck className="h-4 w-4 text-green-600" />
-                    <span className="text-green-600 font-medium">Frete calculado no checkout</span>
+                    <MessageCircle className="h-4 w-4 text-green-600" />
+                    <span className="text-green-600 font-medium">Frete negociado direto com vendedor</span>
                   </div>
                 </div>
 
-                {/* Add to Cart Button */}
-                {showAddToCart && (
-                  <button
-                    onClick={handleAddToCart}
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 font-medium"
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                    Adicionar
-                  </button>
+                {/* WhatsApp Button */}
+                {showWhatsAppButton && (
+                  <div onClick={(e) => e.preventDefault()}>
+                    <WhatsAppProductButton product={product} store={store} className="px-6 py-2" />
+                  </div>
                 )}
               </div>
             </div>
@@ -220,7 +212,7 @@ export function ProductCard({
         {/* Content */}
         <div className="p-5">
           {/* Store */}
-          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Loja Online</div>
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{store.name}</div>
 
           {/* Title */}
           <h3 className="font-semibold text-gray-900 line-clamp-2 mb-3 group-hover:text-blue-600 transition-colors leading-tight">
@@ -243,19 +235,19 @@ export function ProductCard({
 
           {/* Shipping */}
           <div className="flex items-center gap-1.5 text-sm mb-4">
-            <Truck className="h-4 w-4 text-green-600" />
-            <span className="text-green-600 font-semibold">Frete calculado no checkout</span>
+            <MessageCircle className="h-4 w-4 text-green-600" />
+            <span className="text-green-600 font-semibold">Frete negociado direto</span>
           </div>
 
-          {/* Add to Cart Button */}
-          {showAddToCart && (
-            <button
-              onClick={handleAddToCart}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-all duration-200 flex items-center justify-center gap-2 font-semibold text-sm shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              Adicionar ao Carrinho
-            </button>
+          {/* WhatsApp Button */}
+          {showWhatsAppButton && (
+            <div onClick={(e) => e.preventDefault()}>
+              <WhatsAppProductButton
+                product={product}
+                store={store}
+                className="w-full py-3 text-sm font-semibold shadow-md hover:shadow-lg transform hover:scale-[1.02] active:scale-[0.98]"
+              />
+            </div>
           )}
         </div>
       </div>

@@ -5,7 +5,6 @@ import { Search, Filter, Grid, List, SlidersHorizontal, Loader2, AlertCircle } f
 import { ProductCard } from "@/components/ui/ProductCard";
 import { ProductFilters } from "@/components/ui/ProductFilters";
 import { useProductStore } from "@/store/productStore";
-import { useCart } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { EmptySearch, EmptyProducts } from "@/components/ui/feedback/EmptyState";
 
@@ -39,8 +38,7 @@ export default function ProductsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Cart and Wishlist hooks
-  const { addItem, openCart } = useCart();
+  // Wishlist hook
   const { items: wishlistItems, addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
 
   // Carregar produtos iniciais
@@ -312,18 +310,14 @@ export default function ProductsPage() {
                   >
                     <ProductCard
                       product={product}
-                      viewMode={viewMode}
-                      onAddToCart={(product) => {
-                        addItem({
-                          id: product.id,
-                          name: product.name,
-                          price: product.price,
-                          image: product.images?.[0]?.url || "/assets/default-product.svg",
-                          store: product.store?.name || "Loja",
-                          maxQuantity: product.stock,
-                        });
-                        openCart();
+                      store={{
+                        id: product.store?.id || "",
+                        name: product.store?.name || "Loja",
+                        whatsapp: product.store?.whatsapp || null,
+                        phone: product.store?.phone || null,
                       }}
+                      viewMode={viewMode}
+                      isInWishlist={isInWishlist(product.id)}
                       onToggleWishlist={(product) => {
                         if (isInWishlist(product.id)) {
                           const wishlistItem = wishlistItems.find((item) => item.productId === product.id);

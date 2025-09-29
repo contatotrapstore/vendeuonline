@@ -123,7 +123,15 @@ export function RelatedProducts({ products, title = "Produtos Relacionados", cla
         >
           {products.map((product, index) => (
             <div key={product.id} className="px-3 first:pl-0 last:pr-0" style={{ width: `${100 / products.length}%` }}>
-              <ProductCard product={product} />
+              <ProductCard
+                product={product}
+                store={{
+                  id: product.store?.id || "",
+                  name: product.store?.name || "Loja",
+                  whatsapp: product.store?.whatsapp || null,
+                  phone: product.store?.phone || null,
+                }}
+              />
             </div>
           ))}
         </div>

@@ -48,7 +48,16 @@ export default function HomePage() {
           <Suspense fallback={<div className="text-center py-12 text-gray-500">Carregando produtos...</div>}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
               {featuredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  store={{
+                    id: product.store?.id || "",
+                    name: product.store?.name || "Loja",
+                    whatsapp: product.store?.whatsapp || null,
+                    phone: product.store?.phone || null,
+                  }}
+                />
               ))}
             </div>
           </Suspense>
@@ -66,7 +75,16 @@ export default function HomePage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             {allProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard
+                key={product.id}
+                product={product}
+                store={{
+                  id: product.store?.id || "",
+                  name: product.store?.name || "Loja",
+                  whatsapp: product.store?.whatsapp || null,
+                  phone: product.store?.phone || null,
+                }}
+              />
             ))}
           </div>
         </div>

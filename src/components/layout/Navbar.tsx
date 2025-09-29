@@ -200,19 +200,6 @@ const Navbar = () => {
             {/* Notifications (apenas para usuários autenticados) */}
             {isAuthenticated && <NotificationBell />}
 
-            {/* Cart (apenas para compradores) */}
-            {(!isAuthenticated || user?.userType === "buyer") && (
-              <Link
-                to="/cart"
-                className="relative p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 group"
-              >
-                <ShoppingCart className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-medium">
-                  0
-                </span>
-              </Link>
-            )}
-
             {/* User Menu */}
             {isAuthenticated && user ? (
               <div className="relative">

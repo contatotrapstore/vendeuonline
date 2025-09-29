@@ -10,7 +10,6 @@ import { fixEncodingMiddleware } from "./server/middleware/encoding.js";
 import { testSupabaseConnection, getDatabaseStats, supabase } from "./server/lib/supabase-client.js";
 import { logger } from "./server/lib/logger.js";
 
-
 // Importar novos utilitários de erro e middleware
 import {
   AppError,
@@ -67,8 +66,6 @@ import reviewsRouter from "./server/routes/reviews.js";
 import paymentsRouter from "./server/routes/payments.js";
 import plansRouter from "./server/routes/plans.js";
 import usersRouter from "./server/routes/users.js";
-import cartRouter from "./server/routes/cart.js";
-import checkoutRouter from "./server/routes/checkout.js";
 import addressesRouter from "./server/routes/addresses.js";
 import cacheRouter from "./server/routes/cache.js";
 import { standardizeResponses } from "./server/lib/response-standards.js";
@@ -83,7 +80,9 @@ const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!JWT_SECRET) {
   logger.error("❌ ERRO CRÍTICO: JWT_SECRET não definido nas variáveis de ambiente!");
-  logger.error("💡 Gere uma chave forte com: node -e \"logger.info(require('crypto').randomBytes(64).toString('hex'))\"");
+  logger.error(
+    "💡 Gere uma chave forte com: node -e \"logger.info(require('crypto').randomBytes(64).toString('hex'))\""
+  );
   process.exit(1);
 }
 
@@ -318,12 +317,6 @@ app.use("/api/plans", plansRouter);
 
 // Rotas de usuários (requer autenticação)
 app.use("/api/users", usersRouter);
-
-// Rotas de carrinho (requer autenticação)
-app.use("/api/cart", cartRouter);
-
-// Rotas de checkout (requer autenticação)
-app.use("/api/checkout", checkoutRouter);
 
 // Rotas de endereços (requer autenticação)
 app.use("/api/addresses", addressesRouter);
