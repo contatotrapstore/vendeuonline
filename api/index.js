@@ -48,12 +48,18 @@ try {
   };
 }
 
+// Helper function para verificar variáveis com ambos os formatos (NEXT_PUBLIC_ ou sem)
+const getEnvVar = (varName) => {
+  // Primeiro tenta com NEXT_PUBLIC_, depois sem o prefixo
+  return process.env[`NEXT_PUBLIC_${varName}`] || process.env[varName];
+};
+
 // Debug - Verificar variáveis de ambiente críticas (força console.log em produção para debug)
-console.log("🔍 [API] Verificando variáveis de ambiente:");
+console.log("🔍 [API] Verificando variáveis de ambiente (formatos flexíveis):");
 console.log("DATABASE_URL:", process.env.DATABASE_URL ? "DEFINIDA" : "❌ NÃO DEFINIDA");
 console.log("JWT_SECRET:", process.env.JWT_SECRET ? "DEFINIDA" : "❌ NÃO DEFINIDA");
-console.log("SUPABASE_URL:", process.env.SUPABASE_URL ? "DEFINIDA" : "❌ NÃO DEFINIDA");
-console.log("SUPABASE_ANON_KEY:", process.env.SUPABASE_ANON_KEY ? "DEFINIDA" : "❌ NÃO DEFINIDA");
+console.log("SUPABASE_URL:", getEnvVar("SUPABASE_URL") ? "DEFINIDA" : "❌ NÃO DEFINIDA");
+console.log("SUPABASE_ANON_KEY:", getEnvVar("SUPABASE_ANON_KEY") ? "DEFINIDA" : "❌ NÃO DEFINIDA");
 console.log("SUPABASE_SERVICE_ROLE_KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "DEFINIDA" : "❌ NÃO DEFINIDA");
 console.log("Node Version:", process.version);
 console.log("Platform:", process.platform);
@@ -146,33 +152,47 @@ export default async function handler(req, res) {
           platform: process.platform,
           databaseUrl: process.env.DATABASE_URL ? "CONFIGURADA" : "NÃO CONFIGURADA",
           jwtSecret: process.env.JWT_SECRET ? "CONFIGURADA" : "NÃO CONFIGURADA",
-          supabaseUrl: process.env.SUPABASE_URL ? "CONFIGURADA" : "NÃO CONFIGURADA",
-          supabaseAnonKey: process.env.SUPABASE_ANON_KEY ? "CONFIGURADA" : "NÃO CONFIGURADA",
+          supabaseUrl: getEnvVar("SUPABASE_URL") ? "CONFIGURADA" : "NÃO CONFIGURADA",
+          supabaseAnonKey: getEnvVar("SUPABASE_ANON_KEY") ? "CONFIGURADA" : "NÃO CONFIGURADA",
           supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? "CONFIGURADA" : "NÃO CONFIGURADA",
         },
       });
     }
 
-    // Route: GET /api/health/check - Production readiness check
+    // Route: GET /api/health/check - Production readiness check (com suporte a ambos formatos)
     if (req.method === "GET" && pathname === "/api/health/check") {
       const requiredVars = [
-        "DATABASE_URL",
-        "JWT_SECRET",
-        "NEXT_PUBLIC_SUPABASE_URL",
-        "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-        "SUPABASE_SERVICE_ROLE_KEY",
+        { key: "DATABASE_URL", checkBoth: false },
+        { key: "JWT_SECRET", checkBoth: false },
+        { key: "SUPABASE_URL", checkBoth: true },
+        { key: "SUPABASE_ANON_KEY", checkBoth: true },
+        { key: "SUPABASE_SERVICE_ROLE_KEY", checkBoth: false },
       ];
 
       const config = {};
       const missing = [];
 
-      requiredVars.forEach((varName) => {
-        const value = process.env[varName];
-        if (value) {
-          config[varName] = "✅ CONFIGURADA";
+      requiredVars.forEach(({ key, checkBoth }) => {
+        let value;
+        let displayKey = key;
+
+        if (checkBoth) {
+          value = getEnvVar(key);
+          // Mostrar qual formato foi encontrado
+          if (process.env[`NEXT_PUBLIC_${key}`]) {
+            displayKey = `NEXT_PUBLIC_${key}`;
+          } else if (process.env[key]) {
+            displayKey = key;
+          }
         } else {
-          config[varName] = "❌ FALTANDO";
-          missing.push(varName);
+          value = process.env[key];
+        }
+
+        if (value) {
+          config[displayKey] = "✅ CONFIGURADA";
+        } else {
+          config[checkBoth ? `${key} (ou NEXT_PUBLIC_${key})` : key] = "❌ FALTANDO";
+          missing.push(key);
         }
       });
 
@@ -209,8 +229,8 @@ export default async function handler(req, res) {
           NODE_ENV: process.env.NODE_ENV,
           DATABASE_URL: process.env.DATABASE_URL ? `${process.env.DATABASE_URL.slice(0, 20)}...` : "NOT SET",
           JWT_SECRET: process.env.JWT_SECRET ? "SET" : "NOT SET",
-          SUPABASE_URL: process.env.SUPABASE_URL || "NOT SET",
-          SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ? "SET" : "NOT SET",
+          SUPABASE_URL: getEnvVar("SUPABASE_URL") || "NOT SET",
+          SUPABASE_ANON_KEY: getEnvVar("SUPABASE_ANON_KEY") ? "SET" : "NOT SET",
           SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? "SET" : "NOT SET",
         },
         prismaConnection: null,
@@ -241,7 +261,7 @@ export default async function handler(req, res) {
         const { createClient } = await import("@supabase/supabase-js");
 
         // Usar SERVICE_ROLE_KEY para aplicar policies
-        const supabaseAdmin = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+        const supabaseAdmin = createClient(getEnvVar("SUPABASE_URL"), process.env.SUPABASE_SERVICE_ROLE_KEY);
 
         const policies = [
           `CREATE POLICY IF NOT EXISTS "Enable public select access for products" ON "Product" FOR SELECT USING (true);`,
@@ -305,9 +325,9 @@ export default async function handler(req, res) {
         anonKey: null,
         mock: null,
         environment: {
-          SUPABASE_URL: process.env.SUPABASE_URL ? "DEFINIDA" : "❌ VAZIA",
+          SUPABASE_URL: getEnvVar("SUPABASE_URL") ? "DEFINIDA" : "❌ VAZIA",
           SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? "DEFINIDA" : "❌ VAZIA",
-          SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY ? "DEFINIDA" : "❌ VAZIA",
+          SUPABASE_ANON_KEY: getEnvVar("SUPABASE_ANON_KEY") ? "DEFINIDA" : "❌ VAZIA",
           NODE_ENV: process.env.NODE_ENV,
         },
       };
@@ -650,7 +670,12 @@ export default async function handler(req, res) {
           details: "DATABASE_URL não configurada no Vercel. Configure as variáveis de ambiente.",
           help: "Acesse Vercel Dashboard → Project Settings → Environment Variables",
           timestamp: new Date().toISOString(),
-          required_vars: ["DATABASE_URL", "JWT_SECRET", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY"],
+          required_vars: [
+            "DATABASE_URL",
+            "JWT_SECRET",
+            "SUPABASE_URL (ou NEXT_PUBLIC_SUPABASE_URL)",
+            "SUPABASE_ANON_KEY (ou NEXT_PUBLIC_SUPABASE_ANON_KEY)",
+          ],
         });
       }
 
@@ -799,7 +824,7 @@ export default async function handler(req, res) {
 
       try {
         const { createClient } = await import("@supabase/supabase-js");
-        const supabaseUrl = process.env.SUPABASE_URL || "https://dycsfnbqgojhttnjbndp.supabase.co";
+        const supabaseUrl = getEnvVar("SUPABASE_URL") || "https://dycsfnbqgojhttnjbndp.supabase.co";
         const supabaseServiceKey =
           process.env.SUPABASE_SERVICE_ROLE_KEY ||
           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw";
@@ -1083,7 +1108,7 @@ export default async function handler(req, res) {
         // FALLBACK: Usar Supabase client direto
         try {
           const { createClient } = await import("@supabase/supabase-js");
-          const supabaseUrl = process.env.SUPABASE_URL || "https://dycsfnbqgojhttnjbndp.supabase.co";
+          const supabaseUrl = getEnvVar("SUPABASE_URL") || "https://dycsfnbqgojhttnjbndp.supabase.co";
           const supabaseServiceKey =
             process.env.SUPABASE_SERVICE_ROLE_KEY ||
             "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw";
