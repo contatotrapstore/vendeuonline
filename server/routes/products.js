@@ -3,12 +3,22 @@ import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin }
 import { z } from "zod";
 import { supabase } from "../lib/supabase-client.js";
 import { protectRoute, validateInput, commonValidations } from "../middleware/security.js";
-import { validateProduct, validateUUIDParam, validatePagination, validateSearchFilters } from "../middleware/validation.js";
+import {
+  validateProduct,
+  validateUUIDParam,
+  validatePagination,
+  validateSearchFilters,
+} from "../middleware/validation.js";
 import { cache, CACHE_KEYS, CACHE_TTL, cacheMiddleware } from "../lib/cache.js";
-import { OPTIMIZED_SELECTS, createOptimizedQuery, applyCommonFilters, applyTextSearch, withQueryMetrics } from "../lib/query-optimizer.js";
+import {
+  OPTIMIZED_SELECTS,
+  createOptimizedQuery,
+  applyCommonFilters,
+  applyTextSearch,
+  withQueryMetrics,
+} from "../lib/query-optimizer.js";
 import jwt from "jsonwebtoken";
 import { logger } from "../lib/logger.js";
-
 
 const router = express.Router();
 
@@ -64,111 +74,173 @@ const createProductSchema = z.object({
 });
 
 // GET /api/products - Listar produtos
-router.get("/", validatePagination, validateSearchFilters,
-  cacheMiddleware((req) =>
-    CACHE_KEYS.PRODUCTS_LIST(req.query.page || 1, req.query.limit || 12, req.query),
+router.get(
+  "/",
+  validatePagination,
+  validateSearchFilters,
+  cacheMiddleware(
+    (req) => CACHE_KEYS.PRODUCTS_LIST(req.query.page || 1, req.query.limit || 12, req.query),
     CACHE_TTL.MEDIUM
   ),
   async (req, res) => {
-  try {
-    const query = processQuery(req.query);
+    try {
+      logger.info("📦 Iniciando busca de produtos", { query: req.query });
 
-    // Query otimizada com campos específicos
-    let supabaseQuery = createOptimizedQuery(
-      supabase,
-      "Product",
-      `${OPTIMIZED_SELECTS.PRODUCTS_LIST},
+      const query = processQuery(req.query);
+
+      // Verificar se variáveis de ambiente estão configuradas
+      if (!process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+        logger.error("❌ SUPABASE_URL não configurada");
+        return res.status(500).json({
+          success: false,
+          error: "Configuração do banco de dados ausente",
+          message: "Entre em contato com o suporte",
+          products: [],
+          pagination: {
+            page: 1,
+            limit: 12,
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
+        });
+      }
+
+      // Query otimizada com campos específicos
+      let supabaseQuery = createOptimizedQuery(
+        supabase,
+        "Product",
+        `${OPTIMIZED_SELECTS.PRODUCTS_LIST},
        images:ProductImage(*),
        specifications:ProductSpecification(*),
        category:categories(id, name),
        store:stores(id, name, slug, isVerified)`
-    ).eq("isActive", true);
+      ).eq("isActive", true);
 
-    // Aplicar filtros otimizados
-    supabaseQuery = applyCommonFilters(supabaseQuery, {
-      category: query.category,
-      minPrice: query.minPrice,
-      maxPrice: query.maxPrice,
-      storeId: query.storeId
-    });
+      // Aplicar filtros otimizados
+      supabaseQuery = applyCommonFilters(supabaseQuery, {
+        category: query.category,
+        minPrice: query.minPrice,
+        maxPrice: query.maxPrice,
+        storeId: query.storeId,
+      });
 
-    // Aplicar busca de texto otimizada
-    if (query.search) {
-      supabaseQuery = applyTextSearch(supabaseQuery, query.search, ['name', 'description']);
-    }
+      // Aplicar busca de texto otimizada
+      if (query.search) {
+        supabaseQuery = applyTextSearch(supabaseQuery, query.search, ["name", "description"]);
+      }
 
-    if (query.featured) {
-      supabaseQuery = supabaseQuery.eq("isFeatured", true);
-    }
+      if (query.featured) {
+        supabaseQuery = supabaseQuery.eq("isFeatured", true);
+      }
 
-    if (query.storeId) {
-      supabaseQuery = supabaseQuery.eq("storeId", query.storeId);
-    }
+      if (query.storeId) {
+        supabaseQuery = supabaseQuery.eq("storeId", query.storeId);
+      }
 
-    if (query.sellerId) {
-      supabaseQuery = supabaseQuery.eq("sellerId", query.sellerId);
-    }
+      if (query.sellerId) {
+        supabaseQuery = supabaseQuery.eq("sellerId", query.sellerId);
+      }
 
-    // Ordenação
-    const sortField = query.sortBy === "price_asc" ? "price" : query.sortBy;
-    const sortOrder = query.sortBy === "price_asc" ? "asc" : query.sortOrder;
+      // Ordenação
+      const sortField = query.sortBy === "price_asc" ? "price" : query.sortBy;
+      const sortOrder = query.sortBy === "price_asc" ? "asc" : query.sortOrder;
 
-    supabaseQuery = supabaseQuery.order(sortField, { ascending: sortOrder === "asc" });
+      supabaseQuery = supabaseQuery.order(sortField, { ascending: sortOrder === "asc" });
 
-    // Paginação
-    const rangeStart = (query.page - 1) * query.limit;
-    const rangeEnd = rangeStart + query.limit - 1;
+      // Paginação
+      const rangeStart = (query.page - 1) * query.limit;
+      const rangeEnd = rangeStart + query.limit - 1;
 
-    supabaseQuery = supabaseQuery.range(rangeStart, rangeEnd);
+      supabaseQuery = supabaseQuery.range(rangeStart, rangeEnd);
 
-    const { data: products, error, count } = await supabaseQuery;
+      const { data: products, error, count } = await supabaseQuery;
 
-    if (error) {
-      logger.error("Erro ao buscar produtos no Supabase:", error);
-      throw error;
-    }
+      if (error) {
+        logger.error("Erro ao buscar produtos no Supabase:", error);
+        throw error;
+      }
 
-    // Formatar produtos para resposta
-    const formattedProducts = (products || []).map((product) => ({
-      ...product,
-      averageRating: product.rating || 0,
-      totalReviews: product.reviewCount || 0,
-      store: {
-        ...product.store,
-        rating: 5, // Placeholder rating
-      },
-      seller: {
-        id: product.sellerId,
-        rating: 5,
-        storeName: product.store?.name || "Loja",
-      },
-    }));
+      // Formatar produtos para resposta
+      const formattedProducts = (products || []).map((product) => ({
+        ...product,
+        averageRating: product.rating || 0,
+        totalReviews: product.reviewCount || 0,
+        store: {
+          ...product.store,
+          rating: 5, // Placeholder rating
+        },
+        seller: {
+          id: product.sellerId,
+          rating: 5,
+          storeName: product.store?.name || "Loja",
+        },
+      }));
 
-    const totalCount = count || 0;
+      const totalCount = count || 0;
 
-    res.json({
-      success: true,
-      products: formattedProducts,
-      pagination: {
-        page: query.page,
-        limit: query.limit,
-        total: totalCount,
-        totalPages: Math.ceil(totalCount / query.limit),
-        hasNext: query.page * query.limit < totalCount,
-        hasPrev: query.page > 1,
-      },
-    });
-  } catch (error) {
-    logger.error("Erro ao buscar produtos:", error);
-
-    // Se um sellerId específico foi solicitado, retornar lista vazia
-    if (req.query.sellerId) {
-      return res.json({
+      res.json({
         success: true,
+        products: formattedProducts,
+        pagination: {
+          page: query.page,
+          limit: query.limit,
+          total: totalCount,
+          totalPages: Math.ceil(totalCount / query.limit),
+          hasNext: query.page * query.limit < totalCount,
+          hasPrev: query.page > 1,
+        },
+      });
+    } catch (error) {
+      logger.error("❌ Erro ao buscar produtos:", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+      });
+
+      // Se um sellerId específico foi solicitado, retornar lista vazia
+      if (req.query.sellerId) {
+        return res.json({
+          success: true,
+          products: [],
+          pagination: {
+            page: parseInt(req.query.page) || 1,
+            limit: parseInt(req.query.limit) || 12,
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
+        });
+      }
+
+      // Mensagens de erro mais específicas
+      let errorMessage = "Erro ao buscar produtos";
+      let errorDetails = "Erro interno do servidor";
+
+      if (error.message?.includes("connect") || error.message?.includes("ECONNREFUSED")) {
+        errorMessage = "Erro de conexão com o banco de dados";
+        errorDetails = "Não foi possível conectar ao banco. Verifique as configurações.";
+      } else if (error.code === "PGRST116") {
+        errorMessage = "Erro de configuração da query";
+        errorDetails = "A tabela ou relacionamento solicitado não existe.";
+      } else if (error.message?.includes("JWT")) {
+        errorMessage = "Erro de autenticação com o banco";
+        errorDetails = "Token de acesso inválido ou expirado.";
+      }
+
+      res.status(500).json({
+        success: false,
+        error: errorMessage,
+        message: errorDetails,
+        ...(process.env.NODE_ENV === "development" && { debug: error.message }),
         products: [],
         pagination: {
-          page: parseInt(req.query.page) || 1,
-          limit: parseInt(req.query.limit) || 12,
+          page: 1,
+          limit: 12,
           total: 0,
           totalPages: 0,
           hasNext: false,
@@ -176,22 +248,8 @@ router.get("/", validatePagination, validateSearchFilters,
         },
       });
     }
-
-    res.status(500).json({
-      success: false,
-      error: "Erro interno do servidor",
-      products: [],
-      pagination: {
-        page: 1,
-        limit: 12,
-        total: 0,
-        totalPages: 0,
-        hasNext: false,
-        hasPrev: false,
-      },
-    });
   }
-});
+);
 
 // GET /api/products/test - Endpoint de teste (DEVE FICAR ANTES DE /:id)
 router.get("/test", async (req, res) => {
@@ -203,18 +261,20 @@ router.get("/test", async (req, res) => {
 });
 
 // GET /api/products/:id - Buscar produto por ID
-router.get("/:id", validateUUIDParam,
+router.get(
+  "/:id",
+  validateUUIDParam,
   cacheMiddleware((req) => CACHE_KEYS.PRODUCT_DETAIL(req.params.id), CACHE_TTL.LONG),
   async (req, res) => {
-  try {
-    const { id } = req.params;
+    try {
+      const { id } = req.params;
 
-    // Query otimizada para detalhes do produto
-    const productQuery = withQueryMetrics('product-detail', async () => {
-      return await createOptimizedQuery(
-        supabase,
-        "Product",
-        `${OPTIMIZED_SELECTS.PRODUCTS_DETAIL},
+      // Query otimizada para detalhes do produto
+      const productQuery = withQueryMetrics("product-detail", async () => {
+        return await createOptimizedQuery(
+          supabase,
+          "Product",
+          `${OPTIMIZED_SELECTS.PRODUCTS_DETAIL},
          images:ProductImage(id, url, alt, order),
          specifications:ProductSpecification(id, name,
           value
@@ -236,50 +296,52 @@ router.get("/:id", validateUUIDParam,
             name
           )
         )`
-      ).eq("id", id)
-       .eq("isActive", true)
-       .single();
-    });
+        )
+          .eq("id", id)
+          .eq("isActive", true)
+          .single();
+      });
 
-    const { data: product, error } = await productQuery();
+      const { data: product, error } = await productQuery();
 
-    if (error || !product) {
+      if (error || !product) {
+        logger.error("Erro ao buscar produto:", error);
+        return res.status(404).json({
+          error: "Produto não encontrado",
+        });
+      }
+
+      // Incrementar visualizações (opcional - pode remover se não quiser salvar no banco)
+      // await prisma.product.update({
+      //   where: { id },
+      //   data: { viewCount: { increment: 1 } }
+      // });
+
+      // Formatar resposta
+      const formattedProduct = {
+        ...product,
+        averageRating: product.rating || 0,
+        totalReviews: product.reviewCount || 0,
+        store: {
+          ...product.store,
+          rating: 5, // Placeholder rating
+        },
+        seller: {
+          id: product.sellerId,
+          rating: product.seller?.rating || 5,
+          storeName: product.store?.name || product.seller?.user?.name || "Loja",
+        },
+      };
+
+      res.json(formattedProduct);
+    } catch (error) {
       logger.error("Erro ao buscar produto:", error);
-      return res.status(404).json({
-        error: "Produto não encontrado",
+      res.status(500).json({
+        error: "Erro interno do servidor",
       });
     }
-
-    // Incrementar visualizações (opcional - pode remover se não quiser salvar no banco)
-    // await prisma.product.update({
-    //   where: { id },
-    //   data: { viewCount: { increment: 1 } }
-    // });
-
-    // Formatar resposta
-    const formattedProduct = {
-      ...product,
-      averageRating: product.rating || 0,
-      totalReviews: product.reviewCount || 0,
-      store: {
-        ...product.store,
-        rating: 5, // Placeholder rating
-      },
-      seller: {
-        id: product.sellerId,
-        rating: product.seller?.rating || 5,
-        storeName: product.store?.name || product.seller?.user?.name || "Loja",
-      },
-    };
-
-    res.json(formattedProduct);
-  } catch (error) {
-    logger.error("Erro ao buscar produto:", error);
-    res.status(500).json({
-      error: "Erro interno do servidor",
-    });
   }
-});
+);
 
 // GET /api/products/:id/related - Produtos relacionados
 router.get("/:id/related", async (req, res) => {
@@ -459,7 +521,7 @@ router.post(
           success: false,
           error: "Falha ao criar produto",
           details: error.message,
-          code: "PRODUCT_CREATION_FAILED"
+          code: "PRODUCT_CREATION_FAILED",
         });
       }
 
@@ -514,8 +576,8 @@ router.post(
         .single();
 
       // Invalidar cache de produtos após criação
-      await cache.invalidatePattern('products:*');
-      await cache.invalidatePattern('categories:*');
+      await cache.invalidatePattern("products:*");
+      await cache.invalidatePattern("categories:*");
 
       res.status(201).json({
         success: true,

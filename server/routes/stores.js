@@ -7,7 +7,6 @@ import { supabase, supabaseAdmin } from "../lib/supabase-client.js";
 import { logger } from "../lib/logger.js";
 import { normalizePagination, createPaginatedResponse, applyPagination, applySorting } from "../lib/pagination.js";
 
-
 const router = express.Router();
 
 // Middleware de autenticação
@@ -93,7 +92,27 @@ const querySchema = z.object({
 // GET /api/stores - Listar lojas
 router.get("/", async (req, res) => {
   try {
-    logger.info("🔍 GET /api/stores - Buscando lojas no Supabase...");
+    logger.info("🏪 Iniciando busca de lojas", { query: req.query });
+
+    // Verificar se variáveis de ambiente estão configuradas
+    if (!process.env.SUPABASE_URL && !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      logger.error("❌ SUPABASE_URL não configurada");
+      return res.status(500).json({
+        success: false,
+        error: "Configuração do banco de dados ausente",
+        message: "Entre em contato com o suporte",
+        stores: [],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
+        },
+      });
+    }
+
     const query = querySchema.parse(req.query);
 
     // Buscar lojas no Supabase
@@ -103,7 +122,8 @@ router.get("/", async (req, res) => {
         `
         *,
         seller:sellers(*)
-      `
+      `,
+        { count: "exact" }
       )
       .eq("isActive", true);
 
@@ -146,23 +166,52 @@ router.get("/", async (req, res) => {
 
     res.set("Content-Type", "application/json; charset=utf-8");
 
-    const response = createPaginatedResponse(
-      stores || [],
-      count || 0,
-      pagination.page,
-      pagination.limit,
-      {
-        stores: stores || [] // Para compatibilidade
-      }
-    );
+    const response = createPaginatedResponse(stores || [], count || 0, pagination.page, pagination.limit, {
+      stores: stores || [], // Para compatibilidade
+    });
 
     res.json(response);
   } catch (error) {
-    logger.error("❌ Erro ao buscar lojas:", error);
+    logger.error("❌ Erro ao buscar lojas:", {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
+    });
+
+    // Mensagens de erro mais específicas
+    let errorMessage = "Erro ao buscar lojas";
+    let errorDetails = "Erro interno do servidor";
+
+    if (error.message?.includes("connect") || error.message?.includes("ECONNREFUSED")) {
+      errorMessage = "Erro de conexão com o banco de dados";
+      errorDetails = "Não foi possível conectar ao banco. Verifique as configurações.";
+    } else if (error.code === "PGRST116") {
+      errorMessage = "Erro de configuração da query";
+      errorDetails = "A tabela ou relacionamento solicitado não existe.";
+    } else if (error.message?.includes("JWT")) {
+      errorMessage = "Erro de autenticação com o banco";
+      errorDetails = "Token de acesso inválido ou expirado.";
+    } else if (error instanceof z.ZodError) {
+      errorMessage = "Parâmetros inválidos";
+      errorDetails = "Os parâmetros fornecidos são inválidos.";
+    }
+
     res.status(500).json({
       success: false,
-      message: "Erro ao conectar com o banco de dados",
-      error: error.message,
+      error: errorMessage,
+      message: errorDetails,
+      ...(process.env.NODE_ENV === "development" && { debug: error.message }),
+      stores: [],
+      pagination: {
+        page: 1,
+        limit: 10,
+        total: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false,
+      },
     });
   }
 });
