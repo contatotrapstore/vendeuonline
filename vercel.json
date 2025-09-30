@@ -84,6 +84,14 @@
   },
   "rewrites": [
     {
+      "source": "/api/vercel-check",
+      "destination": "/api/vercel-check"
+    },
+    {
+      "source": "/api/diagnostics",
+      "destination": "/api/diagnostics"
+    },
+    {
       "source": "/api/tracking/configs",
       "destination": "/api/tracking/configs"
     },

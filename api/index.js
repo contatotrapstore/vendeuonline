@@ -48,10 +48,10 @@ try {
   };
 }
 
-// Helper function para verificar variáveis com ambos os formatos (NEXT_PUBLIC_ ou sem)
+// Helper function para verificar variáveis em múltiplos formatos (NEXT_PUBLIC_, VITE_, padrão)
 const getEnvVar = (varName) => {
-  // Primeiro tenta com NEXT_PUBLIC_, depois sem o prefixo
-  return process.env[`NEXT_PUBLIC_${varName}`] || process.env[varName];
+  // Tenta NEXT_PUBLIC_ (Next.js), depois VITE_ (Vite), depois sem prefixo
+  return process.env[`NEXT_PUBLIC_${varName}`] || process.env[`VITE_${varName}`] || process.env[varName];
 };
 
 // Debug - Verificar variáveis de ambiente críticas (força console.log em produção para debug)
