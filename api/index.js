@@ -659,7 +659,7 @@ export default async function handler(req, res) {
         logger.warn("⚠️ [REGISTER] Prisma não disponível, usando Supabase Auth...");
 
         try {
-          const supabaseAuth = await import("../server/lib/supabase-auth.js");
+          const supabaseAuth = await import("./lib/supabase-auth.js");
           const result = await supabaseAuth.registerUser({
             name,
             email,
@@ -1130,7 +1130,7 @@ export default async function handler(req, res) {
         logger.warn("⚠️ [LOGIN] Prisma não disponível, usando Supabase Auth...");
 
         try {
-          const supabaseAuth = await import("../server/lib/supabase-auth.js");
+          const supabaseAuth = await import("./lib/supabase-auth.js");
           const result = await supabaseAuth.loginUser({ email, password });
 
           if (!result.success) {
