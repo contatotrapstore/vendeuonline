@@ -94,8 +94,10 @@ function AppContent() {
               {/* Auth Routes */}
               <Route path="/auth/login" element={<LoginPage />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/entrar" element={<LoginPage />} />
               <Route path="/auth/register" element={<RegisterPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/cadastrar" element={<RegisterPage />} />
 
               {/* Shopping Routes */}
 
