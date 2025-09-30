@@ -153,4 +153,148 @@ export async function getStoresAnon() {
   }
 }
 
+// Funções para Admin (usando service role key)
+export async function getAdminStatsSupabase() {
+  try {
+    const [usersResult, productsResult, storesResult, ordersResult] = await Promise.all([
+      supabaseAdmin.from("users").select("*", { count: "exact", head: true }),
+      supabaseAdmin.from("products").select("*", { count: "exact", head: true }).eq("isActive", true),
+      supabaseAdmin.from("stores").select("*", { count: "exact", head: true }).eq("isActive", true),
+      supabaseAdmin.from("orders").select("*", { count: "exact", head: true }),
+    ]);
+
+    return {
+      totalUsers: usersResult.count || 0,
+      totalProducts: productsResult.count || 0,
+      totalStores: storesResult.count || 0,
+      totalOrders: ordersResult.count || 0,
+    };
+  } catch (error) {
+    logger.error("Erro ao buscar estatísticas admin:", error);
+    throw error;
+  }
+}
+
+// Funções para Orders
+export async function getOrdersByUserSupabase(userId) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("orders")
+      .select(
+        `
+        *,
+        items:order_items(*),
+        user:users(id, name, email)
+      `
+      )
+      .eq("userId", userId)
+      .order("createdAt", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    logger.error("Erro ao buscar pedidos do usuário:", error);
+    throw error;
+  }
+}
+
+export async function getOrderByIdSupabase(orderId) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("orders")
+      .select(
+        `
+        *,
+        items:order_items(*),
+        user:users(id, name, email)
+      `
+      )
+      .eq("id", orderId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    logger.error("Erro ao buscar pedido:", error);
+    throw error;
+  }
+}
+
+export async function createOrderSupabase(orderData) {
+  try {
+    const { data, error } = await supabaseAdmin.from("orders").insert(orderData).select().single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    logger.error("Erro ao criar pedido:", error);
+    throw error;
+  }
+}
+
+export async function updateOrderStatusSupabase(orderId, status) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("orders")
+      .update({ status, updatedAt: new Date().toISOString() })
+      .eq("id", orderId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    logger.error("Erro ao atualizar status do pedido:", error);
+    throw error;
+  }
+}
+
+// Funções para Seller Analytics
+export async function getSellerStatsSupabase(sellerId) {
+  try {
+    // Buscar produtos do seller
+    const { data: products, error: productsError } = await supabaseAdmin
+      .from("products")
+      .select("id")
+      .eq("sellerId", sellerId);
+
+    if (productsError) throw productsError;
+
+    const productIds = products.map((p) => p.id);
+
+    // Se não tem produtos, retornar stats zeradas
+    if (productIds.length === 0) {
+      return {
+        totalProducts: 0,
+        totalOrders: 0,
+        totalRevenue: 0,
+        totalViews: 0,
+      };
+    }
+
+    // Buscar pedidos dos produtos do seller
+    const { data: orderItems, error: ordersError } = await supabaseAdmin
+      .from("order_items")
+      .select("quantity, price, orderId")
+      .in("productId", productIds);
+
+    if (ordersError) throw ordersError;
+
+    // Calcular stats
+    const totalProducts = products.length;
+    const uniqueOrders = new Set(orderItems.map((item) => item.orderId)).size;
+    const totalRevenue = orderItems.reduce((sum, item) => sum + item.quantity * parseFloat(item.price), 0);
+
+    return {
+      totalProducts,
+      totalOrders: uniqueOrders,
+      totalRevenue,
+      totalViews: 0, // Views precisam ser implementadas separadamente
+    };
+  } catch (error) {
+    logger.error("Erro ao buscar estatísticas do seller:", error);
+    throw error;
+  }
+}
+
 export default supabase;

@@ -1212,7 +1212,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // Route: GET /api/admin/stats - APENAS BANCO DE DADOS (requires auth)
+    // Route: GET /api/admin/stats - COM FALLBACK SUPABASE (requires auth)
     if (req.method === "GET" && pathname === "/api/admin/stats") {
       logger.info("📊 [ADMIN] Buscando estatísticas...");
 
@@ -1222,43 +1222,53 @@ export default async function handler(req, res) {
           return res.status(403).json({ error: "Acesso negado" });
         }
 
-        if (!prisma || !safeQuery) {
-          logger.error("❌ [ADMIN] Prisma não disponível");
-          return res.status(500).json({
-            success: false,
-            error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
-          });
+        // Tentar Prisma primeiro
+        if (prisma && safeQuery) {
+          const [usersResult, productsResult, storesResult, ordersResult] = await Promise.all([
+            safeQuery(async () => await prisma.user.count()),
+            safeQuery(async () => await prisma.product.count({ where: { isActive: true } })),
+            safeQuery(async () => await prisma.store.count({ where: { isActive: true } })),
+            safeQuery(async () => await prisma.order.count()),
+          ]);
+
+          // Verificar se todas as queries foram bem-sucedidas
+          if (usersResult.success && productsResult.success && storesResult.success && ordersResult.success) {
+            const stats = {
+              totalUsers: usersResult.data,
+              totalProducts: productsResult.data,
+              totalStores: storesResult.data,
+              totalOrders: ordersResult.data,
+            };
+
+            logger.info("✅ [ADMIN] Estatísticas carregadas via Prisma:", stats);
+            return res.json({
+              success: true,
+              data: stats,
+            });
+          }
+
+          logger.warn("⚠️ [ADMIN] Prisma falhou, tentando Supabase...");
         }
 
-        // Buscar stats reais do banco
-        const [usersResult, productsResult, storesResult, ordersResult] = await Promise.all([
-          safeQuery(async () => await prisma.user.count()),
-          safeQuery(async () => await prisma.product.count({ where: { isActive: true } })),
-          safeQuery(async () => await prisma.store.count({ where: { isActive: true } })),
-          safeQuery(async () => await prisma.order.count()),
-        ]);
+        // Fallback: Supabase
+        try {
+          const supabaseClient = await import("../server/lib/supabase-client.js");
+          const stats = await supabaseClient.getAdminStatsSupabase();
 
-        // Verificar se todas as queries foram bem-sucedidas
-        if (!usersResult.success || !productsResult.success || !storesResult.success || !ordersResult.success) {
-          logger.error("❌ [ADMIN] Erro ao buscar estatísticas");
+          logger.info("✅ [ADMIN] Estatísticas carregadas via Supabase:", stats);
+          return res.json({
+            success: true,
+            data: stats,
+            fallback: "supabase",
+          });
+        } catch (supabaseError) {
+          logger.error("❌ [ADMIN] Supabase também falhou:", supabaseError.message);
           return res.status(500).json({
             success: false,
-            error: "Erro ao buscar estatísticas no banco de dados",
+            error: "Serviço de estatísticas temporariamente indisponível",
+            details: supabaseError.message,
           });
         }
-
-        const stats = {
-          totalUsers: usersResult.data,
-          totalProducts: productsResult.data,
-          totalStores: storesResult.data,
-          totalOrders: ordersResult.data,
-        };
-
-        logger.info("✅ [ADMIN] Estatísticas carregadas:", stats);
-        return res.json({
-          success: true,
-          data: stats,
-        });
       } catch (error) {
         logger.error("❌ [ADMIN STATS] Erro:", error.message);
         return res.status(401).json({ error: error.message });
