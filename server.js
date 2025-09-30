@@ -71,6 +71,7 @@ import cacheRouter from "./server/routes/cache.js";
 import { standardizeResponses } from "./server/lib/response-standards.js";
 import { monitoring } from "./server/lib/monitoring.js";
 import healthRouter from "./server/routes/health.js";
+import testDbRouter from "./server/routes/test-db.js";
 
 // Carregar variáveis de ambiente
 dotenv.config();
@@ -322,6 +323,7 @@ app.use("/api/users", usersRouter);
 app.use("/api/addresses", addressesRouter);
 app.use("/api/cache", cacheRouter);
 app.use("/api/health", healthRouter);
+app.use("/api/test-db", testDbRouter);
 
 // Funções de Auditoria
 const createAuditLog = async (
