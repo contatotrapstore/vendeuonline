@@ -1,7 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { logger } from "../lib/logger.js";
 
-
 // Configuração do Supabase - carregando do ambiente
 import dotenv from "dotenv";
 dotenv.config();
@@ -397,6 +396,61 @@ async function updateAdminPlan(planId, updates) {
   }
 }
 
+// Funções genéricas para uso em serverless (service role key)
+async function getPlans() {
+  try {
+    const { data, error } = await supabase
+      .from("plans")
+      .select("*")
+      .eq("isActive", true)
+      .order("order", { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    logger.error("Erro ao buscar planos:", error);
+    throw error;
+  }
+}
+
+async function getProducts() {
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select(
+        `
+        *,
+        images:product_images(url, order),
+        store:stores(id, name)
+      `
+      )
+      .eq("isActive", true)
+      .order("createdAt", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    logger.error("Erro ao buscar produtos:", error);
+    throw error;
+  }
+}
+
+async function getStores() {
+  try {
+    const { data, error } = await supabase
+      .from("stores")
+      .select("*")
+      .eq("isActive", true)
+      .order("createdAt", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    logger.error("Erro ao buscar lojas:", error);
+    throw error;
+  }
+}
+
 export {
   supabase,
   executeSQL,
@@ -406,4 +460,7 @@ export {
   getAdminProducts,
   getAdminPlans,
   updateAdminPlan,
+  getPlans,
+  getProducts,
+  getStores,
 };

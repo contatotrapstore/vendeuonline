@@ -2,7 +2,6 @@ import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 import { logger } from "../lib/logger.js";
 
-
 // Carregar variáveis de ambiente
 dotenv.config();
 
@@ -96,6 +95,61 @@ export async function getDatabaseStats() {
   } catch (error) {
     logger.error("Erro ao obter estatísticas:", error);
     return { users: 0, stores: 0, products: 0 };
+  }
+}
+
+// Funções para buscar dados públicos (usando anon key)
+export async function getPlansAnon() {
+  try {
+    const { data, error } = await supabase
+      .from("plans")
+      .select("*")
+      .eq("isActive", true)
+      .order("order", { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    logger.error("Erro ao buscar planos:", error);
+    throw error;
+  }
+}
+
+export async function getProductsAnon() {
+  try {
+    const { data, error } = await supabase
+      .from("products")
+      .select(
+        `
+        *,
+        images:product_images(url, order),
+        store:stores(id, name)
+      `
+      )
+      .eq("isActive", true)
+      .order("createdAt", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    logger.error("Erro ao buscar produtos:", error);
+    throw error;
+  }
+}
+
+export async function getStoresAnon() {
+  try {
+    const { data, error } = await supabase
+      .from("stores")
+      .select("*")
+      .eq("isActive", true)
+      .order("createdAt", { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    logger.error("Erro ao buscar lojas:", error);
+    throw error;
   }
 }
 

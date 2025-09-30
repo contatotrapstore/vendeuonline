@@ -8,13 +8,13 @@ let safeQuery = null;
 let logger = null;
 
 try {
-  // Import logger
-  const loggerModule = await import("./lib/logger.js");
+  // Import logger from server lib
+  const loggerModule = await import("../server/lib/logger.js");
   logger = loggerModule.logger;
   console.log("✅ [API] Logger importado com sucesso");
 
-  // Import Prisma with correct path
-  const prismaModule = await import("./lib/prisma.js");
+  // Import Prisma from server lib
+  const prismaModule = await import("../server/lib/prisma.js");
   prisma = prismaModule.default;
   safeQuery = prismaModule.safeQuery;
 
@@ -335,8 +335,8 @@ export default async function handler(req, res) {
       // Teste 1: Service Role Key
       try {
         console.log("🧪 [TEST-1] Testando com SERVICE_ROLE_KEY...");
-        const supabaseFetch = await import("./lib/supabase-fetch.js");
-        const plans = await supabaseFetch.getPlans();
+        const supabaseDirect = await import("../server/lib/supabase-direct.js");
+        const plans = await supabaseDirect.getPlans();
         results.serviceRole = { success: true, plans: plans.length };
       } catch (error) {
         console.error("❌ [TEST-1] SERVICE_ROLE falhou:", error.message);
@@ -346,24 +346,16 @@ export default async function handler(req, res) {
       // Teste 2: Anon Key
       try {
         console.log("🧪 [TEST-2] Testando com ANON_KEY...");
-        const supabaseAnon = await import("./lib/supabase-anon.js");
-        const plans = await supabaseAnon.getPlansAnon();
+        const supabaseClient = await import("../server/lib/supabase-client.js");
+        const plans = await supabaseClient.getPlansAnon();
         results.anonKey = { success: true, plans: plans.length };
       } catch (error) {
         console.error("❌ [TEST-2] ANON_KEY falhou:", error.message);
         results.anonKey = { success: false, error: error.message };
       }
 
-      // Teste 3: Mock Data
-      try {
-        console.log("🧪 [TEST-3] Testando mock data...");
-        const mockData = await import("./lib/emergency-mock.js");
-        const plans = mockData.getMockPlans();
-        results.mock = { success: true, plans: plans.length };
-      } catch (error) {
-        console.error("❌ [TEST-3] MOCK falhou:", error.message);
-        results.mock = { success: false, error: error.message };
-      }
+      // Teste 3: Mock Data (removido - não mais necessário em produção)
+      results.mock = { success: false, error: "Mock data disabled in production" };
 
       console.log("🧪 [TEST-SUPABASE] Todos os testes concluídos!");
       return res.json({
@@ -401,8 +393,8 @@ export default async function handler(req, res) {
       // Fallback 1: Supabase com ANON_KEY (WORKING!)
       try {
         console.log("✅ [PLANS] Tentando com ANON_KEY (strategy working)...");
-        const { getPlansAnon } = await import("./lib/supabase-anon.js");
-        const plans = await getPlansAnon();
+        const supabaseClient = await import("../server/lib/supabase-client.js");
+        const plans = await supabaseClient.getPlansAnon();
 
         console.log(`✅ [PLANS] ${plans.length} planos encontrados via ANON_KEY`);
         logger.info(`✅ [PLANS] ${plans.length} planos encontrados via ANON_KEY`);
@@ -418,8 +410,8 @@ export default async function handler(req, res) {
         // Fallback 2: Supabase com SERVICE_ROLE_KEY
         try {
           console.log("⚠️ [PLANS] Tentando SERVICE_ROLE_KEY...");
-          const { getPlans } = await import("./lib/supabase-fetch.js");
-          const plans = await getPlans();
+          const supabaseDirect = await import("../server/lib/supabase-direct.js");
+          const plans = await supabaseDirect.getPlans();
 
           console.log(`✅ [PLANS] ${plans.length} planos encontrados via SERVICE_ROLE`);
           return res.json({
@@ -476,8 +468,8 @@ export default async function handler(req, res) {
       // Fallback 1: Supabase com ANON_KEY (WORKING!)
       try {
         console.log("✅ [PRODUCTS] Tentando com ANON_KEY (strategy working)...");
-        const { getProductsAnon } = await import("./lib/supabase-anon.js");
-        const products = await getProductsAnon();
+        const supabaseClient = await import("../server/lib/supabase-client.js");
+        const products = await supabaseClient.getProductsAnon();
 
         console.log(`✅ [PRODUCTS] ${products.length} produtos encontrados via ANON_KEY`);
         logger.info(`✅ [PRODUCTS] ${products.length} produtos encontrados via ANON_KEY`);
@@ -494,8 +486,8 @@ export default async function handler(req, res) {
         // Fallback 2: Supabase com SERVICE_ROLE_KEY
         try {
           console.log("⚠️ [PRODUCTS] Tentando SERVICE_ROLE_KEY...");
-          const { getProducts } = await import("./lib/supabase-fetch.js");
-          const products = await getProducts();
+          const supabaseDirect = await import("../server/lib/supabase-direct.js");
+          const products = await supabaseDirect.getProducts();
 
           console.log(`✅ [PRODUCTS] ${products.length} produtos encontrados via SERVICE_ROLE_KEY`);
           return res.json({
@@ -573,8 +565,8 @@ export default async function handler(req, res) {
       // Fallback 1: Supabase com ANON_KEY (WORKING!)
       try {
         console.log("✅ [STORES] Tentando com ANON_KEY (strategy working)...");
-        const { getStoresAnon } = await import("./lib/supabase-anon.js");
-        const stores = await getStoresAnon();
+        const supabaseClient = await import("../server/lib/supabase-client.js");
+        const stores = await supabaseClient.getStoresAnon();
 
         console.log(`✅ [STORES] ${stores.length} lojas encontradas via ANON_KEY`);
         logger.info(`✅ [STORES] ${stores.length} lojas encontradas via ANON_KEY`);
@@ -600,8 +592,8 @@ export default async function handler(req, res) {
         // Fallback 2: Supabase com SERVICE_ROLE_KEY
         try {
           console.log("⚠️ [STORES] Tentando SERVICE_ROLE_KEY...");
-          const { getStores } = await import("./lib/supabase-fetch.js");
-          const stores = await getStores();
+          const supabaseDirect = await import("../server/lib/supabase-direct.js");
+          const stores = await supabaseDirect.getStores();
 
           console.log(`✅ [STORES] ${stores.length} lojas encontradas via SERVICE_ROLE_KEY`);
           logger.info(`✅ [STORES] ${stores.length} lojas encontradas via SERVICE_ROLE_KEY`);
