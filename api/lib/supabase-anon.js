@@ -5,8 +5,10 @@
  * para verificar se o problema é de permissões RLS
  */
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+// Tentar múltiplos formatos de variáveis para compatibilidade máxima
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
 
 console.log("🔓 [SUPABASE-ANON] Inicializando com chave anônima...");
 console.log("🔓 [SUPABASE-ANON] URL:", supabaseUrl ? "DEFINIDA" : "❌ NÃO DEFINIDA");

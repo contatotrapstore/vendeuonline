@@ -8,13 +8,13 @@ let safeQuery = null;
 let logger = null;
 
 try {
-  // Import logger from server lib
-  const loggerModule = await import("../server/lib/logger.js");
+  // Import logger from api lib
+  const loggerModule = await import("./lib/logger.js");
   logger = loggerModule.logger;
   console.log("✅ [API] Logger importado com sucesso");
 
-  // Import Prisma from server lib
-  const prismaModule = await import("../server/lib/prisma.js");
+  // Import Prisma from api lib
+  const prismaModule = await import("./lib/prisma.js");
   prisma = prismaModule.default;
   safeQuery = prismaModule.safeQuery;
 
@@ -67,14 +67,12 @@ console.log("NODE_ENV:", process.env.NODE_ENV);
 console.log("Prisma Status:", prisma ? "INICIALIZADO" : "❌ FALHOU");
 
 // Configurações JWT - OBRIGATÓRIO definir JWT_SECRET nas variáveis de ambiente
-// TEMPORARY HARDCODED para testar se problema são env vars no Vercel
-const JWT_SECRET =
-  process.env.JWT_SECRET ||
-  "7824dc4b9456dd55b73eb7236560b0121cfcb5c96d3dc6dc27c9a2841356ac6762bc9b933477313ff1e56cd022d8284e550ceb8e2778c0403e644ddec35bf653";
+const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!JWT_SECRET) {
-  logger.error("❌ ERRO CRÍTICO: JWT_SECRET não definido nas variáveis de ambiente!");
-  throw new Error("JWT_SECRET é obrigatório para segurança");
+  console.error("❌ ERRO CRÍTICO: JWT_SECRET não definido nas variáveis de ambiente!");
+  console.error("⚠️ Configure JWT_SECRET no Vercel Dashboard → Settings → Environment Variables");
+  throw new Error("JWT_SECRET é obrigatório para segurança - configure nas variáveis de ambiente");
 }
 
 // MODO PRODUÇÃO: SEM DADOS MOCK - USAR APENAS BANCO DE DADOS
@@ -335,7 +333,7 @@ export default async function handler(req, res) {
       // Teste 1: Service Role Key
       try {
         console.log("🧪 [TEST-1] Testando com SERVICE_ROLE_KEY...");
-        const supabaseDirect = await import("../server/lib/supabase-direct.js");
+        const supabaseDirect = await import("./lib/supabase-direct.js");
         const plans = await supabaseDirect.getPlans();
         results.serviceRole = { success: true, plans: plans.length };
       } catch (error) {
@@ -346,7 +344,7 @@ export default async function handler(req, res) {
       // Teste 2: Anon Key
       try {
         console.log("🧪 [TEST-2] Testando com ANON_KEY...");
-        const supabaseClient = await import("../server/lib/supabase-client.js");
+        const supabaseClient = await import("./lib/supabase-client.js");
         const plans = await supabaseClient.getPlansAnon();
         results.anonKey = { success: true, plans: plans.length };
       } catch (error) {
@@ -393,7 +391,7 @@ export default async function handler(req, res) {
       // Fallback 1: Supabase com ANON_KEY (WORKING!)
       try {
         console.log("✅ [PLANS] Tentando com ANON_KEY (strategy working)...");
-        const supabaseClient = await import("../server/lib/supabase-client.js");
+        const supabaseClient = await import("./lib/supabase-client.js");
         const plans = await supabaseClient.getPlansAnon();
 
         console.log(`✅ [PLANS] ${plans.length} planos encontrados via ANON_KEY`);
@@ -410,7 +408,7 @@ export default async function handler(req, res) {
         // Fallback 2: Supabase com SERVICE_ROLE_KEY
         try {
           console.log("⚠️ [PLANS] Tentando SERVICE_ROLE_KEY...");
-          const supabaseDirect = await import("../server/lib/supabase-direct.js");
+          const supabaseDirect = await import("./lib/supabase-direct.js");
           const plans = await supabaseDirect.getPlans();
 
           console.log(`✅ [PLANS] ${plans.length} planos encontrados via SERVICE_ROLE`);
@@ -468,7 +466,7 @@ export default async function handler(req, res) {
       // Fallback 1: Supabase com ANON_KEY (WORKING!)
       try {
         console.log("✅ [PRODUCTS] Tentando com ANON_KEY (strategy working)...");
-        const supabaseClient = await import("../server/lib/supabase-client.js");
+        const supabaseClient = await import("./lib/supabase-client.js");
         const products = await supabaseClient.getProductsAnon();
 
         console.log(`✅ [PRODUCTS] ${products.length} produtos encontrados via ANON_KEY`);
@@ -486,7 +484,7 @@ export default async function handler(req, res) {
         // Fallback 2: Supabase com SERVICE_ROLE_KEY
         try {
           console.log("⚠️ [PRODUCTS] Tentando SERVICE_ROLE_KEY...");
-          const supabaseDirect = await import("../server/lib/supabase-direct.js");
+          const supabaseDirect = await import("./lib/supabase-direct.js");
           const products = await supabaseDirect.getProducts();
 
           console.log(`✅ [PRODUCTS] ${products.length} produtos encontrados via SERVICE_ROLE_KEY`);
@@ -565,7 +563,7 @@ export default async function handler(req, res) {
       // Fallback 1: Supabase com ANON_KEY (WORKING!)
       try {
         console.log("✅ [STORES] Tentando com ANON_KEY (strategy working)...");
-        const supabaseClient = await import("../server/lib/supabase-client.js");
+        const supabaseClient = await import("./lib/supabase-client.js");
         const stores = await supabaseClient.getStoresAnon();
 
         console.log(`✅ [STORES] ${stores.length} lojas encontradas via ANON_KEY`);
@@ -592,7 +590,7 @@ export default async function handler(req, res) {
         // Fallback 2: Supabase com SERVICE_ROLE_KEY
         try {
           console.log("⚠️ [STORES] Tentando SERVICE_ROLE_KEY...");
-          const supabaseDirect = await import("../server/lib/supabase-direct.js");
+          const supabaseDirect = await import("./lib/supabase-direct.js");
           const stores = await supabaseDirect.getStores();
 
           console.log(`✅ [STORES] ${stores.length} lojas encontradas via SERVICE_ROLE_KEY`);
@@ -849,10 +847,8 @@ export default async function handler(req, res) {
 
       try {
         const { createClient } = await import("@supabase/supabase-js");
-        const supabaseUrl = getEnvVar("SUPABASE_URL") || "https://dycsfnbqgojhttnjbndp.supabase.co";
-        const supabaseServiceKey =
-          process.env.SUPABASE_SERVICE_ROLE_KEY ||
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw";
+        const supabaseUrl = getEnvVar("SUPABASE_URL");
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
         console.log("🔍 [TEST-HASH] Environment variables debug:");
         console.log("🔍 [TEST-HASH] supabaseUrl:", supabaseUrl ? `${supabaseUrl.slice(0, 30)}...` : "❌ UNDEFINED");
@@ -1252,7 +1248,7 @@ export default async function handler(req, res) {
 
         // Fallback: Supabase
         try {
-          const supabaseClient = await import("../server/lib/supabase-client.js");
+          const supabaseClient = await import("./lib/supabase-client.js");
           const stats = await supabaseClient.getAdminStatsSupabase();
 
           logger.info("✅ [ADMIN] Estatísticas carregadas via Supabase:", stats);
