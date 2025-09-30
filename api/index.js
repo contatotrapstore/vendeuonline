@@ -1165,8 +1165,14 @@ export default async function handler(req, res) {
 
       console.log("⚠️ [LOGIN-EMERGENCY] User not found in emergency list, trying database...");
 
-      if (!prisma || !safeQuery) {
-        logger.warn("⚠️ [LOGIN] Prisma não disponível, usando Supabase Auth...");
+      // Detectar ambiente serverless (Vercel, AWS Lambda, etc)
+      const isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY);
+
+      // Em serverless OU se Prisma não disponível, usar Supabase direto
+      if (isServerless || !prisma || !safeQuery) {
+        logger.warn(
+          `⚠️ [LOGIN] ${isServerless ? "Serverless detectado" : "Prisma não disponível"}, usando Supabase Auth...`
+        );
 
         try {
           const supabaseAuth = await import("./lib/supabase-auth.js");
