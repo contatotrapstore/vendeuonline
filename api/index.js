@@ -641,7 +641,7 @@ export default async function handler(req, res) {
       }
     }
 
-    // Route: POST /api/auth/register - APENAS BANCO DE DADOS
+    // Route: POST /api/auth/register - COM FALLBACK SUPABASE
     if (req.method === "POST" && pathname === "/api/auth/register") {
       logger.info("👤 [REGISTER] Novo registro...");
 
@@ -654,21 +654,54 @@ export default async function handler(req, res) {
         });
       }
 
+      // FALLBACK: Se Prisma não disponível, usar Supabase Auth
       if (!prisma || !safeQuery) {
-        logger.error("❌ [REGISTER] Prisma não disponível");
-        return res.status(500).json({
-          success: false,
-          error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
-          details: "DATABASE_URL não configurada no Vercel. Configure as variáveis de ambiente.",
-          help: "Acesse Vercel Dashboard → Project Settings → Environment Variables",
-          timestamp: new Date().toISOString(),
-          required_vars: [
-            "DATABASE_URL",
-            "JWT_SECRET",
-            "SUPABASE_URL (ou NEXT_PUBLIC_SUPABASE_URL)",
-            "SUPABASE_ANON_KEY (ou NEXT_PUBLIC_SUPABASE_ANON_KEY)",
-          ],
-        });
+        logger.warn("⚠️ [REGISTER] Prisma não disponível, usando Supabase Auth...");
+
+        try {
+          const supabaseAuth = await import("../server/lib/supabase-auth.js");
+          const result = await supabaseAuth.registerUser({
+            name,
+            email,
+            password,
+            phone,
+            type: userType || "BUYER",
+            city: city || "",
+            state: state || "",
+          });
+
+          if (!result.success) {
+            return res.status(400).json({
+              success: false,
+              error: result.error,
+              code: result.code,
+            });
+          }
+
+          // Gerar token
+          const token = generateToken({
+            id: result.user.id,
+            email: result.user.email,
+            name: result.user.name,
+            userType: result.user.type,
+          });
+
+          logger.info("✅ [REGISTER] Usuário criado via Supabase:", result.user.id);
+          return res.status(201).json({
+            success: true,
+            message: "Usuário cadastrado com sucesso",
+            user: result.user,
+            token,
+            method: "supabase-direct",
+          });
+        } catch (error) {
+          logger.error("❌ [REGISTER] Erro no fallback Supabase:", error);
+          return res.status(500).json({
+            success: false,
+            error: "Erro ao criar usuário",
+            details: error.message,
+          });
+        }
       }
 
       // Verificar se usuário já existe
@@ -1094,92 +1127,41 @@ export default async function handler(req, res) {
       console.log("⚠️ [LOGIN-EMERGENCY] User not found in emergency list, trying database...");
 
       if (!prisma || !safeQuery) {
-        logger.error("❌ [LOGIN] Prisma não disponível - usando fallback Supabase");
-        console.log("🔄 [LOGIN-FALLBACK] Iniciando processo de fallback...");
+        logger.warn("⚠️ [LOGIN] Prisma não disponível, usando Supabase Auth...");
 
-        // FALLBACK: Usar Supabase client direto
         try {
-          const { createClient } = await import("@supabase/supabase-js");
-          const supabaseUrl = getEnvVar("SUPABASE_URL") || "https://dycsfnbqgojhttnjbndp.supabase.co";
-          const supabaseServiceKey =
-            process.env.SUPABASE_SERVICE_ROLE_KEY ||
-            "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw";
+          const supabaseAuth = await import("../server/lib/supabase-auth.js");
+          const result = await supabaseAuth.loginUser({ email, password });
 
-          console.log("🔍 [LOGIN-FALLBACK] Verificando variáveis de ambiente:");
-          console.log("🔍 [LOGIN-FALLBACK] supabaseUrl:", supabaseUrl ? "DEFINIDA" : "❌ NÃO DEFINIDA");
-          console.log("🔍 [LOGIN-FALLBACK] supabaseServiceKey:", supabaseServiceKey ? "DEFINIDA" : "❌ NÃO DEFINIDA");
-
-          if (!supabaseUrl || !supabaseServiceKey) {
-            console.log("❌ [LOGIN-FALLBACK] Configurações Supabase não disponíveis");
-            return res.status(500).json({
+          if (!result.success) {
+            return res.status(401).json({
               success: false,
-              error: "Configurações Supabase não disponíveis.",
+              error: result.error,
+              code: result.code,
             });
           }
 
-          const supabase = createClient(supabaseUrl, supabaseServiceKey);
-          console.log("✅ [LOGIN-FALLBACK] Cliente Supabase criado com sucesso");
-
-          // Buscar usuário via Supabase
-          console.log("🔍 [LOGIN-FALLBACK] Buscando usuário com email:", email);
-          const { data: users, error: userError } = await supabase
-            .from("users")
-            .select("*")
-            .eq("email", email)
-            .single();
-
-          console.log("🔍 [LOGIN-FALLBACK] Resultado da busca:");
-          console.log("🔍 [LOGIN-FALLBACK] userError:", userError ? userError.message : "NENHUM");
-          console.log("🔍 [LOGIN-FALLBACK] users encontrado:", users ? "SIM" : "NÃO");
-
-          if (users) {
-            console.log("🔍 [LOGIN-FALLBACK] Dados do usuário encontrado:");
-            console.log("🔍 [LOGIN-FALLBACK] - Email:", users.email);
-            console.log("🔍 [LOGIN-FALLBACK] - Nome:", users.name);
-            console.log("🔍 [LOGIN-FALLBACK] - Tipo:", users.type);
-            console.log("🔍 [LOGIN-FALLBACK] - Hash senha:", users.password ? "PRESENTE" : "AUSENTE");
-          }
-
-          if (userError || !users) {
-            console.log("❌ [LOGIN-FALLBACK] Usuário não encontrado, retornando 401");
-            return res.status(401).json({ error: "Credenciais inválidas" });
-          }
-
-          // Verificar senha
-          console.log("🔍 [LOGIN-FALLBACK] Verificando senha com bcrypt...");
-          console.log("🔍 [LOGIN-FALLBACK] Senha fornecida:", password);
-          console.log("🔍 [LOGIN-FALLBACK] Hash no banco:", users.password);
-
-          const isValidPassword = await bcrypt.compare(password, users.password);
-          console.log("🔍 [LOGIN-FALLBACK] Resultado bcrypt.compare:", isValidPassword);
-
-          if (!isValidPassword) {
-            console.log("❌ [LOGIN-FALLBACK] Senha inválida, retornando 401");
-            return res.status(401).json({ error: "Credenciais inválidas" });
-          }
-
-          // Gerar token JWT
-          const token = jwt.sign({ userId: users.id, email: users.email, type: users.type }, JWT_SECRET, {
-            expiresIn: "7d",
+          // Gerar token
+          const token = generateToken({
+            id: result.user.id,
+            email: result.user.email,
+            name: result.user.name,
+            userType: result.user.type,
           });
 
-          // Resposta de sucesso (usando fallback)
+          logger.info("✅ [LOGIN] Login via Supabase bem-sucedido:", result.user.id);
           return res.json({
             success: true,
-            user: {
-              id: users.id,
-              email: users.email,
-              name: users.name,
-              type: users.type,
-            },
+            user: result.user,
             token,
-            method: "supabase-fallback",
+            method: "supabase-direct",
           });
-        } catch (fallbackError) {
-          logger.error("❌ [LOGIN] Fallback Supabase também falhou:", fallbackError.message);
+        } catch (error) {
+          logger.error("❌ [LOGIN] Erro no fallback Supabase:", error);
           return res.status(500).json({
             success: false,
-            error: "Banco de dados não disponível. Verifique variáveis de ambiente.",
+            error: "Erro ao fazer login",
+            details: error.message,
           });
         }
       }
