@@ -639,6 +639,49 @@ export default async function handler(req, res) {
       }
     }
 
+    // Route: GET /api/categories - BANCO DE DADOS COM FALLBACK SUPABASE
+    if (req.method === "GET" && pathname === "/api/categories") {
+      logger.info("📁 [CATEGORIES] Buscando categorias no banco...");
+
+      // Fallback: Supabase com ANON_KEY (WORKING!)
+      try {
+        console.log("✅ [CATEGORIES] Tentando com ANON_KEY...");
+        const supabaseClient = await import("./lib/supabase-client.js");
+        const { supabase } = supabaseClient;
+
+        if (!supabase) {
+          throw new Error("Supabase client não disponível");
+        }
+
+        const { data, error } = await supabase
+          .from("categories")
+          .select("*")
+          .eq("isActive", true)
+          .order("order", { ascending: true });
+
+        if (error) throw error;
+
+        console.log(`✅ [CATEGORIES] ${data.length} categorias encontradas via ANON_KEY`);
+        logger.info(`✅ [CATEGORIES] ${data.length} categorias encontradas via ANON_KEY`);
+        return res.json({
+          success: true,
+          categories: data || [],
+          fallback: "supabase-anon",
+          source: "real-data",
+        });
+      } catch (error) {
+        console.error("❌ [CATEGORIES] Erro:", error.message);
+        logger.error("❌ [CATEGORIES] Erro:", error.message);
+
+        return res.status(500).json({
+          success: false,
+          error: "Serviço de categorias temporariamente indisponível",
+          details: error.message,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+
     // Route: POST /api/auth/register - COM FALLBACK SUPABASE
     if (req.method === "POST" && pathname === "/api/auth/register") {
       logger.info("👤 [REGISTER] Novo registro...");
