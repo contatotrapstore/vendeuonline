@@ -6,11 +6,28 @@ import { logger } from "../lib/logger.js";
 dotenv.config();
 
 // URL e Keys do Supabase - URLs públicas podem usar NEXT_PUBLIC_* ou VITE_PUBLIC_*
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey =
+  process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
 // 🚨 IMPORTANTE: Service Role Key deve ficar APENAS no backend
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// 🔍 DEBUG: Log configuração do Supabase (APENAS EM DESENVOLVIMENTO)
+if (process.env.NODE_ENV === "development" || process.env.DEBUG_SUPABASE === "true") {
+  logger.info("🔍 [DEBUG] Configuração Supabase:");
+  logger.info(`  - SUPABASE_URL: ${supabaseUrl ? "✅ Configurada" : "❌ Não configurada"}`);
+  logger.info(`  - SUPABASE_ANON_KEY: ${supabaseAnonKey ? "✅ Configurada" : "❌ Não configurada"}`);
+  logger.info(`  - SUPABASE_SERVICE_ROLE_KEY: ${supabaseServiceKey ? "✅ Configurada" : "❌ Não configurada"}`);
+  logger.info(`  - DATABASE_URL: ${process.env.DATABASE_URL ? "✅ Configurada" : "❌ Não configurada"}`);
+
+  if (supabaseUrl) logger.info(`  - URL: ${supabaseUrl}`);
+  if (process.env.DATABASE_URL) {
+    // Mascarar senha no log
+    const dbUrl = process.env.DATABASE_URL.replace(/:[^@]+@/, ":***@");
+    logger.info(`  - DB: ${dbUrl}`);
+  }
+}
 
 const missingSupabaseEnv = [];
 
