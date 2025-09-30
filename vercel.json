@@ -3,6 +3,7 @@
   "buildCommand": "HUSKY=0 rm -rf dist node_modules/.vite && npm run vercel-build",
   "outputDirectory": "dist",
   "installCommand": "HUSKY=0 npm ci --omit=dev && npx prisma generate",
+  "framework": null,
   "headers": [
     {
       "source": "/api/(.*)",
