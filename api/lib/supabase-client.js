@@ -59,9 +59,9 @@ export async function getPlansAnon() {
   }
 
   const { data, error } = await supabase
-    .from("Plan")
+    .from("plans")
     .select("*")
-    .eq("isActive", true)
+    .eq("is_active", true)
     .order("order", { ascending: true });
 
   if (error) {
@@ -85,11 +85,11 @@ export async function getProductsAnon() {
       `
       *,
       images:ProductImage(*),
-      store:Store(
+      store:stores(
         *,
-        seller:Seller(
+        seller:sellers(
           *,
-          user:User(*)
+          user:users(*)
         )
       )
     `
@@ -117,9 +117,9 @@ export async function getStoresAnon() {
     .select(
       `
       *,
-      seller:Seller(
+      seller:sellers(
         *,
-        user:User(*)
+        user:users(*)
       )
     `
     )
@@ -175,7 +175,7 @@ export async function getTrackingConfigsAnon() {
   }
 
   const { data, error } = await supabase
-    .from("SystemConfig")
+    .from("system_configs")
     .select("key, value, isActive")
     .eq("category", "tracking")
     .eq("isActive", true);

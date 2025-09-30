@@ -35,9 +35,9 @@ export async function getPlans() {
   }
 
   const { data, error } = await supabaseClient
-    .from("Plan")
+    .from("plans")
     .select("*")
-    .eq("isActive", true)
+    .eq("is_active", true)
     .order("order", { ascending: true });
 
   if (error) {
@@ -61,11 +61,11 @@ export async function getProducts() {
       `
       *,
       images:ProductImage(*, order),
-      store:Store(
+      store:stores(
         *,
-        seller:Seller(
+        seller:sellers(
           *,
-          user:User(*)
+          user:users(*)
         )
       )
     `
@@ -93,9 +93,9 @@ export async function getStores() {
     .select(
       `
       *,
-      seller:Seller(
+      seller:sellers(
         *,
-        user:User(*)
+        user:users(*)
       )
     `
     )
@@ -117,7 +117,7 @@ export async function getTrackingConfigs() {
   }
 
   const { data, error } = await supabaseClient
-    .from("SystemConfig")
+    .from("system_configs")
     .select("key, value, isActive")
     .eq("category", "tracking")
     .eq("isActive", true);
