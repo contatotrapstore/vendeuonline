@@ -104,7 +104,7 @@ if (supabaseUrl && supabaseServiceKey) {
 // Vercel serverless config
 export const config = {
   api: {
-    bodyParser: false, // Disable para controle total manual
+    bodyParser: true, // Let Vercel parse, we'll handle edge cases
   },
 };
 
@@ -144,34 +144,40 @@ export default async function handler(req, res) {
     // Parse request body for POST/PUT/PATCH requests (ROBUST PARSING)
     if (["POST", "PUT", "PATCH"].includes(req.method)) {
       console.log(`🔍 [BODY-DEBUG] req.body type:`, typeof req.body);
-      console.log(`🔍 [BODY-DEBUG] req.body is undefined:`, req.body === undefined);
+      console.log(`🔍 [BODY-DEBUG] req.body value:`, req.body);
 
       try {
-        if (req.body === undefined || req.body === null) {
-          // Body não parseado pelo Vercel, usar parseBody manual
-          console.log(`📦 [BODY-DEBUG] Using manual parseBody...`);
-          req.body = await parseBody(req);
-          console.log(`✅ [BODY-DEBUG] Manual parse success:`, Object.keys(req.body));
-        } else if (typeof req.body === "string") {
-          // Body veio como string, fazer JSON.parse
+        // Check if body is already a valid parsed object
+        if (req.body && typeof req.body === "object" && !Array.isArray(req.body) && Object.keys(req.body).length > 0) {
+          // Body já parseado como objeto válido
+          console.log(`✅ [BODY-DEBUG] Body is valid object with keys:`, Object.keys(req.body));
+          logger.info(`📦 [API] Body already parsed:`, Object.keys(req.body));
+        } else if (typeof req.body === "string" && req.body.trim()) {
+          // Body veio como string, tentar parsear
           console.log(`📦 [BODY-DEBUG] Body is string, parsing JSON...`);
           req.body = JSON.parse(req.body);
-          console.log(`✅ [BODY-DEBUG] String parse success:`, Object.keys(req.body));
-        } else if (typeof req.body === "object") {
-          // Body já é objeto, usar direto
-          console.log(`✅ [BODY-DEBUG] Body already object:`, Object.keys(req.body));
+          console.log(`✅ [BODY-DEBUG] String parsed with keys:`, Object.keys(req.body));
+          logger.info(`📦 [API] Body parsed from string:`, Object.keys(req.body));
+        } else if (!req.body || (typeof req.body === "object" && Object.keys(req.body).length === 0)) {
+          // Body undefined/null/empty object, tentar ler do stream
+          console.log(`📦 [BODY-DEBUG] Body empty, reading from stream...`);
+          req.body = await parseBody(req);
+          console.log(`✅ [BODY-DEBUG] Stream parsed with keys:`, Object.keys(req.body));
+          logger.info(`📦 [API] Body parsed from stream:`, Object.keys(req.body));
         } else {
-          throw new Error(`Unexpected body type: ${typeof req.body}`);
+          throw new Error(
+            `Unexpected body format. Type: ${typeof req.body}, Keys: ${Object.keys(req.body || {}).length}`
+          );
         }
-
-        logger.info(`📦 [API] Body parsed:`, Object.keys(req.body));
       } catch (error) {
         console.error(`❌ [BODY-DEBUG] Parse error:`, error.message);
+        console.error(`❌ [BODY-DEBUG] req.body was:`, req.body);
         logger.error(`❌ [API] Error parsing body:`, error.message);
         return res.status(400).json({
           success: false,
           error: "Invalid JSON",
           details: error.message,
+          bodyType: typeof req.body,
           timestamp: new Date().toISOString(),
         });
       }
