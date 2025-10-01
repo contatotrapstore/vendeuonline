@@ -46,8 +46,10 @@ export const authenticateUser = async (req, res, next) => {
     }
 
     // ✅ EMERGENCY BYPASS: Aceitar usuários emergency sem buscar no banco
+    // FORÇA REBUILD: 2025-10-01 19:15 UTC
     if (decoded.userId && decoded.userId.startsWith("user_emergency_")) {
-      logger.info(`⚠️ Emergency user detected: ${decoded.email} (${decoded.type})`);
+      logger.info(`⚠️ Emergency user bypass activated: ${decoded.email} (${decoded.type})`);
+      logger.info(`⚠️ User ID: ${decoded.userId}`);
 
       req.user = {
         id: decoded.userId,
@@ -63,6 +65,7 @@ export const authenticateUser = async (req, res, next) => {
         updatedAt: new Date().toISOString(),
       };
 
+      logger.info("✅ Emergency user bypass completed successfully");
       return next();
     }
 
