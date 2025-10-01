@@ -104,7 +104,7 @@ if (supabaseUrl && supabaseServiceKey) {
 // Vercel serverless config
 export const config = {
   api: {
-    bodyParser: true, // Enable Vercel's built-in body parser
+    bodyParser: false, // Disable para controle total manual
   },
 };
 
@@ -141,23 +141,39 @@ export default async function handler(req, res) {
       return res.status(200).end();
     }
 
-    // Parse request body for POST/PUT/PATCH requests
-    // Vercel com bodyParser: true já parseia, mas fazemos fallback manual se necessário
+    // Parse request body for POST/PUT/PATCH requests (ROBUST PARSING)
     if (["POST", "PUT", "PATCH"].includes(req.method)) {
-      if (!req.body) {
-        try {
+      console.log(`🔍 [BODY-DEBUG] req.body type:`, typeof req.body);
+      console.log(`🔍 [BODY-DEBUG] req.body is undefined:`, req.body === undefined);
+
+      try {
+        if (req.body === undefined || req.body === null) {
+          // Body não parseado pelo Vercel, usar parseBody manual
+          console.log(`📦 [BODY-DEBUG] Using manual parseBody...`);
           req.body = await parseBody(req);
-          logger.info(`📦 [API] Body parsed manually:`, Object.keys(req.body));
-        } catch (error) {
-          logger.error(`❌ [API] Error parsing body:`, error.message);
-          return res.status(400).json({
-            success: false,
-            error: "Invalid JSON",
-            timestamp: new Date().toISOString(),
-          });
+          console.log(`✅ [BODY-DEBUG] Manual parse success:`, Object.keys(req.body));
+        } else if (typeof req.body === "string") {
+          // Body veio como string, fazer JSON.parse
+          console.log(`📦 [BODY-DEBUG] Body is string, parsing JSON...`);
+          req.body = JSON.parse(req.body);
+          console.log(`✅ [BODY-DEBUG] String parse success:`, Object.keys(req.body));
+        } else if (typeof req.body === "object") {
+          // Body já é objeto, usar direto
+          console.log(`✅ [BODY-DEBUG] Body already object:`, Object.keys(req.body));
+        } else {
+          throw new Error(`Unexpected body type: ${typeof req.body}`);
         }
-      } else {
-        logger.info(`📦 [API] Body already parsed by Vercel:`, Object.keys(req.body));
+
+        logger.info(`📦 [API] Body parsed:`, Object.keys(req.body));
+      } catch (error) {
+        console.error(`❌ [BODY-DEBUG] Parse error:`, error.message);
+        logger.error(`❌ [API] Error parsing body:`, error.message);
+        return res.status(400).json({
+          success: false,
+          error: "Invalid JSON",
+          details: error.message,
+          timestamp: new Date().toISOString(),
+        });
       }
     }
 
