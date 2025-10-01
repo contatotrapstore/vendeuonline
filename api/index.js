@@ -78,6 +78,24 @@ if (!JWT_SECRET) {
 // MODO PRODUÇÃO: SEM DADOS MOCK - USAR APENAS BANCO DE DADOS
 // Se o Prisma não conectar, retorna erro 500
 
+// Helper to parse request body
+async function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk.toString();
+    });
+    req.on("end", () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch (error) {
+        reject(new Error("Invalid JSON"));
+      }
+    });
+    req.on("error", reject);
+  });
+}
+
 // Serverless function handler
 export default async function handler(req, res) {
   try {
@@ -91,6 +109,21 @@ export default async function handler(req, res) {
 
     if (req.method === "OPTIONS") {
       return res.status(200).end();
+    }
+
+    // Parse request body for POST/PUT/PATCH requests
+    if (["POST", "PUT", "PATCH"].includes(req.method) && !req.body) {
+      try {
+        req.body = await parseBody(req);
+        logger.info(`📦 [API] Body parsed:`, Object.keys(req.body));
+      } catch (error) {
+        logger.error(`❌ [API] Error parsing body:`, error.message);
+        return res.status(400).json({
+          success: false,
+          error: "Invalid JSON",
+          timestamp: new Date().toISOString(),
+        });
+      }
     }
 
     // Route handling
