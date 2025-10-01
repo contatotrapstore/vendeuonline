@@ -224,6 +224,72 @@ export default async function handler(req, res) {
       }
     }
 
+    // Route: POST /api/auth/test-login-flow - Test complete login flow
+    if (req.method === "POST" && pathname === "/api/auth/test-login-flow") {
+      const { email } = req.body;
+
+      try {
+        // Import Supabase client
+        const { createClient } = await import("@supabase/supabase-js");
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+        const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false,
+          },
+        });
+
+        // Query user
+        const { data: user, error: fetchError } = await supabase.from("users").select("*").eq("email", email).single();
+
+        if (fetchError) {
+          return res.json({
+            step: "query",
+            success: false,
+            error: fetchError.message,
+            code: fetchError.code,
+          });
+        }
+
+        if (!user) {
+          return res.json({
+            step: "query",
+            success: false,
+            error: "User not found",
+          });
+        }
+
+        // Test bcrypt
+        const password = "Test123!@#";
+        const passwordMatch = await bcrypt.compare(password, user.password);
+
+        return res.json({
+          step: "complete",
+          success: true,
+          user: {
+            id: user.id,
+            email: user.email,
+            type: user.type,
+            hasPassword: !!user.password,
+            passwordLength: user.password?.length,
+          },
+          bcryptTest: {
+            passwordMatch,
+            hashPrefix: user.password.substring(0, 20),
+          },
+        });
+      } catch (error) {
+        return res.status(500).json({
+          step: "error",
+          success: false,
+          error: error.message,
+          stack: error.stack,
+        });
+      }
+    }
+
     // Route: GET /api/health/check - Production readiness check (com suporte a ambos formatos)
     if (req.method === "GET" && pathname === "/api/health/check") {
       const requiredVars = [
