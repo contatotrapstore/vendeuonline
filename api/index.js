@@ -1182,22 +1182,24 @@ export default async function handler(req, res) {
         email: "contatotrapstore@gmail.com",
         name: "Eduardo Gouveia",
         type: "SELLER",
-        // Hash for "Teste123" generated with bcrypt
-        password: "$2b$12$LBwnDJs4k8B3Fd1lI2rPtOnUTCtoKtj5AW3gaIAZpQDf/3Tecp8HK",
+        // Hash for "Test123!@#" - matches database
+        password: "$2b$12$EG5HR5lndXipZahrTTlQouWXoZlYYxN26YwVxwlsKyI3YxNLNsqWO",
       },
       {
         id: "user_emergency_admin",
         email: "admin@vendeuonline.com",
         name: "Admin Emergency",
         type: "ADMIN",
-        password: "$2b$12$LBwnDJs4k8B3Fd1lI2rPtOnUTCtoKtj5AW3gaIAZpQDf/3Tecp8HK",
+        // Hash for "Test123!@#" - matches database
+        password: "$2b$12$EG5HR5lndXipZahrTTlQouWXoZlYYxN26YwVxwlsKyI3YxNLNsqWO",
       },
       {
         id: "user_emergency_teste",
         email: "teste@teste.com",
         name: "Teste Emergency",
         type: "BUYER",
-        password: "$2b$12$LBwnDJs4k8B3Fd1lI2rPtOnUTCtoKtj5AW3gaIAZpQDf/3Tecp8HK",
+        // Hash for "Test123!@#" - matches database
+        password: "$2b$12$EG5HR5lndXipZahrTTlQouWXoZlYYxN26YwVxwlsKyI3YxNLNsqWO",
       },
     ];
 
