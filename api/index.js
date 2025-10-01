@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
+import { createClient } from "@supabase/supabase-js";
 
 // Import Prisma with error handling and better serverless support
 let prisma = null;
@@ -78,6 +79,28 @@ if (!JWT_SECRET) {
 // MODO PRODUÇÃO: SEM DADOS MOCK - USAR APENAS BANCO DE DADOS
 // Se o Prisma não conectar, retorna erro 500
 
+// Inicializar Supabase client (para auth em produção/serverless)
+const supabaseUrl = getEnvVar("SUPABASE_URL");
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseAnonKey = getEnvVar("SUPABASE_ANON_KEY");
+
+let supabase = null;
+if (supabaseUrl && supabaseServiceKey) {
+  try {
+    supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+    console.log("✅ [API] Supabase client inicializado com service role key");
+  } catch (error) {
+    console.error("❌ [API] Erro ao inicializar Supabase:", error.message);
+  }
+} else {
+  console.warn("⚠️ [API] Supabase credentials incompletas - auth pode falhar");
+}
+
 // Vercel serverless config
 export const config = {
   api: {
@@ -119,17 +142,22 @@ export default async function handler(req, res) {
     }
 
     // Parse request body for POST/PUT/PATCH requests
-    if (["POST", "PUT", "PATCH"].includes(req.method) && !req.body) {
-      try {
-        req.body = await parseBody(req);
-        logger.info(`📦 [API] Body parsed:`, Object.keys(req.body));
-      } catch (error) {
-        logger.error(`❌ [API] Error parsing body:`, error.message);
-        return res.status(400).json({
-          success: false,
-          error: "Invalid JSON",
-          timestamp: new Date().toISOString(),
-        });
+    // Vercel com bodyParser: true já parseia, mas fazemos fallback manual se necessário
+    if (["POST", "PUT", "PATCH"].includes(req.method)) {
+      if (!req.body) {
+        try {
+          req.body = await parseBody(req);
+          logger.info(`📦 [API] Body parsed manually:`, Object.keys(req.body));
+        } catch (error) {
+          logger.error(`❌ [API] Error parsing body:`, error.message);
+          return res.status(400).json({
+            success: false,
+            error: "Invalid JSON",
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } else {
+        logger.info(`📦 [API] Body already parsed by Vercel:`, Object.keys(req.body));
       }
     }
 
@@ -193,6 +221,26 @@ export default async function handler(req, res) {
           supabaseUrl: getEnvVar("SUPABASE_URL") ? "CONFIGURADA" : "NÃO CONFIGURADA",
           supabaseAnonKey: getEnvVar("SUPABASE_ANON_KEY") ? "CONFIGURADA" : "NÃO CONFIGURADA",
           supabaseServiceKey: process.env.SUPABASE_SERVICE_ROLE_KEY ? "CONFIGURADA" : "NÃO CONFIGURADA",
+        },
+      });
+    }
+
+    // Route: GET /api/auth/debug - Verificar configuração Supabase
+    if (req.method === "GET" && pathname === "/api/auth/debug") {
+      return res.json({
+        timestamp: new Date().toISOString(),
+        environment: {
+          nodeEnv: process.env.NODE_ENV,
+          isVercel: !!process.env.VERCEL,
+        },
+        supabase: {
+          urlConfigured: !!supabaseUrl,
+          serviceKeyConfigured: !!supabaseServiceKey,
+          anonKeyConfigured: !!supabaseAnonKey,
+          clientInitialized: !!supabase,
+        },
+        jwt: {
+          secretConfigured: !!JWT_SECRET,
         },
       });
     }
@@ -1318,40 +1366,76 @@ export default async function handler(req, res) {
         );
 
         try {
-          console.log(`📦 [LOGIN-DEBUG] Importando supabase-auth module...`);
-          const supabaseAuth = await import("./lib/supabase-auth.js");
-          console.log(`✅ [LOGIN-DEBUG] Supabase-auth imported, calling loginUser...`);
+          console.log(`🔍 [LOGIN-DEBUG] Verificando Supabase client...`);
 
-          const result = await supabaseAuth.loginUser({ email, password });
-          console.log(`🔍 [LOGIN-DEBUG] LoginUser result:`, {
-            success: result.success,
-            hasUser: !!result.user,
-            error: result.error,
-            code: result.code,
-          });
-
-          if (!result.success) {
-            return res.status(401).json({
-              success: false,
-              error: result.error,
-              code: result.code,
+          if (!supabase) {
+            console.error(`❌ [LOGIN-DEBUG] Supabase client não inicializado`);
+            return res.status(500).json({
+              error: "Configuração de autenticação inválida",
+              details: "Supabase client não inicializado",
             });
           }
 
-          // Gerar token
-          const token = generateToken({
-            id: result.user.id,
-            email: result.user.email,
-            name: result.user.name,
-            userType: result.user.type,
+          console.log(`✅ [LOGIN-DEBUG] Supabase client OK, buscando usuário: ${email}`);
+
+          // Buscar usuário no Supabase
+          const { data: user, error: fetchError } = await supabase
+            .from("users")
+            .select("*")
+            .eq("email", email)
+            .single();
+
+          console.log(`🔍 [LOGIN-DEBUG] Supabase query result:`, {
+            found: !!user,
+            error: fetchError?.message,
+            hasPassword: !!user?.password,
           });
 
-          logger.info("✅ [LOGIN] Login via Supabase bem-sucedido:", result.user.id);
+          if (fetchError || !user) {
+            console.log(`❌ [LOGIN-DEBUG] Usuário não encontrado ou erro:`, fetchError?.message);
+            return res.status(401).json({
+              error: "Credenciais inválidas",
+            });
+          }
+
+          console.log(`✅ [LOGIN-DEBUG] Usuário encontrado: ${user.email}, comparando senha...`);
+
+          // Verificar senha com bcrypt
+          const passwordMatch = await bcrypt.compare(password, user.password);
+
+          console.log(`🔍 [LOGIN-DEBUG] Bcrypt compare result:`, passwordMatch);
+
+          if (!passwordMatch) {
+            console.log(`❌ [LOGIN-DEBUG] Senha incorreta para: ${email}`);
+            return res.status(401).json({
+              error: "Credenciais inválidas",
+            });
+          }
+
+          console.log(`✅ [LOGIN-DEBUG] Login bem-sucedido, gerando token...`);
+
+          // Remover senha antes de retornar
+          const { password: _, ...userWithoutPassword } = user;
+
+          // Gerar token
+          const token = jwt.sign(
+            {
+              userId: user.id,
+              email: user.email,
+              type: user.type,
+            },
+            JWT_SECRET,
+            { expiresIn: "7d" }
+          );
+
+          console.log(`✅ [LOGIN-DEBUG] Token gerado com sucesso`);
+
+          logger.info("✅ [LOGIN] Login via Supabase bem-sucedido:", user.id);
           return res.json({
             success: true,
-            user: result.user,
+            user: userWithoutPassword,
             token,
-            method: "supabase-direct",
+            method: "supabase-inline",
           });
         } catch (error) {
           logger.error("❌ [LOGIN] Erro no fallback Supabase:", error);
