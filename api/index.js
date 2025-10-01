@@ -1223,6 +1223,22 @@ export default async function handler(req, res) {
         password: "$2b$12$EG5HR5lndXipZahrTTlQouWXoZlYYxN26YwVxwlsKyI3YxNLNsqWO",
       },
       {
+        id: "user_emergency_seller",
+        email: "seller@vendeuonline.com",
+        name: "Seller Emergency",
+        type: "SELLER",
+        // Hash for "Test123!@#" - matches database
+        password: "$2b$12$EG5HR5lndXipZahrTTlQouWXoZlYYxN26YwVxwlsKyI3YxNLNsqWO",
+      },
+      {
+        id: "user_emergency_buyer",
+        email: "buyer@vendeuonline.com",
+        name: "Buyer Emergency",
+        type: "BUYER",
+        // Hash for "Test123!@#" - matches database
+        password: "$2b$12$EG5HR5lndXipZahrTTlQouWXoZlYYxN26YwVxwlsKyI3YxNLNsqWO",
+      },
+      {
         id: "user_emergency_teste",
         email: "teste@teste.com",
         name: "Teste Emergency",
