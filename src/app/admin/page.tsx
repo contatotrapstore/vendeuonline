@@ -53,7 +53,9 @@ export default function AdminDashboard() {
     );
   }
 
-  if (user.userType !== "admin") {
+  // Verificar tipo de usuário (case-insensitive)
+  const userType = (user.type || user.userType)?.toLowerCase();
+  if (userType !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
