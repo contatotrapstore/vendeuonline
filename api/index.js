@@ -197,6 +197,33 @@ export default async function handler(req, res) {
       });
     }
 
+    // Route: POST /api/auth/test-bcrypt - Test bcrypt directly
+    if (req.method === "POST" && pathname === "/api/auth/test-bcrypt") {
+      const { password, hash } = req.body;
+
+      if (!password || !hash) {
+        return res.status(400).json({ error: "password and hash required" });
+      }
+
+      try {
+        const result = await bcrypt.compare(password, hash);
+        return res.json({
+          success: true,
+          passwordMatch: result,
+          bcryptVersion: bcrypt.version || "unknown",
+          passwordLength: password.length,
+          hashLength: hash.length,
+          hashPrefix: hash.substring(0, 7),
+        });
+      } catch (error) {
+        return res.status(500).json({
+          success: false,
+          error: error.message,
+          stack: error.stack,
+        });
+      }
+    }
+
     // Route: GET /api/health/check - Production readiness check (com suporte a ambos formatos)
     if (req.method === "GET" && pathname === "/api/health/check") {
       const requiredVars = [
