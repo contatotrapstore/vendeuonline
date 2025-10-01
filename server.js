@@ -30,6 +30,9 @@ import {
 } from "./server/middleware/errorHandler.js";
 import prisma from "./server/lib/prisma.js";
 
+// Importar middlewares de autenticação
+import { authenticateUser } from "./server/middleware/auth.js";
+
 // Importar middlewares de segurança
 import {
   securityHeaders,
@@ -235,7 +238,10 @@ const verifyToken = (token) => {
   }
 };
 
-// Middleware de autenticação melhorado
+// ❌ REMOVIDO: Middleware inline sem emergency bypass
+// Substituído por authenticateUser de server/middleware/auth.js (com emergency bypass)
+// Motivo: Middleware inline não suporta emergency users, causando 403 em produção
+/*
 const authenticate = asyncHandler(async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -270,6 +276,10 @@ const authenticate = asyncHandler(async (req, res, next) => {
   req.user = payload;
   next();
 });
+*/
+
+// ✅ Usar authenticateUser de server/middleware/auth.js (com emergency bypass)
+const authenticate = authenticateUser;
 
 // Middleware authenticateAdmin removido - usando authenticate + protectRoute(['ADMIN'])
 
