@@ -3,7 +3,6 @@ import helmet from "helmet";
 import { body, validationResult } from "express-validator";
 import { logger } from "../lib/logger.js";
 
-
 // ==== RATE LIMITING ====
 export const createRateLimit = (options = {}) => {
   const defaults = {
@@ -331,9 +330,20 @@ export const securityLogger = (req, res, next) => {
 };
 
 // ==== MIDDLEWARE DE PROTEÇÃO DE ROTAS ====
+// VERSION: 2025-10-01-19:30 - Added debug logging
 export const protectRoute = (requiredRoles = []) => {
   return (req, res, next) => {
+    // DEBUG: Log informações do usuário
+    logger.info(`[protectRoute] Checking access:`, {
+      hasUser: !!req.user,
+      userId: req.user?.id,
+      userType: req.user?.type,
+      requiredRoles,
+      path: req.path,
+    });
+
     if (!req.user) {
+      logger.warn(`[protectRoute] No user found - returning 401`);
       return res.status(401).json({
         error: "Acesso negado. Faça login primeiro.",
         code: "AUTHENTICATION_REQUIRED",
@@ -341,6 +351,11 @@ export const protectRoute = (requiredRoles = []) => {
     }
 
     if (requiredRoles.length > 0 && !requiredRoles.includes(req.user.type)) {
+      logger.error(`[protectRoute] Access denied - user type mismatch:`, {
+        current: req.user.type,
+        required: requiredRoles,
+        userId: req.user.id,
+      });
       return res.status(403).json({
         error: "Acesso negado. Privilégios insuficientes.",
         code: "INSUFFICIENT_PRIVILEGES",
@@ -349,6 +364,7 @@ export const protectRoute = (requiredRoles = []) => {
       });
     }
 
+    logger.info(`[protectRoute] Access granted for user ${req.user.id}`);
     next();
   };
 };
@@ -356,7 +372,7 @@ export const protectRoute = (requiredRoles = []) => {
 // Proteção contra HTTP Parameter Pollution
 export const preventHPP = (req, res, next) => {
   // Prevenir poluição de parâmetros em query strings críticas
-  const protectedParams = ['page', 'limit', 'sort', 'order', 'id', 'email'];
+  const protectedParams = ["page", "limit", "sort", "order", "id", "email"];
 
   for (const param of protectedParams) {
     if (req.query[param] && Array.isArray(req.query[param])) {
@@ -368,21 +384,15 @@ export const preventHPP = (req, res, next) => {
 
 // Detectar tentativas de bypass de autenticação
 export const detectAuthBypass = (req, res, next) => {
-  const suspiciousHeaders = [
-    'x-forwarded-user',
-    'x-remote-user',
-    'x-user',
-    'x-admin',
-    'x-role'
-  ];
+  const suspiciousHeaders = ["x-forwarded-user", "x-remote-user", "x-user", "x-admin", "x-role"];
 
   for (const header of suspiciousHeaders) {
     if (req.headers[header]) {
       logger.warn(`Tentativa suspeita de bypass de autenticação via header: ${header}`, {
         ip: req.ip,
-        userAgent: req.get('user-agent'),
+        userAgent: req.get("user-agent"),
         header: header,
-        value: req.headers[header]
+        value: req.headers[header],
       });
       delete req.headers[header];
     }

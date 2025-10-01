@@ -90,6 +90,12 @@ if (!JWT_SECRET) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// ==== BUILD VERSION ====
+const BUILD_VERSION = "2025-10-01-19:30-EMERGENCY-FIX";
+logger.info(`🚀 Starting server - Build: ${BUILD_VERSION}`);
+logger.info(`🔧 Environment: ${process.env.NODE_ENV || "development"}`);
+logger.info(`🔒 JWT_SECRET configured: ${JWT_SECRET ? "✅ Yes" : "❌ No"}`);
+
 // ==== CORE MIDDLEWARES ====
 // Correlation ID (deve ser o primeiro middleware)
 app.use(correlationIdMiddleware);
