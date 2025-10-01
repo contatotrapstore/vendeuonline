@@ -267,6 +267,37 @@ export default async function handler(req, res) {
       });
     }
 
+    // Route: GET /api/auth/verify-key - Verificar se service key está correta
+    if (req.method === "GET" && pathname === "/api/auth/verify-key") {
+      const expectedKey =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw";
+      const currentKey = supabaseServiceKey || "";
+
+      return res.json({
+        timestamp: new Date().toISOString(),
+        current: {
+          exists: !!currentKey,
+          length: currentKey.length,
+          start: currentKey.substring(0, 30),
+          end: currentKey.substring(currentKey.length - 30),
+          hasSpaces: currentKey.includes(" "),
+          hasNewlines: currentKey.includes("\n") || currentKey.includes("\r"),
+          hasTabs: currentKey.includes("\t"),
+        },
+        expected: {
+          length: expectedKey.length,
+          start: expectedKey.substring(0, 30),
+          end: expectedKey.substring(expectedKey.length - 30),
+        },
+        comparison: {
+          lengthMatches: currentKey.length === expectedKey.length,
+          startMatches: currentKey.substring(0, 30) === expectedKey.substring(0, 30),
+          endMatches: currentKey.substring(currentKey.length - 30) === expectedKey.substring(expectedKey.length - 30),
+          exactMatch: currentKey === expectedKey,
+        },
+      });
+    }
+
     // Route: POST /api/auth/test-login-debug - Debug completo do login
     if (req.method === "POST" && pathname === "/api/auth/test-login-debug") {
       const { email, password } = req.body;
@@ -296,6 +327,27 @@ export default async function handler(req, res) {
           debugInfo.error = "Supabase client not initialized";
           return res.json(debugInfo);
         }
+
+        // Step 1.5: Test with hardcoded correct key
+        const correctKey =
+          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw";
+        const testSupabase = createClient(supabaseUrl, correctKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        });
+
+        const { data: testUser, error: testError } = await testSupabase
+          .from("users")
+          .select("email")
+          .eq("email", email)
+          .single();
+
+        debugInfo.steps.push({
+          number: 1.5,
+          name: "test-with-correct-key",
+          worked: !!testUser,
+          error: testError?.message || null,
+          userEmail: testUser?.email || null,
+        });
 
         // Step 2: Query user from database
         const { data: user, error: queryError } = await supabase.from("users").select("*").eq("email", email).single();
