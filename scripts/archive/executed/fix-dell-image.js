@@ -2,7 +2,6 @@ import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 import { logger } from "../lib/logger.js";
 
-
 // Carregar variáveis de ambiente
 dotenv.config();
 

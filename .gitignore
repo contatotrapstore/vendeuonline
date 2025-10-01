@@ -69,10 +69,15 @@ coverage/
 
 # Environment files
 .env.production
+.env.vercel
 
 # Deprecated directories
 .trae/
 .traegnore
+
+# Generated configuration files
+.port-config.json
+.vercel-deploy-trigger
 
 # Test files
 test-*.html

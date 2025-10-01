@@ -1,6 +1,6 @@
-import { logger } from "../lib/logger.js";
-
 #!/usr/bin/env node
+
+import { logger } from "../lib/logger.js";
 
 /**
  * Script para limpar automaticamente warnings do ESLint
