@@ -4,7 +4,6 @@ import { persist } from "zustand/middleware";
 import { apiRequest, post, get as apiGet } from "@/lib/api-client";
 import { logger } from "@/lib/logger";
 
-
 export interface User {
   id: string;
   name: string;
@@ -53,7 +52,7 @@ interface AuthState {
 }
 
 interface AuthActions {
-  login: (email: string, password: string, userType?: string) => Promise<void>;
+  login: (email: string, password: string, userType?: string) => Promise<{ user: User; token: string }>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
@@ -128,6 +127,9 @@ export const useAuthStore = create<AuthStore>()(
             isLoading: false,
             error: null,
           });
+
+          // Retornar o user para uso no componente
+          return { user, token };
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : "Erro ao fazer login";
           set({
