@@ -1320,6 +1320,71 @@ export default async function handler(req, res) {
       }
     }
 
+    // Route: GET /api/products/:id - PRODUCT DETAIL
+    if (req.method === "GET" && pathname.startsWith("/api/products/")) {
+      logger.info("🛍️ [PRODUCT DETAIL] Buscando produto...");
+
+      const productId = pathname.split("/api/products/")[1];
+
+      if (!productId || productId.length < 10) {
+        return res.status(400).json({
+          success: false,
+          error: "ID de produto inválido",
+        });
+      }
+
+      // Tentar Supabase direto (mais confiável no Vercel)
+      try {
+        console.log("✅ [PRODUCT DETAIL] Usando Supabase client...");
+        const supabaseClient = await import("./lib/supabase-client.js");
+        const { supabase: supabaseAnon } = supabaseClient;
+
+        const { data: product, error } = await supabaseAnon
+          .from("Product")
+          .select(
+            `
+            *,
+            ProductImage (id, url, alt, order),
+            ProductSpecification (id, name, value),
+            categories (id, name, slug),
+            stores (id, name, slug, isVerified, rating),
+            sellers (id, rating, storeName)
+          `
+          )
+          .eq("id", productId)
+          .eq("isActive", true)
+          .single();
+
+        if (error) {
+          console.error("❌ [PRODUCT DETAIL] Supabase error:", error.message);
+          return res.status(404).json({
+            success: false,
+            error: "Produto não encontrado",
+          });
+        }
+
+        if (!product) {
+          return res.status(404).json({
+            success: false,
+            error: "Produto não encontrado",
+          });
+        }
+
+        console.log(`✅ [PRODUCT DETAIL] Produto encontrado: ${product.name}`);
+        return res.json({
+          success: true,
+          product: product,
+        });
+      } catch (error) {
+        console.error("❌ [PRODUCT DETAIL] Error:", error.message);
+        return res.status(500).json({
+          success: false,
+          error: "Erro ao buscar produto",
+          details: error.message,
+        });
+      }
+    }
+
     // Route not found
     return res.status(404).json({
       error: "Rota não encontrada",
