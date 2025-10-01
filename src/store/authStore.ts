@@ -117,19 +117,26 @@ export const useAuthStore = create<AuthStore>()(
           logger.info("Login successful - Token:", token);
           logger.info("User type:", user?.userType);
 
+          // Normalizar user object: garantir que type e userType existem
+          const normalizedUser = {
+            ...user,
+            type: user.type || user.userType,
+            userType: (user.userType || user.type) as "admin" | "seller" | "buyer",
+          };
+
           // Armazenar token
           setStoredToken(token);
 
           set({
-            user,
+            user: normalizedUser,
             isAuthenticated: true,
             token,
             isLoading: false,
             error: null,
           });
 
-          // Retornar o user para uso no componente
-          return { user, token };
+          // Retornar o user normalizado para uso no componente
+          return { user: normalizedUser, token };
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : "Erro ao fazer login";
           set({

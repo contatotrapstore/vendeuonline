@@ -30,7 +30,10 @@ export default function AdminDashboard() {
       return;
     }
 
-    if (user.userType !== "admin") {
+    // Verificar tipo de usuário (suporta type e userType, case-insensitive)
+    const userType = (user.type || user.userType)?.toLowerCase();
+    if (userType !== "admin") {
+      console.warn("[ADMIN] Access denied - user type:", userType);
       window.location.href = "/";
       return;
     }
