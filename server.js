@@ -94,7 +94,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ==== BUILD VERSION ====
-const BUILD_VERSION = "2025-10-01-19:30-EMERGENCY-FIX";
+const BUILD_VERSION = "2025-10-01-20:07-FINAL-FIX-AUTHENTICATE";
 logger.info(`🚀 Starting server - Build: ${BUILD_VERSION}`);
 logger.info(`🔧 Environment: ${process.env.NODE_ENV || "development"}`);
 logger.info(`🔒 JWT_SECRET configured: ${JWT_SECRET ? "✅ Yes" : "❌ No"}`);
@@ -432,8 +432,13 @@ app.get("/api/health", (req, res) => {
     status: "OK",
     message: "API funcionando!",
     timestamp: new Date().toISOString(),
+    buildVersion: BUILD_VERSION,
     environment: process.env.APP_ENV || "development",
     version: "1.0.0",
+    middlewareInfo: {
+      authenticateSource: authenticate.name === "authenticateUser" ? "server/middleware/auth.js" : "inline",
+      hasEmergencyBypass: authenticate.name === "authenticateUser",
+    },
   });
 });
 
