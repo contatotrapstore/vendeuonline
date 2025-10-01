@@ -267,6 +267,35 @@ export default async function handler(req, res) {
       });
     }
 
+    // Route: GET /api/auth/check-emergency - Check emergency user hashes (DEBUG)
+    if (req.method === "GET" && pathname === "/api/auth/check-emergency") {
+      const EMERGENCY_USERS_CHECK = [
+        {
+          id: "user_emergency_admin",
+          email: "admin@vendeuonline.com",
+          name: "Admin Emergency",
+          type: "ADMIN",
+          password: "$2b$12$EG5HR5lndXipZahrTTlQouWXoZlYYxN26YwVxwlsKyI3YxNLNsqWO",
+        },
+      ];
+
+      return res.json({
+        timestamp: new Date().toISOString(),
+        emergencyUsers: EMERGENCY_USERS_CHECK.map((u) => ({
+          email: u.email,
+          hashStart: u.password.substring(0, 15),
+          hashEnd: u.password.substring(u.password.length - 15),
+          hashLength: u.password.length,
+        })),
+        expectedHash: {
+          full: "$2b$12$EG5HR5lndXipZahrTTlQouWXoZlYYxN26YwVxwlsKyI3YxNLNsqWO",
+          start: "$2b$12$EG5HR5ln",
+          end: "YxNLNsqWO",
+        },
+        note: "If hashes match, deployment has correct emergency users",
+      });
+    }
+
     // Route: GET /api/auth/verify-key - Verificar se service key está correta
     if (req.method === "GET" && pathname === "/api/auth/verify-key") {
       const expectedKey =
