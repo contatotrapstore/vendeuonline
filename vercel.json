@@ -97,6 +97,10 @@
       "destination": "/api/tracking/configs"
     },
     {
+      "source": "/api/notifications",
+      "destination": "/api/notifications"
+    },
+    {
       "source": "/api/(.*)",
       "destination": "/api/index"
     },
