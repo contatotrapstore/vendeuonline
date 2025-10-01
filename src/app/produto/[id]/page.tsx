@@ -1,22 +1,9 @@
-import { logger } from "@/lib/logger";
-
 "use client";
 
+import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Star,
-  Heart,
-  Share2,
-  ShoppingCart,
-  Truck,
-  Shield,
-  ArrowLeft,
-  Plus,
-  Minus,
-  MapPin,
-  MessageCircle,
-} from "lucide-react";
+import { Star, Heart, Share2, ShoppingCart, Truck, Shield, Plus, Minus, MapPin, MessageCircle } from "lucide-react";
 import { useProductStore } from "@/store/productStore";
 import { Product } from "@/types";
 import { useAuthStore } from "@/store/authStore";
@@ -135,8 +122,11 @@ export default function ProductDetailPage() {
             Produtos
           </Link>
           <span>/</span>
-          <Link to={`/products?category=${typeof product.category === 'object' ? product.category.slug || product.category.name : product.category}`} className="hover:text-blue-600">
-            {typeof product.category === 'object' ? product.category.name : product.category}
+          <Link
+            to={`/products?category=${typeof product.category === "object" ? product.category.slug || product.category.name : product.category}`}
+            className="hover:text-blue-600"
+          >
+            {typeof product.category === "object" ? product.category.name : product.category}
           </Link>
           <span>/</span>
           <span className="text-gray-900">{product.name}</span>
@@ -237,7 +227,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Quantity and Actions */}
-            {stockStatus.available && (
+            {stockStatus.available && user && (
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-medium text-gray-700">Quantidade:</span>
@@ -275,6 +265,25 @@ export default function ProductDetailPage() {
                   >
                     Comprar Agora
                   </button>
+                </div>
+              </div>
+            )}
+
+            {/* Login prompt for non-logged users */}
+            {stockStatus.available && !user && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                <p className="text-gray-700 mb-4">Faça login para comprar este produto</p>
+                <div className="flex gap-3 justify-center">
+                  <Link to="/entrar">
+                    <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                      Fazer Login
+                    </button>
+                  </Link>
+                  <Link to="/cadastrar">
+                    <button className="bg-white text-blue-600 border border-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors font-medium">
+                      Criar Conta
+                    </button>
+                  </Link>
                 </div>
               </div>
             )}

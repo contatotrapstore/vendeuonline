@@ -2,7 +2,6 @@ import { Router } from "express";
 import { supabase, supabaseAdmin } from "../lib/supabase-client.js";
 import { logger } from "../lib/logger.js";
 
-
 const router = Router();
 
 // Função helper para criar notificação no Supabase
@@ -35,10 +34,18 @@ const createNotification = async (userId, title, message, type = "INFO", data = 
 // Get all notifications for the current user
 router.get("/", async (req, res) => {
   try {
+    // Se não houver usuário logado, retornar lista vazia
+    if (!req.user?.userId && !req.user?.id) {
+      return res.json({
+        success: true,
+        notifications: [],
+      });
+    }
+
     const { data: notifications, error } = await supabase
       .from("notifications")
       .select("*")
-      .eq("userId", req.user?.userId || req.user?.id || "demo-user")
+      .eq("userId", req.user.userId || req.user.id)
       .order("createdAt", { ascending: false })
       .limit(50);
 
