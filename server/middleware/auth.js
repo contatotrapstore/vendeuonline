@@ -2,7 +2,6 @@ import jwt from "jsonwebtoken";
 import { supabase } from "../lib/supabase-client.js";
 import { logger } from "../lib/logger.js";
 
-
 // JWT Secret - OBRIGATÓRIO definir JWT_SECRET nas variáveis de ambiente
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -44,6 +43,27 @@ export const authenticateUser = async (req, res, next) => {
         error: "Token inválido ou expirado",
         code: "INVALID_TOKEN",
       });
+    }
+
+    // ✅ EMERGENCY BYPASS: Aceitar usuários emergency sem buscar no banco
+    if (decoded.userId && decoded.userId.startsWith("user_emergency_")) {
+      logger.info(`⚠️ Emergency user detected: ${decoded.email} (${decoded.type})`);
+
+      req.user = {
+        id: decoded.userId,
+        email: decoded.email,
+        name: decoded.name || "Emergency User",
+        type: decoded.type,
+        phone: "(54) 99999-9999",
+        city: "Erechim",
+        state: "RS",
+        isVerified: true,
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      return next();
     }
 
     // Buscar usuário real do Supabase
@@ -100,11 +120,13 @@ export const authenticateSeller = async (req, res, next) => {
     // Buscar informações do seller e loja associada
     const { data: seller, error: sellerError } = await supabase
       .from("sellers")
-      .select(`
+      .select(
+        `
         id,
         *,
         store:stores(id, name, isActive)
-      `)
+      `
+      )
       .eq("userId", req.user.id)
       .single();
 
@@ -279,11 +301,13 @@ export const authenticate = async (req, res, next) => {
     if (req.user.type === "SELLER") {
       const { data: seller, error: sellerError } = await supabase
         .from("sellers")
-        .select(`
+        .select(
+          `
           id,
           *,
           store:stores(id, name, isActive)
-        `)
+        `
+        )
         .eq("userId", req.user.id)
         .single();
 
