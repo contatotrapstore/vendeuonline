@@ -269,40 +269,22 @@ router.get(
     try {
       const { id } = req.params;
 
-      // Query otimizada para detalhes do produto
-      const productQuery = withQueryMetrics("product-detail", async () => {
-        return await createOptimizedQuery(
-          supabase,
-          "Product",
-          `${OPTIMIZED_SELECTS.PRODUCTS_DETAIL},
-         images:ProductImage(id, url, alt, order),
-         specifications:ProductSpecification(id, name,
-          value
-        ),
-        category:categories(
-          id,
-          name,
-          slug
-        ),
-        store:stores(
-          id,
-          name,
-          slug,
-          isVerified
-        ),
-        seller:sellers(
-          id,
-          user:users(
-            name
-          )
-        )`
+      // Query simplificada para detalhes do produto
+      const { data: product, error } = await supabase
+        .from("Product")
+        .select(
+          `
+          *,
+          ProductImage (id, url, alt, order),
+          ProductSpecification (id, name, value),
+          categories (id, name, slug),
+          stores (id, name, slug, isVerified, rating),
+          sellers (id, rating, storeName)
+        `
         )
-          .eq("id", id)
-          .eq("isActive", true)
-          .single();
-      });
-
-      const { data: product, error } = await productQuery();
+        .eq("id", id)
+        .eq("isActive", true)
+        .single();
 
       if (error || !product) {
         logger.error("Erro ao buscar produto:", error);
