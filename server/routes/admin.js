@@ -4,14 +4,14 @@ import { supabase, supabaseAdmin } from "../lib/supabase-client.js";
 import { securityHeaders, adminRateLimit, protectRoute, validateInput, sanitizeInput } from "../middleware/security.js";
 import { logger } from "../lib/logger.js";
 
-
 const router = Router();
 
-// Middleware removido - usando middleware centralizado
+// Middleware removido - usando middleware centralizado em server.js
+// server.js já aplica: authenticate + protectRoute(["ADMIN"])
+// Middleware duplicado causava 403 para emergency users
 
-// Middleware para todas as rotas admin
-// PRODUÇÃO: Aplicar autenticação em todas as rotas
-router.use(authenticateAdmin);
+// PRODUÇÃO: Autenticação aplicada em server.js (linha 299)
+// router.use(authenticateAdmin);  // ❌ REMOVIDO - causa dupla autenticação
 // router.use(adminRateLimit);
 // router.use(securityHeaders);
 
