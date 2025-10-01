@@ -1883,11 +1883,7 @@ const startServer = (port) => {
   return server;
 };
 
-// Iniciar servidor SOMENTE se não estiver em ambiente serverless (Vercel, AWS Lambda, etc)
-const isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY);
-
-if (!isServerless) {
-  startServer(PORT);
-}
+// Iniciar servidor
+startServer(PORT);
 
 export default app;
