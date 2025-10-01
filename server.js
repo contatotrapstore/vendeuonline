@@ -442,6 +442,22 @@ app.get("/api/health", (req, res) => {
   });
 });
 
+// Diagnostic endpoint - shows build version and middleware config
+app.get("/api/diag", (req, res) => {
+  res.json({
+    status: "OK",
+    message: "Diagnostic endpoint",
+    timestamp: new Date().toISOString(),
+    buildVersion: BUILD_VERSION,
+    environment: process.env.APP_ENV || process.env.NODE_ENV || "development",
+    middlewareInfo: {
+      authenticateName: authenticate.name,
+      authenticateSource: authenticate.name === "authenticateUser" ? "server/middleware/auth.js" : "inline (server.js)",
+      hasEmergencyBypass: authenticate.name === "authenticateUser",
+    },
+  });
+});
+
 // CSRF Token endpoint
 app.get("/api/csrf-token", authenticate, getCSRFToken);
 
