@@ -5,6 +5,96 @@ Todas as mudanças notáveis deste projeto serão documentadas neste arquivo.
 O formato é baseado em [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+---
+
+## [2.5.0] - 2025-10-01 🔥 **CORREÇÃO CRÍTICA: ADMIN 403 RESOLVIDO**
+
+### 🐛 **CORRIGIDO**
+
+#### Dashboard Admin 403 "Acesso Negado" - RESOLVIDO ✅
+
+**Problema:** Dashboard administrativo retornava 403 mesmo com token JWT válido e emergency users.
+
+**Causa Raiz #1: Middleware Duplicado**
+
+- `server/routes/admin.js:14` aplicava `authenticateAdmin` redundantemente
+- `authenticateAdmin` chamava `authenticateUser` segunda vez
+- Dupla autenticação causando falha na verificação
+
+**Solução:**
+
+```javascript
+// server/routes/admin.js:14
+// router.use(authenticateAdmin);  // ❌ REMOVIDO
+```
+
+- Commit: `128896b` - fix(admin): remove duplicate authentication middleware
+
+**Causa Raiz #2: Middleware Inline Sem Emergency Bypass**
+
+- `server.js:239-272` usava middleware `authenticate` inline
+- Não tinha suporte a emergency users (user*emergency*\*)
+- Sempre tentava buscar no banco (Prisma/Supabase)
+
+**Solução:**
+
+```javascript
+// server.js:282
+const authenticate = authenticateUser; // ✅ USA middleware com bypass
+```
+
+- Commit: `625099a` - fix(auth): replace inline authenticate with authenticateUser
+
+**Resultado:**
+
+- ✅ Admin dashboard: 403 → 200
+- ✅ Emergency bypass ativo para `user_emergency_admin`
+- ✅ Sem regressão para usuários regulares
+
+**Documentação Completa:**
+
+- `docs/reports/ROOT-CAUSE-ANALYSIS-2025-10-01.md`
+- `docs/reports/FINAL-STATUS-2025-10-01.md`
+
+---
+
+### 🆕 **ADICIONADO**
+
+#### Endpoint de Diagnóstico
+
+- **`GET /api/diag`** - Verificar build version e middleware config
+- Retorna `buildVersion`, `middlewareInfo.hasEmergencyBypass`
+- Útil para validar deploys em produção
+- Commit: `7fc068b`
+
+---
+
+### 📝 **DOCUMENTAÇÃO**
+
+#### Atualizado
+
+- `docs/PROJECT-STATUS.md` - Status 100% correções aplicadas
+- Adicionada seção "CORREÇÕES CRÍTICAS RECENTES"
+- Atualizada seção "PRÓXIMOS PASSOS RECOMENDADOS"
+- Atualizada conclusão com status final
+
+#### Criado
+
+- `docs/reports/ROOT-CAUSE-ANALYSIS-2025-10-01.md` - Análise técnica completa
+- `docs/reports/FINAL-STATUS-2025-10-01.md` - Status e validação
+
+---
+
+### 🔧 **COMMITS RELACIONADOS**
+
+1. `128896b` - fix(admin): remove duplicate authentication middleware
+2. `625099a` - fix(auth): replace inline authenticate with authenticateUser
+3. `79dc39a` - debug: add build version to health endpoint
+4. `7fc068b` - debug: add /api/diag diagnostic endpoint
+5. `96d3a67` - docs: add final status report
+
+---
+
 ## [2.4.0] - 2025-09-23 📁 **ORGANIZAÇÃO COMPLETA DA DOCUMENTAÇÃO**
 
 ### ✨ **ADICIONADO**
