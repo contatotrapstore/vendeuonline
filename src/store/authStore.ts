@@ -159,11 +159,18 @@ export const useAuthStore = create<AuthStore>()(
 
           const { user, token } = response;
 
+          // Normalizar user object: garantir que type e userType existem
+          const normalizedUser = {
+            ...user,
+            type: user.type || user.userType,
+            userType: (user.userType || user.type) as "admin" | "seller" | "buyer",
+          };
+
           // Armazenar token
           setStoredToken(token);
 
           set({
-            user,
+            user: normalizedUser,
             isAuthenticated: true,
             token,
             isLoading: false,
@@ -229,8 +236,17 @@ export const useAuthStore = create<AuthStore>()(
         try {
           const response = await apiGet("/api/auth/me");
 
+          // Normalizar user retornado do /api/auth/me
+          const normalizedUser = response.user
+            ? {
+                ...response.user,
+                type: response.user.type || response.user.userType,
+                userType: (response.user.userType || response.user.type) as "admin" | "seller" | "buyer",
+              }
+            : null;
+
           set({
-            user: response.user,
+            user: normalizedUser,
             isAuthenticated: true,
             token,
             isLoading: false,
