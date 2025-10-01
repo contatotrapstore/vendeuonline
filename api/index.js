@@ -78,7 +78,14 @@ if (!JWT_SECRET) {
 // MODO PRODUÇÃO: SEM DADOS MOCK - USAR APENAS BANCO DE DADOS
 // Se o Prisma não conectar, retorna erro 500
 
-// Helper to parse request body
+// Vercel serverless config
+export const config = {
+  api: {
+    bodyParser: true, // Enable Vercel's built-in body parser
+  },
+};
+
+// Helper to parse request body (fallback if bodyParser disabled)
 async function parseBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
