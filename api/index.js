@@ -267,6 +267,115 @@ export default async function handler(req, res) {
       });
     }
 
+    // Route: POST /api/auth/test-login-debug - Debug completo do login
+    if (req.method === "POST" && pathname === "/api/auth/test-login-debug") {
+      const { email, password } = req.body;
+
+      if (!email || !password) {
+        return res.status(400).json({ error: "email and password required" });
+      }
+
+      const debugInfo = {
+        timestamp: new Date().toISOString(),
+        email,
+        passwordLength: password.length,
+        steps: [],
+      };
+
+      try {
+        // Step 1: Check Supabase client
+        debugInfo.steps.push({
+          number: 1,
+          name: "check-supabase-client",
+          hasClient: !!supabase,
+          hasUrl: !!supabaseUrl,
+          hasServiceKey: !!supabaseServiceKey,
+        });
+
+        if (!supabase) {
+          debugInfo.error = "Supabase client not initialized";
+          return res.json(debugInfo);
+        }
+
+        // Step 2: Query user from database
+        const { data: user, error: queryError } = await supabase.from("users").select("*").eq("email", email).single();
+
+        debugInfo.steps.push({
+          number: 2,
+          name: "query-user",
+          userFound: !!user,
+          queryError: queryError?.message || null,
+          hasPassword: !!user?.password,
+          passwordHashLength: user?.password?.length || 0,
+        });
+
+        if (queryError) {
+          debugInfo.error = `Query error: ${queryError.message}`;
+          return res.json(debugInfo);
+        }
+
+        if (!user) {
+          debugInfo.error = "User not found in database";
+          return res.json(debugInfo);
+        }
+
+        // Step 3: Compare password with bcrypt
+        const passwordMatch = await bcrypt.compare(password, user.password);
+
+        debugInfo.steps.push({
+          number: 3,
+          name: "bcrypt-compare",
+          passwordMatch,
+          bcryptAvailable: typeof bcrypt.compare === "function",
+          passwordProvided: password.substring(0, 3) + "***",
+          hashPrefix: user.password.substring(0, 10),
+        });
+
+        // Step 4: Generate JWT token if password matches
+        if (passwordMatch) {
+          const token = jwt.sign(
+            {
+              userId: user.id,
+              email: user.email,
+              type: user.type,
+            },
+            JWT_SECRET,
+            { expiresIn: "7d" }
+          );
+
+          debugInfo.steps.push({
+            number: 4,
+            name: "generate-token",
+            tokenGenerated: !!token,
+            tokenLength: token.length,
+          });
+
+          return res.json({
+            ...debugInfo,
+            success: true,
+            message: "Login would succeed!",
+            user: {
+              id: user.id,
+              email: user.email,
+              type: user.type,
+              name: user.name,
+            },
+            tokenPreview: token.substring(0, 20) + "...",
+          });
+        } else {
+          debugInfo.error = "Password does not match";
+          return res.json({
+            ...debugInfo,
+            success: false,
+          });
+        }
+      } catch (error) {
+        debugInfo.error = error.message;
+        debugInfo.stack = error.stack;
+        return res.status(500).json(debugInfo);
+      }
+    }
+
     // Route: POST /api/auth/test-bcrypt - Test bcrypt directly
     if (req.method === "POST" && pathname === "/api/auth/test-bcrypt") {
       const { password, hash } = req.body;
