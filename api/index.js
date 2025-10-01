@@ -1207,16 +1207,35 @@ export default async function handler(req, res) {
 
       // Detectar ambiente serverless (Vercel, AWS Lambda, etc)
       const isServerless = !!(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY);
+      const isProduction = process.env.NODE_ENV === "production";
 
-      // Em serverless OU se Prisma não disponível, usar Supabase direto
-      if (isServerless || !prisma || !safeQuery) {
+      console.log(`🌍 [LOGIN-DEBUG] Environment:`, {
+        isServerless,
+        isProduction,
+        hasVercel: !!process.env.VERCEL,
+        hasPrisma: !!prisma,
+        hasSafeQuery: !!safeQuery,
+      });
+
+      // SEMPRE usar Supabase em produção/serverless (Vercel)
+      if (isServerless || isProduction || !prisma || !safeQuery) {
+        console.log(`🔄 [LOGIN-DEBUG] Usando Supabase Auth (serverless: ${isServerless}, production: ${isProduction})`);
         logger.warn(
           `⚠️ [LOGIN] ${isServerless ? "Serverless detectado" : "Prisma não disponível"}, usando Supabase Auth...`
         );
 
         try {
+          console.log(`📦 [LOGIN-DEBUG] Importando supabase-auth module...`);
           const supabaseAuth = await import("./lib/supabase-auth.js");
+          console.log(`✅ [LOGIN-DEBUG] Supabase-auth imported, calling loginUser...`);
+
           const result = await supabaseAuth.loginUser({ email, password });
+          console.log(`🔍 [LOGIN-DEBUG] LoginUser result:`, {
+            success: result.success,
+            hasUser: !!result.user,
+            error: result.error,
+            code: result.code,
+          });
 
           if (!result.success) {
             return res.status(401).json({

@@ -98,12 +98,25 @@ export async function registerUser({ name, email, password, phone, type = "BUYER
  */
 export async function loginUser({ email, password }) {
   try {
+    console.log(`🔐 [SUPABASE-AUTH-DEBUG] Tentativa de login para: ${email}`);
     logger.info(`[SUPABASE-AUTH] Tentativa de login: ${email}`);
 
     // Buscar usuário por email
+    console.log(`🔍 [SUPABASE-AUTH-DEBUG] Buscando usuário no banco...`);
     const { data: user, error: fetchError } = await supabase.from("users").select("*").eq("email", email).single();
 
-    if (fetchError || !user) {
+    if (fetchError) {
+      console.error(`❌ [SUPABASE-AUTH-DEBUG] Erro ao buscar usuário:`, fetchError);
+      logger.warn(`[SUPABASE-AUTH] Erro no fetch: ${fetchError.message}`);
+      return {
+        success: false,
+        error: "Credenciais inválidas",
+        code: "INVALID_CREDENTIALS",
+      };
+    }
+
+    if (!user) {
+      console.log(`⚠️ [SUPABASE-AUTH-DEBUG] Usuário não encontrado: ${email}`);
       logger.warn(`[SUPABASE-AUTH] Usuário não encontrado: ${email}`);
       return {
         success: false,
@@ -112,10 +125,24 @@ export async function loginUser({ email, password }) {
       };
     }
 
+    console.log(`✅ [SUPABASE-AUTH-DEBUG] Usuário encontrado:`, {
+      id: user.id,
+      email: user.email,
+      type: user.type,
+      hasPassword: !!user.password,
+      passwordLength: user.password?.length || 0,
+    });
+
     // Verificar senha
+    console.log(`🔑 [SUPABASE-AUTH-DEBUG] Comparando senhas com bcrypt...`);
+    console.log(`🔑 [SUPABASE-AUTH-DEBUG] Password provided length:`, password.length);
+    console.log(`🔑 [SUPABASE-AUTH-DEBUG] Hash in DB:`, user.password.substring(0, 20) + "...");
+
     const passwordMatch = await bcrypt.compare(password, user.password);
+    console.log(`🔑 [SUPABASE-AUTH-DEBUG] Bcrypt compare result:`, passwordMatch);
 
     if (!passwordMatch) {
+      console.log(`❌ [SUPABASE-AUTH-DEBUG] Senha incorreta para: ${email}`);
       logger.warn(`[SUPABASE-AUTH] Senha incorreta para: ${email}`);
       return {
         success: false,
