@@ -34,12 +34,29 @@ export default function LoginPage() {
     clearError();
 
     try {
-      await login(data.email, data.password);
+      const result = await login(data.email, data.password);
 
       toast.success("Login realizado com sucesso!");
 
-      // Redirecionar para a página inicial ou dashboard
-      navigate("/");
+      // Obter o usuário logado para redirecionar corretamente
+      const { user } = useAuthStore.getState();
+      const userType = (user?.type || user?.userType)?.toUpperCase();
+
+      console.log("[LOGIN] User type:", userType, "User:", user);
+
+      // Redirecionar baseado no tipo de usuário com timeout para garantir state update
+      setTimeout(() => {
+        if (userType === "ADMIN") {
+          console.log("[LOGIN] Redirecting to /admin");
+          navigate("/admin", { replace: true });
+        } else if (userType === "SELLER") {
+          console.log("[LOGIN] Redirecting to /seller");
+          navigate("/seller", { replace: true });
+        } else {
+          console.log("[LOGIN] Redirecting to home");
+          navigate("/", { replace: true });
+        }
+      }, 100);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao fazer login. Tente novamente.");
     }
