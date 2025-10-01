@@ -98,7 +98,7 @@
     },
     {
       "source": "/api/(.*)",
-      "destination": "/api/index"
+      "destination": "/api/server"
     },
     {
       "source": "/assets/(.*)",
