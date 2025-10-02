@@ -7,14 +7,14 @@ const isProduction = import.meta.env.MODE === "production";
 
 // Base URLs for different environments
 const API_URLS = {
-  // Em desenvolvimento, usar '' para que requisições passem pelo proxy do Vite
-  development: "",
-  // Em produção, usar caminho relativo (Vercel serverless functions)
-  production: "",
+  // Em desenvolvimento, usar localhost
+  development: import.meta.env.VITE_API_URL || "http://localhost:3000",
+  // Em produção, usar URL do Render
+  production: import.meta.env.VITE_API_URL || "https://vendeuonline-api.onrender.com",
 };
 
-// Current API base URL (sempre vazio para usar caminhos relativos)
-export const API_BASE_URL = "";
+// Current API base URL baseado no ambiente
+export const API_BASE_URL = isProduction ? API_URLS.production : API_URLS.development;
 
 // Timeout padrão para requisições
 export const API_TIMEOUT = 30000; // 30 segundos
@@ -33,13 +33,11 @@ export const buildApiUrl = (endpoint: string): string => {
     return endpoint;
   }
 
-  // Para desenvolvimento e produção: sempre usar /api/
-  if (endpoint.startsWith("/api")) {
-    return endpoint; // Já tem /api, usar diretamente
-  }
+  // Remover /api/ do início do endpoint se existir (será adicionado abaixo)
+  const cleanEndpoint = endpoint.replace(/^\/api\/?/, "");
 
-  // Adicionar /api/ ao início
-  return `/api/${endpoint.replace(/^\//, "")}`;
+  // Construir URL completa: BASE_URL + /api/ + endpoint
+  return `${API_BASE_URL}/api/${cleanEndpoint.replace(/^\//, "")}`;
 };
 
 // Helper function to get auth headers

@@ -39,7 +39,9 @@
     "validate:deployment": "node scripts/validate-deployment.js",
     "validate:vercel": "node scripts/validate-vercel-deploy.js",
     "deploy:check": "npm run build && npm run validate:deployment",
-    "deploy:vercel": "npm run build && npm run validate:vercel"
+    "deploy:vercel": "npm run build && npm run validate:vercel",
+    "render:build": "npm ci && npx prisma generate",
+    "render:start": "NODE_ENV=production node server.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.0",

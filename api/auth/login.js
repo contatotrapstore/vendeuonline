@@ -1,13 +1,13 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
-import { createClient } from "@supabase/supabase-js";
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { createClient } = require("@supabase/supabase-js");
 
 // Initialize Supabase client
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Set CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
@@ -99,4 +99,4 @@ export default async function handler(req, res) {
     console.error("❌ Erro no login:", error);
     return res.status(500).json({ error: "Erro interno do servidor" });
   }
-}
+};

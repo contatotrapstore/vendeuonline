@@ -131,12 +131,16 @@ app.use(monitoring.requestMonitoring());
 // CORS configurado de forma segura
 const corsOptions = {
   origin: [
+    // Desenvolvimento local
     "http://localhost:5173",
     "http://localhost:5175",
     "http://localhost:5181",
     "http://localhost:4173",
     "http://localhost:4174",
+    // Produção Vercel
     "https://vendeuonline.vercel.app",
+    "https://www.vendeu.online",
+    "https://vendeu.online",
   ],
   credentials: true,
   optionsSuccessStatus: 200,

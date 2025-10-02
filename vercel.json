@@ -74,44 +74,10 @@
       ]
     }
   ],
-  "functions": {
-    "api/*.js": {
-      "maxDuration": 60,
-      "memory": 1024
-    }
-  },
   "env": {
     "NODE_ENV": "production"
   },
   "rewrites": [
-    {
-      "source": "/api/vercel-check",
-      "destination": "/api/vercel-check"
-    },
-    {
-      "source": "/api/diagnostics",
-      "destination": "/api/diagnostics"
-    },
-    {
-      "source": "/api/tracking/configs",
-      "destination": "/api/tracking/configs"
-    },
-    {
-      "source": "/api/notifications",
-      "destination": "/api/notifications"
-    },
-    {
-      "source": "/api/auth/login",
-      "destination": "/api/auth/login"
-    },
-    {
-      "source": "/api/auth/register",
-      "destination": "/api/auth/register"
-    },
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/index"
-    },
     {
       "source": "/assets/(.*)",
       "destination": "/assets/$1"
