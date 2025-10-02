@@ -60,6 +60,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 // Cliente admin (para uploads e operações administrativas)
+// ⚠️ IMPORTANTE: Service Role Key bypassa RLS (Row Level Security)
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   auth: {
     autoRefreshToken: false,
@@ -76,6 +77,7 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 logger.info("✅ Cliente Supabase inicializado com variáveis de ambiente");
+logger.info(`🔑 Service Role Key length: ${supabaseServiceKey ? supabaseServiceKey.length : 0} chars`);
 
 // Função para testar a conexão
 export async function testSupabaseConnection() {

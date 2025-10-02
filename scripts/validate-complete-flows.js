@@ -8,7 +8,7 @@
 import http from "http";
 
 const API_HOST = "localhost";
-const API_PORT = 3003;
+const API_PORT = 3000;
 const timestamp = Date.now();
 
 // Dados de teste

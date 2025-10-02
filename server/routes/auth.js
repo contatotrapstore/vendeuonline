@@ -2,10 +2,10 @@ import express from "express";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { supabase } from "../lib/supabase-client.js";
+import { supabase, supabaseAdmin } from "../lib/supabase-client.js";
 import { AppError, ValidationError, AuthenticationError, ConflictError, DatabaseError } from "../lib/errors.js";
 import { asyncHandler, validateSchema } from "../middleware/errorHandler.js";
-import { loginSchema, createUserSchema } from "../schemas/commonSchemas.js";
+import { loginSchema, createUserSchema, changePasswordSchema } from "../schemas/commonSchemas.js";
 import { autoNotify } from "../middleware/notifications.js";
 import { logger } from "../lib/logger.js";
 
@@ -232,8 +232,11 @@ router.post(
   asyncHandler(async (req, res) => {
     logger.info("📝 Registration request:", req.body);
 
-    const { name, email, password, phone, city, state, userType } = req.body;
+    const { name, email, password, phone, city, state, userType, type } = req.body;
     const emailLower = email.toLowerCase();
+
+    // Suportar tanto 'type' quanto 'userType' com fallback para BUYER
+    const actualUserType = (userType || type || "BUYER").toUpperCase();
 
     // Verificar se o usuário já existe primeiro no Prisma
     try {
@@ -275,7 +278,7 @@ router.post(
       phone,
       city,
       state,
-      type: userType.toUpperCase(), // Garantir que tipo seja BUYER, SELLER ou ADMIN
+      type: actualUserType, // Garantir que tipo seja BUYER, SELLER ou ADMIN
       isVerified: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -312,6 +315,7 @@ router.post(
     }
 
     // Fallback para Supabase
+    logger.info("🔍 DEBUG - Inserindo no Supabase:", { type: actualUserType, email: emailLower });
     const { data: newUser, error: insertError } = await supabase.from("users").insert([userData]).select().single();
 
     if (insertError) {
@@ -319,9 +323,74 @@ router.post(
       throw new DatabaseError("Erro ao criar usuário no banco de dados");
     }
 
+    logger.info("🔍 DEBUG - Supabase retornou:", { type: newUser.type, email: newUser.email });
+
     const token = generateToken(newUser);
 
     logger.info("✅ Usuário criado no Supabase:", emailLower);
+
+    // Se for SELLER, criar automaticamente seller e store
+    if (actualUserType === "SELLER") {
+      try {
+        // Criar registro seller (usando supabaseAdmin para bypassar RLS)
+        const sellerId = `seller_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const { error: sellerError } = await supabaseAdmin.from("sellers").insert({
+          id: sellerId,
+          userId: newUser.id,
+          storeName: `Loja de ${name}`,
+          storeDescription: "Nova loja criada automaticamente",
+          storeSlug: `loja-${newUser.id.substring(0, 8)}`,
+          address: `${city}, ${state}`,
+          zipCode: "00000-000",
+          category: "geral",
+          plan: "GRATUITO",
+          isActive: true,
+          rating: 0,
+          totalSales: 0,
+          commission: 10,
+        });
+
+        if (sellerError) {
+          logger.warn("⚠️ Erro ao criar seller:", sellerError.message);
+        } else {
+          logger.info("✅ Seller criado:", sellerId);
+
+          // Criar registro store (usando supabaseAdmin para bypassar RLS)
+          const storeId = `store_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          const { error: storeError } = await supabaseAdmin.from("stores").insert({
+            id: storeId,
+            sellerId: sellerId,
+            name: `Loja de ${name}`,
+            slug: `loja-${newUser.id.substring(0, 8)}`,
+            description: "Nova loja criada automaticamente. Personalize seu perfil!",
+            address: `${city}, ${state}`,
+            city,
+            state,
+            zipCode: "00000-000",
+            phone,
+            email: emailLower,
+            category: "geral",
+            isActive: true,
+            isVerified: false,
+            rating: 0,
+            reviewCount: 0,
+            productCount: 0,
+            salesCount: 0,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+
+          if (storeError) {
+            logger.warn("⚠️ Erro ao criar store:", storeError.message);
+          } else {
+            logger.info("✅ Store criada:", storeId);
+          }
+        }
+      } catch (err) {
+        logger.error("❌ Erro ao criar seller/store:", err);
+        // Não falhar o registro, apenas logar o erro
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -334,7 +403,7 @@ router.post(
         city: newUser.city,
         state: newUser.state,
         type: newUser.type,
-        userType: userType,
+        userType: actualUserType.toLowerCase(),
         isVerified: newUser.isVerified,
         createdAt: newUser.createdAt,
       },
@@ -378,17 +447,6 @@ const authenticateUser = async (req, res, next) => {
 };
 
 // Schema de validação para mudança de senha
-const changePasswordSchema = z
-  .object({
-    currentPassword: z.string().min(1, "Senha atual é obrigatória"),
-    newPassword: z.string().min(6, "Nova senha deve ter pelo menos 6 caracteres"),
-    confirmPassword: z.string().min(1, "Confirmação de senha é obrigatória"),
-  })
-  .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "As senhas não coincidem",
-    path: ["confirmPassword"],
-  });
-
 // POST /api/users/change-password - Alterar senha do usuário
 router.post(
   "/users/change-password",
@@ -542,6 +600,31 @@ router.get(
         error: "Erro ao carregar dados do usuário",
       });
     }
+  })
+);
+
+// POST /api/auth/logout - Logout
+router.post(
+  "/logout",
+  asyncHandler(async (req, res) => {
+    // Como JWT é stateless, o logout é feito no client-side
+    // Mas podemos registrar o evento aqui e retornar sucesso
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, JWT_SECRET);
+        logger.info("🚪 Logout realizado:", decoded.email);
+      } catch (error) {
+        // Token inválido ou expirado - ainda assim permitir logout
+        logger.warn("⚠️ Logout com token inválido/expirado");
+      }
+    }
+
+    res.json({
+      success: true,
+      message: "Logout realizado com sucesso",
+    });
   })
 );
 

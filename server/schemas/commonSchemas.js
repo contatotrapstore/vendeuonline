@@ -9,7 +9,9 @@ export const uuidSchema = z.string().uuid("ID deve ser um UUID válido");
 
 export const emailSchema = z
   .string()
+  .min(1, "Email é obrigatório")
   .email("Email inválido")
+  .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Formato de email inválido")
   .transform((email) => email.toLowerCase());
 
 export const phoneSchema = z
@@ -18,22 +20,25 @@ export const phoneSchema = z
     /^(\(\d{2}\)\s?\d{4,5}-?\d{4}|\d{10,11}|\d{3}-\d{4})$/,
     "Telefone deve estar no formato (xx) xxxxx-xxxx ou apenas números (10-11 dígitos)"
   )
-  .transform(phone => {
+  .transform((phone) => {
     // Normalizar para formato padrão se for apenas números
-    const numbers = phone.replace(/\D/g, '');
+    const numbers = phone.replace(/\D/g, "");
     if (numbers.length === 11) {
-      return `(${numbers.slice(0,2)}) ${numbers.slice(2,7)}-${numbers.slice(7)}`;
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
     } else if (numbers.length === 10) {
-      return `(${numbers.slice(0,2)}) ${numbers.slice(2,6)}-${numbers.slice(6)}`;
+      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
     }
     return phone;
   });
 
 export const passwordSchema = z
   .string()
-  .min(6, "Senha deve ter pelo menos 6 caracteres")
+  .min(8, "Senha deve ter pelo menos 8 caracteres")
   .max(100, "Senha deve ter no máximo 100 caracteres")
-  .regex(/^(?=.*[a-zA-Z])(?=.*\d)/, "Senha deve conter pelo menos uma letra e um número");
+  .regex(/[A-Z]/, "Senha deve conter pelo menos uma letra maiúscula")
+  .regex(/[a-z]/, "Senha deve conter pelo menos uma letra minúscula")
+  .regex(/[0-9]/, "Senha deve conter pelo menos um número")
+  .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, "Senha deve conter pelo menos um caractere especial (!@#$%^&*)");
 
 export const nameSchema = z
   .string()
@@ -75,18 +80,24 @@ export const searchSchema = z
  */
 export const userTypeSchema = z.enum(["BUYER", "SELLER", "ADMIN"]);
 
-export const createUserSchema = z.object({
-  name: nameSchema,
-  email: emailSchema,
-  password: passwordSchema,
-  phone: phoneSchema.optional(),
-  city: z.string().min(2, "Cidade deve ter pelo menos 2 caracteres").max(100),
-  state: stateSchema,
-  userType: z
-    .enum(["buyer", "seller", "BUYER", "SELLER"])
-    .transform((val) => val.toUpperCase())
-    .default("BUYER"),
-});
+export const createUserSchema = z
+  .object({
+    name: nameSchema,
+    email: emailSchema,
+    password: passwordSchema,
+    phone: phoneSchema.optional(),
+    city: z.string().min(2, "Cidade deve ter pelo menos 2 caracteres").max(100),
+    state: stateSchema,
+    userType: z
+      .enum(["buyer", "seller", "BUYER", "SELLER"])
+      .transform((val) => val.toUpperCase())
+      .default("BUYER"),
+    type: z
+      .enum(["buyer", "seller", "BUYER", "SELLER"])
+      .transform((val) => val.toUpperCase())
+      .optional(),
+  })
+  .passthrough(); // Permitir campos extras para compatibilidade
 
 export const updateUserSchema = z.object({
   name: nameSchema.optional(),
@@ -102,16 +113,22 @@ export const loginSchema = z.object({
   userType: z.enum(["buyer", "seller", "admin", "BUYER", "SELLER", "ADMIN"]).optional(),
 });
 
-export const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, "Senha atual é obrigatória"),
-  newPassword: passwordSchema,
-});
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "Senha atual é obrigatória"),
+    newPassword: passwordSchema,
+    confirmPassword: z.string().optional(),
+  })
+  .refine((data) => !data.confirmPassword || data.newPassword === data.confirmPassword, {
+    message: "As senhas não coincidem",
+    path: ["confirmPassword"],
+  });
 
 /**
  * Schemas para Address
  */
 export const createAddressSchema = z.object({
-  label: z.string().min(1, "Label é obrigatória").max(50),
+  label: z.string().min(1, "Label deve ter pelo menos 1 caractere").max(50).optional(),
   street: z.string().min(5, "Endereço deve ter pelo menos 5 caracteres").max(200),
   number: z.string().min(1, "Número é obrigatório").max(10),
   complement: z.string().max(100).optional(),
