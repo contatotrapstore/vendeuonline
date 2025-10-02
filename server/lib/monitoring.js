@@ -94,7 +94,7 @@ class MonitoringService {
       const startTime = Date.now();
 
       // Test connection
-      const { data, error, count } = await supabase.from("User").select("id", { count: "exact" }).limit(1);
+      const { data, error, count } = await supabase.from("users").select("id", { count: "exact" }).limit(1);
 
       const queryTime = Date.now() - startTime;
       this.metrics.database.queryTime = queryTime;

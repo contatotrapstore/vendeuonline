@@ -109,6 +109,58 @@
       "destination": "/assets/$1"
     },
     {
+      "source": "/produtos",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/lojas",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/planos",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/sobre",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/produto/:id",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/loja/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/carrinho",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/finalizar",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/entrar",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cadastrar",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/painel",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/painel/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/conta",
+      "destination": "/index.html"
+    },
+    {
       "source": "/((?!api|assets|_vercel|_next|_static|favicon.ico|.*\\.).*)",
       "destination": "/index.html"
     }
