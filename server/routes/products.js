@@ -386,23 +386,10 @@ router.post("/", authenticate, protectRoute(["SELLER", "ADMIN"]), async (req, re
 
     // VALIDAÇÃO DE LIMITES DE PLANO
     if (req.user.type === "SELLER") {
-      // 1. Buscar plano atual do seller
+      // 1. Buscar seller (usa enum plan, não foreign key planId)
       const { data: seller, error: sellerError } = await supabase
         .from("sellers")
-        .select(
-          `
-            id,
-            planId,
-            plans:planId (
-              id,
-              name,
-              maxProducts,
-              maxAds,
-              maxPhotos,
-              isActive
-            )
-          `
-        )
+        .select("id, plan")
         .eq("userId", req.user.id)
         .single();
 
@@ -414,15 +401,17 @@ router.post("/", authenticate, protectRoute(["SELLER", "ADMIN"]), async (req, re
         });
       }
 
-      const sellerPlan = seller.plans;
-      if (!sellerPlan || !sellerPlan.isActive) {
-        return res.status(403).json({
-          error: "Plano inativo ou não encontrado",
-          code: "PLAN_INACTIVE",
-        });
-      }
+      // Plano GRATUITO permite produtos ilimitados (-1)
+      const planLimits = {
+        GRATUITO: { maxProducts: -1, maxAds: -1, maxPhotos: 5 },
+        BASICO: { maxProducts: 50, maxAds: 50, maxPhotos: 10 },
+        PREMIUM: { maxProducts: 200, maxAds: 200, maxPhotos: 15 },
+        ENTERPRISE: { maxProducts: -1, maxAds: -1, maxPhotos: 20 },
+      };
 
-      logger.info(`📊 Validando limites - Plano: ${sellerPlan.name}, Max Produtos: ${sellerPlan.maxProducts}`);
+      const sellerPlan = planLimits[seller.plan] || planLimits.GRATUITO;
+
+      logger.info(`📊 Validando limites - Plano: ${seller.plan}, Max Produtos: ${sellerPlan.maxProducts}`);
 
       // 2. Contar produtos atuais do seller
       if (sellerPlan.maxProducts !== -1) {
