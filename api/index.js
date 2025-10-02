@@ -223,8 +223,46 @@ export default async function handler(req, res) {
         throw new Error("Token inválido");
       }
 
+      // Emergency bypass for hardcoded admin user
+      if (payload.userId && payload.userId.startsWith("user_emergency_")) {
+        const emergencyUser = EMERGENCY_USERS.find((u) => u.id === payload.userId);
+        if (emergencyUser) {
+          console.log(`⚠️ [EMERGENCY AUTH] Bypass activated for: ${emergencyUser.email} (${emergencyUser.type})`);
+          return {
+            id: emergencyUser.id,
+            userId: emergencyUser.id,
+            email: emergencyUser.email,
+            type: emergencyUser.type,
+            userType: emergencyUser.type, // Both formats for compatibility
+            isEmergency: true,
+          };
+        }
+      }
+
       return payload;
     };
+
+    // Route: GET /api/diag - Diagnostic endpoint for deployment validation
+    if (req.method === "GET" && pathname === "/api/diag") {
+      return res.json({
+        buildVersion: "2025-10-02-VERCEL-FIX-DIAG",
+        middlewareInfo: {
+          authenticateUser: "emergency-bypass-enabled",
+          authenticateAdmin: "emergency-bypass-enabled",
+          emergencyUsers: EMERGENCY_USERS.map((u) => ({ email: u.email, type: u.type })),
+        },
+        deployment: {
+          type: "vercel-serverless",
+          file: "api/index.js",
+          timestamp: new Date().toISOString(),
+          environment: process.env.NODE_ENV,
+          hasDatabase: !!process.env.DATABASE_URL,
+          hasJWT: !!process.env.JWT_SECRET,
+          hasSupabase: !!(getEnvVar("SUPABASE_URL") && getEnvVar("SUPABASE_ANON_KEY")),
+        },
+        status: "operational",
+      });
+    }
 
     // Route: GET /api/health - Enhanced diagnostic endpoint
     if (req.method === "GET" && pathname === "/api/health") {
@@ -232,6 +270,7 @@ export default async function handler(req, res) {
         status: "OK",
         message: "API funcionando!",
         timestamp: new Date().toISOString(),
+        buildVersion: "2025-10-02-VERCEL-FIX-DIAG", // Added build version
         prismaStatus: prisma ? "CONECTADO" : "NÃO CONECTADO",
         safeQueryStatus: safeQuery ? "DISPONÍVEL" : "NÃO DISPONÍVEL",
         environment: {
