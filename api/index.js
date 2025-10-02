@@ -242,28 +242,6 @@ export default async function handler(req, res) {
       return payload;
     };
 
-    // Route: GET /api/diag - Diagnostic endpoint for deployment validation
-    if (req.method === "GET" && pathname === "/api/diag") {
-      return res.json({
-        buildVersion: "2025-10-02-VERCEL-FIX-DIAG",
-        middlewareInfo: {
-          authenticateUser: "emergency-bypass-enabled",
-          authenticateAdmin: "emergency-bypass-enabled",
-          emergencyUsers: EMERGENCY_USERS.map((u) => ({ email: u.email, type: u.type })),
-        },
-        deployment: {
-          type: "vercel-serverless",
-          file: "api/index.js",
-          timestamp: new Date().toISOString(),
-          environment: process.env.NODE_ENV,
-          hasDatabase: !!process.env.DATABASE_URL,
-          hasJWT: !!process.env.JWT_SECRET,
-          hasSupabase: !!(getEnvVar("SUPABASE_URL") && getEnvVar("SUPABASE_ANON_KEY")),
-        },
-        status: "operational",
-      });
-    }
-
     // Route: GET /api/health - Enhanced diagnostic endpoint
     if (req.method === "GET" && pathname === "/api/health") {
       return res.json({
@@ -1286,6 +1264,28 @@ export default async function handler(req, res) {
         password: "$2b$12$EG5HR5lndXipZahrTTlQouWXoZlYYxN26YwVxwlsKyI3YxNLNsqWO",
       },
     ];
+
+    // Route: GET /api/diag - Diagnostic endpoint for deployment validation
+    if (req.method === "GET" && pathname === "/api/diag") {
+      return res.json({
+        buildVersion: "2025-10-02-VERCEL-FIX-DIAG-V2",
+        middlewareInfo: {
+          authenticateUser: "emergency-bypass-enabled",
+          authenticateAdmin: "emergency-bypass-enabled",
+          emergencyUsers: EMERGENCY_USERS.map((u) => ({ email: u.email, type: u.type })),
+        },
+        deployment: {
+          type: "vercel-serverless",
+          file: "api/index.js",
+          timestamp: new Date().toISOString(),
+          environment: process.env.NODE_ENV,
+          hasDatabase: !!process.env.DATABASE_URL,
+          hasJWT: !!process.env.JWT_SECRET,
+          hasSupabase: !!(getEnvVar("SUPABASE_URL") && getEnvVar("SUPABASE_ANON_KEY")),
+        },
+        status: "operational",
+      });
+    }
 
     // Route: GET /api/test-hash - Endpoint para testar hash de senha
     if (req.method === "GET" && pathname === "/api/test-hash") {
