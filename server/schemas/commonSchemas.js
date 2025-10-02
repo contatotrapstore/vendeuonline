@@ -88,12 +88,13 @@ export const createUserSchema = z
     phone: phoneSchema.optional(),
     city: z.string().min(2, "Cidade deve ter pelo menos 2 caracteres").max(100),
     state: stateSchema,
-    userType: z
-      .enum(["buyer", "seller", "BUYER", "SELLER"])
-      .transform((val) => val.toUpperCase())
-      .default("BUYER"),
+    // Priorizar campo 'type' sobre 'userType' - não aplicar default aqui
     type: z
-      .enum(["buyer", "seller", "BUYER", "SELLER"])
+      .enum(["buyer", "seller", "BUYER", "SELLER", "ADMIN"])
+      .transform((val) => val.toUpperCase())
+      .optional(),
+    userType: z
+      .enum(["buyer", "seller", "BUYER", "SELLER", "ADMIN"])
       .transform((val) => val.toUpperCase())
       .optional(),
   })

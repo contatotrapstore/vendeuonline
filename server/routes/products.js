@@ -403,7 +403,7 @@ router.post("/", authenticate, protectRoute(["SELLER", "ADMIN"]), async (req, re
             )
           `
         )
-        .eq("userId", req.user.userId)
+        .eq("userId", req.user.id)
         .single();
 
       if (sellerError || !seller) {
