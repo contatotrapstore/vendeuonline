@@ -37,10 +37,10 @@ const Navbar = () => {
     if (!isAuthenticated || !user) {
       return [
         { to: "/", label: "Início", icon: null },
-        { to: "/products", label: "Produtos", icon: null },
-        { to: "/stores", label: "Lojas", icon: null },
-        { to: "/pricing", label: "Planos", icon: null },
-        { to: "/about", label: "Sobre", icon: null },
+        { to: "/produtos", label: "Produtos", icon: null },
+        { to: "/lojas", label: "Lojas", icon: null },
+        { to: "/planos", label: "Planos", icon: null },
+        { to: "/sobre", label: "Sobre", icon: null },
       ];
     }
 

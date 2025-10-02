@@ -78,27 +78,27 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/products" className="text-gray-300 hover:text-white transition-colors text-sm">
+                <Link to="/produtos" className="text-gray-300 hover:text-white transition-colors text-sm">
                   Todos os Produtos
                 </Link>
               </li>
               <li>
-                <Link to="/stores" className="text-gray-300 hover:text-white transition-colors text-sm">
+                <Link to="/lojas" className="text-gray-300 hover:text-white transition-colors text-sm">
                   Lojas Parceiras
                 </Link>
               </li>
               <li>
-                <Link to="/pricing" className="text-gray-300 hover:text-white transition-colors text-sm">
+                <Link to="/planos" className="text-gray-300 hover:text-white transition-colors text-sm">
                   Planos e Preços
                 </Link>
               </li>
               <li>
-                <Link to="/about" className="text-gray-300 hover:text-white transition-colors text-sm">
+                <Link to="/sobre" className="text-gray-300 hover:text-white transition-colors text-sm">
                   Sobre Nós
                 </Link>
               </li>
               <li>
-                <Link to="/faq" className="text-gray-300 hover:text-white transition-colors text-sm">
+                <Link to="/perguntas-frequentes" className="text-gray-300 hover:text-white transition-colors text-sm">
                   Perguntas Frequentes
                 </Link>
               </li>
@@ -110,17 +110,17 @@ export default function Footer() {
             <h4 className="text-lg font-semibold text-white">Suporte</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="/contact" className="text-gray-300 hover:text-white transition-colors text-sm">
+                <Link to="/contato" className="text-gray-300 hover:text-white transition-colors text-sm">
                   Central de Ajuda
                 </Link>
               </li>
               <li>
-                <Link to="/terms" className="text-gray-300 hover:text-white transition-colors text-sm">
+                <Link to="/termos" className="text-gray-300 hover:text-white transition-colors text-sm">
                   Termos de Uso
                 </Link>
               </li>
               <li>
-                <Link to="/privacy" className="text-gray-300 hover:text-white transition-colors text-sm">
+                <Link to="/privacidade" className="text-gray-300 hover:text-white transition-colors text-sm">
                   Política de Privacidade
                 </Link>
               </li>

@@ -3,7 +3,8 @@
 import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Star, Heart, Share2, ShoppingCart, Truck, Shield, Plus, Minus, MapPin, MessageCircle } from "lucide-react";
+import { Star, Heart, Share2, Truck, Shield, Plus, Minus, MapPin, MessageCircle } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 import { useProductStore } from "@/store/productStore";
 import { Product } from "@/types";
 import { useAuthStore } from "@/store/authStore";
@@ -58,16 +59,15 @@ export default function ProductDetailPage() {
     return 0;
   };
 
-  const handleAddToCart = () => {
-    // In a real app, this would add to cart store
-    logger.info("Added to cart:", { productId: product.id, quantity });
-    // Show success message or redirect to cart
-  };
+  const handleWhatsAppContact = () => {
+    // Número do WhatsApp da loja/vendedor (formato: código do país + DDD + número)
+    const phone = "5554999999999"; // Substitua pelo número real
+    const productUrl = window.location.href;
+    const message = `Olá! Tenho interesse no produto:\n\n*${product.name}*\nPreço: ${formatPrice(product.price)}\nQuantidade desejada: ${quantity}\n\nLink do produto: ${productUrl}`;
+    const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
-  const handleBuyNow = () => {
-    // In a real app, this would redirect to checkout
-    logger.info("Buy now:", { productId: product.id, quantity });
-    navigate("/checkout");
+    logger.info("WhatsApp contact initiated:", { productId: product.id, quantity });
+    window.open(whatsappUrl, "_blank");
   };
 
   const handleShare = async () => {
@@ -227,7 +227,7 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Quantity and Actions */}
-            {stockStatus.available && user && (
+            {stockStatus.available && (
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-medium text-gray-700">Quantidade:</span>
@@ -251,40 +251,23 @@ export default function ProductDetailPage() {
                   <span className="text-sm text-gray-500">({product.stock} disponíveis)</span>
                 </div>
 
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleAddToCart}
-                    className="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
-                  >
-                    <ShoppingCart className="h-5 w-5" />
-                    Adicionar ao Carrinho
-                  </button>
-                  <button
-                    onClick={handleBuyNow}
-                    className="flex-1 bg-orange-600 text-white py-3 px-6 rounded-lg hover:bg-orange-700 transition-colors font-medium"
-                  >
-                    Comprar Agora
-                  </button>
-                </div>
+                <button
+                  onClick={handleWhatsAppContact}
+                  className="w-full bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-2 font-medium"
+                >
+                  <FaWhatsapp className="h-6 w-6" />
+                  Comprar via WhatsApp
+                </button>
+
+                <p className="text-sm text-gray-600 text-center">Negocie diretamente com o vendedor via WhatsApp</p>
               </div>
             )}
 
-            {/* Login prompt for non-logged users */}
-            {stockStatus.available && !user && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
-                <p className="text-gray-700 mb-4">Faça login para comprar este produto</p>
-                <div className="flex gap-3 justify-center">
-                  <Link to="/entrar">
-                    <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-                      Fazer Login
-                    </button>
-                  </Link>
-                  <Link to="/cadastrar">
-                    <button className="bg-white text-blue-600 border border-blue-600 px-6 py-3 rounded-lg hover:bg-blue-50 transition-colors font-medium">
-                      Criar Conta
-                    </button>
-                  </Link>
-                </div>
+            {/* Out of stock message */}
+            {!stockStatus.available && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                <p className="text-red-700 font-medium mb-2">Produto Indisponível</p>
+                <p className="text-gray-600">Este produto está temporariamente fora de estoque.</p>
               </div>
             )}
 

@@ -80,15 +80,24 @@ function AppContent() {
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<HomePage />} />
+              <Route path="/produtos" element={<ProductsPage />} />
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/produto/:id" element={<ProductPage />} />
+              <Route path="/lojas" element={<StoresPage />} />
               <Route path="/stores" element={<StoresPage />} />
+              <Route path="/lojas/:id" element={<StorePage />} />
               <Route path="/stores/:id" element={<StorePage />} />
+              <Route path="/planos" element={<PricingPage />} />
               <Route path="/pricing" element={<PricingPage />} />
+              <Route path="/sobre" element={<AboutPage />} />
               <Route path="/about" element={<AboutPage />} />
+              <Route path="/contato" element={<ContactPage />} />
               <Route path="/contact" element={<ContactPage />} />
+              <Route path="/perguntas-frequentes" element={<FAQPage />} />
               <Route path="/faq" element={<FAQPage />} />
+              <Route path="/privacidade" element={<PrivacyPage />} />
               <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/termos" element={<TermsPage />} />
               <Route path="/terms" element={<TermsPage />} />
 
               {/* Auth Routes */}
