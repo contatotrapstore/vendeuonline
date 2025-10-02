@@ -7,7 +7,22 @@ import { testSupabaseConnection } from "../lib/supabase-client.js";
 const router = express.Router();
 
 // GET /api/health - Health check público
-router.get("/", healthCheckRoute());
+router.get("/", async (req, res) => {
+  try {
+    const health = await monitoring.getHealthCheck();
+    res.status(200).json({
+      status: "healthy",
+      ...health,
+    });
+  } catch (error) {
+    logger.error("Health check failed:", error);
+    res.status(503).json({
+      status: "unhealthy",
+      error: error.message || "Unknown error",
+      message: "Service temporarily unavailable",
+    });
+  }
+});
 
 // GET /api/health/metrics - Métricas detalhadas (admin apenas)
 router.get("/metrics", authenticateAdmin, metricsRoute());

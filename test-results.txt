@@ -1,0 +1,26 @@
+[36m[1m
+🚀 INICIANDO VALIDAÇÃO COMPLETA DE FLUXOS E2E
+[0m
+[90mTimestamp: 2025-10-02T19:53:34.352Z[0m
+[90mAPI URL: http://localhost:3004/api
+[0m
+[36m[1m
+============================================================
+FASE 1: VALIDAÇÃO DE AUTENTICAÇÃO
+============================================================[0m
+[34mℹ️[0m  1.1 Registrando novo comprador...
+[31m❌[0m Erro ao registrar comprador:
+Status: 500
+Error: undefined
+Data: {
+  "success": false,
+  "data": {
+    "success": false,
+    "error": "[\n  {\n    \"code\": \"unrecognized_keys\",\n    \"keys\": [\n      \"type\"\n    ],\n    \"path\": [],\n    \"message\": \"Unrecognized key: \\\"type\\\"\"\n  }\n]",
+    "code": "INTERNAL_ERROR",
+    "timestamp": "2025-10-02T19:53:34.372Z",
+    "correlationId": "1759434814371-qy9ocw8jt"
+  },
+  "status": 500
+}
+[31m❌[0m Erro crítico: Falha na autenticação - parando testes

@@ -4,7 +4,6 @@ import jwt from "jsonwebtoken";
 import { supabase } from "../lib/supabase-client.js";
 import { logger } from "../lib/logger.js";
 
-
 const router = express.Router();
 
 // JWT Secret - OBRIGATÓRIO nas variáveis de ambiente
@@ -56,11 +55,11 @@ router.post("/", authenticateUser, async (req, res) => {
   try {
     const { label, street, number, complement, neighborhood, city, state, zipCode, isDefault = false } = req.body;
 
-    // Validações básicas
-    if (!label || !street || !number || !city || !state || !zipCode) {
+    // Validações básicas (label is optional after FASE 2 fix)
+    if (!street || !number || !city || !state || !zipCode) {
       return res.status(400).json({
         success: false,
-        error: "Campos obrigatórios: label, street, number, city, state, zipCode",
+        error: "Campos obrigatórios: street, number, city, state, zipCode",
       });
     }
 
@@ -90,7 +89,7 @@ router.post("/", authenticateUser, async (req, res) => {
       .from("addresses")
       .insert({
         userId: req.user.id,
-        label: label.trim(),
+        label: label?.trim() || "Endereço principal",
         street: street.trim(),
         number: number.trim(),
         complement: complement?.trim() || null,

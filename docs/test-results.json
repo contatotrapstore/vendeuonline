@@ -1,0 +1,158 @@
+{
+  "total": 25,
+  "passed": 24,
+  "failed": 1,
+  "tests": [
+    {
+      "category": "AUTH",
+      "name": "Health Check",
+      "status": "FAILED",
+      "error": "Expected 200, got 503",
+      "duration": 23
+    },
+    {
+      "category": "AUTH",
+      "name": "Login Admin",
+      "status": "PASSED",
+      "duration": 762
+    },
+    {
+      "category": "AUTH",
+      "name": "Login Seller",
+      "status": "PASSED",
+      "duration": 779
+    },
+    {
+      "category": "AUTH",
+      "name": "Login Buyer",
+      "status": "PASSED",
+      "duration": 315
+    },
+    {
+      "category": "AUTH",
+      "name": "Login com senha incorreta",
+      "status": "PASSED",
+      "duration": 288
+    },
+    {
+      "category": "AUTH",
+      "name": "Login com email inexistente",
+      "status": "PASSED",
+      "duration": 231
+    },
+    {
+      "category": "AUTH",
+      "name": "Rota protegida sem token",
+      "status": "PASSED",
+      "duration": 2
+    },
+    {
+      "category": "BUYER",
+      "name": "Listar produtos (público)",
+      "status": "PASSED",
+      "duration": 2
+    },
+    {
+      "category": "BUYER",
+      "name": "Listar categorias",
+      "status": "PASSED",
+      "duration": 216
+    },
+    {
+      "category": "BUYER",
+      "name": "Visualizar carrinho (autenticado)",
+      "status": "PASSED",
+      "duration": 669
+    },
+    {
+      "category": "BUYER",
+      "name": "Visualizar wishlist (autenticado)",
+      "status": "PASSED",
+      "duration": 672
+    },
+    {
+      "category": "BUYER",
+      "name": "Listar pedidos do buyer",
+      "status": "PASSED",
+      "duration": 885
+    },
+    {
+      "category": "SELLER",
+      "name": "Listar produtos do seller",
+      "status": "PASSED",
+      "duration": 2
+    },
+    {
+      "category": "SELLER",
+      "name": "Analytics do seller",
+      "status": "PASSED",
+      "duration": 1493
+    },
+    {
+      "category": "SELLER",
+      "name": "Perfil da loja",
+      "status": "PASSED",
+      "duration": 919
+    },
+    {
+      "category": "SELLER",
+      "name": "Pedidos da loja",
+      "status": "PASSED",
+      "duration": 829
+    },
+    {
+      "category": "ADMIN",
+      "name": "Estatísticas gerais",
+      "status": "PASSED",
+      "duration": 417
+    },
+    {
+      "category": "ADMIN",
+      "name": "Listar usuários",
+      "status": "PASSED",
+      "duration": 687
+    },
+    {
+      "category": "ADMIN",
+      "name": "Listar lojas",
+      "status": "PASSED",
+      "duration": 484
+    },
+    {
+      "category": "ADMIN",
+      "name": "Listar assinaturas",
+      "status": "PASSED",
+      "duration": 846
+    },
+    {
+      "category": "API",
+      "name": "Listar planos",
+      "status": "PASSED",
+      "duration": 206
+    },
+    {
+      "category": "API",
+      "name": "Listar notificações (buyer)",
+      "status": "PASSED",
+      "duration": 421
+    },
+    {
+      "category": "SECURITY",
+      "name": "Buyer não acessa admin",
+      "status": "PASSED",
+      "duration": 220
+    },
+    {
+      "category": "SECURITY",
+      "name": "Seller não acessa admin",
+      "status": "PASSED",
+      "duration": 203
+    },
+    {
+      "category": "SECURITY",
+      "name": "Headers de segurança presentes",
+      "status": "PASSED",
+      "duration": 2
+    }
+  ]
+}

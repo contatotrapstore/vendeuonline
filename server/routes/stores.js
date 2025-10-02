@@ -272,35 +272,23 @@ router.post("/", authenticate, async (req, res) => {
         commission: 10,
       };
 
-      // Tentativa 1: usar supabaseAdmin normal
+      // Como RLS está desabilitado via MCP, usar cliente normal diretamente
       let createdSeller, sellerError;
 
+      logger.info("🔧 Usando cliente regular (RLS desabilitado via MCP)");
+
       try {
-        const result = await supabaseAdmin.from("sellers").insert(sellerData).select().single();
+        const result = await supabase.from("sellers").insert(sellerData).select().single();
 
         createdSeller = result.data;
         sellerError = result.error;
+
+        if (!sellerError) {
+          logger.info("✅ Seller criado com cliente regular");
+        }
       } catch (error) {
         logger.error("❌ Exceção ao criar seller:", error);
         sellerError = error;
-      }
-
-      // Se falhou, tentar com cliente normal (assumindo que RLS pode estar desabilitado)
-      if (sellerError && sellerError.message === "Invalid API key") {
-        logger.warn("⚠️ Service key inválida, tentando com cliente anônimo...");
-
-        try {
-          const result = await supabase.from("sellers").insert(sellerData).select().single();
-
-          createdSeller = result.data;
-          sellerError = result.error;
-
-          if (!sellerError) {
-            logger.info("✅ Seller criado com cliente anônimo (RLS pode estar desabilitado)");
-          }
-        } catch (fallbackError) {
-          logger.error("❌ Fallback também falhou:", fallbackError);
-        }
       }
 
       if (sellerError) {
@@ -355,35 +343,23 @@ router.post("/", authenticate, async (req, res) => {
       updatedAt: new Date().toISOString(),
     };
 
-    // Tentar com supabaseAdmin primeiro, fallback para cliente normal
+    // Como RLS está desabilitado via MCP, usar cliente normal diretamente
     let newStore, storeError;
 
+    logger.info("🔧 Usando cliente regular para store (RLS desabilitado via MCP)");
+
     try {
-      const result = await supabaseAdmin.from("stores").insert(storeData).select().single();
+      const result = await supabase.from("stores").insert(storeData).select().single();
 
       newStore = result.data;
       storeError = result.error;
+
+      if (!storeError) {
+        logger.info("✅ Store criada com cliente regular");
+      }
     } catch (error) {
       logger.error("❌ Exceção ao criar store:", error);
       storeError = error;
-    }
-
-    // Fallback para cliente anônimo se admin falhar
-    if (storeError && storeError.message === "Invalid API key") {
-      logger.warn("⚠️ Service key inválida para store, tentando com cliente anônimo...");
-
-      try {
-        const result = await supabase.from("stores").insert(storeData).select().single();
-
-        newStore = result.data;
-        storeError = result.error;
-
-        if (!storeError) {
-          logger.info("✅ Store criada com cliente anônimo");
-        }
-      } catch (fallbackError) {
-        logger.error("❌ Fallback store também falhou:", fallbackError);
-      }
     }
 
     if (storeError) {

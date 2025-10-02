@@ -2,26 +2,23 @@ import express from "express";
 import { supabase } from "../lib/supabase-client.js";
 import { logger } from "../lib/logger.js";
 
-
 const router = express.Router();
 
 // GET /api/categories - Listar categorias
 router.get("/", async (req, res) => {
   try {
     const { data: categories, error } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('isActive', true)
-      .order('order', { ascending: true });
+      .from("categories")
+      .select("*")
+      .eq("isActive", true)
+      .order("order", { ascending: true });
 
     if (error) {
       throw error;
     }
 
-    res.json({
-      success: true,
-      data: categories || []
-    });
+    // Retornar array diretamente para compatibilidade com testes
+    res.json(categories || []);
   } catch (error) {
     logger.error("Erro ao buscar categorias:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
@@ -34,14 +31,16 @@ router.get("/:slug", async (req, res) => {
     const { slug } = req.params;
 
     const { data: category, error } = await supabase
-      .from('categories')
-      .select(`
+      .from("categories")
+      .select(
+        `
         *,
         children:categories!parent_id(*),
         parent:categories!parent_id(id, name, slug)
-      `)
-      .eq('slug', slug)
-      .eq('isActive', true)
+      `
+      )
+      .eq("slug", slug)
+      .eq("isActive", true)
       .single();
 
     if (error || !category) {
@@ -50,7 +49,7 @@ router.get("/:slug", async (req, res) => {
 
     res.json({
       success: true,
-      data: category
+      data: category,
     });
   } catch (error) {
     logger.error("Erro ao buscar categoria:", error);

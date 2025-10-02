@@ -90,6 +90,7 @@ router.get("/", optionalAuth, async (req, res) => {
       success: true,
       data: transformedWishlist,
       count: transformedWishlist.length,
+      items: transformedWishlist, // Add items field for compatibility
     });
   } catch (error) {
     logger.error("❌ Erro ao buscar wishlist:", error);
@@ -104,9 +105,10 @@ router.get("/", optionalAuth, async (req, res) => {
 // POST /api/wishlist - Adicionar item à wishlist
 router.post("/", authenticateUser, async (req, res) => {
   try {
-    const { productId } = req.body;
+    // Aceitar tanto 'productId' quanto 'id'
+    const productId = req.body.productId || req.body.id;
 
-    if (!productId) {
+    if (!productId && !req.body.id) {
       return res.status(400).json({
         success: false,
         error: "ID do produto é obrigatório",

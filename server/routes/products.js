@@ -305,13 +305,13 @@ router.get(
         averageRating: product.rating || 0,
         totalReviews: product.reviewCount || 0,
         store: {
-          ...product.store,
+          ...product.stores,
           rating: 5, // Placeholder rating
         },
         seller: {
           id: product.sellerId,
           rating: product.seller?.rating || 5,
-          storeName: product.store?.name || product.seller?.user?.name || "Loja",
+          storeName: product.stores?.name || product.seller?.user?.name || "Loja",
         },
       };
 
@@ -377,26 +377,20 @@ router.get("/:id/related", async (req, res) => {
 });
 
 // POST /api/products - Criar produto
-router.post(
-  "/",
-  authenticate,
-  protectRoute(["SELLER", "ADMIN"]),
-  validateProduct,
-  validateInput([commonValidations.name, commonValidations.price]),
-  async (req, res) => {
-    try {
-      logger.info("🛍️ Criação de produto requisitada:", req.body);
+router.post("/", authenticate, protectRoute(["SELLER", "ADMIN"]), async (req, res) => {
+  try {
+    logger.info("🛍️ Criação de produto requisitada:", req.body);
 
-      // Validar dados de entrada
-      const productData = createProductSchema.parse(req.body);
+    // Validar dados de entrada com schema correto
+    const productData = createProductSchema.parse(req.body);
 
-      // VALIDAÇÃO DE LIMITES DE PLANO
-      if (req.user.type === "SELLER") {
-        // 1. Buscar plano atual do seller
-        const { data: seller, error: sellerError } = await supabase
-          .from("sellers")
-          .select(
-            `
+    // VALIDAÇÃO DE LIMITES DE PLANO
+    if (req.user.type === "SELLER") {
+      // 1. Buscar plano atual do seller
+      const { data: seller, error: sellerError } = await supabase
+        .from("sellers")
+        .select(
+          `
             id,
             planId,
             plans:planId (
@@ -408,187 +402,186 @@ router.post(
               isActive
             )
           `
-          )
-          .eq("userId", req.user.userId)
-          .single();
-
-        if (sellerError || !seller) {
-          logger.error("❌ Erro ao buscar seller:", sellerError);
-          return res.status(400).json({
-            error: "Seller não encontrado",
-            code: "SELLER_NOT_FOUND",
-          });
-        }
-
-        const sellerPlan = seller.plans;
-        if (!sellerPlan || !sellerPlan.isActive) {
-          return res.status(403).json({
-            error: "Plano inativo ou não encontrado",
-            code: "PLAN_INACTIVE",
-          });
-        }
-
-        logger.info(`📊 Validando limites - Plano: ${sellerPlan.name}, Max Produtos: ${sellerPlan.maxProducts}`);
-
-        // 2. Contar produtos atuais do seller
-        if (sellerPlan.maxProducts !== -1) {
-          // -1 = ilimitado
-          const { count: currentProducts, error: countError } = await supabase
-            .from("Product")
-            .select("id", { count: "exact" })
-            .eq("sellerId", seller.id)
-            .eq("isActive", true);
-
-          if (countError) {
-            logger.error("❌ Erro ao contar produtos:", countError);
-            return res.status(500).json({
-              error: "Erro interno ao validar limites",
-              code: "COUNT_ERROR",
-            });
-          }
-
-          logger.info(`🔢 Produtos atuais: ${currentProducts}/${sellerPlan.maxProducts}`);
-
-          // 3. Verificar se excede o limite
-          if (currentProducts >= sellerPlan.maxProducts) {
-            return res.status(403).json({
-              error: `Limite de produtos excedido. Seu plano "${sellerPlan.name}" permite até ${sellerPlan.maxProducts} produtos ativos.`,
-              code: "PRODUCT_LIMIT_EXCEEDED",
-              details: {
-                currentCount: currentProducts,
-                maxAllowed: sellerPlan.maxProducts,
-                planName: sellerPlan.name,
-                upgradeRequired: true,
-              },
-            });
-          }
-        }
-      }
-
-      // Gerar ID único para o produto
-      const productId = `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      // Criar produto no Supabase
-      const { data: product, error } = await supabase
-        .from("Product")
-        .insert([
-          {
-            id: productId,
-            name: productData.name,
-            description: productData.description,
-            price: productData.price,
-            comparePrice: productData.comparePrice || null,
-            stock: productData.stock,
-            categoryId: productData.categoryId,
-            sellerId: req.user.sellerId,
-            storeId: req.user.storeId,
-            isActive: productData.isActive,
-            isFeatured: req.user.type === "ADMIN" ? productData.isFeatured : false,
-            viewCount: 0,
-            salesCount: 0,
-            averageRating: 0,
-            reviewCount: 0,
-            createdAt: new Date().toISOString(),
-          },
-        ])
-        .select()
+        )
+        .eq("userId", req.user.userId)
         .single();
 
-      if (error) {
-        logger.error("❌ Erro ao criar produto no Supabase:", error);
-
-        // ❌ REMOVIDO: Mock que dava falso sucesso
-        // Agora retorna erro real para o usuário
-        return res.status(500).json({
-          success: false,
-          error: "Falha ao criar produto",
-          details: error.message,
-          code: "PRODUCT_CREATION_FAILED",
+      if (sellerError || !seller) {
+        logger.error("❌ Erro ao buscar seller:", sellerError);
+        return res.status(400).json({
+          error: "Seller não encontrado",
+          code: "SELLER_NOT_FOUND",
         });
       }
 
-      // Adicionar imagens se fornecidas
-      if (productData.images && productData.images.length > 0) {
-        const imagePromises = productData.images.map((image, index) =>
-          supabase.from("ProductImage").insert([
-            {
-              id: `img_${productId}_${index}`,
-              productId: productId,
-              url: image.url,
-              alt: image.alt,
-              order: image.order,
-            },
-          ])
-        );
-
-        await Promise.all(imagePromises);
+      const sellerPlan = seller.plans;
+      if (!sellerPlan || !sellerPlan.isActive) {
+        return res.status(403).json({
+          error: "Plano inativo ou não encontrado",
+          code: "PLAN_INACTIVE",
+        });
       }
 
-      // Adicionar especificações se fornecidas
-      if (productData.specifications && productData.specifications.length > 0) {
-        const specPromises = productData.specifications.map((spec, index) =>
-          supabase.from("ProductSpecification").insert([
-            {
-              id: `spec_${productId}_${index}`,
-              productId: productId,
-              name: spec.name,
-              value: spec.value,
+      logger.info(`📊 Validando limites - Plano: ${sellerPlan.name}, Max Produtos: ${sellerPlan.maxProducts}`);
+
+      // 2. Contar produtos atuais do seller
+      if (sellerPlan.maxProducts !== -1) {
+        // -1 = ilimitado
+        const { count: currentProducts, error: countError } = await supabase
+          .from("Product")
+          .select("id", { count: "exact" })
+          .eq("sellerId", seller.id)
+          .eq("isActive", true);
+
+        if (countError) {
+          logger.error("❌ Erro ao contar produtos:", countError);
+          return res.status(500).json({
+            error: "Erro interno ao validar limites",
+            code: "COUNT_ERROR",
+          });
+        }
+
+        logger.info(`🔢 Produtos atuais: ${currentProducts}/${sellerPlan.maxProducts}`);
+
+        // 3. Verificar se excede o limite
+        if (currentProducts >= sellerPlan.maxProducts) {
+          return res.status(403).json({
+            error: `Limite de produtos excedido. Seu plano "${sellerPlan.name}" permite até ${sellerPlan.maxProducts} produtos ativos.`,
+            code: "PRODUCT_LIMIT_EXCEEDED",
+            details: {
+              currentCount: currentProducts,
+              maxAllowed: sellerPlan.maxProducts,
+              planName: sellerPlan.name,
+              upgradeRequired: true,
             },
-          ])
-        );
-
-        await Promise.all(specPromises);
+          });
+        }
       }
+    }
 
-      logger.info("✅ Produto criado com sucesso:", productId);
+    // Gerar ID único para o produto
+    const productId = `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-      // Buscar produto completo com relacionamentos
-      const { data: fullProduct, error: fetchError } = await supabase
-        .from("Product")
-        .select(
-          `
+    // Criar produto no Supabase
+    const { data: product, error } = await supabase
+      .from("Product")
+      .insert([
+        {
+          id: productId,
+          name: productData.name,
+          description: productData.description,
+          price: productData.price,
+          comparePrice: productData.comparePrice || null,
+          stock: productData.stock,
+          categoryId: productData.categoryId,
+          sellerId: req.user.sellerId,
+          storeId: req.user.storeId,
+          isActive: productData.isActive,
+          isFeatured: req.user.type === "ADMIN" ? productData.isFeatured : false,
+          viewCount: 0,
+          salesCount: 0,
+          averageRating: 0,
+          reviewCount: 0,
+          createdAt: new Date().toISOString(),
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      logger.error("❌ Erro ao criar produto no Supabase:", error);
+
+      // ❌ REMOVIDO: Mock que dava falso sucesso
+      // Agora retorna erro real para o usuário
+      return res.status(500).json({
+        success: false,
+        error: "Falha ao criar produto",
+        details: error.message,
+        code: "PRODUCT_CREATION_FAILED",
+      });
+    }
+
+    // Adicionar imagens se fornecidas
+    if (productData.images && productData.images.length > 0) {
+      const imagePromises = productData.images.map((image, index) =>
+        supabase.from("ProductImage").insert([
+          {
+            id: `img_${productId}_${index}`,
+            productId: productId,
+            url: image.url,
+            alt: image.alt,
+            order: image.order,
+          },
+        ])
+      );
+
+      await Promise.all(imagePromises);
+    }
+
+    // Adicionar especificações se fornecidas
+    if (productData.specifications && productData.specifications.length > 0) {
+      const specPromises = productData.specifications.map((spec, index) =>
+        supabase.from("ProductSpecification").insert([
+          {
+            id: `spec_${productId}_${index}`,
+            productId: productId,
+            name: spec.name,
+            value: spec.value,
+          },
+        ])
+      );
+
+      await Promise.all(specPromises);
+    }
+
+    logger.info("✅ Produto criado com sucesso:", productId);
+
+    // Buscar produto completo com relacionamentos
+    const { data: fullProduct, error: fetchError } = await supabase
+      .from("Product")
+      .select(
+        `
         *,
         images:ProductImage(*),
         specifications:ProductSpecification(*),
         category:categories(*),
         store:stores(id, name, slug, rating, isVerified)
       `
-        )
-        .eq("id", productId)
-        .single();
+      )
+      .eq("id", productId)
+      .single();
 
-      // Invalidar cache de produtos após criação
-      await cache.invalidatePattern("products:*");
-      await cache.invalidatePattern("categories:*");
+    // Invalidar cache de produtos após criação
+    await cache.invalidatePattern("products:*");
+    await cache.invalidatePattern("categories:*");
 
-      res.status(201).json({
-        success: true,
-        message: "Produto criado com sucesso",
-        product: fullProduct || product,
-      });
-    } catch (error) {
-      logger.error("❌ Erro ao criar produto:", error);
+    res.status(201).json({
+      success: true,
+      message: "Produto criado com sucesso",
+      product: fullProduct || product,
+    });
+  } catch (error) {
+    logger.error("❌ Erro ao criar produto:", error);
 
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          success: false,
-          error: "Dados de entrada inválidos",
-          details: error.issues.map((issue) => ({
-            field: issue.path.join("."),
-            message: issue.message,
-            value: issue.input,
-          })),
-        });
-      }
-
-      res.status(500).json({
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
         success: false,
-        error: "Erro interno do servidor",
-        message: error.message,
+        error: "Dados de entrada inválidos",
+        details: error.issues.map((issue) => ({
+          field: issue.path.join("."),
+          message: issue.message,
+          value: issue.input,
+        })),
       });
     }
+
+    res.status(500).json({
+      success: false,
+      error: "Erro interno do servidor",
+      message: error.message,
+    });
   }
-);
+});
 
 // PUT /api/products/:id - Atualizar produto
 router.put("/:id", authenticate, protectRoute(["SELLER", "ADMIN"]), async (req, res) => {

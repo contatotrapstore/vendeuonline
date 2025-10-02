@@ -139,7 +139,7 @@ router.get("/stats", async (req, res) => {
       };
 
       logger.info("✅ Admin stats retrieved successfully (híbrido real/simulado):", stats);
-      res.json({ success: true, data: stats });
+      res.json(stats); // Retorna objeto direto sem wrapper
     } catch (supabaseError) {
       logger.error("❌ Erro no Supabase:", supabaseError);
 
@@ -164,7 +164,7 @@ router.get("/stats", async (req, res) => {
       };
 
       logger.info("✅ Admin stats retornadas (fallback completo):", stats);
-      res.json({ success: true, data: stats });
+      res.json(stats); // Retorna objeto direto sem wrapper
     }
   } catch (error) {
     logger.error("❌ Erro fatal ao buscar estatísticas admin:", error);
@@ -245,13 +245,13 @@ router.get("/users", async (req, res) => {
     logger.info(`✅ ${users.length}/${total} usuários retornados do Supabase`);
 
     res.json({
-      success: true,
-      data: users,
+      users: users,
+      total: total,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total,
-        totalPages: Math.ceil(total / parseInt(limit)),
+        total: total,
+        totalPages: Math.ceil(total / limit),
       },
     });
   } catch (error) {
@@ -296,7 +296,7 @@ router.get("/stores", async (req, res) => {
         reviews (
           id
         ),
-        products (
+        Product (
           id
         )
       `);
@@ -358,13 +358,13 @@ router.get("/stores", async (req, res) => {
     logger.info(`✅ ${transformedStores.length} lojas retornadas do Supabase REAL`);
 
     res.json({
-      success: true,
-      data: transformedStores,
+      stores: transformedStores,
+      total: total,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
-        total,
-        totalPages: Math.ceil(total / parseInt(limit)),
+        total: total,
+        totalPages: Math.ceil(total / limit),
       },
     });
   } catch (error) {
@@ -386,8 +386,9 @@ router.get("/products", async (req, res) => {
 
     logger.info("📦 GET /api/admin/products - Buscando produtos REAIS do Supabase...");
 
-    // Query base para buscar produtos com joins de stores e sellers
-    let query = supabase.from("products").select(`
+    // Query base para buscar produtos com join de stores apenas
+    // Sellers são acessados via stores.sellerId
+    let query = supabase.from("Product").select(`
         id,
         name,
         description,
@@ -402,17 +403,10 @@ router.get("/products", async (req, res) => {
         updatedAt,
         sellerId,
         storeId,
-        stores (
+        stores!storeId (
           id,
-          name
-        ),
-        sellers (
-          id,
-          users (
-            id,
-            name,
-            email
-          )
+          name,
+          sellerId
         )
       `);
 
@@ -630,10 +624,7 @@ router.get("/plans", async (req, res) => {
 
     logger.info(`✅ ${plans.length} planos retornados do Supabase REAL`);
 
-    res.json({
-      success: true,
-      data: plans,
-    });
+    res.json(plans); // Retorna array direto sem wrapper
   } catch (error) {
     logger.error("❌ Erro ao buscar planos:", error);
     res.status(500).json({
@@ -863,9 +854,9 @@ router.get("/subscriptions", authenticateAdmin, async (req, res) => {
     logger.info("💳 GET /api/admin/subscriptions - Buscando subscriptions REAIS do Supabase...");
 
     // Buscar subscriptions reais do Supabase
-    let query = supabase.from("subscriptions").select(`
+    let query = supabase.from("Subscription").select(`
         id,
-        userId,
+        sellerId,
         planId,
         status,
         startDate,
@@ -874,12 +865,7 @@ router.get("/subscriptions", authenticateAdmin, async (req, res) => {
         paymentMethod,
         createdAt,
         updatedAt,
-        users (
-          id,
-          name,
-          email
-        ),
-        plans (
+        Plan (
           id,
           name,
           price
@@ -903,7 +889,7 @@ router.get("/subscriptions", authenticateAdmin, async (req, res) => {
     }
 
     // Contar total para paginação
-    let countQuery = supabase.from("subscriptions").select("id", { count: "exact" });
+    let countQuery = supabase.from("Subscription").select("id", { count: "exact" });
     if (status && ["ACTIVE", "CANCELLED", "EXPIRED"].includes(status)) {
       countQuery = countQuery.eq("status", status);
     }
@@ -913,7 +899,7 @@ router.get("/subscriptions", authenticateAdmin, async (req, res) => {
     const transformedSubscriptions = (subscriptions || []).map((subscription) => {
       return {
         id: subscription.id,
-        userId: subscription.userId,
+        sellerId: subscription.sellerId,
         planId: subscription.planId,
         status: subscription.status,
         startDate: subscription.startDate,
@@ -922,15 +908,10 @@ router.get("/subscriptions", authenticateAdmin, async (req, res) => {
         paymentMethod: subscription.paymentMethod || "N/A",
         createdAt: subscription.createdAt,
         updatedAt: subscription.updatedAt,
-        user: {
-          id: subscription.users?.id,
-          name: subscription.users?.name || "N/A",
-          email: subscription.users?.email || "N/A",
-        },
         plan: {
-          id: subscription.plans?.id,
-          name: subscription.plans?.name || "N/A",
-          price: subscription.plans?.price || 0,
+          id: subscription.Plan?.id,
+          name: subscription.Plan?.name || "N/A",
+          price: subscription.Plan?.price || 0,
         },
       };
     });
@@ -940,16 +921,7 @@ router.get("/subscriptions", authenticateAdmin, async (req, res) => {
 
     logger.info(`✅ ${transformedSubscriptions.length}/${subscriptionsTotal} assinaturas retornadas do Supabase`);
 
-    res.json({
-      success: true,
-      data: transformedSubscriptions,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total: subscriptionsTotal,
-        totalPages: Math.ceil(subscriptionsTotal / parseInt(limit)),
-      },
-    });
+    res.json(transformedSubscriptions); // Retorna array direto sem wrapper
   } catch (error) {
     logger.error("❌ Erro ao buscar assinaturas:", error);
     res.status(500).json({
@@ -1685,6 +1657,328 @@ router.post("/subscriptions/:id/renew", authenticateAdmin, async (req, res) => {
       error: "Erro ao renovar assinatura",
       details: error.message,
     });
+  }
+});
+
+// ==== ORDER STATUS UPDATE ====
+router.put("/orders/:id/status", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, trackingCode, notes } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ error: "Status é obrigatório" });
+    }
+
+    const validStatuses = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: "Status inválido" });
+    }
+
+    const updateData = { status, updatedAt: new Date().toISOString() };
+    if (trackingCode) updateData.trackingCode = trackingCode;
+    if (notes) updateData.notes = notes;
+
+    const { data: order, error } = await supabase.from("Order").update(updateData).eq("id", id).select().single();
+
+    if (error) {
+      throw error;
+    }
+
+    logger.info(`✅ Status do pedido ${id} atualizado para ${status}`);
+    res.json({ success: true, data: order });
+  } catch (error) {
+    logger.error("❌ Erro ao atualizar status do pedido:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+});
+
+// ==== REVENUE ANALYTICS ====
+router.get("/revenue", async (req, res) => {
+  try {
+    const { data: orders, error } = await supabase
+      .from("Order")
+      .select("total, status, createdAt")
+      .in("status", ["CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"]);
+
+    if (error) {
+      throw error;
+    }
+
+    const totalRevenue = orders?.reduce((sum, order) => sum + parseFloat(order.total || 0), 0) || 0;
+    const orderCount = orders?.length || 0;
+
+    // Calcular receita por mês (últimos 6 meses)
+    const monthlyRevenue = {};
+    orders?.forEach((order) => {
+      const month = new Date(order.createdAt).toISOString().slice(0, 7); // YYYY-MM
+      monthlyRevenue[month] = (monthlyRevenue[month] || 0) + parseFloat(order.total || 0);
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalRevenue,
+        orderCount,
+        averageOrderValue: orderCount > 0 ? totalRevenue / orderCount : 0,
+        monthlyRevenue,
+      },
+    });
+  } catch (error) {
+    logger.error("❌ Erro ao buscar receita:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+});
+
+// ==== REPORTS: SALES ====
+router.get("/reports/sales", async (req, res) => {
+  try {
+    const { startDate, endDate, period = "daily" } = req.query;
+
+    let query = supabase
+      .from("Order")
+      .select("id, total, status, createdAt")
+      .in("status", ["CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED"]);
+
+    if (startDate) {
+      query = query.gte("createdAt", startDate);
+    }
+    if (endDate) {
+      query = query.lte("createdAt", endDate);
+    }
+
+    const { data: orders, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    const groupedSales = {};
+    orders?.forEach((order) => {
+      let key;
+      const date = new Date(order.createdAt);
+
+      if (period === "daily") {
+        key = date.toISOString().slice(0, 10); // YYYY-MM-DD
+      } else if (period === "monthly") {
+        key = date.toISOString().slice(0, 7); // YYYY-MM
+      } else if (period === "yearly") {
+        key = date.toISOString().slice(0, 4); // YYYY
+      }
+
+      if (!groupedSales[key]) {
+        groupedSales[key] = { count: 0, revenue: 0 };
+      }
+      groupedSales[key].count++;
+      groupedSales[key].revenue += parseFloat(order.total || 0);
+    });
+
+    res.json({
+      success: true,
+      data: {
+        period,
+        sales: groupedSales,
+        totalOrders: orders?.length || 0,
+        totalRevenue: orders?.reduce((sum, o) => sum + parseFloat(o.total || 0), 0) || 0,
+      },
+    });
+  } catch (error) {
+    logger.error("❌ Erro ao gerar relatório de vendas:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+});
+
+// ==== REPORTS: USERS ====
+router.get("/reports/users", async (req, res) => {
+  try {
+    const { data: users, error } = await supabase.from("users").select("id, type, createdAt, isActive");
+
+    if (error) {
+      throw error;
+    }
+
+    const usersByType = {
+      BUYER: 0,
+      SELLER: 0,
+      ADMIN: 0,
+    };
+
+    const usersByMonth = {};
+
+    users?.forEach((user) => {
+      usersByType[user.type] = (usersByType[user.type] || 0) + 1;
+
+      const month = new Date(user.createdAt).toISOString().slice(0, 7);
+      if (!usersByMonth[month]) {
+        usersByMonth[month] = { total: 0, active: 0 };
+      }
+      usersByMonth[month].total++;
+      if (user.isActive) {
+        usersByMonth[month].active++;
+      }
+    });
+
+    res.json({
+      success: true,
+      data: {
+        total: users?.length || 0,
+        byType: usersByType,
+        byMonth: usersByMonth,
+        activeUsers: users?.filter((u) => u.isActive).length || 0,
+      },
+    });
+  } catch (error) {
+    logger.error("❌ Erro ao gerar relatório de usuários:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+});
+
+// ==== REPORTS: PRODUCTS ====
+router.get("/reports/products", async (req, res) => {
+  try {
+    const { data: products, error } = await supabase.from("Product").select(`
+        id,
+        name,
+        price,
+        stock,
+        isActive,
+        viewCount,
+        salesCount,
+        categoryId,
+        categories (name)
+      `);
+
+    if (error) {
+      throw error;
+    }
+
+    const productsByCategory = {};
+    let totalRevenue = 0;
+
+    products?.forEach((product) => {
+      const categoryName = product.categories?.name || "Sem categoria";
+
+      if (!productsByCategory[categoryName]) {
+        productsByCategory[categoryName] = {
+          count: 0,
+          revenue: 0,
+          sales: 0,
+        };
+      }
+
+      productsByCategory[categoryName].count++;
+      productsByCategory[categoryName].sales += product.salesCount || 0;
+      productsByCategory[categoryName].revenue += (product.salesCount || 0) * parseFloat(product.price || 0);
+      totalRevenue += (product.salesCount || 0) * parseFloat(product.price || 0);
+    });
+
+    res.json({
+      success: true,
+      data: {
+        total: products?.length || 0,
+        active: products?.filter((p) => p.isActive).length || 0,
+        outOfStock: products?.filter((p) => p.stock === 0).length || 0,
+        byCategory: productsByCategory,
+        totalRevenue,
+        totalSales: products?.reduce((sum, p) => sum + (p.salesCount || 0), 0) || 0,
+      },
+    });
+  } catch (error) {
+    logger.error("❌ Erro ao gerar relatório de produtos:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+});
+
+// ==== BROADCAST NOTIFICATIONS ====
+router.post("/notifications/broadcast", async (req, res) => {
+  try {
+    const { title, message, type = "SYSTEM", userType } = req.body;
+
+    if (!title || !message) {
+      return res.status(400).json({ error: "Título e mensagem são obrigatórios" });
+    }
+
+    // Buscar usuários alvo
+    let query = supabase.from("users").select("id");
+
+    if (userType && userType !== "all") {
+      query = query.eq("type", userType.toUpperCase());
+    }
+
+    const { data: targetUsers, error: usersError } = await query;
+
+    if (usersError) {
+      throw usersError;
+    }
+
+    // Criar notificações para todos os usuários alvo
+    const notifications =
+      targetUsers?.map((user) => ({
+        userId: user.id,
+        type,
+        title,
+        message,
+        isRead: false,
+      })) || [];
+
+    const { data: createdNotifications, error } = await supabase.from("Notification").insert(notifications).select();
+
+    if (error) {
+      throw error;
+    }
+
+    logger.info(`✅ ${createdNotifications.length} notificações enviadas`);
+
+    res.json({
+      success: true,
+      message: `Notificação enviada para ${createdNotifications.length} usuários`,
+      data: {
+        sentCount: createdNotifications.length,
+        targetType: userType || "all",
+      },
+    });
+  } catch (error) {
+    logger.error("❌ Erro ao enviar notificações em massa:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
+  }
+});
+
+// ==== UPDATE SUBSCRIPTION STATUS ====
+router.put("/subscriptions/:id/status", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status) {
+      return res.status(400).json({ error: "Status é obrigatório" });
+    }
+
+    const validStatuses = ["ACTIVE", "INACTIVE", "CANCELLED", "EXPIRED"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ error: "Status inválido" });
+    }
+
+    const { data: subscription, error } = await supabase
+      .from("Subscription")
+      .update({ status, updatedAt: new Date().toISOString() })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    logger.info(`✅ Status da assinatura ${id} atualizado para ${status}`);
+
+    res.json({
+      success: true,
+      message: "Status da assinatura atualizado com sucesso",
+      data: subscription,
+    });
+  } catch (error) {
+    logger.error("❌ Erro ao atualizar status da assinatura:", error);
+    res.status(500).json({ error: "Erro interno do servidor" });
   }
 });
 

@@ -64,6 +64,7 @@ import sellerRouter from "./server/routes/seller.js";
 import categoriesRouter from "./server/routes/categories.js";
 import uploadRouter from "./server/routes/upload.js";
 import ordersRouter from "./server/routes/orders.js";
+import cartRouter from "./server/routes/cart.js";
 import wishlistRouter from "./server/routes/wishlist.js";
 import reviewsRouter from "./server/routes/reviews.js";
 import paymentsRouter from "./server/routes/payments.js";
@@ -319,6 +320,9 @@ app.use("/api/upload", uploadRateLimit, uploadRouter);
 
 // Rotas de pedidos (requer autenticação)
 app.use("/api/orders", authenticate, ordersRouter);
+
+// Rotas de carrinho (requer autenticação)
+app.use("/api/cart", authenticate, cartRouter);
 
 // Rotas de wishlist (requer autenticação)
 app.use("/api/wishlist", authenticate, wishlistRouter);

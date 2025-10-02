@@ -55,9 +55,13 @@ class MonitoringService {
         const responseTime = Date.now() - startTime;
 
         // Atualizar métricas de resposta
+        // Excluir 401 (autenticação) de erros reais para health check
+        const isExpectedAuthError = res.statusCode === 401 && req.path.includes("/auth/login");
+
         if (res.statusCode >= 200 && res.statusCode < 400) {
           monitoring.metrics.requests.successful++;
-        } else {
+        } else if (!isExpectedAuthError) {
+          // Só contar como falha se não for erro esperado de autenticação
           monitoring.metrics.requests.failed++;
         }
 
@@ -248,6 +252,17 @@ class MonitoringService {
       this.alerts = this.alerts.filter((alert) => new Date(alert.timestamp).getTime() > tenMinutesAgo);
     }, 600000); // 10 minutos
 
+    // Garbage collection forçado em produção para economizar memória
+    if (process.env.NODE_ENV === "production" && global.gc) {
+      this.gcInterval = setInterval(() => {
+        const memBefore = process.memoryUsage().heapUsed;
+        global.gc();
+        const memAfter = process.memoryUsage().heapUsed;
+        const freed = ((memBefore - memAfter) / 1024 / 1024).toFixed(2);
+        logger.info(`🗑️ Garbage collection executado: ${freed}MB liberados`);
+      }, 600000); // 10 minutos
+    }
+
     logger.info("Monitoring service started (optimized mode)");
   }
 
@@ -260,6 +275,9 @@ class MonitoringService {
     }
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
+    }
+    if (this.gcInterval) {
+      clearInterval(this.gcInterval);
     }
     logger.info("Monitoring service stopped");
   }

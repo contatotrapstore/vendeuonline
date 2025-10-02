@@ -236,7 +236,8 @@ router.post(
     const emailLower = email.toLowerCase();
 
     // Suportar tanto 'type' quanto 'userType' com fallback para BUYER
-    const actualUserType = (userType || type || "BUYER").toUpperCase();
+    // Priorizar 'type' sobre 'userType' pois é o campo padrão
+    const actualUserType = (type || userType || "BUYER").toUpperCase();
 
     // Verificar se o usuário já existe primeiro no Prisma
     try {
@@ -304,7 +305,7 @@ router.post(
           city: newUser.city,
           state: newUser.state,
           type: newUser.type,
-          userType: userType.toLowerCase(),
+          userType: actualUserType.toLowerCase(),
           isVerified: newUser.isVerified,
           createdAt: newUser.createdAt,
         },

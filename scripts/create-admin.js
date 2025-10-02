@@ -1,57 +1,89 @@
-import bcrypt from 'bcryptjs';
-import { createClient } from '@supabase/supabase-js';
-import dotenv from 'dotenv';
-import { logger } from "../lib/logger.js";
-
+import { createClient } from "@supabase/supabase-js";
+import dotenv from "dotenv";
+import { randomUUID } from "crypto";
 
 dotenv.config();
 
-logger.info('🔧 Criando/atualizando usuário admin...');
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-logger.info('🔍 Verificando variáveis de ambiente...');
-logger.info('SUPABASE_URL:', process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅' : '❌');
-logger.info('SERVICE_KEY:', process.env.SUPABASE_SERVICE_ROLE_KEY ? '✅' : '❌');
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error("❌ Missing Supabase credentials in .env");
+  process.exit(1);
+}
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY
-);
+const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});
 
 async function createAdmin() {
+  console.log("🔧 Creating admin principal account...\n");
+
+  // Create admin user
+  const adminData = {
+    id: randomUUID(),
+    email: "admin@vendeuonline.com.br",
+    password: "$2b$12$4l3T5osGRPwm5ZjGlRzI2.pq7O7jMIz9N0RzAFcFR25dzwKrv.xWu", // Admin@2025!
+    name: "Administrador Principal",
+    type: "ADMIN",
+    emailVerified: true,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
   try {
-    logger.info('📊 Gerando hash da senha...');
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-    logger.info('✅ Senha hasheada com sucesso');
+    // Insert user
+    const { data: user, error: userError } = await supabase.from("users").insert([adminData]).select().single();
 
-    logger.info('📡 Conectando ao Supabase...');
-    const { data, error } = await supabase
-      .from('users')
-      .upsert({
-        email: 'admin@test.com',
-        password: hashedPassword,
-        name: 'Admin User',
-        type: 'ADMIN',
-        userType: 'admin',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }, {
-        onConflict: 'email'
-      });
-
-    if (error) {
-      logger.error('❌ Erro ao criar/atualizar admin:', error);
-      process.exit(1);
-    } else {
-      logger.info('✅ Usuário admin criado/atualizado com sucesso!');
-      logger.info('📧 Email: admin@test.com');
-      logger.info('🔑 Senha: admin123');
-      logger.info('👤 Tipo: ADMIN');
-      logger.info('');
-      logger.info('🎉 Agora você pode fazer login no sistema!');
+    if (userError) {
+      console.error("❌ Error creating admin user:", userError.message);
+      return;
     }
-  } catch (err) {
-    logger.error('❌ Erro inesperado:', err);
-    process.exit(1);
+
+    console.log("✅ Admin user created successfully!");
+    console.log("   ID:", user.id);
+    console.log("   Email:", user.email);
+    console.log("   Name:", user.name);
+
+    // Create admin record
+    const { data: admin, error: adminError } = await supabase
+      .from("admins")
+      .insert([
+        {
+          id: randomUUID(),
+          userId: user.id,
+          permissions: ["ALL"],
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ])
+      .select()
+      .single();
+
+    if (adminError) {
+      console.error("❌ Error creating admin record:", adminError.message);
+      return;
+    }
+
+    console.log("✅ Admin record created successfully!\n");
+
+    console.log("=".repeat(60));
+    console.log("🎯 ADMIN PRINCIPAL CRIADO COM SUCESSO!");
+    console.log("=".repeat(60));
+    console.log("");
+    console.log("📧 Email: admin@vendeuonline.com.br");
+    console.log("🔑 Senha: Admin@2025!");
+    console.log("");
+    console.log("🌐 Acesso: https://www.vendeu.online/login");
+    console.log("   ou localmente: http://localhost:5173/login");
+    console.log("");
+    console.log("🛡️ Permissões: Acesso total ao sistema");
+    console.log("=".repeat(60));
+  } catch (error) {
+    console.error("❌ Unexpected error:", error);
   }
 }
 

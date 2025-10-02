@@ -6,7 +6,6 @@ import { protectRoute, validateInput, commonValidations } from "../middleware/se
 import jwt from "jsonwebtoken";
 import { logger } from "../lib/logger.js";
 
-
 const router = express.Router();
 
 // Middleware de autenticação específico para vendedores (com funcionalidades extras)
@@ -91,12 +90,14 @@ router.get("/categories", authenticateSellerWithExtras, async (req, res) => {
     // Buscar categorias reais baseado nos produtos do vendedor
     const { data: categoryStats, error } = await supabase
       .from("products")
-      .select(`
+      .select(
+        `
         categories!inner (
           id,
           name
         )
-      `)
+      `
+      )
       .eq("sellerId", sellerId)
       .eq("isActive", true);
 
@@ -108,7 +109,7 @@ router.get("/categories", authenticateSellerWithExtras, async (req, res) => {
     // Contar produtos por categoria
     const categoryCount = {};
     if (categoryStats && Array.isArray(categoryStats)) {
-      categoryStats.forEach(product => {
+      categoryStats.forEach((product) => {
         if (product.categories) {
           const categoryName = product.categories.name;
           categoryCount[categoryName] = (categoryCount[categoryName] || 0) + 1;
@@ -119,7 +120,7 @@ router.get("/categories", authenticateSellerWithExtras, async (req, res) => {
     // Converter para o formato esperado
     const categoriesData = Object.entries(categoryCount).map(([name, count]) => ({
       name,
-      count
+      count,
     }));
 
     logger.info("✅ Categorias encontradas (reais):", categoriesData.length);
@@ -416,6 +417,29 @@ router.get("/analytics", authenticateSellerWithExtras, async (req, res) => {
     const sellerId = req.seller.id;
     const period = req.query.period || "30"; // dias
     logger.info("📈 Buscando analytics para vendedor:", sellerId, "período:", period, "dias");
+
+    // Return basic analytics structure immediately
+    if (!sellerId) {
+      return res.json({
+        success: true,
+        data: {
+          period: parseInt(period),
+          revenue: 0,
+          orders: 0,
+          visits: 0,
+          conversionRate: 0,
+          averageOrderValue: 0,
+          comparison: {
+            revenueChange: 0,
+            ordersChange: 0,
+            visitsChange: 0,
+            previousRevenue: 0,
+            previousOrders: 0,
+            previousVisits: 0,
+          },
+        },
+      });
+    }
 
     const periodDays = parseInt(period);
     const currentStartDate = new Date();
@@ -752,6 +776,94 @@ router.get("/analytics/categories", authenticateSellerWithExtras, async (req, re
     });
   } catch (error) {
     logger.error("❌ Erro ao buscar distribuição de categorias:", error);
+    res.status(500).json({
+      error: "Erro interno do servidor",
+      details: error.message,
+    });
+  }
+});
+
+// GET /api/seller/analytics/products - Buscar analytics dos produtos do seller
+router.get("/analytics/products", authenticateSellerWithExtras, async (req, res) => {
+  try {
+    const sellerId = req.seller.id;
+
+    logger.info("📊 Buscando analytics de produtos para vendedor:", sellerId);
+
+    // Buscar produtos do seller com informações completas
+    const { data: products, error } = await supabase
+      .from("Product")
+      .select(
+        `
+        id,
+        name,
+        price,
+        stock,
+        isActive,
+        viewCount,
+        salesCount,
+        rating,
+        reviewCount,
+        createdAt,
+        categories (id, name)
+      `
+      )
+      .eq("sellerId", sellerId)
+      .order("salesCount", { ascending: false });
+
+    if (error) {
+      logger.error("❌ Erro ao buscar produtos:", error);
+      throw new Error(error.message);
+    }
+
+    // Calcular estatísticas
+    const totalProducts = products?.length || 0;
+    const activeProducts = products?.filter((p) => p.isActive).length || 0;
+    const totalViews = products?.reduce((sum, p) => sum + (p.viewCount || 0), 0) || 0;
+    const totalSales = products?.reduce((sum, p) => sum + (p.salesCount || 0), 0) || 0;
+    const totalRevenue = products?.reduce((sum, p) => sum + (p.salesCount || 0) * parseFloat(p.price || 0), 0) || 0;
+    const averageRating =
+      products?.length > 0 ? products.reduce((sum, p) => sum + (p.rating || 0), 0) / products.length : 0;
+
+    // Top 5 produtos mais vendidos
+    const topSelling =
+      products?.slice(0, 5).map((p) => ({
+        id: p.id,
+        name: p.name,
+        sales: p.salesCount || 0,
+        revenue: (p.salesCount || 0) * parseFloat(p.price || 0),
+        category: p.categories?.name || "Sem categoria",
+      })) || [];
+
+    // Produtos com baixo estoque (menos de 5 unidades)
+    const lowStock =
+      products
+        ?.filter((p) => p.stock > 0 && p.stock < 5)
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          stock: p.stock,
+        })) || [];
+
+    logger.info(`✅ Analytics de ${totalProducts} produtos calculados`);
+
+    res.json({
+      success: true,
+      data: {
+        summary: {
+          totalProducts,
+          activeProducts,
+          totalViews,
+          totalSales,
+          totalRevenue,
+          averageRating: Math.round(averageRating * 10) / 10,
+        },
+        topSelling,
+        lowStock,
+      },
+    });
+  } catch (error) {
+    logger.error("❌ Erro ao buscar analytics de produtos:", error);
     res.status(500).json({
       error: "Erro interno do servidor",
       details: error.message,
@@ -1174,8 +1286,12 @@ router.put("/settings", authenticateSellerWithExtras, async (req, res) => {
       terms: storePolicies?.terms || "Termos e condições padrão",
 
       // Configurações da loja
-      workingDays: storeConfig?.workingDays ? JSON.stringify(storeConfig.workingDays) : JSON.stringify(["monday", "tuesday", "wednesday", "thursday", "friday"]),
-      workingHours: storeConfig?.workingHours ? JSON.stringify(storeConfig.workingHours) : JSON.stringify({ start: "08:00", end: "18:00" }),
+      workingDays: storeConfig?.workingDays
+        ? JSON.stringify(storeConfig.workingDays)
+        : JSON.stringify(["monday", "tuesday", "wednesday", "thursday", "friday"]),
+      workingHours: storeConfig?.workingHours
+        ? JSON.stringify(storeConfig.workingHours)
+        : JSON.stringify({ start: "08:00", end: "18:00" }),
       autoApproveOrders: storeConfig?.autoApproveOrders ?? false,
 
       updatedAt: new Date().toISOString(),
