@@ -413,7 +413,17 @@ router.post("/", authenticate, protectRoute(["SELLER", "ADMIN"]), async (req, re
 
       logger.info(`📊 Validando limites - Plano: ${seller.plan}, Max Produtos: ${sellerPlan.maxProducts}`);
 
-      // 2. Contar produtos atuais do seller
+      // 2. Buscar storeId do seller (caso não esteja no req.user)
+      if (!req.user.storeId) {
+        const { data: store } = await supabase.from("stores").select("id").eq("sellerId", seller.id).single();
+
+        if (store) {
+          req.user.storeId = store.id;
+          logger.info(`✅ StoreId encontrado: ${store.id}`);
+        }
+      }
+
+      // 3. Contar produtos atuais do seller
       if (sellerPlan.maxProducts !== -1) {
         // -1 = ilimitado
         const { count: currentProducts, error: countError } = await supabase
@@ -451,12 +461,27 @@ router.post("/", authenticate, protectRoute(["SELLER", "ADMIN"]), async (req, re
     // Gerar ID único para o produto
     const productId = `product_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+    // Gerar slug a partir do nome do produto
+    const slug =
+      productData.name
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+        .replace(/[^a-z0-9\s-]/g, "") // Remove caracteres especiais
+        .trim()
+        .replace(/\s+/g, "-") // Substitui espaços por hífen
+        .replace(/-+/g, "-") + // Remove hífens duplicados
+      `-${Date.now()}`; // Adiciona timestamp para garantir unicidade
+
+    logger.info(`✅ Slug gerado: ${slug}`);
+
     // Criar produto no Supabase
     const { data: product, error } = await supabase
       .from("Product")
       .insert([
         {
           id: productId,
+          slug: slug,
           name: productData.name,
           description: productData.description,
           price: productData.price,

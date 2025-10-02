@@ -8,7 +8,7 @@
 import http from "http";
 
 const API_HOST = "localhost";
-const API_PORT = 3007;
+const API_PORT = 3000;
 const timestamp = Date.now();
 
 // Dados de teste
@@ -300,7 +300,7 @@ async function testSellerFlow() {
     description: "Produto de teste automatizado",
     price: 99.99,
     stock: 10,
-    categoryId: "eletronicos",
+    categoryId: "caaf0663-33f0-46dc-8213-8274fe5a8afe", // Eletrônicos category UUID
     isActive: true,
   };
 

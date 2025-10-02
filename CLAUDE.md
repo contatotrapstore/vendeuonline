@@ -244,6 +244,10 @@ The application requires environment variables for:
 - ✅ **16/09/2025**: TrapStore populada com 3 produtos (iPhone, MacBook, AirPods)
 - ✅ **16/09/2025**: Configuração Supabase service role key corrigida
 - ✅ **16/09/2025**: Analytics JSON robustas sem crashes
+- ✅ **02/10/2025**: Geração automática de slug para produtos implementada
+- ✅ **02/10/2025**: Corrigido uso de UUID para categorias (estava usando string)
+- ✅ **02/10/2025**: Seller flow 100% funcional - E2E tests passando 4/4 fases
+- ✅ **02/10/2025**: Banco limpo - removidos 71 usuários de teste
 
 ### Quality Assurance ✅
 
