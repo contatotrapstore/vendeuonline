@@ -7,6 +7,31 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ---
 
+## [2.6.0] - 2025-10-02 🚀 **APIS COMPLETAS & SISTEMA OTIMIZADO**
+
+### ✨ **ADICIONADO**
+
+- Implementação completa de 27 APIs essenciais do e-commerce
+- APIs de Cart, Wishlist, Orders, Reviews implementadas
+- Sistema de User Profile e Change Password
+- Analytics APIs para vendedores
+- Subscription e Upgrade APIs
+
+### 🐛 **CORRIGIDO**
+
+- Register API error handling com `.maybeSingle()`
+- Authentication flow otimizado
+- Supabase integration melhorada
+
+### 🧹 **MELHORADO**
+
+- Repository limpo e organizado
+- Documentação atualizada
+- Arquivos temporários removidos
+- Reports antigos arquivados
+
+---
+
 ## [2.5.0] - 2025-10-01 🔥 **CORREÇÃO CRÍTICA: ADMIN 403 RESOLVIDO**
 
 ### 🐛 **CORRIGIDO**

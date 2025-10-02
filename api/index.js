@@ -1111,8 +1111,17 @@ export default async function handler(req, res) {
 
         if (supabase) {
           try {
-            // Check if user exists
-            const { data: existingUser } = await supabase.from("users").select("id").eq("email", email).single();
+            // Check if user exists - using maybeSingle() to handle no results without error
+            const { data: existingUser, error: checkError } = await supabase
+              .from("users")
+              .select("id")
+              .eq("email", email)
+              .maybeSingle();
+
+            // If there's an error other than no rows, log it
+            if (checkError && checkError.code !== "PGRST116") {
+              logger.error("❌ [REGISTER] Erro ao verificar usuário existente:", checkError);
+            }
 
             if (existingUser) {
               return res.status(400).json({ error: "Email já cadastrado" });
