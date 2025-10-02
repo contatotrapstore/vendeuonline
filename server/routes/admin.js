@@ -15,6 +15,65 @@ const router = Router();
 // router.use(adminRateLimit);
 // router.use(securityHeaders);
 
+// ==== DASHBOARD ====
+router.get("/dashboard", async (req, res) => {
+  try {
+    logger.info("📊 Admin dashboard endpoint called");
+
+    // Buscar estatísticas reais do banco
+    const { data: usersData } = await supabase.from("users").select("type");
+    const { data: storesData } = await supabase.from("stores").select("isActive, isVerified");
+    const { data: productsData } = await supabase.from("products").select("isActive");
+    const { count: ordersCount } = await supabase.from("Order").select("*", { count: "exact", head: true });
+
+    const totalUsers = usersData?.length || 0;
+    const buyersCount = usersData?.filter((u) => u.type === "BUYER").length || 0;
+    const sellersCount = usersData?.filter((u) => u.type === "SELLER").length || 0;
+    const adminsCount = usersData?.filter((u) => u.type === "ADMIN").length || 0;
+
+    const totalStores = storesData?.length || 0;
+    const activeStores = storesData?.filter((s) => s.isActive).length || 0;
+
+    const totalProducts = productsData?.length || 0;
+    const activeProducts = productsData?.filter((p) => p.isActive).length || 0;
+
+    const dashboard = {
+      users: {
+        total: totalUsers,
+        buyers: buyersCount,
+        sellers: sellersCount,
+        admins: adminsCount,
+      },
+      stores: {
+        total: totalStores,
+        active: activeStores,
+        inactive: totalStores - activeStores,
+      },
+      products: {
+        total: totalProducts,
+        active: activeProducts,
+        inactive: totalProducts - activeProducts,
+      },
+      orders: {
+        total: ordersCount || 0,
+      },
+      stats: {
+        conversionRate: totalUsers > 0 ? Math.round((sellersCount / totalUsers) * 100) : 0,
+      },
+    };
+
+    logger.info("✅ Admin dashboard retrieved successfully");
+    res.json({ success: true, data: dashboard });
+  } catch (error) {
+    logger.error("❌ Erro ao buscar dashboard:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erro ao buscar dados do dashboard",
+      details: error.message,
+    });
+  }
+});
+
 // ==== DASHBOARD STATS ====
 router.get("/stats", async (req, res) => {
   try {

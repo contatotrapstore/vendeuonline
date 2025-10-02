@@ -9,7 +9,6 @@ import { loginSchema, createUserSchema } from "../schemas/commonSchemas.js";
 import { autoNotify } from "../middleware/notifications.js";
 import { logger } from "../lib/logger.js";
 
-
 const router = express.Router();
 
 // JWT Secret
@@ -276,7 +275,7 @@ router.post(
       phone,
       city,
       state,
-      type: userType,
+      type: userType.toUpperCase(), // Garantir que tipo seja BUYER, SELLER ou ADMIN
       isVerified: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),

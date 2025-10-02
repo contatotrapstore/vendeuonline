@@ -6,7 +6,6 @@ import jwt from "jsonwebtoken";
 import { logger } from "../lib/logger.js";
 import { normalizePagination, createPaginatedResponse, applyPagination, applySorting } from "../lib/pagination.js";
 
-
 const router = express.Router();
 
 // Middleware de autenticação
@@ -33,7 +32,7 @@ router.get("/", authenticateUser, async (req, res) => {
           Product!inner(
             id,
             name,
-            images:product_images(url, alt, isMain)
+            images:ProductImage(url, alt, position)
           )
         )
       `
@@ -45,9 +44,9 @@ router.get("/", authenticateUser, async (req, res) => {
       query = query.eq("sellerId", req.seller.id);
     }
 
-    // Filtrar por comprador se usuário for buyer (usar userId como buyerId)
+    // Filtrar por comprador se usuário for buyer
     if (user.type === "BUYER") {
-      query = query.eq("userId", user.id); // Buscar pelo userId ao invés de buyerId
+      query = query.eq("buyerId", user.id); // Buscar pelo buyerId
     }
 
     // Filtrar por status se especificado
@@ -78,8 +77,8 @@ router.get("/", authenticateUser, async (req, res) => {
               images:
                 item.Product.images?.map((img) => ({
                   url: img.url,
-                  alt: img.alt,
-                  isMain: img.isMain,
+                  alt: img.alt || "",
+                  position: img.position || 0,
                 })) || [],
             },
           })) || [];
@@ -128,7 +127,10 @@ router.get("/", authenticateUser, async (req, res) => {
   } catch (error) {
     logger.error("Erro ao buscar pedidos:", error);
     res.status(500).json({
-      error: "Erro interno do servidor",
+      success: false,
+      error: "Erro ao buscar pedidos",
+      details: error.message,
+      code: "DATABASE_ERROR",
     });
   }
 });
@@ -157,7 +159,7 @@ router.get("/:id", authenticateUser, async (req, res) => {
           Product!inner(
             id,
             name,
-            images:product_images(url, alt, isMain)
+            images:ProductImage(url, alt, position)
           )
         )
       `

@@ -34,16 +34,16 @@ export const createRateLimit = (options = {}) => {
 
 // Rate limits específicos por tipo de operação
 export const authRateLimit = createRateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutos
-  max: process.env.APP_ENV === "development" ? 100 : 5, // Mais permissivo em desenvolvimento
+  windowMs: 5 * 60 * 1000, // 5 minutos (reduzido de 10)
+  max: process.env.NODE_ENV === "production" ? 5 : 100, // 100 em dev, 5 em produção
   message: {
-    error: "Muitas tentativas de login. Tente novamente em 10 minutos.",
+    error: "Muitas tentativas de login. Tente novamente em 5 minutos.",
     code: "AUTH_RATE_LIMIT_EXCEEDED",
   },
   // Pular rate limiting em desenvolvimento e testes
   skip: (req) => {
     // Pular em ambiente de teste
-    if (process.env.NODE_ENV === "test" || process.env.APP_ENV === "test" || process.env.TEST_MODE === "true") {
+    if (process.env.NODE_ENV === "test" || process.env.TEST_MODE === "true") {
       return true;
     }
     // Pular para Playwright e testes automatizados
@@ -51,13 +51,13 @@ export const authRateLimit = createRateLimit({
       return true;
     }
     // Pular em desenvolvimento para facilitar testes
-    return process.env.APP_ENV === "development";
+    return process.env.NODE_ENV !== "production";
   },
 });
 
 export const apiRateLimit = createRateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: process.env.APP_ENV === "development" ? 1000 : 100, // Muito mais permissivo em dev
+  max: process.env.NODE_ENV === "production" ? 100 : 1000, // 1000 em dev, 100 em produção
   message: {
     error: "Limite de API excedido. Tente novamente em 15 minutos.",
     code: "API_RATE_LIMIT_EXCEEDED",
@@ -65,7 +65,7 @@ export const apiRateLimit = createRateLimit({
   // Pular para testes automatizados
   skip: (req) => {
     return (
-      process.env.APP_ENV === "development" &&
+      process.env.NODE_ENV !== "production" &&
       (req.headers["user-agent"]?.includes("playwright") || req.headers["x-test-mode"] === "true")
     );
   },

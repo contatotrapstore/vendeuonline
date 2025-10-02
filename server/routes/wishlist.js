@@ -1,8 +1,13 @@
 import express from "express";
-import { authenticate, authenticateUser, authenticateSeller, authenticateAdmin, optionalAuth } from "../middleware/auth.js";
+import {
+  authenticate,
+  authenticateUser,
+  authenticateSeller,
+  authenticateAdmin,
+  optionalAuth,
+} from "../middleware/auth.js";
 import { supabase } from "../lib/supabase-client.js";
 import { logger } from "../lib/logger.js";
-
 
 const router = express.Router();
 
@@ -38,7 +43,7 @@ router.get("/", optionalAuth, async (req, res) => {
           name,
           price,
           comparePrice,
-          category,
+          categoryId,
           isActive,
           images:ProductImage (
             id,
@@ -71,7 +76,7 @@ router.get("/", optionalAuth, async (req, res) => {
           name: product.name,
           price: product.price,
           comparePrice: product.comparePrice,
-          category: product.category,
+          categoryId: product.categoryId,
           storeName: "Loja Vendeu Online", // Nome genérico temporário
           storeId: "store-placeholder",
           imageUrl: mainImage?.url || "/placeholder-product.jpg",
