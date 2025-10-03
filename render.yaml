@@ -3,10 +3,10 @@ services:
   # Backend API Service
   - type: web
     name: vendeuonline-api
-    env: node
+    runtime: node
     region: oregon # ou 'frankfurt' para Europa
     plan: free # free tier com 750h/mês
-    buildCommand: npm ci && npx prisma generate
+    buildCommand: npm install && npx prisma generate
     startCommand: node server.js
     healthCheckPath: /api/health
     envVars:
