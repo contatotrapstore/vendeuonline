@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import { useState, useEffect } from "react";
+import { buildApiUrl } from "@/config/api";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { User, Mail, Phone, MapPin, Calendar, Camera, Save, Edit3, Package, Heart, ShoppingCart } from "lucide-react";
@@ -81,13 +82,13 @@ export default function BuyerProfile() {
 
       // Buscar perfil e estatísticas em paralelo
       const [profileResponse, statsResponse] = await Promise.all([
-        fetch("/api/users/profile", {
+        fetch(buildApiUrl("/api/users/profile"), {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         }),
-        fetch("/api/users/stats", {
+        fetch(buildApiUrl("/api/users/stats"), {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
@@ -124,7 +125,7 @@ export default function BuyerProfile() {
 
     try {
       setIsSaving(true);
-      const response = await fetch("/api/users/profile", {
+      const response = await fetch(buildApiUrl("/api/users/profile"), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -163,7 +164,7 @@ export default function BuyerProfile() {
       const formData = new FormData();
       formData.append("avatar", file);
 
-      const response = await fetch("/api/users/avatar", {
+      const response = await fetch(buildApiUrl("/api/users/avatar"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

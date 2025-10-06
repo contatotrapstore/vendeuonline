@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import { useEffect, useState } from "react";
+import { buildApiUrl } from "@/config/api";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CheckCircle, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,7 +47,7 @@ export default function PaymentSuccessPage() {
 
   const checkPaymentStatus = async () => {
     try {
-      const response = await fetch(`/api/payments/status?payment_id=${paymentId}`);
+      const response = await fetch(buildApiUrl(`/api/payments/status?payment_id=${paymentId}`));
 
       if (response.ok) {
         const data = await response.json();

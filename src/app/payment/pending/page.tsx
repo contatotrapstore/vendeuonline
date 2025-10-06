@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import { useEffect, useState } from "react";
+import { buildApiUrl } from "@/config/api";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Clock, RefreshCw, Copy, CheckCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -69,7 +70,7 @@ export default function PaymentPendingPage() {
     if (!silent) setChecking(true);
 
     try {
-      const response = await fetch(`/api/payments/status?payment_id=${paymentId}`);
+      const response = await fetch(buildApiUrl(`/api/payments/status?payment_id=${paymentId}`));
 
       if (response.ok) {
         const data = await response.json();

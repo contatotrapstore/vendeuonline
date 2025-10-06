@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 
 import { useEffect, useState } from "react";
 import { apiRequest } from "@/lib/api-client";
+import { buildApiUrl } from "@/config/api";
 
 interface TrackingConfig {
   google_analytics_id?: string;
@@ -88,7 +89,7 @@ export default function TrackingScripts() {
   const loadTrackingConfigs = async () => {
     try {
       // Buscar configurações de tracking sem autenticação (endpoint público)
-      const response = await fetch("/api/tracking/configs");
+      const response = await fetch(buildApiUrl("/api/tracking/configs"));
       if (response.ok) {
         const data = await response.json();
 

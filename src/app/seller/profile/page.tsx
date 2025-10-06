@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import { useState, useEffect } from "react";
+import { buildApiUrl } from "@/config/api";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import {
@@ -113,7 +114,7 @@ export default function SellerProfile() {
   const loadStoreProfile = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/stores/profile", {
+      const response = await fetch(buildApiUrl("/api/stores/profile"), {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -138,7 +139,7 @@ export default function SellerProfile() {
 
     try {
       setIsSaving(true);
-      const response = await fetch("/api/stores/profile", {
+      const response = await fetch(buildApiUrl("/api/stores/profile"), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -166,7 +167,7 @@ export default function SellerProfile() {
       formData.append("image", file);
       formData.append("type", type);
 
-      const response = await fetch("/api/stores/upload", {
+      const response = await fetch(buildApiUrl("/api/stores/upload"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

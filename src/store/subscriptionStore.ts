@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { logger } from "@/lib/logger";
+import { buildApiUrl } from "@/config/api";
 
 
 export interface Subscription {
@@ -94,7 +95,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
       if (filters.planId !== "all") params.append("planId", filters.planId);
       if (filters.paymentStatus !== "all") params.append("paymentStatus", filters.paymentStatus);
 
-      const response = await fetch(`/api/admin/subscriptions?${params.toString()}`, {
+      const response = await fetch(buildApiUrl(`/api/admin/subscriptions?${params.toString()}`), {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -135,7 +136,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch(`/api/admin/subscriptions/${subscriptionId}/status`, {
+      const response = await fetch(buildApiUrl(`/api/admin/subscriptions/${subscriptionId}/status`), {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -171,7 +172,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch(`/api/admin/subscriptions/${subscriptionId}/cancel`, {
+      const response = await fetch(buildApiUrl(`/api/admin/subscriptions/${subscriptionId}/cancel`), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -208,7 +209,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch(`/api/admin/subscriptions/${subscriptionId}/renew`, {
+      const response = await fetch(buildApiUrl(`/api/admin/subscriptions/${subscriptionId}/renew`), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

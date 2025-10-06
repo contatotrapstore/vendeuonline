@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { buildApiUrl } from "@/config/api";
 import { Package, Truck, CheckCircle, Clock, X, Eye, Edit, Plus, Search, Filter } from "lucide-react";
 import { toast } from "sonner";
 import { useOrderStore, Order } from "@/store/orderStore";
@@ -89,7 +90,7 @@ export default function SellerOrdersPage() {
 
         useOrderStore.setState({ isLoading: true, error: null });
 
-        const response = await fetch("/api/seller/orders", {
+        const response = await fetch(buildApiUrl("/api/seller/orders"), {
           headers: {
             Authorization: `Bearer ${token}`,
           },

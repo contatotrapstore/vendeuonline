@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import { useState, useEffect } from "react";
+import { buildApiUrl } from "@/config/api";
 import { Check, Crown, Users, Building, Zap } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { toast } from "sonner";
@@ -61,7 +62,7 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
 
   const fetchPlans = async () => {
     try {
-      const response = await fetch("/api/plans");
+      const response = await fetch(buildApiUrl("/api/plans"));
       const data = await response.json();
 
       if (data.success) {
@@ -107,7 +108,7 @@ export default function PricingPlans({ onSelectPlan, currentPlanId, showTitle = 
     setSubscribing(planId);
 
     try {
-      const response = await fetch("/api/subscriptions", {
+      const response = await fetch(buildApiUrl("/api/subscriptions"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

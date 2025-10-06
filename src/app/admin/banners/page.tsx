@@ -5,6 +5,7 @@ import { logger } from "@/lib/logger";
 import { useState, useEffect } from "react";
 import { ImageIcon, Plus, Edit, Trash2, Eye, EyeOff, ExternalLink, Calendar, AlertCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { buildApiUrl } from "@/config/api";
 
 interface Banner {
   id: string;
@@ -38,7 +39,7 @@ export default function BannersPage() {
       setError(null);
 
       // Tentar buscar da API real primeiro
-      const response = await fetch("/api/admin/banners");
+      const response = await fetch(buildApiUrl("/api/admin/banners"));
 
       if (response.ok) {
         const data = await response.json();
@@ -73,7 +74,7 @@ export default function BannersPage() {
 
   const handleStatusToggle = async (bannerId: string) => {
     try {
-      const response = await fetch(`/api/admin/banners/${bannerId}/toggle`, {
+      const response = await fetch(buildApiUrl(`/api/admin/banners/${bannerId}/toggle`), {
         method: "PATCH",
       });
 
@@ -94,7 +95,7 @@ export default function BannersPage() {
     if (!confirm("Tem certeza que deseja excluir este banner?")) return;
 
     try {
-      const response = await fetch(`/api/admin/banners/${bannerId}`, {
+      const response = await fetch(buildApiUrl(`/api/admin/banners/${bannerId}`), {
         method: "DELETE",
       });
 

@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import { useState, useEffect } from "react";
+import { buildApiUrl } from "@/config/api";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import {
@@ -177,7 +178,7 @@ export default function SellerSettings() {
       // Carregar planos primeiro
       await loadPlans();
 
-      const response = await fetch("/api/seller/settings", {
+      const response = await fetch(buildApiUrl("/api/seller/settings"), {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -230,7 +231,7 @@ export default function SellerSettings() {
   const handlePaymentSave = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/seller/settings", {
+      const response = await fetch(buildApiUrl("/api/seller/settings"), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -263,7 +264,7 @@ export default function SellerSettings() {
   const handleShippingSave = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/seller/settings", {
+      const response = await fetch(buildApiUrl("/api/seller/settings"), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -292,7 +293,7 @@ export default function SellerSettings() {
 
   const loadPlans = async () => {
     try {
-      const response = await fetch("/api/plans", {
+      const response = await fetch(buildApiUrl("/api/plans"), {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -311,10 +312,10 @@ export default function SellerSettings() {
     try {
       // Buscar dados reais de uso do vendedor
       const [productsRes, subscriptionRes] = await Promise.all([
-        fetch("/api/seller/products", {
+        fetch(buildApiUrl("/api/seller/products"), {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        fetch("/api/seller/subscription", {
+        fetch(buildApiUrl("/api/seller/subscription"), {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -340,7 +341,7 @@ export default function SellerSettings() {
   const handleNotificationSave = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/seller/settings", {
+      const response = await fetch(buildApiUrl("/api/seller/settings"), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -378,7 +379,7 @@ export default function SellerSettings() {
 
     try {
       setIsLoading(true);
-      const response = await fetch("/api/users/change-password", {
+      const response = await fetch(buildApiUrl("/api/users/change-password"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -408,7 +409,7 @@ export default function SellerSettings() {
   const handlePlanUpgrade = async (planId: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/seller/upgrade", {
+      const response = await fetch(buildApiUrl("/api/seller/upgrade"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

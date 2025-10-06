@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { buildApiUrl } from "@/config/api";
 
 interface Plan {
   id: string;
@@ -36,7 +37,7 @@ const AdminPricing = () => {
   const fetchPlans = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/admin/plans");
+      const response = await fetch(buildApiUrl("/api/admin/plans"));
       if (!response.ok) {
         throw new Error("Erro ao carregar planos");
       }
@@ -82,7 +83,7 @@ const AdminPricing = () => {
 
   const handleToggleActive = async (planId: string, isActive: boolean) => {
     try {
-      const response = await fetch(`/api/admin/plans/${planId}`, {
+      const response = await fetch(buildApiUrl(`/api/admin/plans/${planId}`), {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

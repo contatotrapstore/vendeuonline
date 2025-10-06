@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import { useState, useEffect } from "react";
+import { buildApiUrl } from "@/config/api";
 import { useAuthStore } from "@/store/authStore";
 import {
   Shield,
@@ -85,7 +86,7 @@ export default function BuyerSettings() {
   const loadSettings = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/users/settings", {
+      const response = await fetch(buildApiUrl("/api/users/settings"), {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -133,7 +134,7 @@ export default function BuyerSettings() {
 
     try {
       setIsLoading(true);
-      const response = await fetch("/api/users/password", {
+      const response = await fetch(buildApiUrl("/api/users/password"), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -163,7 +164,7 @@ export default function BuyerSettings() {
   const handleNotificationSave = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/users/settings", {
+      const response = await fetch(buildApiUrl("/api/users/settings"), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -193,7 +194,7 @@ export default function BuyerSettings() {
   const handlePrivacySave = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/users/settings", {
+      const response = await fetch(buildApiUrl("/api/users/settings"), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -230,7 +231,7 @@ export default function BuyerSettings() {
 
     try {
       setIsLoading(true);
-      const response = await fetch("/api/users/delete", {
+      const response = await fetch(buildApiUrl("/api/users/delete"), {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

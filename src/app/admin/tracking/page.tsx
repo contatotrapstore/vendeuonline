@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import { useState, useEffect } from "react";
+import { buildApiUrl } from "@/config/api";
 import { useAuthStore, usePermissions } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -78,7 +79,7 @@ export default function AdminTrackingPage() {
   const loadConfigs = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/tracking/admin", {
+      const response = await fetch(buildApiUrl("/api/tracking/admin"), {
         headers: {
           Authorization: `Bearer ${token}`,
         },

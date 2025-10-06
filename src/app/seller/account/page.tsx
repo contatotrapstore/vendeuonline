@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import { useState, useEffect } from "react";
+import { buildApiUrl } from "@/config/api";
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { User, Mail, Phone, MapPin, Calendar, Camera, Save, Edit3, Shield, Key, Bell, CreditCard } from "lucide-react";
@@ -51,7 +52,7 @@ export default function SellerAccountPage() {
   const loadAccountData = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch("/api/account/profile", {
+      const response = await fetch(buildApiUrl("/api/account/profile"), {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -117,7 +118,7 @@ export default function SellerAccountPage() {
 
     try {
       setIsSaving(true);
-      const response = await fetch("/api/account/profile", {
+      const response = await fetch(buildApiUrl("/api/account/profile"), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,

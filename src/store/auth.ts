@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { buildApiUrl } from "@/config/api";
 
 export interface User {
   id: string;
@@ -105,7 +106,7 @@ export const useAuthStore = create<AuthStore>()(
 
         try {
           // Simulação de API call - substituir pela API real
-          const response = await fetch("/api/auth/register", {
+          const response = await fetch(buildApiUrl("/api/auth/register"), {
             method: "POST",
             headers: {
               "Content-Type": "application/json",

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { logger } from "@/lib/logger";
+import { buildApiUrl } from "@/config/api";
 
 
 export interface Plan {
@@ -46,7 +47,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch("/api/admin/plans", {
+      const response = await fetch(buildApiUrl("/api/admin/plans"), {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -78,7 +79,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch("/api/admin/plans", {
+      const response = await fetch(buildApiUrl("/api/admin/plans"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -115,7 +116,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch(`/api/admin/plans/${id}`, {
+      const response = await fetch(buildApiUrl(`/api/admin/plans/${id}`), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -154,7 +155,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch(`/api/admin/plans/${id}`, {
+      const response = await fetch(buildApiUrl(`/api/admin/plans/${id}`), {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

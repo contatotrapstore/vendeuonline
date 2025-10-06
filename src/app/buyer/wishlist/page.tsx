@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import { useState, useEffect } from "react";
+import { buildApiUrl } from "@/config/api";
 import { Heart, ShoppingCart, Share2, Grid, List, Star, Filter, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -65,7 +66,7 @@ export default function WishlistPage() {
       }
 
       // Tentar buscar da API real com autenticação
-      const response = await fetch("/api/wishlist", {
+      const response = await fetch(buildApiUrl("/api/wishlist"), {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -110,7 +111,7 @@ export default function WishlistPage() {
 
   const removeFromWishlist = async (itemId: string) => {
     try {
-      const response = await fetch(`/api/buyer/wishlist/${itemId}`, {
+      const response = await fetch(buildApiUrl(`/api/buyer/wishlist/${itemId}`), {
         method: "DELETE",
       });
 
@@ -127,7 +128,7 @@ export default function WishlistPage() {
 
   const addToCart = async (item: WishlistItem) => {
     try {
-      const response = await fetch("/api/buyer/cart", {
+      const response = await fetch(buildApiUrl("/api/buyer/cart"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId: item.productId, quantity: 1 }),

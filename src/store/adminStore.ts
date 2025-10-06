@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { logger } from "@/lib/logger";
+import { buildApiUrl } from "@/config/api";
 
 
 export interface DashboardStats {
@@ -44,7 +45,7 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         throw new Error("Token não encontrado. Faça login como administrador.");
       }
 
-      const response = await fetch("/api/admin/stats", {
+      const response = await fetch(buildApiUrl("/api/admin/stats"), {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { logger } from "@/lib/logger";
+import { buildApiUrl } from "@/config/api";
 
 
 export interface User {
@@ -52,7 +53,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch("/api/admin/users", {
+      const response = await fetch(buildApiUrl("/api/admin/users"), {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -98,7 +99,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch(`/api/admin/users/${userId}/status`, {
+      const response = await fetch(buildApiUrl(`/api/admin/users/${userId}/status`), {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -134,7 +135,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch(`/api/admin/users/${userId}`, {
+      const response = await fetch(buildApiUrl(`/api/admin/users/${userId}`), {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,

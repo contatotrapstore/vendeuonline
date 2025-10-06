@@ -17,6 +17,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { buildApiUrl } from "@/config/api";
 
 interface Plan {
   id: string;
@@ -57,7 +58,7 @@ export default function AdminPlansPage() {
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch("/api/admin/plans", {
+      const response = await fetch(buildApiUrl("/api/admin/plans"), {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -138,7 +139,7 @@ export default function AdminPlansPage() {
         throw new Error("Token não encontrado");
       }
 
-      const response = await fetch(`/api/admin/plans/${plan.id}`, {
+      const response = await fetch(buildApiUrl(`/api/admin/plans/${plan.id}`), {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,

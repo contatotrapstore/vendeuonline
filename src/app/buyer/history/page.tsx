@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import { useState, useEffect } from "react";
+import { buildApiUrl } from "@/config/api";
 import { Clock, Eye, Heart, ShoppingCart, Trash2, Star, Calendar, Filter, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -40,7 +41,7 @@ export default function HistoryPage() {
       setLoading(true);
 
       // Tentar buscar da API real primeiro
-      const response = await fetch("/api/buyer/history");
+      const response = await fetch(buildApiUrl("/api/buyer/history"));
 
       if (response.ok) {
         const data = await response.json();
@@ -77,7 +78,7 @@ export default function HistoryPage() {
 
   const addToWishlist = async (item: HistoryItem) => {
     try {
-      const response = await fetch("/api/buyer/wishlist", {
+      const response = await fetch(buildApiUrl("/api/buyer/wishlist"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId: item.productId }),
@@ -95,7 +96,7 @@ export default function HistoryPage() {
 
   const addToCart = async (item: HistoryItem) => {
     try {
-      const response = await fetch("/api/buyer/cart", {
+      const response = await fetch(buildApiUrl("/api/buyer/cart"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId: item.productId, quantity: 1 }),
@@ -113,7 +114,7 @@ export default function HistoryPage() {
 
   const removeFromHistory = async (itemId: string) => {
     try {
-      const response = await fetch(`/api/buyer/history/${itemId}`, {
+      const response = await fetch(buildApiUrl(`/api/buyer/history/${itemId}`), {
         method: "DELETE",
       });
 

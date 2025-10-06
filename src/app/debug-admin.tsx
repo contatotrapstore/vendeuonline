@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { buildApiUrl } from "@/config/api";
 
 export default function DebugAdminPage() {
   const [loginResult, setLoginResult] = useState(null);
@@ -8,7 +9,7 @@ export default function DebugAdminPage() {
 
   const testLogin = async () => {
     try {
-      const response = await fetch("/api/auth/login", {
+      const response = await fetch(buildApiUrl("/api/auth/login"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

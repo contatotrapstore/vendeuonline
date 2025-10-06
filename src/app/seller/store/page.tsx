@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import { useState, useEffect } from "react";
+import { buildApiUrl } from "@/config/api";
 import { Save, Upload, MapPin, Clock, Phone, Mail, Globe, Camera, Star, Shield, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { get, put } from "@/lib/api-client";
@@ -123,7 +124,7 @@ export default function SellerStorePage() {
       formData.append("file", file);
       formData.append("type", type);
 
-      const response = await fetch("/api/upload", {
+      const response = await fetch(buildApiUrl("/api/upload"), {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
