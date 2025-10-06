@@ -78,7 +78,11 @@ import healthRouter from "./server/routes/health.js";
 // import testDbRouter from "./server/routes/test-db.js"; // Removido - apenas para testes locais
 
 // Carregar variáveis de ambiente
-dotenv.config();
+// Em produção (Render/Vercel), as variáveis são injetadas automaticamente no process.env
+// Em desenvolvimento local, dotenv carrega do arquivo .env
+if (process.env.NODE_ENV !== 'production') {
+  dotenv.config();
+}
 
 // Configurações JWT - OBRIGATÓRIO definir JWT_SECRET nas variáveis de ambiente
 const JWT_SECRET = process.env.JWT_SECRET;
