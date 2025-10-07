@@ -10,7 +10,7 @@ const API_URLS = {
   // Em desenvolvimento, usar localhost
   development: import.meta.env.VITE_API_URL || "http://localhost:3000",
   // Em produção, usar URL do Render
-  production: import.meta.env.VITE_API_URL || "https://vendeuonline-api.onrender.com",
+  production: import.meta.env.VITE_API_URL || "https://vendeuonline-uqkk.onrender.com",
 };
 
 // Current API base URL baseado no ambiente
