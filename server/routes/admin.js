@@ -1070,7 +1070,7 @@ router.patch("/products/:id/approval", async (req, res) => {
 
     // Validar se produto existe
     const { data: product, error: fetchError } = await supabase
-      .from("products")
+      .from("Product")
       .select("id, name, sellerId")
       .eq("id", id)
       .single();
@@ -1094,7 +1094,7 @@ router.patch("/products/:id/approval", async (req, res) => {
 
     // Atualizar produto no Supabase
     const { data: updatedProduct, error: updateError } = await supabase
-      .from("products")
+      .from("Product")
       .update(updateData)
       .eq("id", id)
       .select()
@@ -1131,7 +1131,7 @@ router.post("/products/:id/approve", async (req, res) => {
     logger.info(`📦 POST /api/admin/products/${id}/approve`);
 
     const { data: updatedProduct, error } = await supabase
-      .from("products")
+      .from("Product")
       .update({
         approvalStatus: "APPROVED",
         approvedBy: req.user.id,
@@ -1161,7 +1161,7 @@ router.post("/products/:id/reject", async (req, res) => {
     logger.info(`📦 POST /api/admin/products/${id}/reject`);
 
     const { data: updatedProduct, error } = await supabase
-      .from("products")
+      .from("Product")
       .update({
         approvalStatus: "REJECTED",
         approvedBy: req.user.id,
