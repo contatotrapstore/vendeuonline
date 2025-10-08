@@ -163,13 +163,13 @@ export default function AdminProductsPage() {
       const token = getAuthToken();
       if (!token) throw new Error("Token não encontrado");
 
-      const response = await fetch(`/api/admin/products/${productId}/approval`, {
+      const response = await fetch(buildApiUrl(`/admin/products/${productId}/approval`), {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ approvalStatus, rejectionReason }),
+        body: JSON.stringify({ isApproved: approvalStatus === "APPROVED", rejectionReason }),
       });
 
       if (!response.ok) throw new Error("Erro ao atualizar aprovação");
@@ -200,7 +200,7 @@ export default function AdminProductsPage() {
         const token = getAuthToken();
         if (!token) throw new Error("Token não encontrado");
 
-        const response = await fetch(`/api/admin/products/${productId}`, {
+        const response = await fetch(buildApiUrl(`/admin/products/${productId}`), {
           method: "DELETE",
           headers: {
             Authorization: `Bearer ${token}`,
