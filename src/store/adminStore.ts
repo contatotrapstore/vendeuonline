@@ -54,6 +54,12 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
         },
       });
 
+      // ✅ Status 304 (Not Modified) = Cache válido, manter dados existentes
+      if (response.status === 304) {
+        set({ loading: false });
+        return;
+      }
+
       if (!response.ok) {
         const errorText = await response.text();
         let errorMessage;

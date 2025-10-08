@@ -17,8 +17,11 @@ router.get("/", async (req, res) => {
       throw error;
     }
 
-    // Retornar array diretamente para compatibilidade com testes
-    res.json(categories || []);
+    // Retornar formato padronizado { success, data }
+    res.json({
+      success: true,
+      data: categories || [],
+    });
   } catch (error) {
     logger.error("Erro ao buscar categorias:", error);
     res.status(500).json({ error: "Erro interno do servidor" });
