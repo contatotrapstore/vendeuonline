@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { logger } from "@/lib/logger";
 import { buildApiUrl } from "@/config/api";
+import { getAuthToken } from "@/config/storage-keys";
 
 
 export interface DashboardStats {
@@ -40,7 +41,8 @@ export const useAdminStore = create<AdminStore>((set, get) => ({
   fetchDashboardStats: async () => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      // ✅ Usar helper centralizado (Zustand persist format)
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado. Faça login como administrador.");
       }
