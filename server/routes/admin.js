@@ -1060,6 +1060,131 @@ router.post("/stores/:id/activate", async (req, res) => {
   }
 });
 
+// ==== PRODUCT ACTIONS ====
+router.patch("/products/:id/approval", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isApproved, rejectionReason } = req.body;
+
+    logger.info(`📦 PATCH /api/admin/products/${id}/approval - isApproved: ${isApproved}`);
+
+    // Validar se produto existe
+    const { data: product, error: fetchError } = await supabase
+      .from("products")
+      .select("id, name, sellerId")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !product) {
+      logger.error("❌ Produto não encontrado:", fetchError);
+      return res.status(404).json({ success: false, error: "Produto não encontrado" });
+    }
+
+    // Preparar dados de atualização
+    const updateData = {
+      approvalStatus: isApproved ? "APPROVED" : "REJECTED",
+      approvedBy: req.user.id,
+      approvedAt: new Date().toISOString(),
+    };
+
+    // Adicionar motivo da rejeição se fornecido
+    if (!isApproved && rejectionReason) {
+      updateData.rejectionReason = rejectionReason;
+    }
+
+    // Atualizar produto no Supabase
+    const { data: updatedProduct, error: updateError } = await supabase
+      .from("products")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (updateError) {
+      logger.error("❌ Erro ao atualizar produto:", updateError);
+      return res.status(500).json({
+        success: false,
+        error: "Erro ao atualizar produto",
+        details: updateError.message,
+      });
+    }
+
+    logger.info(`✅ Produto ${isApproved ? "aprovado" : "rejeitado"} com sucesso`);
+    res.json({
+      success: true,
+      data: updatedProduct,
+      message: `Produto ${isApproved ? "aprovado" : "rejeitado"} com sucesso`,
+    });
+  } catch (error) {
+    logger.error("❌ Erro ao atualizar aprovação do produto:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erro ao atualizar aprovação do produto",
+      details: error.message,
+    });
+  }
+});
+
+router.post("/products/:id/approve", async (req, res) => {
+  try {
+    const { id } = req.params;
+    logger.info(`📦 POST /api/admin/products/${id}/approve`);
+
+    const { data: updatedProduct, error } = await supabase
+      .from("products")
+      .update({
+        approvalStatus: "APPROVED",
+        approvedBy: req.user.id,
+        approvedAt: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      logger.error("❌ Erro ao aprovar produto:", error);
+      return res.status(500).json({ success: false, error: "Erro ao aprovar produto" });
+    }
+
+    logger.info("✅ Produto aprovado com sucesso");
+    res.json({ success: true, data: updatedProduct });
+  } catch (error) {
+    logger.error("❌ Erro ao aprovar produto:", error);
+    res.status(500).json({ success: false, error: "Erro ao aprovar produto" });
+  }
+});
+
+router.post("/products/:id/reject", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rejectionReason } = req.body;
+    logger.info(`📦 POST /api/admin/products/${id}/reject`);
+
+    const { data: updatedProduct, error } = await supabase
+      .from("products")
+      .update({
+        approvalStatus: "REJECTED",
+        approvedBy: req.user.id,
+        approvedAt: new Date().toISOString(),
+        rejectionReason: rejectionReason || "Sem motivo especificado",
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      logger.error("❌ Erro ao rejeitar produto:", error);
+      return res.status(500).json({ success: false, error: "Erro ao rejeitar produto" });
+    }
+
+    logger.info("✅ Produto rejeitado com sucesso");
+    res.json({ success: true, data: updatedProduct });
+  } catch (error) {
+    logger.error("❌ Erro ao rejeitar produto:", error);
+    res.status(500).json({ success: false, error: "Erro ao rejeitar produto" });
+  }
+});
+
 // ==== USER ACTIONS ====
 router.patch("/users/:id/status", async (req, res) => {
   try {
