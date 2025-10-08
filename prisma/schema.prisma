@@ -165,10 +165,10 @@ model Product {
   seoDescription  String?
   isFeatured      Boolean  @default(false)
   isActive        Boolean  @default(true)
-  approvalStatus  ApprovalStatus @default(PENDING)
-  rejectionReason String?
-  approvedAt      DateTime?
-  approvedBy      String?
+  approvalStatus  ApprovalStatus @default(PENDING) @map("approval_status")
+  rejectionReason String? @map("rejection_reason")
+  approvedAt      DateTime? @map("approved_at")
+  approvedBy      String? @map("approved_by")
   rating          Float    @default(0.0)
   reviewCount     Int      @default(0)
   salesCount      Int      @default(0)
@@ -183,7 +183,7 @@ model Product {
   reviews         Review[]
   cart            Cart[]
   
-  @@map("products")
+  @@map("Product")
 }
 
 model ProductImage {

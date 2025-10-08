@@ -1080,16 +1080,16 @@ router.patch("/products/:id/approval", async (req, res) => {
       return res.status(404).json({ success: false, error: "Produto não encontrado" });
     }
 
-    // Preparar dados de atualização
+    // Preparar dados de atualização (snake_case para Supabase)
     const updateData = {
-      approvalStatus: isApproved ? "APPROVED" : "REJECTED",
-      approvedBy: req.user.id,
-      approvedAt: new Date().toISOString(),
+      approval_status: isApproved ? "APPROVED" : "REJECTED",
+      approved_by: req.user.id,
+      approved_at: new Date().toISOString(),
     };
 
     // Adicionar motivo da rejeição se fornecido
     if (!isApproved && rejectionReason) {
-      updateData.rejectionReason = rejectionReason;
+      updateData.rejection_reason = rejectionReason;
     }
 
     // Atualizar produto no Supabase
@@ -1133,9 +1133,9 @@ router.post("/products/:id/approve", async (req, res) => {
     const { data: updatedProduct, error } = await supabase
       .from("Product")
       .update({
-        approvalStatus: "APPROVED",
-        approvedBy: req.user.id,
-        approvedAt: new Date().toISOString(),
+        approval_status: "APPROVED",
+        approved_by: req.user.id,
+        approved_at: new Date().toISOString(),
       })
       .eq("id", id)
       .select()
@@ -1163,10 +1163,10 @@ router.post("/products/:id/reject", async (req, res) => {
     const { data: updatedProduct, error } = await supabase
       .from("Product")
       .update({
-        approvalStatus: "REJECTED",
-        approvedBy: req.user.id,
-        approvedAt: new Date().toISOString(),
-        rejectionReason: rejectionReason || "Sem motivo especificado",
+        approval_status: "REJECTED",
+        approved_by: req.user.id,
+        approved_at: new Date().toISOString(),
+        rejection_reason: rejectionReason || "Sem motivo especificado",
       })
       .eq("id", id)
       .select()
