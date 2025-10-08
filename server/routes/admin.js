@@ -87,29 +87,12 @@ router.get("/stats", async (req, res) => {
       const { data: usersData, error: usersError } = await supabase.from("users").select("type");
 
       if (usersError) {
-        logger.warn("⚠️ Erro ao buscar usuários do Supabase, usando dados simulados:", usersError.message);
-        // Fallback para dados simulados
-        const stats = {
-          totalUsers: 28,
-          buyersCount: 22,
-          sellersCount: 5,
-          adminsCount: 1,
-          totalStores: 6,
-          activeStores: 5,
-          pendingStores: 1,
-          suspendedStores: 0,
-          totalProducts: 13,
-          approvedProducts: 11,
-          pendingApprovals: 2,
-          totalOrders: 1,
-          totalSubscriptions: 1,
-          activeSubscriptions: 1,
-          monthlyRevenue: 1599.99,
-          conversionRate: 18,
-        };
-
-        logger.info("✅ Admin stats retornadas (fallback simulado):", stats);
-        return res.json({ success: true, data: stats });
+        logger.error("❌ Erro ao buscar usuários do Supabase:", usersError.message);
+        return res.status(500).json({
+          success: false,
+          error: "Erro ao buscar usuários do banco de dados",
+          details: usersError.message,
+        });
       }
 
       // Calcular estatísticas de usuários
@@ -118,53 +101,66 @@ router.get("/stats", async (req, res) => {
       const sellersCount = usersData.filter((u) => u.type === "SELLER").length;
       const adminsCount = usersData.filter((u) => u.type === "ADMIN").length;
 
-      // Para outras métricas, usar dados simulados baseados na realidade
+      // Buscar dados reais de stores
+      const { data: storesData } = await supabase.from("stores").select("isActive, approval_status");
+      const totalStores = storesData?.length || 0;
+      const activeStores = storesData?.filter((s) => s.isActive).length || 0;
+      const pendingStores = storesData?.filter((s) => s.approval_status === "pending").length || 0;
+      const suspendedStores = storesData?.filter((s) => s.approval_status === "suspended").length || 0;
+
+      // Buscar dados reais de products
+      const { data: productsData } = await supabase.from("Product").select("isActive");
+      const totalProducts = productsData?.length || 0;
+      const approvedProducts = productsData?.filter((p) => p.isActive).length || 0;
+      const pendingApprovals = totalProducts - approvedProducts;
+
+      // Buscar dados reais de orders
+      const { count: totalOrders } = await supabase.from("Order").select("*", { count: "exact", head: true });
+
+      // Buscar dados reais de subscriptions
+      const { data: subscriptionsData } = await supabase.from("Subscription").select("status");
+      const totalSubscriptions = subscriptionsData?.length || 0;
+      const activeSubscriptions = subscriptionsData?.filter((s) => s.status === "ACTIVE").length || 0;
+
+      // Calcular receita mensal real (soma dos pagamentos confirmados do mês atual)
+      const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+      const { data: paymentsData } = await supabase
+        .from("payments")
+        .select("amount")
+        .eq("status", "CONFIRMED")
+        .gte("createdAt", firstDayOfMonth);
+      const monthlyRevenue = paymentsData?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+
       const stats = {
         totalUsers,
         buyersCount,
         sellersCount,
         adminsCount,
-        totalStores: 6, // Baseado no log do servidor
-        activeStores: 5,
-        pendingStores: 1,
-        suspendedStores: 0,
-        totalProducts: 13, // Baseado no log do servidor
-        approvedProducts: 11,
-        pendingApprovals: 2,
-        totalOrders: 1,
-        totalSubscriptions: 1,
-        activeSubscriptions: 1,
-        monthlyRevenue: 1599.99,
+        totalStores,
+        activeStores,
+        pendingStores,
+        suspendedStores,
+        totalProducts,
+        approvedProducts,
+        pendingApprovals,
+        totalOrders: totalOrders || 0,
+        totalSubscriptions,
+        activeSubscriptions,
+        monthlyRevenue,
         conversionRate: totalUsers > 0 ? Math.round((sellersCount / totalUsers) * 100) : 0,
       };
 
-      logger.info("✅ Admin stats retrieved successfully (híbrido real/simulado):", stats);
+      logger.info("✅ Admin stats retrieved successfully (100% dados reais):", stats);
       res.json(stats); // Retorna objeto direto sem wrapper
     } catch (supabaseError) {
       logger.error("❌ Erro no Supabase:", supabaseError);
 
-      // Fallback completo para dados simulados
-      const stats = {
-        totalUsers: 28,
-        buyersCount: 22,
-        sellersCount: 5,
-        adminsCount: 1,
-        totalStores: 6,
-        activeStores: 5,
-        pendingStores: 1,
-        suspendedStores: 0,
-        totalProducts: 13,
-        approvedProducts: 11,
-        pendingApprovals: 2,
-        totalOrders: 1,
-        totalSubscriptions: 1,
-        activeSubscriptions: 1,
-        monthlyRevenue: 1599.99,
-        conversionRate: 18,
-      };
-
-      logger.info("✅ Admin stats retornadas (fallback completo):", stats);
-      res.json(stats); // Retorna objeto direto sem wrapper
+      // Retornar erro ao invés de dados mockados
+      return res.status(500).json({
+        success: false,
+        error: "Erro ao buscar estatísticas do banco de dados",
+        details: supabaseError.message,
+      });
     }
   } catch (error) {
     logger.error("❌ Erro fatal ao buscar estatísticas admin:", error);
