@@ -443,6 +443,10 @@ router.get("/products", async (req, res) => {
         updatedAt,
         sellerId,
         storeId,
+        approval_status,
+        approved_by,
+        approved_at,
+        rejection_reason,
         stores!storeId (
           id,
           name,
@@ -540,6 +544,10 @@ router.get("/products", async (req, res) => {
         reviewCount: reviewCounts[product.id] || 0, // ✅ Contagem real de reviews
         viewCount: 0, // Field doesn't exist in current schema
         salesCount: salesCounts[product.id] || product.salesCount || 0, // ✅ Contagem real de vendas
+        approvalStatus: product.approval_status || "PENDING",
+        approvedBy: product.approved_by || null,
+        approvedAt: product.approved_at || null,
+        rejectionReason: product.rejection_reason || null,
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
       };
