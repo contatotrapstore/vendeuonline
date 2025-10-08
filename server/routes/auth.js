@@ -159,20 +159,6 @@ router.post(
     // Priorizar 'type' sobre 'userType' pois é o campo padrão
     const actualUserType = (type || userType || "BUYER").toUpperCase();
 
-    // Verificar se o usuário já existe primeiro no Prisma
-    try {
-      const existingPrismaUser = await prisma.user.findUnique({
-        where: { email: emailLower },
-      });
-
-      if (existingPrismaUser) {
-        logger.info("❌ Email já existe no banco de dados:", email);
-        throw new ValidationError("Email já está em uso");
-      }
-    } catch (prismaError) {
-      logger.warn("⚠️ Prisma não disponível, verificando no Supabase");
-    }
-
     // Verificar se o usuário já existe no Supabase
     const { data: existingUser } = await supabase.from("users").select("id").eq("email", emailLower).single();
 
@@ -205,37 +191,7 @@ router.post(
       updatedAt: new Date().toISOString(),
     };
 
-    // Tentar criar usuário no Prisma primeiro
-    try {
-      const newUser = await prisma.user.create({
-        data: userData,
-      });
-
-      const token = generateToken(newUser);
-      logger.info("✅ Usuário criado no Prisma:", emailLower);
-
-      return res.status(201).json({
-        success: true,
-        message: "Usuário criado com sucesso",
-        user: {
-          id: newUser.id,
-          name: newUser.name,
-          email: newUser.email,
-          phone: newUser.phone,
-          city: newUser.city,
-          state: newUser.state,
-          type: newUser.type,
-          userType: actualUserType.toLowerCase(),
-          isVerified: newUser.isVerified,
-          createdAt: newUser.createdAt,
-        },
-        token,
-      });
-    } catch (prismaError) {
-      logger.warn("⚠️ Prisma falhou, tentando Supabase:", prismaError.message);
-    }
-
-    // Fallback para Supabase
+    // Criar usuário no Supabase
     logger.info("🔍 DEBUG - Inserindo no Supabase:", { type: actualUserType, email: emailLower });
     const { data: newUser, error: insertError } = await supabase.from("users").insert([userData]).select().single();
 
