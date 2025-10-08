@@ -73,25 +73,9 @@ export interface RegisterData {
 
 type AuthStore = AuthState & AuthActions;
 
-// Utilitário para gerenciar token no localStorage
-const getStoredToken = () => {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("auth-token");
-  }
-  return null;
-};
-
-const setStoredToken = (token: string) => {
-  if (typeof window !== "undefined") {
-    localStorage.setItem("auth-token", token);
-  }
-};
-
-const removeStoredToken = () => {
-  if (typeof window !== "undefined") {
-    localStorage.removeItem("auth-token");
-  }
-};
+// ✅ REMOVIDO: Funções legadas substituídas por Zustand persist
+// Token agora é persistido automaticamente pelo Zustand junto com o estado
+// Ver config/storage-keys.ts para helpers centralizados
 
 export const useAuthStore = create<AuthStore>()(
   persist(
@@ -100,7 +84,7 @@ export const useAuthStore = create<AuthStore>()(
       user: null,
       isAuthenticated: false,
       isLoading: false,
-      token: typeof window !== "undefined" ? localStorage.getItem("auth-token") : null,
+      token: null,
       error: null,
 
       // Ações
@@ -124,13 +108,11 @@ export const useAuthStore = create<AuthStore>()(
             userType: (user.userType || user.type) as "admin" | "seller" | "buyer",
           };
 
-          // Armazenar token
-          setStoredToken(token);
-
+          // ✅ Token agora é persistido automaticamente pelo Zustand
           set({
             user: normalizedUser,
             isAuthenticated: true,
-            token,
+            token, // Token incluído no state persistido
             isLoading: false,
             error: null,
           });
@@ -146,7 +128,6 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             token: null,
           });
-          removeStoredToken();
           throw error;
         }
       },
@@ -166,13 +147,11 @@ export const useAuthStore = create<AuthStore>()(
             userType: (user.userType || user.type) as "admin" | "seller" | "buyer",
           };
 
-          // Armazenar token
-          setStoredToken(token);
-
+          // ✅ Token agora é persistido automaticamente pelo Zustand
           set({
             user: normalizedUser,
             isAuthenticated: true,
-            token,
+            token, // Token incluído no state persistido
             isLoading: false,
             error: null,
           });
@@ -185,13 +164,12 @@ export const useAuthStore = create<AuthStore>()(
             isAuthenticated: false,
             token: null,
           });
-          removeStoredToken();
           throw error;
         }
       },
 
       logout: () => {
-        removeStoredToken();
+        // ✅ Zustand persist limpa automaticamente ao fazer set com null
         set({
           user: null,
           isAuthenticated: false,
@@ -219,7 +197,8 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       checkAuth: async () => {
-        const token = getStoredToken();
+        // ✅ Obter token do state persistido (Zustand)
+        const { token } = get();
 
         if (!token) {
           set({
@@ -254,7 +233,6 @@ export const useAuthStore = create<AuthStore>()(
           });
         } catch (error) {
           // Token inválido, fazer logout
-          removeStoredToken();
           set({
             user: null,
             isAuthenticated: false,
@@ -270,7 +248,7 @@ export const useAuthStore = create<AuthStore>()(
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
-        // token é gerenciado separadamente no localStorage
+        token: state.token, // ✅ Token agora é persistido junto com o state
       }),
     }
   )
