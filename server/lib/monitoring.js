@@ -139,7 +139,7 @@ class MonitoringService {
   }
 
   /**
-   * Monitorar uso de memória
+   * Monitorar uso de memória (otimizado)
    */
   monitorMemory() {
     const memoryUsage = process.memoryUsage();
@@ -149,7 +149,8 @@ class MonitoringService {
     // Calcular porcentagem de uso
     const memoryUsagePercent = (memoryUsage.heapUsed / memoryUsage.heapTotal) * 100;
 
-    if (memoryUsagePercent > 85) {
+    // Threshold aumentado para 95% (evitar alertas constantes em desenvolvimento)
+    if (memoryUsagePercent > 95) {
       this.addAlert("high_memory_usage", `Memory usage: ${memoryUsagePercent.toFixed(2)}%`);
     }
   }

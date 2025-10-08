@@ -2,10 +2,9 @@ import { createClient } from "@supabase/supabase-js";
 import { logger } from "../lib/logger.js";
 
 
-// Configurar cliente Supabase
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// Configurar cliente Supabase (usando supabaseAdmin do lib/supabase-client)
+import { supabaseAdmin } from "../lib/supabase-client.js";
+const supabase = supabaseAdmin;
 
 // Helper para criar notificações automáticas
 export const createNotification = async (userId, title, message, type = 'INFO', data = null) => {

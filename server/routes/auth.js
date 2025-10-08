@@ -128,8 +128,12 @@ router.post(
       }
     }
 
-    // Debug: log dos dados que serão retornados (Supabase)
-    logger.info("🔍 Dados do seller antes da resposta (Supabase):", JSON.stringify(user.seller, null, 2));
+    // Debug: log dos dados que serão retornados (Supabase) - com safe stringify
+    try {
+      logger.info("🔍 Dados do seller antes da resposta (Supabase):", JSON.stringify(user.seller, null, 2));
+    } catch (err) {
+      logger.info("🔍 Dados do seller antes da resposta (Supabase):", user.seller);
+    }
 
     // Construir resposta com dados específicos do tipo de usuário (remover senha)
     const { password: _, ...userData } = user;
