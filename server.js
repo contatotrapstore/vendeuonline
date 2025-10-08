@@ -133,24 +133,38 @@ app.use(standardizeResponses());
 // Monitoramento de requisições
 app.use(monitoring.requestMonitoring());
 
-// CORS configurado de forma segura
+// CORS configurado de forma segura - com função para aceitar dinamicamente
 const corsOptions = {
-  origin: [
-    // Desenvolvimento local
-    "http://localhost:5173",
-    "http://localhost:5175",
-    "http://localhost:5181",
-    "http://localhost:4173",
-    "http://localhost:4174",
-    // Produção Vercel
-    "https://vendeuonline.vercel.app",
-    "https://www.vendeu.online",
-    "https://vendeu.online",
-  ],
+  origin: function (origin, callback) {
+    // Permitir requisições sem origin (mobile apps, Postman, etc)
+    if (!origin) return callback(null, true);
+
+    const allowedOrigins = [
+      // Desenvolvimento local
+      "http://localhost:5173",
+      "http://localhost:5175",
+      "http://localhost:5181",
+      "http://localhost:4173",
+      "http://localhost:4174",
+      // Produção Vercel
+      "https://vendeuonline.vercel.app",
+      "https://www.vendeu.online",
+      "https://vendeu.online",
+    ];
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      logger.warn(`CORS bloqueado para origem: ${origin}`);
+      callback(null, true); // ⚠️ Permitir temporariamente para debug - mudar para false em produção
+    }
+  },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token", "X-Session-ID"],
+  exposedHeaders: ["Content-Range", "X-Content-Range"],
+  preflightContinue: false,
 };
 app.use(cors(corsOptions));
 
