@@ -1,6 +1,7 @@
 # Backend files (deployed to Render, not Vercel)
 server.js
 server/
+api/
 render.yaml
 .env.local
 .env.development
