@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import { useState, useEffect } from "react";
+import { getAuthToken } from "@/config/storage-keys";
 import {
   Search,
   Filter,
@@ -159,7 +160,7 @@ export default function AdminProductsPage() {
     rejectionReason?: string
   ) => {
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) throw new Error("Token não encontrado");
 
       const response = await fetch(`/api/admin/products/${productId}/approval`, {
@@ -196,7 +197,7 @@ export default function AdminProductsPage() {
   const handleDeleteProduct = async (productId: string) => {
     if (confirm("Tem certeza que deseja excluir este produto?")) {
       try {
-        const token = localStorage.getItem("auth-token");
+        const token = getAuthToken();
         if (!token) throw new Error("Token não encontrado");
 
         const response = await fetch(`/api/admin/products/${productId}`, {

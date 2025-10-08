@@ -9,6 +9,18 @@ vi.mock("@/lib/api-client", () => ({
   apiRequest: vi.fn(),
 }));
 
+// Mock storage-keys module
+vi.mock("@/config/storage-keys", () => ({
+  getAuthToken: vi.fn(),
+  setAuthToken: vi.fn(),
+  removeAuthToken: vi.fn(),
+  STORAGE_KEYS: {
+    AUTH: "auth-storage",
+    CART: "cart-storage",
+    WISHLIST: "wishlist-storage",
+  },
+}));
+
 // Mock localStorage
 const mockLocalStorage = {
   getItem: vi.fn(),
@@ -80,7 +92,7 @@ describe("AuthStore", () => {
       expect(state.isAuthenticated).toBe(true);
       expect(state.token).toBe(mockToken);
       expect(state.error).toBe(null);
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith("auth-token", mockToken);
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith("auth-storage", mockToken);
     });
 
     it("should try multiple user types when no type specified", async () => {
@@ -122,7 +134,7 @@ describe("AuthStore", () => {
       expect(state.user).toBe(null);
       expect(state.isAuthenticated).toBe(false);
       expect(state.error).toBe(errorMessage);
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("auth-token");
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("auth-storage");
     });
   });
 
@@ -150,7 +162,7 @@ describe("AuthStore", () => {
       expect(state.user).toEqual(mockUser);
       expect(state.isAuthenticated).toBe(true);
       expect(state.token).toBe(mockToken);
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith("auth-token", mockToken);
+      expect(mockLocalStorage.setItem).toHaveBeenCalledWith("auth-storage", mockToken);
     });
 
     it("should handle registration failure", async () => {
@@ -194,7 +206,7 @@ describe("AuthStore", () => {
       expect(state.user).toBe(null);
       expect(state.isAuthenticated).toBe(false);
       expect(state.token).toBe(null);
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("auth-token");
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("auth-storage");
     });
   });
 
@@ -249,7 +261,7 @@ describe("AuthStore", () => {
       expect(state.user).toBe(null);
       expect(state.isAuthenticated).toBe(false);
       expect(state.token).toBe(null);
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("auth-token");
+      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("auth-storage");
     });
 
     it("should handle no token", async () => {

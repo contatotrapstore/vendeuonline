@@ -2,6 +2,8 @@
  * Configuração centralizada da API
  */
 
+import { getAuthToken } from "./storage-keys";
+
 const isDevelopment = import.meta.env.MODE === "development";
 const isProduction = import.meta.env.MODE === "production";
 
@@ -42,24 +44,7 @@ export const buildApiUrl = (endpoint: string): string => {
 
 // Helper function to get auth headers
 export const getAuthHeaders = (): Record<string, string> => {
-  // Tentar pegar token do Zustand persist storage primeiro
-  let token = null;
-
-  try {
-    const authStorage = localStorage.getItem("auth-storage");
-    if (authStorage) {
-      const parsed = JSON.parse(authStorage);
-      token = parsed?.state?.token || parsed?.token;
-    }
-  } catch (error) {
-    console.warn("[API] Erro ao parsear auth-storage:", error);
-  }
-
-  // Fallback: tentar chave antiga
-  if (!token) {
-    token = localStorage.getItem("auth-token");
-  }
-
+  const token = getAuthToken();
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 

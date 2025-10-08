@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 
 import { useState, useEffect } from "react";
 import { buildApiUrl } from "@/config/api";
+import { getAuthToken } from "@/config/storage-keys";
 import { Save, Upload, MapPin, Clock, Phone, Mail, Globe, Camera, Star, Shield, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { get, put } from "@/lib/api-client";
@@ -114,7 +115,7 @@ export default function SellerStorePage() {
   // Função para fazer upload de imagem
   const handleImageUpload = async (file: File, type: "store-logo" | "store-banner") => {
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         toast.error("Token de autenticação não encontrado");
         return;

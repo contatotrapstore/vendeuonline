@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { buildApiUrl } from "@/config/api";
+import { getAuthToken } from "@/config/storage-keys";
 
 export default function DebugAdminPage() {
   const [loginResult, setLoginResult] = useState(null);
@@ -34,7 +35,7 @@ export default function DebugAdminPage() {
   };
 
   const checkStorage = () => {
-    const token = localStorage.getItem("auth-token");
+    const token = getAuthToken();
     const authStorage = localStorage.getItem("auth-storage");
 
     setStorageData({

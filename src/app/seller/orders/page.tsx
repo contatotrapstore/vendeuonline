@@ -4,6 +4,7 @@ import { logger } from "@/lib/logger";
 
 import React, { useState, useEffect } from "react";
 import { buildApiUrl } from "@/config/api";
+import { getAuthToken } from "@/config/storage-keys";
 import { Package, Truck, CheckCircle, Clock, X, Eye, Edit, Plus, Search, Filter } from "lucide-react";
 import { toast } from "sonner";
 import { useOrderStore, Order } from "@/store/orderStore";
@@ -78,7 +79,7 @@ export default function SellerOrdersPage() {
     // Buscar pedidos do seller usando endpoint correto
     const fetchSellerOrders = async () => {
       try {
-        const token = localStorage.getItem("auth-token");
+        const token = getAuthToken();
         if (!token) {
           useOrderStore.setState({
             orders: [],

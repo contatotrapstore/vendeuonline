@@ -3,6 +3,7 @@ import { logger } from "@/lib/logger";
 "use client";
 
 import { useState, useEffect } from "react";
+import { getAuthToken } from "@/config/storage-keys";
 import {
   Save,
   RefreshCw,
@@ -53,7 +54,7 @@ export default function AdminPlansPage() {
       setLoading(true);
       setError(null);
 
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }
@@ -134,7 +135,7 @@ export default function AdminPlansPage() {
     try {
       setSaving(true);
 
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }

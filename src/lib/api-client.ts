@@ -5,24 +5,12 @@ import { logger } from "@/lib/logger";
  */
 
 import { API_BASE_URL, API_TIMEOUT, DEFAULT_HEADERS } from "@/config/api";
+import { getAuthToken } from "@/config/storage-keys";
 
 // Função para obter token armazenado
 const getStoredToken = (): string | null => {
   if (typeof window !== "undefined") {
-    // Tentar auth-storage primeiro (formato Zustand)
-    try {
-      const authStorage = localStorage.getItem("auth-storage");
-      if (authStorage) {
-        const parsed = JSON.parse(authStorage);
-        const token = parsed?.state?.token;
-        if (token) return token;
-      }
-    } catch (error) {
-      console.error("Erro ao ler auth-storage:", error);
-    }
-
-    // Fallback para auth-token (legado)
-    return localStorage.getItem("auth-token");
+    return getAuthToken();
   }
   return null;
 };
