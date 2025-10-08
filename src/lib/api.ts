@@ -17,13 +17,35 @@ export class ApiError extends Error {
   }
 }
 
+// Helper para pegar token do authStore
+function getAuthToken(): string | null {
+  try {
+    const authStorage = localStorage.getItem('auth-storage');
+    if (authStorage) {
+      const parsed = JSON.parse(authStorage);
+      return parsed?.state?.token || null;
+    }
+  } catch (error) {
+    console.error('Erro ao ler token:', error);
+  }
+  return null;
+}
+
 export async function apiRequest<T = any>(url: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
   try {
+    // Pegar token e adicionar ao header Authorization
+    const token = getAuthToken();
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...(options.headers as Record<string, string> || {}),
+    };
+
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const response = await fetch(url, {
-      headers: {
-        "Content-Type": "application/json",
-        ...options.headers,
-      },
+      headers,
       ...options,
     });
 
