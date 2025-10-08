@@ -155,19 +155,52 @@ router.get("/stats", async (req, res) => {
     } catch (supabaseError) {
       logger.error("❌ Erro no Supabase:", supabaseError);
 
-      // Retornar erro ao invés de dados mockados
-      return res.status(500).json({
-        success: false,
-        error: "Erro ao buscar estatísticas do banco de dados",
-        details: supabaseError.message,
+      // Retornar stats básicas como fallback para evitar UI quebrada
+      logger.warn("⚠️ Retornando stats zeradas como fallback");
+      return res.status(200).json({
+        totalUsers: 0,
+        buyersCount: 0,
+        sellersCount: 0,
+        adminsCount: 0,
+        totalStores: 0,
+        activeStores: 0,
+        pendingStores: 0,
+        suspendedStores: 0,
+        totalProducts: 0,
+        approvedProducts: 0,
+        pendingApprovals: 0,
+        totalOrders: 0,
+        totalSubscriptions: 0,
+        activeSubscriptions: 0,
+        monthlyRevenue: 0,
+        conversionRate: 0,
+        error: "Dados temporariamente indisponíveis",
+        fallback: true,
       });
     }
   } catch (error) {
     logger.error("❌ Erro fatal ao buscar estatísticas admin:", error);
-    res.status(500).json({
-      success: false,
+
+    // Fallback para erro fatal também
+    res.status(200).json({
+      totalUsers: 0,
+      buyersCount: 0,
+      sellersCount: 0,
+      adminsCount: 0,
+      totalStores: 0,
+      activeStores: 0,
+      pendingStores: 0,
+      suspendedStores: 0,
+      totalProducts: 0,
+      approvedProducts: 0,
+      pendingApprovals: 0,
+      totalOrders: 0,
+      totalSubscriptions: 0,
+      activeSubscriptions: 0,
+      monthlyRevenue: 0,
+      conversionRate: 0,
       error: "Erro interno do servidor",
-      details: error.message,
+      fallback: true,
     });
   }
 });

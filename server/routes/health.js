@@ -46,6 +46,32 @@ router.get("/status", async (req, res) => {
   }
 });
 
+// GET /api/health/keep-alive - Endpoint para manter servidor ativo (Render free tier)
+router.get("/keep-alive", async (req, res) => {
+  try {
+    const uptime = process.uptime();
+    const memoryUsage = process.memoryUsage();
+
+    res.status(200).json({
+      status: "alive",
+      timestamp: new Date().toISOString(),
+      uptime: `${Math.floor(uptime)}s`,
+      memory: {
+        used: `${Math.round(memoryUsage.heapUsed / 1024 / 1024)}MB`,
+        total: `${Math.round(memoryUsage.heapTotal / 1024 / 1024)}MB`,
+      },
+      message: "Server is warm and ready",
+    });
+  } catch (error) {
+    logger.error("Keep-alive check failed:", error);
+    res.status(200).json({
+      status: "alive",
+      timestamp: new Date().toISOString(),
+      message: "Server responding but with errors",
+    });
+  }
+});
+
 // GET /api/health/db - Health check específico do banco de dados
 router.get("/db", async (req, res) => {
   const startTime = Date.now();

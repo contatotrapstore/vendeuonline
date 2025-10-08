@@ -89,6 +89,58 @@ export const adminRateLimit = createRateLimit({
   },
 });
 
+// ==== CACHE CONTROL ====
+/**
+ * Middleware para controlar cache HTTP
+ * Previne HTTP 304 em rotas autenticadas que causam problemas após login
+ */
+export const noCacheMiddleware = (req, res, next) => {
+  // Rotas que NUNCA devem ser cacheadas
+  const noCacheRoutes = [
+    '/api/auth',
+    '/api/admin',
+    '/api/seller',
+    '/api/notifications',
+    '/api/users',
+  ];
+
+  const shouldDisableCache = noCacheRoutes.some(route => req.path.startsWith(route));
+
+  if (shouldDisableCache) {
+    // Desabilitar completamente o cache
+    res.set({
+      'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Surrogate-Control': 'no-store',
+    });
+  }
+
+  next();
+};
+
+/**
+ * Cache controlado para rotas públicas (produtos, lojas, etc)
+ */
+export const publicCacheMiddleware = (req, res, next) => {
+  const publicRoutes = [
+    '/api/products',
+    '/api/stores',
+    '/api/categories',
+  ];
+
+  const isPublicRoute = publicRoutes.some(route => req.path.startsWith(route));
+
+  if (isPublicRoute && req.method === 'GET') {
+    // Cache de 5 minutos para rotas públicas
+    res.set({
+      'Cache-Control': 'public, max-age=300, stale-while-revalidate=60',
+    });
+  }
+
+  next();
+};
+
 // ==== SECURITY HEADERS ====
 export const securityHeaders = helmet({
   // Content Security Policy

@@ -104,7 +104,7 @@ export default function NewProductPage() {
     }
   };
 
-  const validateForm = (): boolean => {
+  const validateForm = (requireImages: boolean = true): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
@@ -131,8 +131,9 @@ export default function NewProductPage() {
       newErrors.stock = "Estoque não pode ser negativo";
     }
 
-    if (formData.images.length === 0) {
-      newErrors.images = "Pelo menos uma imagem é obrigatória";
+    // Imagem obrigatória apenas para publicação, não para rascunho
+    if (requireImages && formData.images.length === 0) {
+      newErrors.images = "Pelo menos uma imagem é obrigatória para publicar";
     }
 
     setErrors(newErrors);
@@ -142,7 +143,10 @@ export default function NewProductPage() {
   const handleSubmit = async (e: React.FormEvent, status: "draft" | "active") => {
     e.preventDefault();
 
-    if (status === "active" && !validateForm()) {
+    // Para publicação (active), exigir imagens. Para rascunho (draft), imagens são opcionais
+    const requireImages = status === "active";
+    if (!validateForm(requireImages)) {
+      toast.error(status === "draft" ? "Preencha os campos obrigatórios" : "Preencha todos os campos para publicar");
       return;
     }
 

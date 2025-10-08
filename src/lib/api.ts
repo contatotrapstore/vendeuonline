@@ -31,7 +31,26 @@ function getAuthToken(): string | null {
   return null;
 }
 
-export async function apiRequest<T = any>(url: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+// Detecta se é um cold start do Render (timeout ou conexão recusada)
+function isColdStartError(error: any): boolean {
+  if (!error) return false;
+  const message = error.message?.toLowerCase() || '';
+  return (
+    message.includes('timeout') ||
+    message.includes('aborted') ||
+    message.includes('network') ||
+    error.name === 'AbortError'
+  );
+}
+
+export async function apiRequest<T = any>(
+  url: string,
+  options: RequestInit = {},
+  retryCount: number = 0
+): Promise<ApiResponse<T>> {
+  const MAX_RETRIES = 2;
+  const COLD_START_TIMEOUT = 40000; // 40s para primeira tentativa durante cold start
+
   try {
     // Pegar token e adicionar ao header Authorization
     const token = getAuthToken();
@@ -44,10 +63,18 @@ export async function apiRequest<T = any>(url: string, options: RequestInit = {}
       headers['Authorization'] = `Bearer ${token}`;
     }
 
+    // Timeout maior na primeira tentativa para permitir cold start
+    const timeout = retryCount === 0 ? COLD_START_TIMEOUT : 15000;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
     const response = await fetch(url, {
       headers,
       ...options,
+      signal: controller.signal,
     });
+
+    clearTimeout(timeoutId);
 
     const data = await response.json();
 
@@ -60,10 +87,28 @@ export async function apiRequest<T = any>(url: string, options: RequestInit = {}
       data,
     };
   } catch (error) {
+    // Se é cold start error e ainda temos retries, tentar novamente
+    if (isColdStartError(error) && retryCount < MAX_RETRIES) {
+      console.warn(`⏳ Servidor inicializando (tentativa ${retryCount + 1}/${MAX_RETRIES + 1})...`);
+
+      // Aguardar antes de retry (backoff exponencial)
+      await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+
+      return apiRequest<T>(url, options, retryCount + 1);
+    }
+
     if (error instanceof ApiError) {
       return {
         success: false,
         error: error.message,
+      };
+    }
+
+    // Mensagem amigável para timeout
+    if (isColdStartError(error)) {
+      return {
+        success: false,
+        error: "Servidor está inicializando. Por favor, tente novamente em alguns segundos.",
       };
     }
 

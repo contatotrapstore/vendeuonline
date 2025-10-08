@@ -50,6 +50,8 @@ import {
   cleanupExpiredTokens,
   preventHPP,
   detectAuthBypass,
+  noCacheMiddleware,
+  publicCacheMiddleware,
 } from "./server/middleware/security.js";
 
 // Importar rotas
@@ -126,6 +128,10 @@ app.use(detectAuthBypass);
 
 // Sanitização de entrada
 app.use(sanitizeInput);
+
+// Controle de cache HTTP (importante: antes das rotas)
+app.use(noCacheMiddleware);
+app.use(publicCacheMiddleware);
 
 // Padronizar respostas de todas as APIs
 app.use(standardizeResponses());
