@@ -156,13 +156,43 @@ router.get("/stats", async (req, res) => {
       };
 
       logger.info("✅ Admin stats retrieved successfully (100% dados reais):", stats);
-      res.json(stats); // Retorna objeto direto sem wrapper
+      res.json({ success: true, data: stats }); // Formato padronizado
     } catch (supabaseError) {
       logger.error("❌ Erro no Supabase:", supabaseError);
 
       // Retornar stats básicas como fallback para evitar UI quebrada
       logger.warn("⚠️ Retornando stats zeradas como fallback");
       return res.status(200).json({
+        success: true,
+        data: {
+          totalUsers: 0,
+          buyersCount: 0,
+          sellersCount: 0,
+          adminsCount: 0,
+          totalStores: 0,
+          activeStores: 0,
+          pendingStores: 0,
+          suspendedStores: 0,
+          totalProducts: 0,
+          approvedProducts: 0,
+          pendingApprovals: 0,
+          totalOrders: 0,
+          totalSubscriptions: 0,
+          activeSubscriptions: 0,
+          monthlyRevenue: 0,
+          conversionRate: 0,
+        },
+        error: "Dados temporariamente indisponíveis",
+        fallback: true,
+      });
+    }
+  } catch (error) {
+    logger.error("❌ Erro fatal ao buscar estatísticas admin:", error);
+
+    // Fallback para erro fatal também
+    res.status(200).json({
+      success: true,
+      data: {
         totalUsers: 0,
         buyersCount: 0,
         sellersCount: 0,
@@ -179,31 +209,7 @@ router.get("/stats", async (req, res) => {
         activeSubscriptions: 0,
         monthlyRevenue: 0,
         conversionRate: 0,
-        error: "Dados temporariamente indisponíveis",
-        fallback: true,
-      });
-    }
-  } catch (error) {
-    logger.error("❌ Erro fatal ao buscar estatísticas admin:", error);
-
-    // Fallback para erro fatal também
-    res.status(200).json({
-      totalUsers: 0,
-      buyersCount: 0,
-      sellersCount: 0,
-      adminsCount: 0,
-      totalStores: 0,
-      activeStores: 0,
-      pendingStores: 0,
-      suspendedStores: 0,
-      totalProducts: 0,
-      approvedProducts: 0,
-      pendingApprovals: 0,
-      totalOrders: 0,
-      totalSubscriptions: 0,
-      activeSubscriptions: 0,
-      monthlyRevenue: 0,
-      conversionRate: 0,
+      },
       error: "Erro interno do servidor",
       fallback: true,
     });
@@ -658,7 +664,7 @@ router.get("/plans", async (req, res) => {
 
     logger.info(`✅ ${plans.length} planos retornados do Supabase REAL`);
 
-    res.json(plans); // Retorna array direto sem wrapper
+    res.json({ success: true, data: plans }); // Formato padronizado
   } catch (error) {
     logger.error("❌ Erro ao buscar planos:", error);
     res.status(500).json({
@@ -955,7 +961,16 @@ router.get("/subscriptions", authenticateAdmin, async (req, res) => {
 
     logger.info(`✅ ${transformedSubscriptions.length}/${subscriptionsTotal} assinaturas retornadas do Supabase`);
 
-    res.json(transformedSubscriptions); // Retorna array direto sem wrapper
+    res.json({
+      success: true,
+      data: transformedSubscriptions,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: subscriptionsTotal,
+        totalPages: Math.ceil(subscriptionsTotal / limit)
+      }
+    }); // Formato padronizado
   } catch (error) {
     logger.error("❌ Erro ao buscar assinaturas:", error);
     res.status(500).json({
