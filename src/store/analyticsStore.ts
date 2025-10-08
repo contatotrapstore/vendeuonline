@@ -1,11 +1,12 @@
 import { create } from "zustand";
 import { logger } from "@/lib/logger";
+import { getAuthToken } from "@/config/storage-keys";
 
 
 // Utilitário para gerenciar token no localStorage
 const getStoredToken = () => {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("auth-token");
+    return getAuthToken();
   }
   return null;
 };

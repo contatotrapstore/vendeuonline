@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { logger } from "@/lib/logger";
 import { buildApiUrl } from "@/config/api";
+import { getAuthToken } from "@/config/storage-keys";
 
 
 export interface User {
@@ -48,7 +49,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
   fetchUsers: async () => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }
@@ -66,20 +67,21 @@ export const useUserStore = create<UserStore>((set, get) => ({
       }
 
       const data = await response.json();
-      
+
       // Mapear dados para o formato esperado pelo frontend
-      const mappedUsers = (data.data || []).map((user: any) => ({
+      // API retorna { users: [], total, pagination }
+      const mappedUsers = (data.users || []).map((user: any) => ({
         id: user.id,
         name: user.name,
         email: user.email,
-        userType: user.type?.toLowerCase() || "buyer", // Mapear BUYER -> buyer
-        status: "active", // Assumir ativo por padrão, pode ajustar conforme o schema
+        userType: user.userType?.toLowerCase() || "buyer", // Já vem em lowercase
+        status: user.status || "active",
         createdAt: user.createdAt,
-        lastLogin: null, // Campo não existe no backend atual
-        storeCount: 0, // Pode ser calculado se necessário
-        orderCount: 0, // Pode ser calculado se necessário
+        lastLogin: user.lastLogin || null,
+        storeCount: user.storeCount || 0,
+        orderCount: user.orderCount || 0,
       }));
-      
+
       set({ users: mappedUsers, loading: false });
     } catch (error: any) {
       logger.error("Erro ao buscar usuários:", error);
@@ -94,7 +96,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
   updateUserStatus: async (userId: string, status: "active" | "inactive") => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }
@@ -130,7 +132,7 @@ export const useUserStore = create<UserStore>((set, get) => ({
   deleteUser: async (userId: string) => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }

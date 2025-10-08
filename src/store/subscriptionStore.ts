@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { logger } from "@/lib/logger";
 import { buildApiUrl } from "@/config/api";
+import { getAuthToken } from "@/config/storage-keys";
 
 
 export interface Subscription {
@@ -78,7 +79,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
   fetchSubscriptions: async (page = 1) => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }
@@ -131,7 +132,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
   updateSubscriptionStatus: async (subscriptionId: string, status: Subscription["status"]) => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }
@@ -167,7 +168,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
   cancelSubscription: async (subscriptionId: string) => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }
@@ -204,7 +205,7 @@ export const useSubscriptionStore = create<SubscriptionStore>((set, get) => ({
   renewSubscription: async (subscriptionId: string) => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }

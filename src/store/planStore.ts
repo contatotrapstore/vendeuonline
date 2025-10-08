@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { logger } from "@/lib/logger";
 import { buildApiUrl } from "@/config/api";
+import { getAuthToken } from "@/config/storage-keys";
 
 
 export interface Plan {
@@ -42,7 +43,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
   fetchPlans: async () => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }
@@ -74,7 +75,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
   createPlan: async (planData: Omit<Plan, "id" | "createdAt" | "updatedAt">) => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }
@@ -111,7 +112,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
   updatePlan: async (id: number, planData: Partial<Plan>) => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }
@@ -150,7 +151,7 @@ export const usePlanStore = create<PlanStore>((set, get) => ({
   deletePlan: async (id: number) => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }

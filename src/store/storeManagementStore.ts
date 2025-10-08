@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { buildApiUrl, getHeaders } from "@/config/api";
 import { logger } from "@/lib/logger";
+import { getAuthToken } from "@/config/storage-keys";
 
 
 // Função para mapear approval_status do backend para status do frontend
@@ -220,7 +221,7 @@ export const useStoreManagementStore = create<StoreManagementStore>((set, get) =
   suspendStore: async (storeId: string, reason?: string) => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }
@@ -258,7 +259,7 @@ export const useStoreManagementStore = create<StoreManagementStore>((set, get) =
   activateStore: async (storeId: string) => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }
@@ -295,7 +296,7 @@ export const useStoreManagementStore = create<StoreManagementStore>((set, get) =
   updateStore: async (storeId: string, data: Partial<StoreInfo>) => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }
@@ -333,7 +334,7 @@ export const useStoreManagementStore = create<StoreManagementStore>((set, get) =
   deleteStore: async (storeId: string) => {
     set({ loading: true, error: null });
     try {
-      const token = localStorage.getItem("auth-token");
+      const token = getAuthToken();
       if (!token) {
         throw new Error("Token não encontrado");
       }
