@@ -61,6 +61,7 @@ import trackingRouter from "./server/routes/tracking.js";
 import adminRouter from "./server/routes/admin.js";
 import notificationsRouter from "./server/routes/notifications.js";
 import sellerRouter from "./server/routes/seller.js";
+import sellersRouter from "./server/routes/sellers.js";
 import categoriesRouter from "./server/routes/categories.js";
 import uploadRouter from "./server/routes/upload.js";
 import ordersRouter from "./server/routes/orders.js";
@@ -319,9 +320,7 @@ app.use("/api/admin", authenticate, protectRoute(["ADMIN"]), adminRouter);
 
 // Rotas do vendedor
 app.use("/api/seller", sellerRouter);
-// APIs de sellers consolidadas em /api/seller
-
-// Rotas consolidadas em /api/seller (settings, subscription, upgrade agora incluídos)
+app.use("/api/sellers", sellersRouter);
 
 // Rotas de upload
 app.use("/api/upload", uploadRateLimit, uploadRouter);
