@@ -10,13 +10,41 @@ const NotificationBell = () => {
     useNotificationStore();
 
   useEffect(() => {
-    if (user) {
-      fetchNotifications();
+    if (!user) return;
 
-      // Buscar notificações a cada 30 segundos
-      const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
-    }
+    // Fetch inicial
+    fetchNotifications();
+
+    // Polling inteligente: buscar notificações a cada 30 segundos
+    // Apenas quando a aba está ativa (para economizar recursos)
+    let interval: NodeJS.Timeout;
+
+    const startPolling = () => {
+      interval = setInterval(() => {
+        if (!document.hidden) {
+          fetchNotifications();
+        }
+      }, 30000); // 30 segundos (reduzido de 5s para evitar rate limiting)
+    };
+
+    startPolling();
+
+    // Pausar polling quando aba fica inativa
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        clearInterval(interval);
+      } else {
+        fetchNotifications(); // Fetch ao voltar para aba
+        startPolling();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [user, fetchNotifications]);
 
   const handleNotificationClick = async (notification: Notification) => {

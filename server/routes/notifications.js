@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { supabase, supabaseAdmin } from "../lib/supabase-client.js";
 import { logger } from "../lib/logger.js";
+import { notificationRateLimit } from "../middleware/security.js";
 
 const router = Router();
 
@@ -31,8 +32,8 @@ const createNotification = async (userId, title, message, type = "INFO", data = 
   }
 };
 
-// Get all notifications for the current user
-router.get("/", async (req, res) => {
+// Get all notifications for the current user (com rate limiting especial)
+router.get("/", notificationRateLimit, async (req, res) => {
   try {
     // Se não houver usuário logado, retornar lista vazia
     if (!req.user?.userId && !req.user?.id) {

@@ -142,6 +142,11 @@ router.get("/categories", authenticateSellerWithExtras, async (req, res) => {
 // GET /api/seller/stats - Estatísticas do vendedor
 router.get("/stats", authenticateSellerWithExtras, async (req, res) => {
   try {
+    // Forçar no-cache para garantir dados frescos
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     const sellerId = req.seller.id;
     logger.info("📊 Buscando stats para vendedor:", sellerId);
 

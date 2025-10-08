@@ -77,6 +77,11 @@ router.get("/dashboard", async (req, res) => {
 // ==== DASHBOARD STATS ====
 router.get("/stats", async (req, res) => {
   try {
+    // Forçar no-cache para garantir dados frescos
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     logger.info("📊 Admin stats endpoint called");
 
     try {

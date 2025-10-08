@@ -102,7 +102,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // ==== BUILD VERSION ====
-const BUILD_VERSION = "2025-10-01-20:07-FINAL-FIX-AUTHENTICATE";
+const BUILD_VERSION = "2025-10-08-20:45-PRODUCTION-FIXES";
 logger.info(`🚀 Starting server - Build: ${BUILD_VERSION}`);
 logger.info(`🔧 Environment: ${process.env.NODE_ENV || "development"}`);
 logger.info(`🔒 JWT_SECRET configured: ${JWT_SECRET ? "✅ Yes" : "❌ No"}`);
@@ -142,35 +142,46 @@ app.use(monitoring.requestMonitoring());
 // CORS configurado de forma segura - com função para aceitar dinamicamente
 const corsOptions = {
   origin: function (origin, callback) {
-    // Permitir requisições sem origin (mobile apps, Postman, etc)
+    // Permitir requisições sem origin (mobile apps, Postman, cURL, etc)
     if (!origin) return callback(null, true);
 
     const allowedOrigins = [
       // Desenvolvimento local
       "http://localhost:5173",
+      "http://localhost:5174",
       "http://localhost:5175",
       "http://localhost:5181",
       "http://localhost:4173",
       "http://localhost:4174",
-      // Produção Vercel
+      "http://127.0.0.1:5173",
+      // Produção Vercel - TODOS os domínios
       "https://vendeuonline.vercel.app",
       "https://www.vendeu.online",
       "https://vendeu.online",
+      // Vercel preview deployments
+      ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : []),
     ];
 
-    if (allowedOrigins.indexOf(origin) !== -1) {
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('vercel.app')) {
       callback(null, true);
     } else {
-      logger.warn(`CORS bloqueado para origem: ${origin}`);
-      callback(null, true); // ⚠️ Permitir temporariamente para debug - mudar para false em produção
+      logger.warn(`⚠️ CORS bloqueado para origem não autorizada: ${origin}`);
+      // Em produção, bloquear origens não autorizadas
+      if (process.env.NODE_ENV === 'production') {
+        callback(new Error('Not allowed by CORS'), false);
+      } else {
+        // Em desenvolvimento, permitir para facilitar testes
+        callback(null, true);
+      }
     }
   },
   credentials: true,
   optionsSuccessStatus: 200,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token", "X-Session-ID"],
-  exposedHeaders: ["Content-Range", "X-Content-Range"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token", "X-Session-ID", "X-Correlation-ID"],
+  exposedHeaders: ["Content-Range", "X-Content-Range", "X-Correlation-ID", "RateLimit-Limit", "RateLimit-Remaining"],
   preflightContinue: false,
+  maxAge: 86400, // 24 horas de cache para preflight requests
 };
 app.use(cors(corsOptions));
 

@@ -57,7 +57,7 @@ export const authRateLimit = createRateLimit({
 
 export const apiRateLimit = createRateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutos
-  max: process.env.NODE_ENV === "production" ? 100 : 1000, // 1000 em dev, 100 em produção
+  max: process.env.NODE_ENV === "production" ? 1000 : 2000, // 2000 em dev, 1000 em produção (aumentado de 100)
   message: {
     error: "Limite de API excedido. Tente novamente em 15 minutos.",
     code: "API_RATE_LIMIT_EXCEEDED",
@@ -86,6 +86,23 @@ export const adminRateLimit = createRateLimit({
   message: {
     error: "Limite de operações administrativas excedido.",
     code: "ADMIN_RATE_LIMIT_EXCEEDED",
+  },
+});
+
+// Rate limit especial para notificações (polling frequente)
+export const notificationRateLimit = createRateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 500, // 500 requisições por 15 minutos = ~33 por minuto (suficiente para polling de 30s)
+  message: {
+    error: "Limite de notificações excedido. Tente novamente em alguns minutos.",
+    code: "NOTIFICATION_RATE_LIMIT_EXCEEDED",
+  },
+  skip: (req) => {
+    // Pular em testes
+    if (process.env.NODE_ENV === "test" || process.env.TEST_MODE === "true") {
+      return true;
+    }
+    return false;
   },
 });
 
