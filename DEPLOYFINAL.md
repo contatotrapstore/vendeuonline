@@ -1,484 +1,396 @@
 # 🚀 DEPLOY FINAL - VENDEU ONLINE ADMIN
 
-**Data**: 08/10/2025
-**Sessão**: Testes E2E Completos do Painel Admin em Produção
+**Data**: 09/10/2025
+**Sessão**: Sistema de Aprovação de Produtos - Implementação Completa
 **Ambiente**: Vercel (Frontend) + Render (Backend) + Supabase (Database)
 
 ---
 
 ## 📊 RESUMO EXECUTIVO
 
-Realizados testes completos do painel administrativo em produção. Foram identificados e corrigidos **5 problemas críticos** que impediam o funcionamento do sistema de aprovação de produtos. Todos os problemas foram resolvidos e deployados.
+Sistema de aprovação de produtos **100% implementado, testado e validado em produção**. Foram identificados e corrigidos **6 problemas críticos** que impediam o funcionamento correto do sistema de moderação de conteúdo.
 
-**Status Final**: ✅ Sistema de Aprovação de Produtos 100% Funcional
-
----
-
-## 🐛 PROBLEMAS IDENTIFICADOS E CORRIGIDOS
-
-### **Problema 1: Rotas de Aprovação Não Existiam no Backend**
-
-**Commit**: `3bb6b2f`
-**Arquivo**: `server/routes/admin.js`
-
-**Sintoma**: Frontend chamava `/api/admin/products/:id/approval` → 404
-
-**Solução**: Implementadas 3 rotas de aprovação:
-
-```javascript
-// PATCH /api/admin/products/:id/approval
-router.patch("/products/:id/approval", async (req, res) => {
-  const { isApproved, rejectionReason } = req.body;
-  // Atualiza approval_status para APPROVED ou REJECTED
-});
-
-// POST /api/admin/products/:id/approve
-router.post("/products/:id/approve", async (req, res) => {
-  // Aprova produto diretamente
-});
-
-// POST /api/admin/products/:id/reject
-router.post("/products/:id/reject", async (req, res) => {
-  // Rejeita produto com motivo
-});
-```
+**Status Final**: ✅ **Sistema de Aprovação/Rejeição de Produtos 100% Funcional**
 
 ---
 
-### **Problema 2: Nome de Tabela Case-Sensitive**
+## ✅ PROBLEMAS RESOLVIDOS E DEPLOYADOS
 
-**Commit**: `2ef5a56`
-**Arquivo**: `server/routes/admin.js`
+### Problema #1: Rotas de Aprovação Não Existiam
+- **Commit**: `3bb6b2f`
+- **Correção**: Implementadas 3 rotas de aprovação em `server/routes/admin.js`
+- **Rotas Criadas**: PATCH `/approval`, POST `/approve`, POST `/reject`
 
-**Sintoma**: Backend usava `"products"` mas Supabase tem `"Product"` (PostgreSQL é case-sensitive)
+### Problema #2: Nome de Tabela Case-Sensitive
+- **Commit**: `2ef5a56`
+- **Correção**: `"products"` → `"Product"` (4 ocorrências corrigidas)
 
-**Solução**: Corrigidas 4 ocorrências:
+### Problema #3: Schema Prisma e Database Desatualizados
+- **Commit**: `b8e0895`
+- **Correção**: Enum `ApprovalStatus` criado + 4 colunas adicionadas ao banco
 
-```javascript
-// ANTES
-await supabase.from("products").select()
+### Problema #4: Frontend Usando URL Relativa
+- **Commit**: `cac4791`
+- **Correção**: Implementado `buildApiUrl()` em 2 funções do admin
 
-// DEPOIS
-await supabase.from("Product").select()
-```
+### Problema #5: API Não Retornava Campos de Aprovação
+- **Commit**: `d411455`
+- **Correção**: Adicionados campos `approval_status`, `approved_by`, `approved_at`, `rejection_reason` na rota `GET /api/admin/products`
 
-**Linhas corrigidas**: 1073, 1097, 1134, 1164
-
----
-
-### **Problema 3: Schema Prisma e Database Desatualizados**
-
-**Commit**: `b8e0895`
-**Arquivos**: `prisma/schema.prisma` + Database Migration
-
-**Problemas Múltiplos**:
-1. ❌ `@@map("products")` → Deveria ser `@@map("Product")`
-2. ❌ Campos em camelCase → Supabase usa snake_case
-3. ❌ Coluna `approval_status` não existia no banco
-
-**Soluções Aplicadas**:
-
-#### A. Schema Prisma (`prisma/schema.prisma`)
-
-```prisma
-model Product {
-  // ...campos existentes...
-
-  // Campos de aprovação com mapeamento snake_case
-  approvalStatus  ApprovalStatus @default(PENDING) @map("approval_status")
-  approvedBy      String? @map("approved_by")
-  approvedAt      DateTime? @map("approved_at")
-  rejectionReason String? @map("rejection_reason")
-
-  // Mapeamento correto da tabela
-  @@map("Product")  // Corrigido de "products"
-}
-
-enum ApprovalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-```
-
-#### B. Database Migration (Supabase)
-
-```sql
--- Criar enum ApprovalStatus
-CREATE TYPE "ApprovalStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED');
-
--- Adicionar colunas de aprovação
-ALTER TABLE "Product"
-ADD COLUMN approval_status "ApprovalStatus" DEFAULT 'PENDING',
-ADD COLUMN approved_by text,
-ADD COLUMN approved_at timestamptz,
-ADD COLUMN rejection_reason text;
-```
-
-#### C. Backend Routes (snake_case)
-
-```javascript
-const updateData = {
-  approval_status: isApproved ? "APPROVED" : "REJECTED",
-  approved_by: req.user.id,
-  approved_at: new Date().toISOString(),
-  rejection_reason: rejectionReason
-};
-
-await supabase.from("Product").update(updateData).eq("id", id);
-```
+### Problema #6: Produtos Não Aprovados Aparecendo Publicamente (CRÍTICO)
+- **Commit**: `254f70c`
+- **Correção**: Adicionado filtro `.eq("approval_status", "APPROVED")` em 3 rotas públicas:
+  - `GET /api/products` (listagem home)
+  - `GET /api/products/:id` (detalhes)
+  - `GET /api/products/:id/related` (relacionados)
 
 ---
 
-### **Problema 4: Frontend Usando URL Relativa**
+## 🧪 TESTES E2E COMPLETOS (09/10/2025)
 
-**Commit**: `cac4791`
-**Arquivo**: `src/app/admin/products/page.tsx`
+**Ambiente**: https://www.vendeu.online (Produção)
 
-**Sintoma**: Frontend chamava `www.vendeu.online/api/...` ao invés de `vendeuonline-uqkk.onrender.com/api/...`
+### ✅ Fluxo de Aprovação
+- ✅ Produto "Notebook Dell Inspiron 15" aprovado com sucesso
+- ✅ Contadores atualizados: Aprovados 0 → 1
+- ✅ Status persistido no banco
+- ✅ Botões desapareceram após aprovação
+- ✅ API retorna `approvalStatus: "APPROVED"`, `approvedBy`, `approvedAt`
 
-**Root Cause**: Código usava URL relativa ao invés da função `buildApiUrl()`
+### ✅ Fluxo de Rejeição
+- ✅ Produto "Mouse Gamer RGB" criado como seller
+- ✅ Rejeitado com motivo: "Produto duplicado - já existe mouse gamer similar"
+- ✅ Contadores atualizados: Pendente 1 → 0, Rejeitados 0 → 1
+- ✅ Dialog de rejeição funcionando
+- ✅ Motivo salvo no campo `rejection_reason` e exibido na UI
 
-**Solução**:
+### ✅ Validação de Segurança
+- ✅ Produtos PENDING não aparecem na home
+- ✅ Produtos REJECTED não aparecem na home
+- ✅ Apenas produtos APPROVED são visíveis publicamente
+- ✅ Proteção em 3 rotas públicas críticas
 
-```javascript
-// ANTES (linha 166)
-const response = await fetch(`/api/admin/products/${productId}/approval`, {
-  body: JSON.stringify({ approvalStatus, rejectionReason })
-});
-
-// DEPOIS
-const response = await fetch(buildApiUrl(`/admin/products/${productId}/approval`), {
-  body: JSON.stringify({
-    isApproved: approvalStatus === "APPROVED",
-    rejectionReason
-  })
-});
-```
-
-**Funções corrigidas**:
-- `handleApprovalChange` (linha 166)
-- `handleDeleteProduct` (linha 203)
-
----
-
-## 📁 ARQUIVOS MODIFICADOS
-
-### Backend (Render)
-- ✅ `server/routes/admin.js` (+125 linhas, 3 rotas criadas, 4 correções de tabela)
-
-### Database (Supabase)
-- ✅ Criado enum `ApprovalStatus`
-- ✅ Adicionadas 4 colunas em `Product`: `approval_status`, `approved_by`, `approved_at`, `rejection_reason`
-
-### Schema
-- ✅ `prisma/schema.prisma` (mapeamento corrigido, campos com @map)
-
-### Frontend (Vercel)
-- ✅ `src/app/admin/products/page.tsx` (2 funções corrigidas para usar buildApiUrl)
+### 📊 Estatísticas Finais
+- **Total de Produtos**: 2
+- **Aprovados**: 1 (Notebook Dell - visível publicamente ✅)
+- **Rejeitados**: 1 (Mouse Gamer - oculto do público ✅)
+- **Pendentes**: 0
 
 ---
 
-## 🧪 TESTES REALIZADOS
+## 📋 PRÓXIMO PLANO DE TESTES E REVISÃO
 
-### ✅ Testes Backend (API Direct via curl)
+### 🔍 PRIORITY 1: Validação de Fluxos Críticos do Sistema
 
-```bash
-# Teste de aprovação via API
-curl -X PATCH "https://vendeuonline-uqkk.onrender.com/api/admin/products/2ea6b5ff.../approval" \
-  -H "Authorization: Bearer ${TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{"isApproved": true}'
+#### 1.1 Fluxo Completo do Vendedor (E2E)
+**Objetivo**: Validar jornada completa de um vendedor na plataforma
 
-# Resultado
-{
-  "success": true,
-  "data": {
-    "approval_status": "APPROVED",
-    "approved_by": "02ac6b40-47e4-44ca-af2c-749ce60e1ba3",
-    "approved_at": "2025-10-08T23:00:57.217+00:00"
-  },
-  "message": "Produto aprovado com sucesso"
-}
-```
+**Testes**:
+- [ ] Registro de novo vendedor
+- [ ] Criação de loja (store)
+- [ ] Upload de logo e banner da loja
+- [ ] Cadastro de produto com imagens
+- [ ] Produto aparece como PENDING no painel seller
+- [ ] Produto não aparece na home enquanto PENDING
+- [ ] Admin aprova produto
+- [ ] Produto aparece na home após aprovação
+- [ ] Vendedor recebe pedido
+- [ ] Processamento de pedido (pending → processing → shipped → delivered)
+- [ ] Atualização de estoque após venda
 
-**Status**: ✅ Backend 100% funcional
-
-### ✅ Testes Database (Supabase SQL)
-
-```sql
--- Verificar produto aprovado
-SELECT id, name, approval_status, approved_by, approved_at
-FROM "Product"
-WHERE id = '2ea6b5ff-32f0-4026-b268-bf0ccd012fc4';
-
--- Resultado
-{
-  "name": "Notebook Dell Inspiron 15",
-  "approval_status": "APPROVED",
-  "approved_by": "02ac6b40-47e4-44ca-af2c-749ce60e1ba3",
-  "approved_at": "2025-10-08T23:00:57.217+00:00"
-}
-```
-
-**Status**: ✅ Database atualizada corretamente
-
-### ✅ Testes Frontend (Chrome DevTools MCP)
-
-**Dashboard Admin**:
-- ✅ Login funcionando
-- ✅ Estatísticas carregando (4 usuários, 1 loja, 1 produto)
-- ✅ API `GET /api/admin/stats` → 200 OK
-
-**Listagem de Produtos**:
-- ✅ API `GET /api/admin/products` → 200 OK
-- ✅ Produto listado: "Notebook Dell Inspiron 15"
-- ✅ Botões "Aprovar" e "Rejeitar" renderizados
+**Ferramentas**: Chrome DevTools MCP + Supabase MCP
 
 ---
 
-## 🔄 COMMITS DEPLOYADOS
+#### 1.2 Fluxo Completo do Comprador (E2E)
+**Objetivo**: Validar jornada de compra do início ao fim
 
-```bash
-3bb6b2f - fix(admin): implement missing product approval/rejection API routes
-2ef5a56 - fix(admin): correct table name from 'products' to 'Product'
-b8e0895 - fix(admin): complete product approval system - schema + routes + database
-cac4791 - fix(frontend): use buildApiUrl for admin product approval and delete
-```
+**Testes**:
+- [ ] Registro de novo comprador
+- [ ] Navegação na home (apenas produtos aprovados visíveis)
+- [ ] Busca de produtos
+- [ ] Filtros por categoria/preço
+- [ ] Adicionar produto ao carrinho
+- [ ] Atualizar quantidade no carrinho
+- [ ] Remover item do carrinho
+- [ ] Finalizar compra
+- [ ] Escolher método de pagamento (PIX/Boleto/Cartão)
+- [ ] Confirmação de pedido
+- [ ] Rastreamento de pedido
+- [ ] Avaliar produto após recebimento
 
-**Total**: 4 commits (Backend: 3, Frontend: 1)
-
-**Deploy Status**:
-- ✅ Render: Deployed (backend API funcionando)
-- ✅ Vercel: Deployed (frontend corrigido)
-
----
-
-## 📋 PRÓXIMOS PASSOS
-
-### 1. ✅ Validar Aprovação de Produtos no Frontend (CONCLUÍDO)
-
-**Data**: 09/10/2025
-**Status**: ✅ **100% FUNCIONAL**
-
-**Problema Identificado (Problema #5)**:
-- API `GET /api/admin/products` não retornava campos de aprovação
-- Frontend não conseguia exibir status de aprovação
-- Contadores sempre zerados
-
-**Correção Aplicada**:
-- Adicionados campos `approval_status`, `approved_by`, `approved_at`, `rejection_reason` na query SELECT
-- Mapeamento snake_case → camelCase no transformedProducts
-- **Commit**: `d411455` - "fix(admin): add approval fields to GET /api/admin/products response"
-
-**Resultado dos Testes E2E**:
-✅ Aprovação do produto "Notebook Dell Inspiron 15" realizada com sucesso
-✅ Contador "Aprovados" atualizado: 0 → 1
-✅ Status mudou de "Pendente" → "Aprovado"
-✅ Botões "Aprovar/Rejeitar" desapareceram após aprovação
-✅ API retorna `approvalStatus: "APPROVED"`, `approvedBy`, `approvedAt`
+**Ferramentas**: Chrome DevTools MCP + ASAAS API (pagamentos)
 
 ---
 
-### 2. ✅ Testar Rejeição de Produto (CONCLUÍDO)
+#### 1.3 Painel Admin - Gerenciamento de Lojas
+**Objetivo**: Validar moderação de lojas
 
-**Data**: 09/10/2025
-**Status**: ✅ **100% FUNCIONAL**
-
-**Passos Executados**:
-1. ✅ Login como seller (seller@vendeuonline.com)
-2. ✅ Criado novo produto "Mouse Gamer RGB" (R$ 150,00, 5 unidades)
-3. ✅ Produto criado com `approval_status: PENDING`
-4. ✅ Login como admin (admin@vendeuonline.com)
-5. ✅ Acessado `/admin/products` - produto listado como "Pendente"
-6. ✅ Clicado em "✗ Rejeitar"
-7. ✅ Dialog apareceu pedindo motivo de rejeição
-8. ✅ Inserido motivo: "Produto duplicado - já existe mouse gamer similar cadastrado na plataforma"
-9. ✅ Produto rejeitado com sucesso
-
-**Validações**:
-✅ Status mudou de "Pendente" → "Rejeitado"
-✅ Motivo exibido na UI: "Produto duplicado - ..." (truncado)
-✅ Contador "Pendente Aprovação": 1 → 0
-✅ Contador "Rejeitados": 0 → 1
-✅ Botões "Aprovar/Rejeitar" desapareceram após rejeição
-✅ Campo `rejection_reason` salvo no banco de dados
-
-**Screenshot dos Contadores Finais**:
-- Total de Produtos: **2**
-- Pendente Aprovação: **0**
-- Aprovados: **1** (Notebook Dell Inspiron 15)
-- Rejeitados: **1** (Mouse Gamer RGB)
-
----
-
-### 3. Testar Gerenciamento de Lojas ⏳ (PRIORITY 3)
-
-**Objetivo**: Validar aprovação/rejeição de lojas
-
-**Páginas**: `/admin/stores`
-
-**Funcionalidades a testar**:
-- [ ] Listar lojas pendentes
+**Testes**:
+- [ ] Listar lojas pendentes de aprovação
 - [ ] Aprovar loja
-- [ ] Rejeitar loja
-- [ ] Suspender loja
-- [ ] Reativar loja
+- [ ] Rejeitar loja com motivo
+- [ ] Suspender loja ativa
+- [ ] Reativar loja suspensa
+- [ ] Verificar se produtos de loja suspensa ficam ocultos
+- [ ] Verificar notificação ao seller quando loja for aprovada/rejeitada
 
-**APIs envolvidas**:
+**APIs a validar**:
 - `GET /api/admin/stores`
 - `POST /api/admin/stores/:id/approve`
 - `POST /api/admin/stores/:id/reject`
 - `POST /api/admin/stores/:id/suspend`
 - `POST /api/admin/stores/:id/activate`
 
-**⚠️ Verificar**: Se estas rotas também usam URLs relativas (se sim, corrigir)
+**⚠️ Verificar**: URLs relativas vs `buildApiUrl()`
 
 ---
 
-### 4. Testar Gerenciamento de Usuários ⏳ (PRIORITY 4)
+#### 1.4 Painel Admin - Gerenciamento de Usuários
+**Objetivo**: Validar controle de usuários
 
-**Objetivo**: Validar gestão de usuários
-
-**Páginas**: `/admin/users`
-
-**Funcionalidades a testar**:
+**Testes**:
 - [ ] Listar usuários (compradores, vendedores, admins)
+- [ ] Filtrar por tipo de usuário
+- [ ] Buscar usuário por nome/email
 - [ ] Ativar/desativar usuário
-- [ ] Alterar tipo de usuário
+- [ ] Alterar tipo de usuário (BUYER → SELLER)
+- [ ] Verificar se usuário desativado perde acesso
 - [ ] Excluir usuário
+- [ ] Verificar cascade delete (produtos, pedidos, etc)
 
-**APIs envolvidas**:
+**APIs a validar**:
 - `GET /api/admin/users`
 - `PATCH /api/admin/users/:id/status`
+- `PATCH /api/admin/users/:id/type`
 - `DELETE /api/admin/users/:id`
 
 ---
 
-### 5. Testar Tracking Pixels ⏳ (PRIORITY 5)
+### 🔍 PRIORITY 2: Validação de Integrações Externas
 
-**Objetivo**: Validar configuração de analytics
+#### 2.1 Sistema de Pagamentos (ASAAS)
+**Objetivo**: Validar integração completa com gateway de pagamento
 
-**Páginas**: `/admin/tracking-pixels`
+**Testes**:
+- [ ] Criar customer no ASAAS ao registrar usuário
+- [ ] Gerar cobrança PIX
+- [ ] Gerar boleto
+- [ ] Processar pagamento com cartão de crédito
+- [ ] Webhook de confirmação de pagamento
+- [ ] Atualização de status do pedido após pagamento
+- [ ] Tratamento de pagamento recusado
+- [ ] Reembolso/estorno
 
-**Funcionalidades a testar**:
+**APIs ASAAS a validar**:
+- `POST /v3/customers` (criar cliente)
+- `POST /v3/payments` (criar cobrança)
+- `POST /webhook` (receber confirmações)
+
+**⚠️ Verificar**: Variáveis de ambiente `ASAAS_API_KEY`, `ASAAS_WEBHOOK_TOKEN`
+
+---
+
+#### 2.2 Upload de Imagens (Supabase Storage)
+**Objetivo**: Validar upload e armazenamento de imagens
+
+**Testes**:
+- [ ] Upload de imagem de produto (múltiplas imagens)
+- [ ] Upload de logo da loja
+- [ ] Upload de banner da loja
+- [ ] Upload de avatar do usuário
+- [ ] Validação de tipo de arquivo (PNG, JPG, WebP)
+- [ ] Validação de tamanho (max 5MB)
+- [ ] Otimização automática de imagens
+- [ ] URLs públicas funcionando
+- [ ] Exclusão de imagens ao deletar produto/loja
+
+**Buckets Supabase a validar**:
+- `products` (imagens de produtos)
+- `stores` (logos e banners)
+- `avatars` (fotos de perfil)
+
+---
+
+#### 2.3 Tracking Pixels (Analytics)
+**Objetivo**: Validar configuração de pixels de rastreamento
+
+**Testes**:
 - [ ] Listar configurações existentes
-- [ ] Configurar Google Analytics
-- [ ] Configurar Meta Pixel
+- [ ] Configurar Google Analytics (GA4)
+- [ ] Configurar Meta Pixel (Facebook/Instagram)
 - [ ] Configurar TikTok Pixel
 - [ ] Salvar e ativar pixels
+- [ ] Verificar se pixels são injetados no `<head>` do site
+- [ ] Testar eventos: page_view, add_to_cart, purchase
 
-**APIs envolvidas**:
+**APIs a validar**:
 - `GET /api/tracking/configs`
 - `POST /api/admin/tracking/configs`
 - `PUT /api/admin/tracking/configs/:id`
+- `DELETE /api/admin/tracking/configs/:id`
 
 ---
 
-### 6. Testar Configuração de Planos ⏳ (PRIORITY 6)
+### 🔍 PRIORITY 3: Validação de Funcionalidades Business
 
-**Objetivo**: Validar gestão de planos de assinatura
+#### 3.1 Sistema de Planos de Assinatura
+**Objetivo**: Validar gestão de planos e upgrades
 
-**Páginas**: `/admin/plans`
+**Testes**:
+- [ ] Listar planos disponíveis (Gratuito, Básico, Pro, Empresa, Empresa Plus)
+- [ ] Verificar limites de cada plano (produtos, fotos, features)
+- [ ] Seller fazer upgrade de plano
+- [ ] Processar pagamento de assinatura
+- [ ] Ativar features do novo plano
+- [ ] Validar limite de produtos (bloquear criação se exceder)
+- [ ] Renovação automática de assinatura
+- [ ] Downgrade de plano
+- [ ] Cancelamento de assinatura
 
-**Funcionalidades a testar**:
-- [ ] Listar planos existentes
-- [ ] Criar novo plano
-- [ ] Editar plano (preço, features, limites)
-- [ ] Ativar/desativar plano
-- [ ] Excluir plano
-
-**APIs envolvidas**:
-- `GET /api/admin/plans`
-- `POST /api/admin/plans`
-- `PUT /api/admin/plans/:id`
-- `DELETE /api/admin/plans/:id`
-
----
-
-## 🔍 CHECKLIST DE VALIDAÇÃO FINAL
-
-### Backend (Render)
-- [x] Rotas de aprovação implementadas
-- [x] Tabela "Product" (case-sensitive) corrigida
-- [x] Campos snake_case corrigidos
-- [x] API retornando 200 em testes curl
-- [ ] Testar rejeição via API
-- [ ] Testar exclusão via API
-
-### Database (Supabase)
-- [x] Enum ApprovalStatus criado
-- [x] Coluna approval_status criada
-- [x] Coluna approved_by criada
-- [x] Coluna approved_at criada
-- [x] Coluna rejection_reason criada
-- [x] Dados salvos corretamente após aprovação
-
-### Frontend (Vercel)
-- [x] buildApiUrl() corrigido em handleApprovalChange
-- [x] buildApiUrl() corrigido em handleDeleteProduct
-- [x] Body corrigido (isApproved: boolean)
-- [ ] Aprovação funcionando via UI
-- [ ] Rejeição funcionando via UI
-- [ ] Contador de aprovações atualizando
-- [ ] Badge de status atualizando
-
-### Integração
-- [x] Frontend → Backend: URLs corretas
-- [x] Backend → Database: Queries corretas
-- [x] Database → Frontend: Dados retornados
-- [ ] Fluxo completo E2E funcionando
+**APIs a validar**:
+- `GET /api/plans`
+- `GET /api/sellers/subscription` (assinatura atual)
+- `POST /api/sellers/upgrade` (fazer upgrade)
+- `POST /api/admin/plans` (admin criar plano)
 
 ---
 
-## 📊 ESTATÍSTICAS DO SISTEMA
+#### 3.2 Sistema de Reviews e Avaliações
+**Objetivo**: Validar avaliações de produtos e lojas
 
-**Dados Atuais (08/10/2025)**:
-- **Usuários**: 4 (1 comprador, 1 vendedor, 2 admins)
-- **Lojas**: 1 ativa
-- **Produtos**: 1 total (1 aprovado após testes)
-- **Receita**: R$ 0,00
+**Testes**:
+- [ ] Comprador avaliar produto após receber
+- [ ] Apenas compradores que receberam podem avaliar
+- [ ] Avaliação com nota (1-5 estrelas) e comentário
+- [ ] Calcular média de avaliações do produto
+- [ ] Exibir reviews na página do produto
+- [ ] Moderar reviews (admin pode deletar)
+- [ ] Responder review (vendedor)
+- [ ] Avaliar loja (rating geral)
+- [ ] Denunciar review abusivo
 
-**Produto de Teste**:
-- **ID**: `2ea6b5ff-32f0-4026-b268-bf0ccd012fc4`
-- **Nome**: "Notebook Dell Inspiron 15"
-- **Preço**: R$ 3.299,90
-- **Status**: APPROVED (após testes)
-- **Aprovado por**: Admin User (02ac6b40-47e4-44ca-af2c-749ce60e1ba3)
-- **Aprovado em**: 2025-10-08T23:00:57.217+00:00
-
----
-
-## 🚨 PROBLEMAS CONHECIDOS PENDENTES
-
-### Nenhum problema crítico identificado ✅
-
-Todos os problemas foram resolvidos. Sistema 100% funcional para aprovação de produtos.
+**APIs a validar**:
+- `POST /api/products/:id/reviews`
+- `GET /api/products/:id/reviews`
+- `DELETE /api/admin/reviews/:id`
+- `POST /api/reviews/:id/reply`
 
 ---
 
-## 💡 MELHORIAS FUTURAS (Opcional)
+#### 3.3 Notificações do Sistema
+**Objetivo**: Validar sistema de notificações em tempo real
 
-1. **Notificações em Tempo Real**
-   - WebSocket para atualização automática de aprovações
-   - Notificar vendedor quando produto for aprovado/rejeitado
+**Testes**:
+- [ ] Notificação ao seller quando produto for aprovado
+- [ ] Notificação ao seller quando produto for rejeitado
+- [ ] Notificação ao seller quando receber novo pedido
+- [ ] Notificação ao comprador quando pedido for enviado
+- [ ] Notificação ao comprador quando pedido for entregue
+- [ ] Ícone de sino com contador de não lidas
+- [ ] Marcar notificação como lida
+- [ ] Marcar todas como lidas
+- [ ] Deletar notificação
+- [ ] Polling a cada 30 segundos funcionando
 
-2. **Histórico de Aprovações**
-   - Tabela `product_approval_history`
-   - Registrar todas mudanças de status
+**APIs a validar**:
+- `GET /api/notifications`
+- `PATCH /api/notifications/:id/read`
+- `DELETE /api/notifications/:id`
 
-3. **Bulk Actions**
-   - Aprovar múltiplos produtos de uma vez
-   - Rejeitar múltiplos produtos
+**⚠️ Verificar**: Rate limiting (500 req/15min) não bloquear polling
 
-4. **Filtros Avançados**
-   - Filtrar por data de criação
-   - Filtrar por vendedor
-   - Filtrar por faixa de preço
+---
 
-5. **Export/Import**
-   - Exportar lista de produtos (CSV/Excel)
-   - Importar produtos em lote
+### 🔍 PRIORITY 4: Validação de Segurança e Performance
+
+#### 4.1 Autenticação e Autorização
+**Objetivo**: Validar JWT e proteção de rotas
+
+**Testes**:
+- [ ] Login gera JWT válido
+- [ ] Token expira após 7 dias
+- [ ] Refresh token funcionando
+- [ ] Middleware `authenticate` bloqueia requisições sem token
+- [ ] Middleware `authenticateAdmin` bloqueia não-admins
+- [ ] Middleware `authenticateSeller` bloqueia não-sellers
+- [ ] CORS permitindo apenas origens autorizadas
+- [ ] Proteção contra CSRF
+- [ ] Logout invalida token
+
+**⚠️ Verificar**: Variável `JWT_SECRET` configurada e forte
+
+---
+
+#### 4.2 Rate Limiting e DDoS Protection
+**Objetivo**: Validar limites de requisições
+
+**Testes**:
+- [ ] Rate limit geral: 1000 req/15min em produção
+- [ ] Rate limit de notificações: 500 req/15min
+- [ ] Rate limit de login: proteção contra brute force
+- [ ] Resposta 429 com mensagem clara quando atingir limite
+- [ ] Headers `RateLimit-*` presentes na resposta
+- [ ] IP bloqueado temporariamente após múltiplas tentativas falhas
+
+**Middleware a validar**: `server/middleware/security.js`
+
+---
+
+#### 4.3 Validação de Inputs e SQL Injection
+**Objetivo**: Validar proteção contra ataques
+
+**Testes**:
+- [ ] Zod validando todos inputs de APIs
+- [ ] Proteção contra SQL injection (Supabase parametrizado)
+- [ ] Proteção contra XSS em campos de texto
+- [ ] Sanitização de HTML em descrições de produtos
+- [ ] Validação de UUIDs em rotas `/:id`
+- [ ] Validação de tipos de arquivo em uploads
+- [ ] Validação de tamanho de arquivos
+- [ ] Proteção contra path traversal em uploads
+
+---
+
+### 🔍 PRIORITY 5: Revisão de Código e Refatoração
+
+#### 5.1 Código Duplicado e Inconsistências
+**Objetivo**: Identificar e corrigir código duplicado
+
+**Áreas a revisar**:
+- [ ] Queries Supabase repetidas (criar helpers reutilizáveis)
+- [ ] Lógica de autenticação duplicada (centralizar em middleware)
+- [ ] Validações Zod repetidas (criar schemas reutilizáveis)
+- [ ] Formatação de datas inconsistente (criar util `formatDate()`)
+- [ ] Tratamento de erros inconsistente (padronizar responses)
+- [ ] Logs sem padrão (padronizar com logger)
+
+---
+
+#### 5.2 Tipos TypeScript Faltantes
+**Objetivo**: Completar tipagem forte
+
+**Áreas a revisar**:
+- [ ] Types para responses de APIs (`ApiResponse<T>`)
+- [ ] Types para Supabase queries (gerar com CLI)
+- [ ] Types para Zustand stores
+- [ ] Eliminar `any` e `unknown` desnecessários
+- [ ] Strict mode habilitado em `tsconfig.json`
+
+---
+
+#### 5.3 Testes Automatizados Faltantes
+**Objetivo**: Aumentar cobertura de testes
+
+**Áreas a cobrir**:
+- [ ] Unit tests para utils (`formatCurrency`, `slugify`, etc)
+- [ ] Unit tests para Zustand stores
+- [ ] Integration tests para APIs críticas
+- [ ] E2E tests com Playwright para fluxos principais
+- [ ] Snapshot tests para componentes UI
+- [ ] Coverage mínimo de 80%
+
+**Ferramentas**: Vitest + @testing-library + Playwright
 
 ---
 
@@ -487,17 +399,14 @@ Todos os problemas foram resolvidos. Sistema 100% funcional para aprovação de 
 **Admin**:
 - Email: admin@vendeuonline.com
 - Senha: Test123!@#
-- Tipo: ADMIN
 
 **Vendedor**:
 - Email: seller@vendeuonline.com
 - Senha: Test123!@#
-- Tipo: SELLER
 
 **Comprador**:
 - Email: buyer@vendeuonline.com
 - Senha: Test123!@#
-- Tipo: BUYER
 
 ---
 
@@ -506,48 +415,31 @@ Todos os problemas foram resolvidos. Sistema 100% funcional para aprovação de 
 - **API Backend**: [CLAUDE.md](CLAUDE.md)
 - **Schema Prisma**: [prisma/schema.prisma](prisma/schema.prisma)
 - **Configuração API**: [src/config/api.ts](src/config/api.ts)
-- **Admin Products**: [src/app/admin/products/page.tsx](src/app/admin/products/page.tsx)
+- **Arquitetura**: [docs/architecture/ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)
+- **Guia de Deploy**: [docs/deployment/VERCEL_COMPLETE_GUIDE.md](docs/deployment/VERCEL_COMPLETE_GUIDE.md)
 
 ---
 
 ## 🎯 CONCLUSÃO
 
-Sistema de aprovação de produtos totalmente implementado, deployado e **validado 100% em produção**. Foram corrigidos:
+Sistema de aprovação de produtos **100% implementado e validado**. Total de **6 problemas críticos resolvidos**:
 
-1. ✅ 3 rotas de backend criadas (PATCH/POST approval/reject)
-2. ✅ 4 correções de nome de tabela (products → Product)
-3. ✅ 4 campos de banco adicionados (approval_status, approved_by, approved_at, rejection_reason)
-4. ✅ Schema Prisma atualizado com mapeamento snake_case
-5. ✅ 2 funções frontend corrigidas (buildApiUrl)
-6. ✅ **Problema #5 corrigido**: GET /api/admin/products agora retorna campos de aprovação
+1. ✅ Rotas de backend criadas
+2. ✅ Nomes de tabela corrigidos
+3. ✅ Campos de banco adicionados
+4. ✅ Frontend usando URLs corretas
+5. ✅ API retornando campos de aprovação
+6. ✅ **Produtos não aprovados ocultos do público** (CRÍTICO)
 
-## ✅ TESTES E2E COMPLETOS - RESULTADOS
+**Estatísticas**:
+- **6 commits deployados**
+- **2 produtos testados** (1 aprovado, 1 rejeitado)
+- **3 rotas públicas protegidas**
+- **100% de sucesso** nos testes E2E
 
-**Data dos Testes**: 09/10/2025
-**Ambiente**: Produção (https://www.vendeu.online)
-
-### Fluxo de Aprovação ✅
-- ✅ Produto "Notebook Dell Inspiron 15" aprovado com sucesso
-- ✅ Contadores atualizados corretamente
-- ✅ Status persistido no banco de dados
-- ✅ UI atualizada em tempo real
-
-### Fluxo de Rejeição ✅
-- ✅ Produto "Mouse Gamer RGB" criado como seller
-- ✅ Produto listado como "Pendente" no admin
-- ✅ Rejeição com motivo funcionando
-- ✅ Dialog de rejeição aparecendo corretamente
-- ✅ Motivo salvo e exibido na UI
-
-### Estatísticas Finais
-- **Total de Produtos**: 2
-- **Aprovados**: 1 (Notebook Dell)
-- **Rejeitados**: 1 (Mouse Gamer)
-- **Pendentes**: 0
-
-**Próximo passo**: Continuar testes das demais funcionalidades admin (Lojas, Usuários, Tracking Pixels, Planos).
+**Próximos Passos**: Executar plano de testes completo (Priorities 1-5) para validar **todos os fluxos** do sistema antes de ir para produção final.
 
 ---
 
-**Última Atualização**: 09/10/2025 00:15 UTC
-**Status**: ✅ **Deploy Completo + Testes E2E Aprovação/Rejeição 100% Validados**
+**Última Atualização**: 09/10/2025 01:00 UTC
+**Status**: ✅ **Sistema de Aprovação 100% Validado + Plano de Testes Completo Definido**
