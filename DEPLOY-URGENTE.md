@@ -20,9 +20,10 @@
 - Status: ✅ Atualizado
 
 ❌ **Backend (Render)**: Deploy automático NÃO FUNCIONOU
-- URL: https://vendeuonline-api.onrender.com
+- URL: https://vendeuonline-uqkk.onrender.com
 - Status: ❌ Código antigo (sem correções)
-- Problema: API `/api/seller/products` ainda retorna campos errados
+- Problema: API `/api/seller/products` retorna **HTTP 500 (Erro Interno do Servidor)**
+- Evidência: Testado em 09/10/2025 16:50 - 3 tentativas de retry, todas falharam com 500
 
 ### Teste que Confirma o Problema
 
@@ -92,16 +93,18 @@ let query = supabase
 
 ## ✅ SOLUÇÃO: DEPLOY MANUAL NO RENDER
 
-### Opção 1: Deploy Manual via Dashboard (RECOMENDADO)
+### Opção 1: Deploy Manual via Dashboard (RECOMENDADO) ⚠️ URGENTE
 
 1. Acesse: https://dashboard.render.com
 2. Login com conta conectada ao repositório
-3. Selecione o serviço: **vendeuonline-api**
+3. Selecione o serviço: **vendeuonline-uqkk** (URL: https://vendeuonline-uqkk.onrender.com)
 4. Clique em **"Manual Deploy"** → **"Deploy latest commit"**
-5. Aguarde 3-5 minutos
-6. Verifique logs:
+5. **IMPORTANTE**: Certifique-se que o branch conectado é `main` (onde estão os commits)
+6. Aguarde 3-5 minutos
+7. Verifique logs:
    - Deve aparecer: `✅ Build successful`
    - Deve iniciar: `🚀 Server running on port 3000`
+   - Procure por: `✅ "Produtos encontrados: X/Y"` nos logs da API
 
 ### Opção 2: Force Push (Se dashboard não funcionar)
 
