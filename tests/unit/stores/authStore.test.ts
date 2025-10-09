@@ -9,12 +9,24 @@ vi.mock("@/lib/api-client", () => ({
   apiRequest: vi.fn(),
 }));
 
-// Mock localStorage
+// Mock localStorage for Zustand persist
+const localStorageData: Record<string, string> = {};
+
 const mockLocalStorage = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
+  getItem: vi.fn((key: string) => localStorageData[key] || null),
+  setItem: vi.fn((key: string, value: string) => {
+    localStorageData[key] = value;
+  }),
+  removeItem: vi.fn((key: string) => {
+    delete localStorageData[key];
+  }),
+  clear: vi.fn(() => {
+    Object.keys(localStorageData).forEach((key) => delete localStorageData[key]);
+  }),
+  get length() {
+    return Object.keys(localStorageData).length;
+  },
+  key: vi.fn((index: number) => Object.keys(localStorageData)[index] || null),
 };
 
 Object.defineProperty(window, "localStorage", {
@@ -31,6 +43,7 @@ describe("AuthStore", () => {
     city: "São Paulo",
     state: "SP",
     userType: "buyer",
+    type: "buyer", // Added normalized field
     avatar: "avatar.jpg",
     isVerified: true,
     createdAt: "2023-01-01T00:00:00Z",
@@ -45,7 +58,8 @@ describe("AuthStore", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockLocalStorage.getItem.mockReturnValue(null);
+    // Clear localStorage data
+    Object.keys(localStorageData).forEach((key) => delete localStorageData[key]);
 
     // Reset store state
     useAuthStore.setState({
@@ -59,6 +73,8 @@ describe("AuthStore", () => {
 
   afterEach(() => {
     vi.clearAllMocks();
+    // Clear localStorage after each test
+    Object.keys(localStorageData).forEach((key) => delete localStorageData[key]);
   });
 
   describe("login", () => {
@@ -72,7 +88,6 @@ describe("AuthStore", () => {
       expect(apiClient.post).toHaveBeenCalledWith("/api/auth/login", {
         email: "test@example.com",
         password: "password",
-        userType: "buyer",
       });
 
       const state = useAuthStore.getState();
@@ -80,34 +95,23 @@ describe("AuthStore", () => {
       expect(state.isAuthenticated).toBe(true);
       expect(state.token).toBe(mockToken);
       expect(state.error).toBe(null);
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith("auth-token", mockToken);
     });
 
-    it("should try multiple user types when no type specified", async () => {
+    it("should successfully login without user type", async () => {
       const mockResponse = { user: mockUser, token: mockToken };
-
-      // First call fails, second succeeds
-      vi.mocked(apiClient.post)
-        .mockRejectedValueOnce(new Error("Invalid credentials"))
-        .mockResolvedValueOnce(mockResponse);
+      vi.mocked(apiClient.post).mockResolvedValue(mockResponse);
 
       const { login } = useAuthStore.getState();
       await login("test@example.com", "password");
 
-      expect(apiClient.post).toHaveBeenCalledTimes(2);
-      expect(apiClient.post).toHaveBeenNthCalledWith(1, "/api/auth/login", {
+      expect(apiClient.post).toHaveBeenCalledWith("/api/auth/login", {
         email: "test@example.com",
         password: "password",
-        userType: "buyer",
-      });
-      expect(apiClient.post).toHaveBeenNthCalledWith(2, "/api/auth/login", {
-        email: "test@example.com",
-        password: "password",
-        userType: "seller",
       });
 
       const state = useAuthStore.getState();
       expect(state.isAuthenticated).toBe(true);
+      expect(state.token).toBe(mockToken);
     });
 
     it("should handle login failure", async () => {
@@ -122,7 +126,7 @@ describe("AuthStore", () => {
       expect(state.user).toBe(null);
       expect(state.isAuthenticated).toBe(false);
       expect(state.error).toBe(errorMessage);
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("auth-token");
+      expect(state.token).toBe(null);
     });
   });
 
@@ -150,7 +154,6 @@ describe("AuthStore", () => {
       expect(state.user).toEqual(mockUser);
       expect(state.isAuthenticated).toBe(true);
       expect(state.token).toBe(mockToken);
-      expect(mockLocalStorage.setItem).toHaveBeenCalledWith("auth-token", mockToken);
     });
 
     it("should handle registration failure", async () => {
@@ -194,7 +197,7 @@ describe("AuthStore", () => {
       expect(state.user).toBe(null);
       expect(state.isAuthenticated).toBe(false);
       expect(state.token).toBe(null);
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("auth-token");
+      // Zustand persist handles storage automatically
     });
   });
 
@@ -223,7 +226,8 @@ describe("AuthStore", () => {
 
   describe("checkAuth", () => {
     it("should validate existing token and set user data", async () => {
-      mockLocalStorage.getItem.mockReturnValue(mockToken);
+      // Set token in store state (Zustand persist)
+      useAuthStore.setState({ token: mockToken });
       const mockResponse = { user: mockUser };
       vi.mocked(apiClient.get).mockResolvedValue(mockResponse);
 
@@ -239,7 +243,8 @@ describe("AuthStore", () => {
     });
 
     it("should handle invalid token", async () => {
-      mockLocalStorage.getItem.mockReturnValue(mockToken);
+      // Set token in store state
+      useAuthStore.setState({ token: mockToken });
       vi.mocked(apiClient.get).mockRejectedValue(new Error("Invalid token"));
 
       const { checkAuth } = useAuthStore.getState();
@@ -249,11 +254,11 @@ describe("AuthStore", () => {
       expect(state.user).toBe(null);
       expect(state.isAuthenticated).toBe(false);
       expect(state.token).toBe(null);
-      expect(mockLocalStorage.removeItem).toHaveBeenCalledWith("auth-token");
     });
 
     it("should handle no token", async () => {
-      mockLocalStorage.getItem.mockReturnValue(null);
+      // No token in state
+      useAuthStore.setState({ token: null });
 
       const { checkAuth } = useAuthStore.getState();
       await checkAuth();
