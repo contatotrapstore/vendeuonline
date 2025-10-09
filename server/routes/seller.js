@@ -1850,17 +1850,25 @@ router.get("/products", authenticateSellerWithExtras, async (req, res) => {
     const productsWithDetails = await Promise.all(
       (products || []).map(async (product) => {
         // Buscar imagens do produto
-        const { data: images } = await supabase
-          .from("product_images")
-          .select("id, url, alt, order, isMain")
+        const { data: images, error: imagesError } = await supabase
+          .from("ProductImage")
+          .select("id, url, alt, order, position")
           .eq("productId", product.id)
           .order("order", { ascending: true });
 
+        if (imagesError) {
+          logger.warn(`⚠️ Erro ao buscar imagens do produto ${product.id}:`, imagesError);
+        }
+
         // Buscar especificações do produto
-        const { data: specifications } = await supabase
-          .from("product_specifications")
+        const { data: specifications, error: specsError } = await supabase
+          .from("ProductSpecification")
           .select("name, value")
           .eq("productId", product.id);
+
+        if (specsError) {
+          logger.warn(`⚠️ Erro ao buscar especificações do produto ${product.id}:`, specsError);
+        }
 
         // Formatar produto para o frontend
         return {
