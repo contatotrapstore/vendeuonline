@@ -256,38 +256,59 @@ cac4791 - fix(frontend): use buildApiUrl for admin product approval and delete
 
 ## 📋 PRÓXIMOS PASSOS
 
-### 1. Validar Aprovação de Produtos no Frontend ✅ (PRIORITY 1)
+### 1. ✅ Validar Aprovação de Produtos no Frontend (CONCLUÍDO)
 
-**Objetivo**: Confirmar que aprovação funciona via UI
+**Data**: 09/10/2025
+**Status**: ✅ **100% FUNCIONAL**
 
-**Passos**:
-1. Acessar https://www.vendeu.online/admin/products
-2. Clicar em "✓ Aprovar" no produto "Notebook Dell Inspiron 15"
-3. Verificar mensagem de sucesso
-4. Confirmar que status muda de "Pendente" → "Aprovado"
-5. Verificar contador "Aprovados" atualiza de 0 → 1
+**Problema Identificado (Problema #5)**:
+- API `GET /api/admin/products` não retornava campos de aprovação
+- Frontend não conseguia exibir status de aprovação
+- Contadores sempre zerados
 
-**Validação**:
-- Network tab deve mostrar: `PATCH https://vendeuonline-uqkk.onrender.com/api/admin/products/.../approval → 200`
-- Produto deve aparecer com badge "Aprovado" (verde)
+**Correção Aplicada**:
+- Adicionados campos `approval_status`, `approved_by`, `approved_at`, `rejection_reason` na query SELECT
+- Mapeamento snake_case → camelCase no transformedProducts
+- **Commit**: `d411455` - "fix(admin): add approval fields to GET /api/admin/products response"
+
+**Resultado dos Testes E2E**:
+✅ Aprovação do produto "Notebook Dell Inspiron 15" realizada com sucesso
+✅ Contador "Aprovados" atualizado: 0 → 1
+✅ Status mudou de "Pendente" → "Aprovado"
+✅ Botões "Aprovar/Rejeitar" desapareceram após aprovação
+✅ API retorna `approvalStatus: "APPROVED"`, `approvedBy`, `approvedAt`
 
 ---
 
-### 2. Testar Rejeição de Produto ⏳ (PRIORITY 2)
+### 2. ✅ Testar Rejeição de Produto (CONCLUÍDO)
 
-**Objetivo**: Validar fluxo de rejeição
+**Data**: 09/10/2025
+**Status**: ✅ **100% FUNCIONAL**
 
-**Passos**:
-1. Criar novo produto via seller
-2. Admin acessa `/admin/products`
-3. Clicar em "✗ Rejeitar"
-4. Inserir motivo: "Produto duplicado"
-5. Confirmar rejeição
+**Passos Executados**:
+1. ✅ Login como seller (seller@vendeuonline.com)
+2. ✅ Criado novo produto "Mouse Gamer RGB" (R$ 150,00, 5 unidades)
+3. ✅ Produto criado com `approval_status: PENDING`
+4. ✅ Login como admin (admin@vendeuonline.com)
+5. ✅ Acessado `/admin/products` - produto listado como "Pendente"
+6. ✅ Clicado em "✗ Rejeitar"
+7. ✅ Dialog apareceu pedindo motivo de rejeição
+8. ✅ Inserido motivo: "Produto duplicado - já existe mouse gamer similar cadastrado na plataforma"
+9. ✅ Produto rejeitado com sucesso
 
-**Validação**:
-- Status → "Rejeitado"
-- Campo `rejection_reason` salvo no banco
-- Contador "Rejeitados" atualizado
+**Validações**:
+✅ Status mudou de "Pendente" → "Rejeitado"
+✅ Motivo exibido na UI: "Produto duplicado - ..." (truncado)
+✅ Contador "Pendente Aprovação": 1 → 0
+✅ Contador "Rejeitados": 0 → 1
+✅ Botões "Aprovar/Rejeitar" desapareceram após rejeição
+✅ Campo `rejection_reason` salvo no banco de dados
+
+**Screenshot dos Contadores Finais**:
+- Total de Produtos: **2**
+- Pendente Aprovação: **0**
+- Aprovados: **1** (Notebook Dell Inspiron 15)
+- Rejeitados: **1** (Mouse Gamer RGB)
 
 ---
 
@@ -491,17 +512,42 @@ Todos os problemas foram resolvidos. Sistema 100% funcional para aprovação de 
 
 ## 🎯 CONCLUSÃO
 
-Sistema de aprovação de produtos totalmente implementado e funcional. Foram corrigidos:
+Sistema de aprovação de produtos totalmente implementado, deployado e **validado 100% em produção**. Foram corrigidos:
 
-1. ✅ 3 rotas de backend criadas
-2. ✅ 4 correções de nome de tabela
-3. ✅ 4 campos de banco adicionados
-4. ✅ Schema Prisma atualizado
-5. ✅ 2 funções frontend corrigidas
+1. ✅ 3 rotas de backend criadas (PATCH/POST approval/reject)
+2. ✅ 4 correções de nome de tabela (products → Product)
+3. ✅ 4 campos de banco adicionados (approval_status, approved_by, approved_at, rejection_reason)
+4. ✅ Schema Prisma atualizado com mapeamento snake_case
+5. ✅ 2 funções frontend corrigidas (buildApiUrl)
+6. ✅ **Problema #5 corrigido**: GET /api/admin/products agora retorna campos de aprovação
 
-**Próximo passo**: Validar aprovação via UI em produção e continuar testes das demais funcionalidades admin.
+## ✅ TESTES E2E COMPLETOS - RESULTADOS
+
+**Data dos Testes**: 09/10/2025
+**Ambiente**: Produção (https://www.vendeu.online)
+
+### Fluxo de Aprovação ✅
+- ✅ Produto "Notebook Dell Inspiron 15" aprovado com sucesso
+- ✅ Contadores atualizados corretamente
+- ✅ Status persistido no banco de dados
+- ✅ UI atualizada em tempo real
+
+### Fluxo de Rejeição ✅
+- ✅ Produto "Mouse Gamer RGB" criado como seller
+- ✅ Produto listado como "Pendente" no admin
+- ✅ Rejeição com motivo funcionando
+- ✅ Dialog de rejeição aparecendo corretamente
+- ✅ Motivo salvo e exibido na UI
+
+### Estatísticas Finais
+- **Total de Produtos**: 2
+- **Aprovados**: 1 (Notebook Dell)
+- **Rejeitados**: 1 (Mouse Gamer)
+- **Pendentes**: 0
+
+**Próximo passo**: Continuar testes das demais funcionalidades admin (Lojas, Usuários, Tracking Pixels, Planos).
 
 ---
 
-**Última Atualização**: 08/10/2025 23:30 UTC
-**Status**: ✅ Deploy Completo - Pronto para Testes E2E Frontend
+**Última Atualização**: 09/10/2025 00:15 UTC
+**Status**: ✅ **Deploy Completo + Testes E2E Aprovação/Rejeição 100% Validados**

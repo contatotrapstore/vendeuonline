@@ -116,7 +116,9 @@ router.get(
        specifications:ProductSpecification(*),
        category:categories(id, name),
        store:stores(id, name, slug, isVerified)`
-      ).eq("isActive", true);
+      )
+      .eq("isActive", true)
+      .eq("approval_status", "APPROVED"); // Apenas produtos aprovados aparecem publicamente
 
       // Aplicar filtros otimizados
       supabaseQuery = applyCommonFilters(supabaseQuery, {
@@ -284,6 +286,7 @@ router.get(
         )
         .eq("id", id)
         .eq("isActive", true)
+        .eq("approval_status", "APPROVED") // Apenas produtos aprovados podem ser visualizados
         .single();
 
       if (error || !product) {
@@ -358,6 +361,7 @@ router.get("/:id/related", async (req, res) => {
       .eq("categoryId", product.categoryId)
       .neq("id", id)
       .eq("isActive", true)
+      .eq("approval_status", "APPROVED") // Apenas produtos aprovados em relacionados
       .limit(limit);
 
     if (error) {
