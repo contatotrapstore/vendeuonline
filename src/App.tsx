@@ -132,6 +132,7 @@ function AppContent() {
               <Route path="/seller/dashboard" element={<SellerDashboard />} />
               <Route path="/seller/products" element={<SellerProducts />} />
               <Route path="/seller/products/new" element={<SellerProductsNew />} />
+              <Route path="/seller/products/:id/edit" element={<SellerProductsNew />} />
               <Route path="/seller/orders" element={<SellerOrders />} />
               <Route path="/seller/store" element={<SellerStore />} />
               <Route path="/seller/analytics" element={<SellerAnalytics />} />
