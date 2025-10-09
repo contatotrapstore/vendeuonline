@@ -1765,18 +1765,31 @@ router.get("/products", authenticateSellerWithExtras, async (req, res) => {
 
     logger.info("🔍 Buscando produtos do seller:", sellerId);
 
-    // Query base para produtos do vendedor (sem imagens por enquanto)
+    // Query base para produtos do vendedor (incluindo relações)
     let query = supabase
       .from("Product")
       .select(
         `
         id,
+        sellerId,
         name,
         description,
         price,
+        comparePrice,
         stock,
+        minStock,
         categoryId,
+        category:Category(id, name, slug),
         isActive,
+        isFeatured,
+        rating,
+        reviewCount,
+        salesCount,
+        sku,
+        weight,
+        tags,
+        seoTitle,
+        seoDescription,
         createdAt,
         updatedAt
       `
@@ -1833,21 +1846,52 @@ router.get("/products", authenticateSellerWithExtras, async (req, res) => {
 
     const { count: totalCount } = await countQuery;
 
-    // Formatar produtos para o frontend
-    const formattedProducts =
-      products?.map((product) => ({
-        id: product.id,
-        name: product.name,
-        description: product.description,
-        price: parseFloat(product.price),
-        stockQuantity: product.stock,
-        categoryId: product.categoryId,
-        isActive: product.isActive,
-        createdAt: product.createdAt,
-        updatedAt: product.updatedAt,
-        images: [], // Imagens serão buscadas separadamente se necessário
-        mainImage: null, // Por enquanto sem imagem principal
-      })) || [];
+    // Buscar imagens e especificações para cada produto
+    const productsWithDetails = await Promise.all(
+      (products || []).map(async (product) => {
+        // Buscar imagens do produto
+        const { data: images } = await supabase
+          .from("product_images")
+          .select("id, url, alt, order, isMain")
+          .eq("productId", product.id)
+          .order("order", { ascending: true });
+
+        // Buscar especificações do produto
+        const { data: specifications } = await supabase
+          .from("product_specifications")
+          .select("name, value")
+          .eq("productId", product.id);
+
+        // Formatar produto para o frontend
+        return {
+          id: product.id,
+          sellerId: product.sellerId,
+          name: product.name,
+          description: product.description,
+          price: parseFloat(product.price),
+          comparePrice: product.comparePrice ? parseFloat(product.comparePrice) : undefined,
+          stock: product.stock,
+          minStock: product.minStock,
+          category: product.category || { id: product.categoryId, name: "Sem categoria", slug: "" },
+          isActive: product.isActive,
+          isFeatured: product.isFeatured || false,
+          rating: product.rating || 0,
+          reviewCount: product.reviewCount || 0,
+          salesCount: product.salesCount || 0,
+          sku: product.sku || undefined,
+          weight: product.weight || undefined,
+          tags: product.tags ? (typeof product.tags === "string" ? JSON.parse(product.tags) : product.tags) : [],
+          seoTitle: product.seoTitle || undefined,
+          seoDescription: product.seoDescription || undefined,
+          images: images || [],
+          specifications: specifications || [],
+          createdAt: product.createdAt,
+          updatedAt: product.updatedAt,
+        };
+      })
+    );
+
+    const formattedProducts = productsWithDetails;
 
     const totalPages = Math.ceil((totalCount || 0) / parseInt(limit));
 
