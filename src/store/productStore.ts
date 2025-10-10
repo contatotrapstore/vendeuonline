@@ -318,9 +318,8 @@ export const useProductStore = create<ProductStore>()(
 
       await del(`/api/products/${id}`);
 
-      // Remover produto da lista local
-      const products = get().products.filter((product) => product.id !== id);
-      set({ products, filteredProducts: products, loading: false });
+      // Refetch produtos do servidor após DELETE (backend faz soft delete, não remoção)
+      await get().fetchSellerProducts();
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "Erro ao deletar produto",

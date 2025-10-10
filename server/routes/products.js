@@ -633,11 +633,38 @@ router.put("/:id", authenticate, protectRoute(["SELLER", "ADMIN"]), async (req, 
       });
     }
 
-    // Atualizar produto
+    // Extrair images e specifications para processamento separado
+    const { images, specifications, ...productFields } = updateData;
+
+    // Filtrar apenas campos permitidos da tabela Product
+    const allowedFields = [
+      "name",
+      "description",
+      "price",
+      "comparePrice",
+      "categoryId",
+      "stock",
+      "weight",
+      "dimensions",
+      "isActive",
+      "brand",
+      "model",
+      "sku",
+      "tags",
+    ];
+
+    const filteredData = Object.keys(productFields)
+      .filter((key) => allowedFields.includes(key))
+      .reduce((obj, key) => {
+        obj[key] = productFields[key];
+        return obj;
+      }, {});
+
+    // Atualizar produto (apenas campos da tabela Product)
     const { data: updatedProduct, error: updateError } = await supabase
       .from("Product")
       .update({
-        ...updateData,
+        ...filteredData,
         updatedAt: new Date().toISOString(),
       })
       .eq("id", productId)
@@ -649,7 +676,52 @@ router.put("/:id", authenticate, protectRoute(["SELLER", "ADMIN"]), async (req, 
       return res.status(500).json({
         success: false,
         error: "Erro ao atualizar produto",
+        details: updateError.message,
       });
+    }
+
+    // Processar images se fornecidas
+    if (images && Array.isArray(images)) {
+      // Deletar imagens antigas
+      await supabase.from("ProductImage").delete().eq("productId", productId);
+
+      // Inserir novas imagens
+      const imageRecords = images.map((img, idx) => ({
+        productId,
+        url: img.url,
+        alt: img.alt || updatedProduct.name,
+        isMain: img.isMain || idx === 0,
+        order: img.order || idx,
+      }));
+
+      const { error: imageError } = await supabase.from("ProductImage").insert(imageRecords);
+
+      if (imageError) {
+        logger.error("⚠️ Erro ao atualizar imagens:", imageError);
+      }
+    }
+
+    // Processar specifications se fornecidas
+    if (specifications && Array.isArray(specifications)) {
+      // Deletar especificações antigas
+      await supabase.from("ProductSpecification").delete().eq("productId", productId);
+
+      // Inserir novas especificações
+      const specRecords = specifications
+        .filter((spec) => spec.name && spec.value)
+        .map((spec) => ({
+          productId,
+          name: spec.name,
+          value: spec.value,
+        }));
+
+      if (specRecords.length > 0) {
+        const { error: specError } = await supabase.from("ProductSpecification").insert(specRecords);
+
+        if (specError) {
+          logger.error("⚠️ Erro ao atualizar especificações:", specError);
+        }
+      }
     }
 
     logger.info("✅ Produto atualizado:", productId);
