@@ -6,6 +6,7 @@ import { protectRoute, validateInput, commonValidations } from "../middleware/se
 import {
   validateProduct,
   validateUUIDParam,
+  validateProductIdParam,
   validatePagination,
   validateSearchFilters,
 } from "../middleware/validation.js";
@@ -265,7 +266,7 @@ router.get("/test", async (req, res) => {
 // GET /api/products/:id - Buscar produto por ID
 router.get(
   "/:id",
-  validateUUIDParam,
+  validateProductIdParam,
   cacheMiddleware((req) => CACHE_KEYS.PRODUCT_DETAIL(req.params.id), CACHE_TTL.LONG),
   async (req, res) => {
     try {

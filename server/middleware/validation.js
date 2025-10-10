@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { emailSchema, passwordSchema, nameSchema, priceSchema, uuidSchema } from "../schemas/commonSchemas.js";
+import { emailSchema, passwordSchema, nameSchema, priceSchema, uuidSchema, productIdSchema } from "../schemas/commonSchemas.js";
 import { logger } from "../lib/logger.js";
 
 /**
@@ -137,6 +137,7 @@ export const queryPaginationValidation = z.object({
 
 // Validações rápidas para parâmetros comuns
 export const validateUUIDParam = validateData(z.object({ id: uuidSchema }), "params");
+export const validateProductIdParam = validateData(z.object({ id: productIdSchema }), "params");
 export const validatePagination = validateData(queryPaginationValidation, "query");
 export const validateLogin = validateData(loginValidation);
 export const validateRegister = validateData(registerValidation);

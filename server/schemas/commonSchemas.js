@@ -7,6 +7,19 @@ import { z } from "zod";
 // Tipos básicos
 export const uuidSchema = z.string().uuid("ID deve ser um UUID válido");
 
+// Schema para IDs de produtos (aceita UUID v4 OU IDs customizados product_TIMESTAMP_RANDOM)
+export const productIdSchema = z.string().refine(
+  (id) => {
+    // Aceitar UUID v4
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    // Aceitar IDs customizados (product_TIMESTAMP_RANDOMSTRING)
+    const customIdRegex = /^product_\d{13}_[a-z0-9]+$/;
+
+    return uuidRegex.test(id) || customIdRegex.test(id);
+  },
+  { message: "ID de produto inválido" }
+);
+
 export const emailSchema = z
   .string()
   .min(1, "Email é obrigatório")
