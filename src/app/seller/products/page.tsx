@@ -26,7 +26,7 @@ const categoryOptions = [
 
 export default function SellerProductsPage() {
   const { user } = useAuthStore();
-  const { products, fetchSellerProducts, updateProduct, deleteProduct } = useProductStore();
+  const { products, loading, fetchSellerProducts, updateProduct, deleteProduct } = useProductStore();
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -104,6 +104,64 @@ export default function SellerProductsPage() {
     }
     return { label: "Em estoque", className: "text-green-600" };
   };
+
+  // Loading skeleton
+  if (loading && products.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Meus Produtos</h1>
+            <p className="text-gray-600 mt-2">Gerencie seu catálogo de produtos</p>
+          </div>
+
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-lg shadow-sm border p-6 animate-pulse">
+                <div className="h-8 w-8 bg-gray-200 rounded mb-4"></div>
+                <div className="h-4 bg-gray-200 rounded w-24 mb-2"></div>
+                <div className="h-8 bg-gray-200 rounded w-16"></div>
+              </div>
+            ))}
+          </div>
+
+          {/* Filters Skeleton */}
+          <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
+            <div className="flex gap-4">
+              <div className="flex-1 h-12 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-48 h-12 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-48 h-12 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Table Skeleton */}
+          <div className="bg-white rounded-lg shadow-sm border overflow-hidden">
+            <div className="p-6 space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-4 animate-pulse">
+                  <div className="h-16 w-16 bg-gray-200 rounded-lg"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                  <div className="h-4 bg-gray-200 rounded w-24"></div>
+                  <div className="h-4 bg-gray-200 rounded w-20"></div>
+                  <div className="h-4 bg-gray-200 rounded w-16"></div>
+                  <div className="flex gap-2">
+                    <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                    <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                    <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

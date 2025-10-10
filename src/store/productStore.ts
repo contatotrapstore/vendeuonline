@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { Product } from "@/types";
 import { apiRequest, get as apiGet, post, put, del } from "@/lib/api-client";
 import { appCache } from "@/lib/cache";
@@ -124,14 +125,16 @@ const defaultFilters: ProductFilters = {
   sortBy: "relevance",
 };
 
-export const useProductStore = create<ProductStore>((set, get) => ({
-  products: [],
-  filteredProducts: [],
-  filters: defaultFilters,
-  loading: false,
-  error: null,
-  isEmpty: false,
-  pagination: initialPagination,
+export const useProductStore = create<ProductStore>()(
+  persist(
+    (set, get) => ({
+      products: [],
+      filteredProducts: [],
+      filters: defaultFilters,
+      loading: false,
+      error: null,
+      isEmpty: false,
+      pagination: initialPagination,
 
   fetchProducts: async (params = {}) => {
     try {
@@ -397,6 +400,17 @@ export const useProductStore = create<ProductStore>((set, get) => ({
       return [];
     }
   },
-}));
+    }),
+    {
+      name: "product-storage",
+      partialize: (state) => ({
+        products: state.products,
+        filteredProducts: state.filteredProducts,
+        pagination: state.pagination,
+        filters: state.filters,
+      }),
+    }
+  )
+);
 
 export default useProductStore;
