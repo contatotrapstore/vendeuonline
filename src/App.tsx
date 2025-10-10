@@ -42,6 +42,7 @@ const DebugAdmin = lazy(() => import("@/app/debug-admin"));
 const SellerDashboard = lazy(() => import("@/app/seller/page"));
 const SellerProducts = lazy(() => import("@/app/seller/products/page"));
 const SellerProductsNew = lazy(() => import("@/app/seller/products/new/page"));
+const SellerProductsEdit = lazy(() => import("@/app/seller/products/[id]/edit/page"));
 const SellerOrders = lazy(() => import("@/app/seller/orders/page"));
 const SellerStore = lazy(() => import("@/app/seller/store/page"));
 const SellerAnalytics = lazy(() => import("@/app/seller/analytics/page"));
@@ -132,7 +133,7 @@ function AppContent() {
               <Route path="/seller/dashboard" element={<SellerDashboard />} />
               <Route path="/seller/products" element={<SellerProducts />} />
               <Route path="/seller/products/new" element={<SellerProductsNew />} />
-              <Route path="/seller/products/:id/edit" element={<SellerProductsNew />} />
+              <Route path="/seller/products/:id/edit" element={<SellerProductsEdit />} />
               <Route path="/seller/orders" element={<SellerOrders />} />
               <Route path="/seller/store" element={<SellerStore />} />
               <Route path="/seller/analytics" element={<SellerAnalytics />} />
