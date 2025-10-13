@@ -145,7 +145,9 @@ export default function SellerPlansPage() {
     }
   };
 
-  const formatValue = (value: number) => {
+  const formatValue = (value: number | undefined | null) => {
+    // Null check para evitar crash quando campos não existem no banco
+    if (value === undefined || value === null) return "0";
     return value === -1 ? "Ilimitado" : value.toString();
   };
 
@@ -279,7 +281,7 @@ export default function SellerPlansPage() {
         )}
 
         {/* Grid de Planos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {plans.map((plan) => {
             const Icon = getPlanIcon(plan.name);
             const isCurrent = isCurrentPlan(plan.id);

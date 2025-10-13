@@ -1,5 +1,3 @@
-import { logger } from "../lib/logger.js";
-
 #!/usr/bin/env node
 
 /**
@@ -12,6 +10,7 @@ import { logger } from "../lib/logger.js";
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { logger } from "../server/lib/logger.js";
 import dotenv from "dotenv";
 import readline from "readline";
 
