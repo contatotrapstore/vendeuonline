@@ -35,8 +35,8 @@ async function createAdmin() {
   };
 
   try {
-    // Insert user
-    const { data: user, error: userError } = await supabase.from("users").insert([adminData]).select().single();
+    // Insert user (tabela User conforme schema Prisma)
+    const { data: user, error: userError } = await supabase.from("User").insert([adminData]).select().single();
 
     if (userError) {
       console.error("❌ Error creating admin user:", userError.message);
@@ -48,16 +48,14 @@ async function createAdmin() {
     console.log("   Email:", user.email);
     console.log("   Name:", user.name);
 
-    // Create admin record
+    // Create admin record (tabela Admin conforme schema Prisma)
     const { data: admin, error: adminError } = await supabase
-      .from("admins")
+      .from("Admin")
       .insert([
         {
           id: randomUUID(),
           userId: user.id,
-          permissions: ["ALL"],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          permissions: JSON.stringify(["ALL"]), // JSON string conforme schema
         },
       ])
       .select()

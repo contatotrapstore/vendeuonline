@@ -1,7 +1,8 @@
 # 🔐 Credenciais de Acesso - Administrador Principal
 
 **Data de Criação:** 02 de Outubro de 2025
-**Última Atualização:** 13 de Outubro de 2025
+**Última Atualização:** 14 de Outubro de 2025
+**Senha Atualizada:** 14 de Outubro de 2025 ✅ Validada com E2E Test
 
 ---
 
@@ -12,7 +13,7 @@
 | Campo     | Valor                         |
 | --------- | ----------------------------- |
 | **Email** | `admin@vendeuonline.com.br`   |
-| **Senha** | `Admin@2025!`                 |
+| **Senha** | `Admin123!@#`                 |
 | **Tipo**  | ADMIN (Acesso Total)          |
 
 ### 🌐 URLs de Acesso
@@ -86,7 +87,7 @@ O usuário admin tem acesso total ao sistema:
 
 2. **Digite as Credenciais:**
    - Email: `admin@vendeuonline.com.br`
-   - Senha: `Admin@2025!`
+   - Senha: `Admin123!@#`
 
 3. **Clique em "Entrar"**
 
@@ -172,15 +173,17 @@ Para problemas de acesso ou dúvidas técnicas:
 
 ## 📝 Histórico de Atualizações
 
-- **13/10/2025:** Documento atualizado com navegação e segurança
-- **02/10/2025:** Administrador principal criado e validado
-- **09/10/2025:** Sistema validado em produção (deploy completo)
-- **12/10/2025:** Correções CRUD validadas (UPDATE/DELETE funcionando)
+- **14/10/2025:** Senha admin atualizada e validada com E2E test (Admin123!@#)
 - **13/10/2025:** Sistema 100% pronto para produção
+- **13/10/2025:** Documento atualizado com navegação e segurança
+- **12/10/2025:** Correções CRUD validadas (UPDATE/DELETE funcionando)
+- **09/10/2025:** Sistema validado em produção (deploy completo)
+- **02/10/2025:** Administrador principal criado e validado
 
 ---
 
 **Status do Sistema:** ✅ 100% Operacional
 **Ambiente:** Produção (https://www.vendeu.online)
 **Banco de Dados:** PostgreSQL (Supabase)
-**Última Validação:** 13 Outubro 2025
+**Última Validação:** 14 Outubro 2025
+**Login Admin:** ✅ Funcional e Validado (E2E Test)
