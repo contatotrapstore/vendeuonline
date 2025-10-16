@@ -319,6 +319,7 @@ router.get("/stores", async (req, res) => {
         name,
         description,
         isActive,
+        approval_status,
         createdAt,
         updatedAt,
         sellerId,
@@ -375,16 +376,18 @@ router.get("/stores", async (req, res) => {
         id: store.id,
         name: store.name || "Loja sem nome",
         sellerId: store.sellerId,
+        sellerName: user?.name || "N/A",
         city: user?.city || "N/A",
         state: user?.state || "N/A",
         phone: user?.phone || "N/A",
         email: user?.email || "N/A",
         category: "Geral", // Campo fixo por enquanto
+        approval_status: store.approval_status || "pending", // Status de aprovação
         isActive: store.isActive,
         isVerified: true, // Por enquanto todas estão verificadas
         rating: 4.5, // Rating simulado
         reviewCount: store.reviews?.length || 0,
-        productCount: store.products?.length || 0,
+        productCount: store.Product?.length || 0, // Corrigido: Product ao invés de products
         salesCount: 0, // Vendas simuladas
         plan: "básico", // Plano simulado
         createdAt: store.createdAt,
@@ -1193,6 +1196,179 @@ router.post("/products/:id/reject", async (req, res) => {
   }
 });
 
+// ==== USER MANAGEMENT ACTIONS ====
+
+// POST /api/admin/users - Criar novo usuário
+router.post("/users", async (req, res) => {
+  try {
+    const { name, email, password, phone, type, city, state } = req.body;
+
+    logger.info("👤 POST /api/admin/users - Criando novo usuário:", { name, email, type });
+
+    // Validar campos obrigatórios
+    if (!name || !email || !password || !type) {
+      return res.status(400).json({
+        success: false,
+        error: "Campos obrigatórios: name, email, password, type",
+      });
+    }
+
+    // Validar tipo de usuário
+    const validTypes = ["BUYER", "SELLER", "ADMIN"];
+    if (!validTypes.includes(type.toUpperCase())) {
+      return res.status(400).json({
+        success: false,
+        error: "Tipo de usuário inválido. Valores permitidos: BUYER, SELLER, ADMIN",
+      });
+    }
+
+    // Verificar se o email já existe
+    const { data: existingUser } = await supabase.from("users").select("id").eq("email", email).single();
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        error: "Email já cadastrado no sistema",
+      });
+    }
+
+    // Hash da senha (usar bcrypt)
+    const bcrypt = await import("bcryptjs");
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Criar usuário
+    const { data: newUser, error: createError } = await supabase
+      .from("users")
+      .insert([
+        {
+          id: crypto.randomUUID ? crypto.randomUUID() : `user_${Date.now()}`,
+          name,
+          email,
+          password: hashedPassword,
+          phone: phone || null,
+          type: type.toUpperCase(),
+          city: city || null,
+          state: state || null,
+          isVerified: true, // Admin-created users são pré-verificados
+          isActive: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ])
+      .select()
+      .single();
+
+    if (createError) {
+      logger.error("❌ Erro ao criar usuário:", createError);
+      throw createError;
+    }
+
+    logger.info(`✅ Usuário ${newUser.name} criado com sucesso`);
+
+    // Remover senha do retorno
+    const { password: _, ...userWithoutPassword } = newUser;
+
+    res.status(201).json({
+      success: true,
+      message: `Usuário ${newUser.name} criado com sucesso`,
+      data: userWithoutPassword,
+    });
+  } catch (error) {
+    logger.error("❌ Erro ao criar usuário:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erro ao criar usuário",
+      details: error.message,
+    });
+  }
+});
+
+// PUT /api/admin/users/:id - Editar usuário
+router.put("/users/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, phone, type, city, state, isVerified } = req.body;
+
+    logger.info(`👤 PUT /api/admin/users/${id} - Editando usuário`);
+
+    // Verificar se usuário existe
+    const { data: user, error: fetchError } = await supabase
+      .from("users")
+      .select("id, name, email, type")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !user) {
+      logger.error("❌ Usuário não encontrado:", fetchError);
+      return res.status(404).json({ success: false, error: "Usuário não encontrado" });
+    }
+
+    // Preparar dados de atualização (apenas campos fornecidos)
+    const updateData = {
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (name !== undefined) updateData.name = name;
+    if (phone !== undefined) updateData.phone = phone;
+    if (city !== undefined) updateData.city = city;
+    if (state !== undefined) updateData.state = state;
+    if (isVerified !== undefined) updateData.isVerified = Boolean(isVerified);
+
+    // Atualizar email somente se mudou e não existe outro usuário com esse email
+    if (email !== undefined && email !== user.email) {
+      const { data: emailExists } = await supabase.from("users").select("id").eq("email", email).single();
+
+      if (emailExists) {
+        return res.status(400).json({
+          success: false,
+          error: "Email já cadastrado para outro usuário",
+        });
+      }
+      updateData.email = email;
+    }
+
+    // Atualizar tipo somente se mudou e for válido
+    if (type !== undefined && type !== user.type) {
+      const validTypes = ["BUYER", "SELLER", "ADMIN"];
+      if (!validTypes.includes(type.toUpperCase())) {
+        return res.status(400).json({
+          success: false,
+          error: "Tipo de usuário inválido. Valores permitidos: BUYER, SELLER, ADMIN",
+        });
+      }
+      updateData.type = type.toUpperCase();
+    }
+
+    // Atualizar usuário
+    const { data: updatedUser, error: updateError } = await supabase
+      .from("users")
+      .update(updateData)
+      .eq("id", id)
+      .select("id, name, email, phone, type, city, state, isVerified, createdAt, updatedAt")
+      .single();
+
+    if (updateError) {
+      logger.error("❌ Erro ao atualizar usuário:", updateError);
+      throw updateError;
+    }
+
+    logger.info(`✅ Usuário ${updatedUser.name} atualizado com sucesso`);
+
+    res.json({
+      success: true,
+      message: `Usuário ${updatedUser.name} atualizado com sucesso`,
+      data: updatedUser,
+    });
+  } catch (error) {
+    logger.error("❌ Erro ao atualizar usuário:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erro ao atualizar usuário",
+      details: error.message,
+    });
+  }
+});
+
 // ==== USER ACTIONS ====
 router.patch("/users/:id/status", async (req, res) => {
   try {
@@ -1290,6 +1466,69 @@ router.delete("/users/:id", async (req, res) => {
     res.status(500).json({
       success: false,
       error: "Erro ao excluir usuário",
+      details: error.message,
+    });
+  }
+});
+
+// ==== PRODUCT MANAGEMENT ACTIONS ====
+
+// PATCH /api/admin/products/:id/status - Atualizar status de produto (ativo/inativo)
+router.patch("/products/:id/status", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isActive } = req.body;
+
+    logger.info(`📦 PATCH /api/admin/products/${id}/status - Atualizando para isActive: ${isActive}`);
+
+    // Validar se isActive foi fornecido
+    if (isActive === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: "Campo isActive é obrigatório (true ou false)",
+      });
+    }
+
+    // Verificar se produto existe
+    const { data: product, error: fetchError } = await supabase
+      .from("Product")
+      .select("id, name, isActive")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !product) {
+      logger.error("❌ Produto não encontrado:", fetchError);
+      return res.status(404).json({ success: false, error: "Produto não encontrado" });
+    }
+
+    // Atualizar status do produto
+    const { data: updatedProduct, error: updateError } = await supabase
+      .from("Product")
+      .update({
+        isActive: Boolean(isActive),
+        updatedAt: new Date().toISOString(),
+      })
+      .eq("id", id)
+      .select("id, name, isActive, updatedAt")
+      .single();
+
+    if (updateError) {
+      logger.error("❌ Erro ao atualizar status do produto:", updateError);
+      throw updateError;
+    }
+
+    logger.info(`✅ Status do produto ${product.name} atualizado para isActive: ${isActive}`);
+
+    res.json({
+      success: true,
+      message: `Produto ${updatedProduct.isActive ? "ativado" : "desativado"} com sucesso`,
+      data: updatedProduct,
+    });
+  } catch (error) {
+    logger.error("❌ Erro ao atualizar status do produto:", error);
+    res.status(500).json({
+      success: false,
+      error: "Erro ao atualizar status do produto",
       details: error.message,
     });
   }

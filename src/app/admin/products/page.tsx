@@ -24,6 +24,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { buildApiUrl, getHeaders } from "@/config/api";
+import ProductDetailsModal from "@/components/admin/ProductDetailsModal";
+import { useModal } from "@/components/ui/Modal";
 
 interface Product {
   id: string;
@@ -74,6 +76,14 @@ export default function AdminProductsPage() {
     totalCount: 0,
     pageSize: 20,
   });
+
+  const detailsModal = useModal();
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+
+  const openDetailsModal = (product: Product) => {
+    setSelectedProduct(product);
+    detailsModal.openModal();
+  };
 
   const fetchProducts = async (page = 1) => {
     setLoading(true);
@@ -136,16 +146,18 @@ export default function AdminProductsPage() {
       const authHeaders = getHeaders();
       if (!authHeaders.Authorization) throw new Error("Token não encontrado");
 
+      // Converter status para isActive (booleano)
+      const isActive = newStatus.toLowerCase() === "active";
+
       const response = await fetch(buildApiUrl(`/api/admin/products/${productId}/status`), {
         method: "PATCH",
         headers: authHeaders,
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify({ isActive }),
       });
 
       if (!response.ok) throw new Error("Erro ao atualizar status");
 
-      // Atualizar localmente (converter para isActive)
-      const isActive = newStatus.toLowerCase() === "active";
+      // Atualizar localmente
       setProducts((prev) => prev.map((product) => (product.id === productId ? { ...product, isActive } : product)));
 
       toast.success("Status atualizado com sucesso");
@@ -556,7 +568,11 @@ export default function AdminProductsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
-                          <button className="text-blue-600 hover:text-blue-900" title="Ver detalhes">
+                          <button
+                            onClick={() => openDetailsModal(product)}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Ver detalhes"
+                          >
                             <Eye className="h-4 w-4" />
                           </button>
                           <select
@@ -652,6 +668,13 @@ export default function AdminProductsPage() {
             </div>
           )}
         </div>
+
+        {/* Product Details Modal */}
+        <ProductDetailsModal
+          isOpen={detailsModal.isOpen}
+          onClose={detailsModal.closeModal}
+          product={selectedProduct}
+        />
       </div>
     </div>
   );

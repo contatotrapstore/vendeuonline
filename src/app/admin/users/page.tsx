@@ -16,11 +16,17 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useUserStore } from "@/store/userStore";
+import { useUserStore, type User as UserType } from "@/store/userStore";
+import UserFormModal from "@/components/admin/UserFormModal";
+import { useModal } from "@/components/ui/Modal";
 
 export default function AdminUsersPage() {
-  const { users, loading, error, filters, fetchUsers, updateUserStatus, deleteUser, setFilters, clearError } =
+  const { users, loading, error, filters, fetchUsers, createUser, updateUser, updateUserStatus, deleteUser, setFilters, clearError } =
     useUserStore();
+
+  const createModal = useModal();
+  const editModal = useModal();
+  const [selectedUser, setSelectedUser] = useState<UserType | null>(null);
 
   // Carregar usuários ao montar o componente
   useEffect(() => {
@@ -55,6 +61,35 @@ export default function AdminUsersPage() {
         toast.error("Erro ao excluir usuário");
       }
     }
+  };
+
+  const handleCreateUser = async (userData: any) => {
+    try {
+      await createUser(userData);
+      toast.success("Usuário criado com sucesso!");
+      createModal.closeModal();
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao criar usuário");
+      throw error;
+    }
+  };
+
+  const handleEditUser = async (userData: any) => {
+    if (!selectedUser) return;
+    try {
+      await updateUser(selectedUser.id, userData);
+      toast.success("Usuário atualizado com sucesso!");
+      editModal.closeModal();
+      setSelectedUser(null);
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao atualizar usuário");
+      throw error;
+    }
+  };
+
+  const openEditModal = (user: UserType) => {
+    setSelectedUser(user);
+    editModal.openModal();
   };
 
   const handleSearchChange = (value: string) => {
@@ -172,6 +207,7 @@ export default function AdminUsersPage() {
             </select>
 
             <button
+              onClick={createModal.openModal}
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               disabled={loading}
             >
@@ -263,8 +299,10 @@ export default function AdminUsersPage() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex items-center gap-2">
                           <button
+                            onClick={() => openEditModal(user)}
                             className="text-blue-600 hover:text-blue-900 disabled:opacity-50 disabled:cursor-not-allowed"
                             disabled={loading}
+                            title="Editar usuário"
                           >
                             <Edit className="h-4 w-4" />
                           </button>
@@ -353,6 +391,22 @@ export default function AdminUsersPage() {
             </div>
           </div>
         </div>
+
+        {/* Modals */}
+        <UserFormModal
+          isOpen={createModal.isOpen}
+          onClose={createModal.closeModal}
+          onSubmit={handleCreateUser}
+          mode="create"
+        />
+
+        <UserFormModal
+          isOpen={editModal.isOpen}
+          onClose={editModal.closeModal}
+          onSubmit={handleEditUser}
+          user={selectedUser}
+          mode="edit"
+        />
       </div>
     </div>
   );

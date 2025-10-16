@@ -30,6 +30,8 @@ interface UserStore {
 
   // Actions
   fetchUsers: () => Promise<void>;
+  createUser: (userData: Partial<User> & { password: string }) => Promise<void>;
+  updateUser: (userId: string, userData: Partial<User>) => Promise<void>;
   updateUserStatus: (userId: string, status: "active" | "inactive") => Promise<void>;
   deleteUser: (userId: string) => Promise<void>;
   setFilters: (filters: Partial<UserFilters>) => void;
@@ -90,6 +92,105 @@ export const useUserStore = create<UserStore>((set, get) => ({
         error: error.message || "Erro ao carregar usuários",
         loading: false,
       });
+    }
+  },
+
+  createUser: async (userData) => {
+    set({ loading: true, error: null });
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        throw new Error("Token não encontrado");
+      }
+
+      const response = await fetch(buildApiUrl("/api/admin/users"), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao criar usuário");
+      }
+
+      const responseData = await response.json();
+
+      // Adicionar novo usuário à lista local
+      const { users } = get();
+      const newUser: User = {
+        id: responseData.data.id,
+        name: responseData.data.name,
+        email: responseData.data.email,
+        userType: responseData.data.type?.toLowerCase() || "buyer",
+        status: (responseData.data.isVerified ? "active" : "pending") as "active" | "pending" | "inactive",
+        createdAt: responseData.data.createdAt,
+        lastLogin: null,
+        storeCount: 0,
+        orderCount: 0,
+      };
+
+      set({ users: [...users, newUser], loading: false });
+    } catch (error: any) {
+      logger.error("Erro ao criar usuário:", error);
+      set({
+        error: error.message || "Erro ao criar usuário",
+        loading: false,
+      });
+      throw error;
+    }
+  },
+
+  updateUser: async (userId, userData) => {
+    set({ loading: true, error: null });
+    try {
+      const token = getAuthToken();
+      if (!token) {
+        throw new Error("Token não encontrado");
+      }
+
+      const response = await fetch(buildApiUrl(`/api/admin/users/${userId}`), {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro ao atualizar usuário");
+      }
+
+      const responseData = await response.json();
+
+      // Atualizar usuário localmente
+      const { users } = get();
+      const updatedUsers = users.map((user) => {
+        if (user.id === userId) {
+          return {
+            ...user,
+            name: responseData.data.name || user.name,
+            email: responseData.data.email || user.email,
+            userType: responseData.data.type?.toLowerCase() || user.userType,
+            status: (responseData.data.isVerified ? "active" : "pending") as "active" | "pending" | "inactive",
+          };
+        }
+        return user;
+      });
+
+      set({ users: updatedUsers, loading: false });
+    } catch (error: any) {
+      logger.error("Erro ao atualizar usuário:", error);
+      set({
+        error: error.message || "Erro ao atualizar usuário",
+        loading: false,
+      });
+      throw error;
     }
   },
 
