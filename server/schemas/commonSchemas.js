@@ -27,31 +27,12 @@ export const emailSchema = z
   .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Formato de email inválido")
   .transform((email) => email.toLowerCase());
 
-export const phoneSchema = z
-  .string()
-  .regex(
-    /^(\(\d{2}\)\s?\d{4,5}-?\d{4}|\d{10,11}|\d{3}-\d{4})$/,
-    "Telefone deve estar no formato (xx) xxxxx-xxxx ou apenas números (10-11 dígitos)"
-  )
-  .transform((phone) => {
-    // Normalizar para formato padrão se for apenas números
-    const numbers = phone.replace(/\D/g, "");
-    if (numbers.length === 11) {
-      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
-    } else if (numbers.length === 10) {
-      return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 6)}-${numbers.slice(6)}`;
-    }
-    return phone;
-  });
+export const phoneSchema = z.string().optional();
 
 export const passwordSchema = z
   .string()
-  .min(8, "Senha deve ter pelo menos 8 caracteres")
-  .max(100, "Senha deve ter no máximo 100 caracteres")
-  .regex(/[A-Z]/, "Senha deve conter pelo menos uma letra maiúscula")
-  .regex(/[a-z]/, "Senha deve conter pelo menos uma letra minúscula")
-  .regex(/[0-9]/, "Senha deve conter pelo menos um número")
-  .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, "Senha deve conter pelo menos um caractere especial (!@#$%^&*)");
+  .min(6, "Senha deve ter pelo menos 6 caracteres")
+  .max(100, "Senha deve ter no máximo 100 caracteres");
 
 export const nameSchema = z
   .string()
@@ -69,7 +50,8 @@ export const priceSchema = z
 export const stateSchema = z
   .string()
   .length(2, "Estado deve ter 2 caracteres")
-  .regex(/^[A-Z]{2}$/, "Estado deve ser uma sigla válida (ex: SP, RJ, TS)");
+  .regex(/^[A-Za-z]{2}$/, "Estado deve ser uma sigla válida (ex: SP, RJ, RS)")
+  .transform((val) => val.toUpperCase());
 
 export const zipCodeSchema = z.string().regex(/^\d{5}-?\d{3}$/, "CEP deve estar no formato xxxxx-xxx");
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Phone, Mail, Clock, Send, MessageCircle } from "lucide-react";
+import { MapPin, Mail, Send } from "lucide-react";
 import { APP_CONFIG } from "@/config/app";
 import { toast } from "sonner";
 
@@ -90,42 +90,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900 mb-1">E-mail</h3>
-                    <p className="text-gray-600">{APP_CONFIG.contact.email}</p>
+                    <p className="text-gray-600">vendeuonliners@gmail.com</p>
                     <p className="text-sm text-gray-500">Resposta em até 24 horas</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Phone className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">Telefone</h3>
-                    <p className="text-gray-600">(54) 9999-9999</p>
-                    <p className="text-sm text-gray-500">Segunda a Sexta, 8h às 18h</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <MessageCircle className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">WhatsApp</h3>
-                    <p className="text-gray-600">(54) 9 9999-9999</p>
-                    <p className="text-sm text-gray-500">Atendimento rápido</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start space-x-4">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <Clock className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">Horário de Atendimento</h3>
-                    <p className="text-gray-600">Segunda a Sexta: 8h às 18h</p>
-                    <p className="text-gray-600">Sábado: 8h às 12h</p>
-                    <p className="text-gray-600">Domingo: Fechado</p>
                   </div>
                 </div>
               </div>

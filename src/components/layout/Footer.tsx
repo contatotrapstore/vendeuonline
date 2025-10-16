@@ -3,7 +3,6 @@
 import {
   Store,
   Mail,
-  Phone,
   MapPin,
   Facebook,
   Instagram,
@@ -151,12 +150,8 @@ export default function Footer() {
                 <span className="text-gray-300 text-sm">Erechim, Rio Grande do Sul</span>
               </div>
               <div className="flex items-center space-x-3">
-                <Phone className="h-4 w-4 text-blue-400 flex-shrink-0" />
-                <span className="text-gray-300 text-sm">(54) 9999-9999</span>
-              </div>
-              <div className="flex items-center space-x-3">
                 <Mail className="h-4 w-4 text-blue-400 flex-shrink-0" />
-                <span className="text-gray-300 text-sm">contato@vendeuonline.com.br</span>
+                <span className="text-gray-300 text-sm">vendeuonliners@gmail.com</span>
               </div>
             </div>
 
@@ -175,10 +170,6 @@ export default function Footer() {
                 <div className="flex items-center space-x-2 bg-gray-800 rounded-lg p-2">
                   <Truck className="h-4 w-4 text-orange-400" />
                   <span className="text-xs text-gray-300">Entrega Local</span>
-                </div>
-                <div className="flex items-center space-x-2 bg-gray-800 rounded-lg p-2">
-                  <Heart className="h-4 w-4 text-red-400" />
-                  <span className="text-xs text-gray-300">Suporte 24h</span>
                 </div>
               </div>
             </div>
