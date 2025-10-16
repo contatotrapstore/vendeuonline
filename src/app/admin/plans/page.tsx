@@ -150,14 +150,14 @@ export default function AdminPlansPage() {
           name: plan.name,
           description: plan.description,
           price: Number(plan.price),
-          billingPeriod: plan.billingPeriod,
+          billingPeriod: plan.billingPeriod.toUpperCase(), // Converter para UPPERCASE (monthly → MONTHLY)
           maxAds: Number(plan.maxAds),
-          maxPhotos: Number(plan.maxPhotos),
+          maxPhotosPerAd: Number(plan.maxPhotos), // Campo correto esperado pelo backend
           maxProducts: Number(plan.maxProducts),
           maxImages: Number(plan.maxImages),
           maxCategories: Number(plan.maxCategories),
           prioritySupport: plan.prioritySupport,
-          support: plan.support,
+          supportLevel: plan.support, // Campo correto esperado pelo backend
           features: plan.features.filter((f) => f.trim() !== ""),
           isActive: plan.isActive,
         }),
