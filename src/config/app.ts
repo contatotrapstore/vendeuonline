@@ -15,9 +15,7 @@ export const APP_CONFIG = {
 
   // Contato
   contact: {
-    email: "grupomaboon@gmail.com",
-    phone: "(54) 99999-9999",
-    whatsapp: "5554999999999",
+    email: "vendeuonliners@gmail.com",
     address: {
       street: "Rua Principal, 123",
       neighborhood: "Centro",
