@@ -117,24 +117,28 @@ export const useStoreManagementStore = create<StoreManagementStore>((set, get) =
       }
 
       const data = await response.json();
-      
+
       // Mapear dados para o formato esperado pelo frontend
-      const mappedStores = (data.data || []).map((store: any) => ({
+      const mappedStores = (data.stores || []).map((store: any) => ({
         ...store,
         status: mapApprovalStatusToFrontend(store.approval_status),
         _count: {
           products: store.productCount || 0,
           orders: 0
         },
-        user: null // Não temos relação user nas stores
+        user: {
+          name: store.sellerName || store.user?.name || "N/A",
+          email: store.email || store.user?.email || "N/A",
+          id: store.sellerId || store.user?.id || "",
+        }
       }));
-      
+
       set({
         stores: mappedStores,
         pagination: {
           currentPage: data.pagination?.page || 1,
           totalPages: data.pagination?.totalPages || 1,
-          totalCount: data.pagination?.total || 0,
+          totalCount: data.pagination?.total || data.total || 0,
           pageSize: data.pagination?.limit || 20,
         },
         loading: false,
