@@ -122,7 +122,7 @@ export default function AdminStoresPage() {
     }
   };
 
-  // Calcular estatísticas
+  // Calcular estatísticas (dos stores filtrados na tela, não do total)
   const activeCount = stores.filter((store) => store.status === "ACTIVE").length;
   const pendingCount = stores.filter((store) => store.status === "PENDING").length;
   const suspendedCount = stores.filter((store) => store.status === "SUSPENDED").length;
