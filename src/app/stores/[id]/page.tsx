@@ -22,7 +22,8 @@ import {
 } from "lucide-react";
 import { useStoreStore } from "@/stores/storeStore";
 import { useProductStore } from "@/store/productStore";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
+import Link from "next/link";
 
 export default function StorePage() {
   const params = useParams<{ id: string }>();
@@ -410,7 +411,7 @@ export default function StorePage() {
                             }
                           >
                             {filteredProducts.map((product) => (
-                              <Link key={product.id} to={`/products/${product.id}`}>
+                              <Link key={product.id} href={`/products/${product.id}`}>
                                 <div
                                   className={`bg-gray-50 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer ${
                                     viewMode === "list" ? "flex" : ""

@@ -429,8 +429,7 @@ router.get("/products", async (req, res) => {
 
     logger.info("📦 GET /api/admin/products - Buscando produtos REAIS do Supabase...");
 
-    // Query base para buscar produtos com join de stores apenas
-    // Sellers são acessados via stores.sellerId
+    // Query base para buscar produtos com join de stores e sellers
     let query = supabase.from("Product").select(`
         id,
         name,
@@ -442,6 +441,7 @@ router.get("/products", async (req, res) => {
         isFeatured,
         rating,
         salesCount,
+        categoryId,
         createdAt,
         updatedAt,
         sellerId,
@@ -453,7 +453,15 @@ router.get("/products", async (req, res) => {
         stores!storeId (
           id,
           name,
-          sellerId
+          sellerId,
+          sellers!sellerId (
+            id,
+            users!userId (
+              id,
+              name,
+              email
+            )
+          )
         )
       `);
 
@@ -527,17 +535,48 @@ router.get("/products", async (req, res) => {
       }
     }
 
+    // ✅ NEW: Buscar imagens de produtos (ProductImage)
+    const productsWithImages = await Promise.all(
+      (products || []).map(async (product) => {
+        // Buscar imagens do produto
+        const { data: images, error: imagesError } = await supabase
+          .from("ProductImage")
+          .select("url")
+          .eq("productId", product.id)
+          .order("order", { ascending: true });
+
+        if (imagesError) {
+          logger.warn(`⚠️ Erro ao buscar imagens do produto ${product.id}:`, imagesError.message);
+        }
+
+        // Retornar produto com array de URLs de imagens
+        return {
+          ...product,
+          images: images?.map(img => img.url) || [],
+        };
+      })
+    );
+
     // Transformar dados para formato esperado pelo frontend
-    const transformedProducts = (products || []).map((product) => {
+    const transformedProducts = productsWithImages.map((product) => {
       return {
         id: product.id,
         name: product.name,
+        description: product.description || "",
         sellerId: product.sellerId,
         storeId: product.storeId,
-        storeName: product.stores?.name || "N/A",
-        sellerName: product.sellers?.users?.name || "N/A",
-        sellerEmail: product.sellers?.users?.email || "N/A",
+        store: {
+          id: product.storeId,
+          name: product.stores?.name || "N/A",
+        },
+        seller: {
+          user: {
+            name: product.stores?.sellers?.users?.name || "N/A",
+            email: product.stores?.sellers?.users?.email || "N/A",
+          }
+        },
         category: "N/A", // Field doesn't exist in current schema
+        categoryId: product.categoryId || null,
         price: product.price || 0,
         comparePrice: product.comparePrice || null,
         stock: product.stock || 0,
@@ -551,6 +590,7 @@ router.get("/products", async (req, res) => {
         approvedBy: product.approved_by || null,
         approvedAt: product.approved_at || null,
         rejectionReason: product.rejection_reason || null,
+        images: product.images || [], // ✅ Array de URLs de imagens
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
       };

@@ -222,31 +222,65 @@ router.get("/subscription", authenticateUser, async (req, res, next) => {
         .eq("slug", "gratuito")
         .single();
 
+      const freePlan = plan || {
+        id: "free",
+        name: "Gratuito",
+        slug: "gratuito",
+        price: 0,
+        billingPeriod: "MONTHLY",
+        maxAds: 1,
+        maxPhotos: 5,
+        maxProducts: 5,
+        maxImages: 5,
+        maxCategories: 1,
+        prioritySupport: false,
+        support: "Suporte básico",
+        features: ["1 anúncio por mês", "5 fotos por produto", "Suporte básico por e-mail"],
+        isActive: true,
+        order: 1,
+      };
+
       return res.json({
         success: true,
         data: {
-          currentPlan: seller.plan || "GRATUITO",
-          subscription: null,
-          plan: plan || {
-            name: "Gratuito",
-            slug: "gratuito",
-            price: 0,
-            billingPeriod: "LIFETIME",
-            maxAds: 1,
-            maxPhotosPerAd: 5,
-            features: ["1 anúncio", "5 fotos por anúncio"],
-          },
+          id: "default",
+          planId: freePlan.id,
+          plan: freePlan,
+          status: "active",
+          startDate: new Date().toISOString(),
+          endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+          autoRenew: false,
+          paymentMethod: "Gratuito",
         },
       });
     }
 
+    // Formatar subscription para o formato esperado pelo frontend
+    const formattedSubscription = {
+      id: subscription.id,
+      planId: subscription.planId,
+      plan: {
+        ...subscription.plan,
+        maxPhotos: subscription.plan.maxPhotosPerAd || subscription.plan.maxPhotos || 5,
+        maxProducts: subscription.plan.maxProducts || subscription.plan.maxAds || 5,
+        maxImages: subscription.plan.maxImages || subscription.plan.maxPhotosPerAd || 5,
+        maxCategories: subscription.plan.maxCategories || 1,
+        prioritySupport: subscription.plan.prioritySupport || false,
+        support: subscription.plan.support || "Suporte básico",
+        features: subscription.plan.features || [],
+        isActive: subscription.plan.isActive !== false,
+        order: subscription.plan.order || 1,
+      },
+      status: subscription.status.toLowerCase(),
+      startDate: subscription.startDate,
+      endDate: subscription.endDate || new Date(new Date(subscription.startDate).getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      autoRenew: subscription.autoRenew !== false,
+      paymentMethod: subscription.paymentMethod || "Cartão de Crédito",
+    };
+
     res.json({
       success: true,
-      data: {
-        currentPlan: seller.plan,
-        subscription: subscription,
-        plan: subscription.plan,
-      },
+      data: formattedSubscription,
     });
   } catch (error) {
     next(error);

@@ -150,7 +150,7 @@ export default function AdminPlansPage() {
           name: plan.name,
           description: plan.description,
           price: Number(plan.price),
-          billingPeriod: plan.billingPeriod.toUpperCase(), // Converter para UPPERCASE (monthly → MONTHLY)
+          billingPeriod: plan.billingPeriod?.toUpperCase() || 'MONTHLY', // Null check adicionado
           maxAds: Number(plan.maxAds),
           maxPhotosPerAd: Number(plan.maxPhotos), // Campo correto esperado pelo backend
           maxProducts: Number(plan.maxProducts),

@@ -46,7 +46,30 @@ router.get("/", authenticateUser, async (req, res) => {
 
     // Filtrar por comprador se usuário for buyer
     if (user.type === "BUYER") {
-      query = query.eq("buyerId", user.id); // Buscar pelo buyerId
+      // Buscar o buyerId a partir do userId
+      const { data: buyer, error: buyerError } = await supabase
+        .from("buyers")
+        .select("id")
+        .eq("userId", user.id)
+        .single();
+
+      if (buyerError || !buyer) {
+        logger.warn("⚠️ Buyer não encontrado para userId:", user.id);
+        return res.json({
+          success: true,
+          orders: [],
+          pagination: {
+            page: parseInt(page),
+            limit: parseInt(limit),
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
+        });
+      }
+
+      query = query.eq("buyerId", buyer.id);
     }
 
     // Filtrar por status se especificado
@@ -171,7 +194,22 @@ router.get("/:id", authenticateUser, async (req, res) => {
     if (user.type === "SELLER" && req.seller) {
       query = query.eq("sellerId", req.seller.id);
     } else if (user.type === "BUYER") {
-      query = query.eq("userId", user.id);
+      // Buscar o buyerId a partir do userId
+      const { data: buyer, error: buyerError } = await supabase
+        .from("buyers")
+        .select("id")
+        .eq("userId", user.id)
+        .single();
+
+      if (buyerError || !buyer) {
+        logger.warn("⚠️ Buyer não encontrado para userId:", user.id);
+        return res.status(404).json({
+          success: false,
+          error: "Dados de comprador não encontrados",
+        });
+      }
+
+      query = query.eq("buyerId", buyer.id);
     } else if (user.type !== "ADMIN") {
       return res.status(403).json({
         success: false,

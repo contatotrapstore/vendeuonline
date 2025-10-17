@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { X } from "lucide-react";
 import {
   Search,
   Filter,
@@ -37,6 +38,9 @@ export default function AdminStoresPage() {
     setFilters,
     clearError,
   } = useStoreManagementStore();
+
+  const [selectedStore, setSelectedStore] = useState<StoreInfo | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   // Carregar dados ao montar o componente
   useEffect(() => {
@@ -385,7 +389,14 @@ export default function AdminStoresPage() {
                               <Play className="h-4 w-4" />
                             </button>
                           )}
-                          <button className="text-blue-600 hover:text-blue-900" title="Ver detalhes">
+                          <button
+                            onClick={() => {
+                              setSelectedStore(store);
+                              setShowDetailsModal(true);
+                            }}
+                            className="text-blue-600 hover:text-blue-900"
+                            title="Ver detalhes"
+                          >
                             <Eye className="h-4 w-4" />
                           </button>
                         </div>
@@ -466,6 +477,108 @@ export default function AdminStoresPage() {
             </div>
           )}
         </div>
+
+        {/* Modal de Detalhes da Loja */}
+        {showDetailsModal && selectedStore && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-semibold text-gray-900">Detalhes da Loja</h2>
+                  <button
+                    onClick={() => setShowDetailsModal(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Logo */}
+                  {selectedStore.logo && (
+                    <div className="flex justify-center mb-4">
+                      <img
+                        src={selectedStore.logo}
+                        alt={selectedStore.name}
+                        className="h-24 w-24 rounded-lg object-cover"
+                      />
+                    </div>
+                  )}
+
+                  {/* Informações Básicas */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm text-gray-500">Nome da Loja</p>
+                      <p className="font-medium">{selectedStore.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Status</p>
+                      <div className="mt-1">{getStatusBadge(selectedStore.status)}</div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Proprietário</p>
+                      <p className="font-medium">{selectedStore.user?.name || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Email</p>
+                      <p className="font-medium text-sm">{selectedStore.user?.email || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Produtos</p>
+                      <p className="font-medium">{selectedStore._count?.products || 0}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Data de Criação</p>
+                      <p className="font-medium">
+                        {new Date(selectedStore.createdAt).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Descrição */}
+                  {selectedStore.description && (
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Descrição</p>
+                      <p className="text-gray-700">{selectedStore.description}</p>
+                    </div>
+                  )}
+
+                  {/* Ações */}
+                  <div className="flex justify-end space-x-3 pt-4 border-t">
+                    <button
+                      onClick={() => setShowDetailsModal(false)}
+                      className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                    >
+                      Fechar
+                    </button>
+                    {selectedStore.status === "PENDING" && (
+                      <>
+                        <button
+                          onClick={() => {
+                            handleApprove(selectedStore.id);
+                            setShowDetailsModal(false);
+                          }}
+                          className="px-4 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700"
+                        >
+                          Aprovar
+                        </button>
+                        <button
+                          onClick={() => {
+                            handleReject(selectedStore.id);
+                            setShowDetailsModal(false);
+                          }}
+                          className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700"
+                        >
+                          Rejeitar
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
