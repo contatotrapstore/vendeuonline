@@ -101,6 +101,10 @@ export const APP_CONFIG = {
     enableReviews: true,
     enableWishlist: true,
     enableCompare: true,
+    enableCheckout: false, // Desabilitar checkout - usar WhatsApp
+    enableCart: false, // Desabilitar carrinho - usar WhatsApp
+    enablePayments: false, // Desabilitar pagamentos online - usar WhatsApp
+    forceWhatsApp: true, // Forçar uso de WhatsApp para vendas
   },
 
   // Limites e configurações

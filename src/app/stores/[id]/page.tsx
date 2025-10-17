@@ -24,6 +24,7 @@ import { useStoreStore } from "@/stores/storeStore";
 import { useProductStore } from "@/store/productStore";
 import { useParams } from "react-router-dom";
 import Link from "next/link";
+import ImageGalleryModal from "@/components/ui/ImageGalleryModal";
 
 export default function StorePage() {
   const params = useParams<{ id: string }>();
@@ -34,6 +35,9 @@ export default function StorePage() {
   const [storeProducts, setStoreProducts] = useState<any[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const [productsError, setProductsError] = useState<string | null>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [selectedProductImages, setSelectedProductImages] = useState<string[]>([]);
+  const [selectedProductName, setSelectedProductName] = useState("");
 
   // Store hooks
   const {
@@ -411,26 +415,38 @@ export default function StorePage() {
                             }
                           >
                             {filteredProducts.map((product) => (
-                              <Link key={product.id} href={`/products/${product.id}`}>
+                              <div
+                                key={product.id}
+                                className={`bg-gray-50 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 ${
+                                  viewMode === "list" ? "flex" : ""
+                                }`}
+                              >
                                 <div
-                                  className={`bg-gray-50 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer ${
-                                    viewMode === "list" ? "flex" : ""
-                                  }`}
+                                  className={`${viewMode === "list" ? "w-32 flex-shrink-0" : ""} cursor-pointer`}
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    const images = product.images || (product.image ? [product.image] : []);
+                                    if (images.length > 0) {
+                                      setSelectedProductImages(images);
+                                      setSelectedProductName(product.name);
+                                      setGalleryOpen(true);
+                                    }
+                                  }}
+                                  title="Clique para ver imagens"
                                 >
-                                  <div className={viewMode === "list" ? "w-32 flex-shrink-0" : ""}>
-                                    <img
-                                      src={
-                                        product.images?.[0] ||
-                                        product.image ||
-                                        "https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=product_placeholder&image_size=square"
-                                      }
-                                      alt={product.name}
-                                      className={`w-full object-cover ${viewMode === "list" ? "h-full" : "h-48"}`}
-                                    />
-                                  </div>
+                                  <img
+                                    src={
+                                      product.images?.[0] ||
+                                      product.image ||
+                                      "https://trae-api-us.mchost.guru/api/ide/v1/text_to_image?prompt=product_placeholder&image_size=square"
+                                    }
+                                    alt={product.name}
+                                    className={`w-full object-cover ${viewMode === "list" ? "h-full" : "h-48"}`}
+                                  />
+                                </div>
 
-                                  <div className="p-4 flex-1">
-                                    <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.name}</h4>
+                                <Link href={`/products/${product.id}`} className="p-4 flex-1 block">
+                                  <h4 className="font-semibold text-gray-900 mb-2 line-clamp-2">{product.name}</h4>
 
                                     <div className="flex items-center space-x-2 mb-2">
                                       <div className="flex items-center space-x-1">
@@ -465,9 +481,8 @@ export default function StorePage() {
                                         <Heart className="h-5 w-5" />
                                       </button>
                                     </div>
-                                  </div>
-                                </div>
-                              </Link>
+                                </Link>
+                              </div>
                             ))}
                           </div>
 
@@ -599,6 +614,14 @@ export default function StorePage() {
           </div>
         </div>
       </div>
+
+      {/* Image Gallery Modal */}
+      <ImageGalleryModal
+        images={selectedProductImages}
+        isOpen={galleryOpen}
+        onClose={() => setGalleryOpen(false)}
+        productName={selectedProductName}
+      />
     </div>
   );
 }

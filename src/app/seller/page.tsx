@@ -20,6 +20,9 @@ import {
   Clock,
   Store,
   Crown,
+  Share2,
+  Copy,
+  Check,
 } from "lucide-react";
 import { apiRequest } from "@/lib/api-client";
 
@@ -70,6 +73,7 @@ export default function SellerDashboard() {
   const [recentOrders, setRecentOrders] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     // Verificar autenticação e tipo de usuário
@@ -182,14 +186,23 @@ export default function SellerDashboard() {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => {
-                  logger.info("🔍 Debug botão Ver minha loja:");
-                  logger.info("- user:", user);
-                  logger.info("- seller:", user?.seller);
-                  logger.info("- store:", user?.seller?.store);
-                  logger.info("- storeId:", storeId);
-                  logger.info("- storeSlug:", storeSlug);
-                  logger.info("- storeName:", storeName);
-
+                  if (storeId) {
+                    const storeUrl = `${window.location.origin}/stores/${storeId}`;
+                    navigator.clipboard.writeText(storeUrl);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                    logger.info("✅ URL da loja copiado:", storeUrl);
+                  } else {
+                    alert("Sua loja ainda não foi criada. Configure sua loja primeiro.");
+                  }
+                }}
+                className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                <span>{copied ? "Link Copiado!" : "Compartilhar Loja"}</span>
+              </button>
+              <button
+                onClick={() => {
                   if (storeId) {
                     logger.info(`✅ Navegando para: /stores/${storeId}`);
                     navigate(`/stores/${storeId}`);
