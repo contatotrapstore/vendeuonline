@@ -40,15 +40,39 @@ const authenticateSellerWithExtras = async (req, res, next) => {
     }
 
     // Buscar dados do seller separadamente
-    const { data: sellers, error: sellerError } = await supabase
+    let { data: sellers, error: sellerError } = await supabase
       .from("sellers")
       .select("id")
       .eq("userId", user.id)
       .single();
 
+    // Se seller não existe, criar automaticamente
     if (sellerError || !sellers) {
-      logger.info("❌ Dados de seller não encontrados:", sellerError);
-      return res.status(403).json({ error: "Dados de vendedor não encontrados" });
+      logger.info("📝 Seller não encontrado, criando automaticamente para userId:", user.id);
+
+      const { data: newSeller, error: createError } = await supabase
+        .from("sellers")
+        .insert({
+          userId: user.id,
+          plan: "GRATUITO",
+          storeName: `Loja de ${user.name}`,
+          storeSlug: `loja-${user.id.slice(0, 8)}`,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (createError || !newSeller) {
+        logger.error("❌ Erro ao criar seller:", createError);
+        return res.status(500).json({
+          error: "Erro ao criar vendedor. Por favor, contate o suporte.",
+          details: createError?.message
+        });
+      }
+
+      sellers = newSeller;
+      logger.info("✅ Seller criado com sucesso:", sellers.id);
     }
 
     // Buscar dados da store separadamente

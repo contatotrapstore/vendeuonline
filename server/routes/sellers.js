@@ -15,14 +15,33 @@ router.get("/settings", authenticateUser, async (req, res, next) => {
     const userId = req.user.userId;
 
     // Buscar seller pelo userId
-    const { data: seller, error: sellerError } = await supabase
+    let { data: seller, error: sellerError } = await supabase
       .from("sellers")
       .select("id")
       .eq("userId", userId)
       .single();
 
+    // Se seller não existir, criar automaticamente
     if (sellerError || !seller) {
-      throw new NotFoundError("Vendedor não encontrado");
+      logger.info(`Criando registro de seller automaticamente para userId: ${userId}`);
+
+      const { data: newSeller, error: createError } = await supabase
+        .from("sellers")
+        .insert({
+          userId: userId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (createError || !newSeller) {
+        logger.error("Erro ao criar seller:", createError);
+        throw new NotFoundError("Erro ao criar perfil de vendedor. Por favor, contate o suporte.");
+      }
+
+      seller = newSeller;
+      logger.info(`Seller criado com sucesso: ${seller.id}`);
     }
 
     // Buscar configurações do seller
@@ -95,14 +114,33 @@ router.put("/settings", authenticateUser, async (req, res, next) => {
     } = req.body;
 
     // Buscar seller pelo userId
-    const { data: seller, error: sellerError } = await supabase
+    let { data: seller, error: sellerError } = await supabase
       .from("sellers")
       .select("id")
       .eq("userId", userId)
       .single();
 
+    // Se seller não existir, criar automaticamente
     if (sellerError || !seller) {
-      throw new NotFoundError("Vendedor não encontrado");
+      logger.info(`Criando registro de seller automaticamente para userId: ${userId}`);
+
+      const { data: newSeller, error: createError } = await supabase
+        .from("sellers")
+        .insert({
+          userId: userId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (createError || !newSeller) {
+        logger.error("Erro ao criar seller:", createError);
+        throw new NotFoundError("Erro ao criar perfil de vendedor. Por favor, contate o suporte.");
+      }
+
+      seller = newSeller;
+      logger.info(`Seller criado com sucesso: ${seller.id}`);
     }
 
     // Verificar se já existem configurações
@@ -301,14 +339,33 @@ router.post("/upgrade", authenticateUser, async (req, res, next) => {
     }
 
     // Buscar seller pelo userId
-    const { data: seller, error: sellerError } = await supabase
+    let { data: seller, error: sellerError } = await supabase
       .from("sellers")
       .select("id")
       .eq("userId", userId)
       .single();
 
+    // Se seller não existir, criar automaticamente
     if (sellerError || !seller) {
-      throw new NotFoundError("Vendedor não encontrado");
+      logger.info(`Criando registro de seller automaticamente para userId: ${userId}`);
+
+      const { data: newSeller, error: createError } = await supabase
+        .from("sellers")
+        .insert({
+          userId: userId,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (createError || !newSeller) {
+        logger.error("Erro ao criar seller:", createError);
+        throw new NotFoundError("Erro ao criar perfil de vendedor. Por favor, contate o suporte.");
+      }
+
+      seller = newSeller;
+      logger.info(`Seller criado com sucesso: ${seller.id}`);
     }
 
     // Buscar detalhes do plano

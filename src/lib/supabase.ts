@@ -58,21 +58,70 @@ export const supabaseStorage = {
     formData.append('bucket', bucket);
     if (folder) formData.append('folder', folder);
 
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-    });
+    // Criar timeout de 60 segundos (aumentado de 30s)
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60000);
 
-    if (!response.ok) {
-      throw new Error('Failed to upload image');
+    // Retry logic - tentar até 2 vezes
+    let lastError: Error | null = null;
+    const maxRetries = 2;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        // Obter token de autenticação
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Token de autenticação não encontrado. Faça login novamente.');
+        }
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
+          throw new Error(errorData.error || `Erro no upload: ${response.status} ${response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        if (!result.success || !result.url) {
+          throw new Error(result.error || 'Upload falhou - URL não retornada');
+        }
+
+        return {
+          publicUrl: result.url,
+          path: result.path || result.fileName,
+          fullPath: result.fullPath || result.path || result.fileName,
+        };
+      } catch (error: any) {
+        clearTimeout(timeout);
+
+        if (error.name === 'AbortError') {
+          lastError = new Error('Upload cancelado por timeout (60s). Tente novamente com uma imagem menor.');
+          break; // Não tentar novamente em caso de timeout
+        }
+
+        lastError = error;
+
+        // Se não for a última tentativa, aguardar 1 segundo antes de tentar novamente
+        if (attempt < maxRetries) {
+          console.log(`Tentativa ${attempt} falhou. Tentando novamente...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          continue;
+        }
+      }
     }
 
-    const result = await response.json();
-    return {
-      publicUrl: result.url,
-      path: result.path,
-      fullPath: result.fullPath || result.path,
-    };
+    // Se chegou aqui, todas as tentativas falharam
+    throw lastError || new Error('Erro desconhecido no upload');
   },
 };
 

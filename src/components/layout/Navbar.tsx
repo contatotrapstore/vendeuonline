@@ -18,6 +18,7 @@ import {
   Users,
   Shield,
   Activity,
+  CreditCard,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import Logo from "@/components/ui/Logo";
@@ -39,7 +40,6 @@ const Navbar = () => {
         { to: "/", label: "Início", icon: null },
         { to: "/produtos", label: "Produtos", icon: null },
         { to: "/lojas", label: "Lojas", icon: null },
-        { to: "/planos", label: "Planos", icon: null },
         { to: "/sobre", label: "Sobre", icon: null },
       ];
     }
@@ -61,6 +61,7 @@ const Navbar = () => {
           { to: "/seller/products", label: "Produtos", icon: Package },
           { to: "/seller/orders", label: "Pedidos", icon: ShoppingCart },
           { to: "/seller/store", label: "Minha Loja", icon: Store },
+          { to: "/seller/plans", label: "Planos", icon: CreditCard },
           { to: "/seller/analytics", label: "Analytics", icon: BarChart3 },
         ];
 
@@ -70,7 +71,6 @@ const Navbar = () => {
           { to: "/", label: "Início", icon: null },
           { to: "/products", label: "Produtos", icon: null },
           { to: "/stores", label: "Lojas", icon: null },
-          { to: "/pricing", label: "Planos", icon: null },
           { to: "/buyer/wishlist", label: "Favoritos", icon: Heart },
           { to: "/buyer/orders", label: "Pedidos", icon: Package },
         ];

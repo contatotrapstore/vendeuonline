@@ -33,11 +33,30 @@ export default function ImageUploader({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadFile = async (file: File): Promise<UploadedImage | null> => {
+    // Validar tamanho do arquivo (5MB máximo)
+    const MAX_SIZE = 5 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      logger.error("Arquivo muito grande:", file.size);
+      alert(`Arquivo ${file.name} muito grande. Máximo 5MB permitido.`);
+      return null;
+    }
+
+    // Validar tipo de arquivo
+    if (!file.type.startsWith("image/")) {
+      logger.error("Tipo de arquivo inválido:", file.type);
+      alert(`Arquivo ${file.name} não é uma imagem válida.`);
+      return null;
+    }
+
     // Usar Supabase Storage real ao invés de API mockada
     const { supabaseStorage } = await import("@/lib/supabase");
 
     try {
+      logger.info(`📤 Iniciando upload de: ${file.name} (${(file.size / 1024).toFixed(2)}KB)`);
+
       const uploadResult = await supabaseStorage.uploadImage(file, "products", folder);
+
+      logger.info(`✅ Upload concluído: ${uploadResult.publicUrl}`);
 
       // Criar objeto compatível com UploadedImage
       const result = {
@@ -51,13 +70,31 @@ export default function ImageUploader({
         publicId: result.publicId,
         width: 800, // Default width
         height: 600, // Default height
-        format: "jpeg", // Default format
+        format: file.type.split("/")[1] || "jpeg",
         size: file.size,
         file,
       };
-    } catch (error) {
-      logger.error("Erro no upload:", error);
-      alert(`Erro ao fazer upload de ${file.name}: ${error}`);
+    } catch (error: any) {
+      logger.error("❌ Erro no upload:", error);
+
+      let errorMessage = `Erro ao fazer upload de ${file.name}`;
+
+      // Mensagens de erro mais específicas
+      if (error.message) {
+        if (error.message.includes('timeout')) {
+          errorMessage = `Upload de ${file.name} demorou muito. Tente uma imagem menor ou verifique sua conexão.`;
+        } else if (error.message.includes('Token')) {
+          errorMessage = `Sessão expirada. Faça login novamente.`;
+        } else if (error.message.includes('too large')) {
+          errorMessage = `${file.name} é muito grande. Tamanho máximo: 5MB.`;
+        } else {
+          errorMessage += `: ${error.message}`;
+        }
+      } else if (typeof error === "string") {
+        errorMessage += `: ${error}`;
+      }
+
+      alert(errorMessage);
       return null;
     }
   };

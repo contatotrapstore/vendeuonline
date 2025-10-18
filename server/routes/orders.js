@@ -47,26 +47,49 @@ router.get("/", authenticateUser, async (req, res) => {
     // Filtrar por comprador se usuário for buyer
     if (user.type === "BUYER") {
       // Buscar o buyerId a partir do userId
-      const { data: buyer, error: buyerError } = await supabase
+      let { data: buyer, error: buyerError } = await supabase
         .from("buyers")
         .select("id")
         .eq("userId", user.id)
         .single();
 
+      // Se buyer não existir, criar automaticamente
       if (buyerError || !buyer) {
-        logger.warn("⚠️ Buyer não encontrado para userId:", user.id);
-        return res.json({
-          success: true,
-          orders: [],
-          pagination: {
-            page: parseInt(page),
-            limit: parseInt(limit),
-            total: 0,
-            totalPages: 0,
-            hasNext: false,
-            hasPrev: false,
-          },
-        });
+        logger.info(`📝 Buyer não encontrado, criando automaticamente para userId: ${user.id}`);
+
+        const { data: newBuyer, error: createError } = await supabase
+          .from("buyers")
+          .insert({
+            userId: user.id,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          })
+          .select("id")
+          .single();
+
+        if (createError || !newBuyer) {
+          logger.error("❌ Erro ao criar buyer:", createError);
+          logger.error("🔍 Detalhes:", { userId: user.id, error: createError?.message });
+
+          // Retornar array vazio com mensagem de erro clara
+          return res.status(500).json({
+            success: false,
+            error: "Erro ao criar perfil de comprador. Por favor, contate o suporte.",
+            details: createError?.message,
+            orders: [],
+            pagination: {
+              page: parseInt(page),
+              limit: parseInt(limit),
+              total: 0,
+              totalPages: 0,
+              hasNext: false,
+              hasPrev: false,
+            },
+          });
+        }
+
+        buyer = newBuyer;
+        logger.info(`✅ Buyer criado com sucesso: ${buyer.id}`);
       }
 
       query = query.eq("buyerId", buyer.id);
@@ -195,18 +218,36 @@ router.get("/:id", authenticateUser, async (req, res) => {
       query = query.eq("sellerId", req.seller.id);
     } else if (user.type === "BUYER") {
       // Buscar o buyerId a partir do userId
-      const { data: buyer, error: buyerError } = await supabase
+      let { data: buyer, error: buyerError } = await supabase
         .from("buyers")
         .select("id")
         .eq("userId", user.id)
         .single();
 
+      // Se buyer não existir, criar automaticamente
       if (buyerError || !buyer) {
-        logger.warn("⚠️ Buyer não encontrado para userId:", user.id);
-        return res.status(404).json({
-          success: false,
-          error: "Dados de comprador não encontrados",
-        });
+        logger.info(`Criando registro de buyer automaticamente para userId: ${user.id}`);
+
+        const { data: newBuyer, error: createError } = await supabase
+          .from("buyers")
+          .insert({
+            userId: user.id,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          })
+          .select("id")
+          .single();
+
+        if (createError || !newBuyer) {
+          logger.error("Erro ao criar buyer:", createError);
+          return res.status(404).json({
+            success: false,
+            error: "Erro ao criar perfil de comprador. Por favor, contate o suporte.",
+          });
+        }
+
+        buyer = newBuyer;
+        logger.info(`Buyer criado com sucesso: ${buyer.id}`);
       }
 
       query = query.eq("buyerId", buyer.id);

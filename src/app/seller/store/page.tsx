@@ -479,21 +479,20 @@ export default function SellerStorePage() {
                       <label className="block text-sm font-medium text-gray-700 mb-2">Cidade</label>
                       <input
                         type="text"
-                        value={settings.address.city}
-                        onChange={(e) => updateSettings("address.city", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="São Paulo"
+                        value="Erechim"
+                        readOnly
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
                       />
+                      <p className="text-xs text-gray-500 mt-1">Atualmente disponível apenas em Erechim</p>
                     </div>
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
                       <input
                         type="text"
-                        value={settings.address.state}
-                        onChange={(e) => updateSettings("address.state", e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        placeholder="SP"
+                        value="RS"
+                        readOnly
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600 cursor-not-allowed"
                       />
                     </div>
 

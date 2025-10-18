@@ -323,11 +323,12 @@ export default function RegisterPage() {
                     id="city"
                     type="text"
                     {...register("city")}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Sua cidade"
+                    value="Erechim"
+                    readOnly
+                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-600 cursor-not-allowed"
                   />
                 </div>
-                {errors.city && <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>}
+                <p className="mt-1 text-xs text-gray-500">Atualmente disponível apenas em Erechim</p>
               </div>
 
               {/* Estado */}
@@ -335,21 +336,14 @@ export default function RegisterPage() {
                 <label htmlFor="state" className="block text-sm font-medium text-gray-700">
                   Estado
                 </label>
-                <select
+                <input
                   id="state"
+                  type="text"
                   {...register("state")}
-                  className="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Selecione o estado</option>
-                  <option value="SP">São Paulo</option>
-                  <option value="RJ">Rio de Janeiro</option>
-                  <option value="MG">Minas Gerais</option>
-                  <option value="DF">Distrito Federal</option>
-                  <option value="PR">Paraná</option>
-                  <option value="RS">Rio Grande do Sul</option>
-                  <option value="SC">Santa Catarina</option>
-                </select>
-                {errors.state && <p className="mt-1 text-sm text-red-600">{errors.state.message}</p>}
+                  value="RS"
+                  readOnly
+                  className="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-600 cursor-not-allowed"
+                />
               </div>
             </div>
 

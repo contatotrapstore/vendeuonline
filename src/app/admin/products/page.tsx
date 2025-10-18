@@ -21,6 +21,7 @@ import {
   Ban,
   CheckCircle,
   DollarSign,
+  Star,
 } from "lucide-react";
 import { toast } from "sonner";
 import { buildApiUrl, getHeaders } from "@/config/api";
@@ -36,6 +37,7 @@ interface Product {
   categoryId?: string;
   category?: string;
   isActive: boolean;
+  isFeatured?: boolean;
   approvalStatus?: "PENDING" | "APPROVED" | "REJECTED";
   rejectionReason?: string;
   approvedAt?: string;
@@ -228,6 +230,37 @@ export default function AdminProductsPage() {
       } catch (error) {
         toast.error("Erro ao excluir produto");
       }
+    }
+  };
+
+  const handleFeaturedToggle = async (productId: string, currentFeatured: boolean) => {
+    try {
+      const authHeaders = getHeaders();
+      if (!authHeaders.Authorization) throw new Error("Token não encontrado");
+
+      const response = await fetch(buildApiUrl(`/api/products/${productId}`), {
+        method: "PUT",
+        headers: authHeaders,
+        body: JSON.stringify({ isFeatured: !currentFeatured }),
+      });
+
+      if (!response.ok) throw new Error("Erro ao atualizar produto em destaque");
+
+      // Atualizar localmente
+      setProducts((prev) =>
+        prev.map((product) =>
+          product.id === productId ? { ...product, isFeatured: !currentFeatured } : product
+        )
+      );
+
+      toast.success(
+        !currentFeatured
+          ? "Produto adicionado aos destaques"
+          : "Produto removido dos destaques"
+      );
+    } catch (error) {
+      logger.error("Erro ao atualizar destaque:", error);
+      toast.error("Erro ao atualizar produto em destaque");
     }
   };
 
@@ -451,6 +484,9 @@ export default function AdminProductsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Preço
                   </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Destaque
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
                   </th>
@@ -471,7 +507,7 @@ export default function AdminProductsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading && (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center">
+                    <td colSpan={9} className="px-6 py-12 text-center">
                       <div className="flex justify-center items-center space-x-3">
                         <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
                         <span className="text-gray-600">Carregando produtos...</span>
@@ -481,7 +517,7 @@ export default function AdminProductsPage() {
                 )}
                 {!loading && products.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="px-6 py-12 text-center">
+                    <td colSpan={9} className="px-6 py-12 text-center">
                       <div className="text-gray-500">
                         <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
                         <p className="text-lg font-medium mb-2">Nenhum produto encontrado</p>
@@ -523,6 +559,19 @@ export default function AdminProductsPage() {
                           <DollarSign className="h-4 w-4 text-gray-400 mr-1" />
                           R$ {product.price.toFixed(2)}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button
+                          onClick={() => handleFeaturedToggle(product.id, product.isFeatured || false)}
+                          className={`p-2 rounded-lg transition-colors ${
+                            product.isFeatured
+                              ? "bg-yellow-100 text-yellow-600 hover:bg-yellow-200"
+                              : "bg-gray-100 text-gray-400 hover:bg-gray-200"
+                          }`}
+                          title={product.isFeatured ? "Remover dos destaques" : "Adicionar aos destaques"}
+                        >
+                          <Star className={`h-5 w-5 ${product.isFeatured ? "fill-yellow-500" : ""}`} />
+                        </button>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(product.isActive)}</td>
                       <td className="px-6 py-4 whitespace-nowrap">
