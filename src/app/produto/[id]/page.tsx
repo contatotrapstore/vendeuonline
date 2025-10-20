@@ -60,13 +60,31 @@ export default function ProductDetailPage() {
   };
 
   const handleWhatsAppContact = () => {
-    // Número do WhatsApp da loja/vendedor (formato: código do país + DDD + número)
-    const phone = "5554999999999"; // Substitua pelo número real
+    // Usar WhatsApp da loja (campo whatsapp ou phone)
+    const storeWhatsApp = product.store?.whatsapp || product.store?.phone;
+
+    if (!storeWhatsApp) {
+      alert("Loja sem WhatsApp cadastrado. Entre em contato pelo telefone ou email da loja.");
+      return;
+    }
+
+    // Limpar formatação do número (remover espaços, parênteses, traços)
+    const cleanPhone = storeWhatsApp.replace(/[^\d]/g, "");
+
+    // Garantir que tem código do país (55 para Brasil)
+    const phone = cleanPhone.startsWith("55") ? cleanPhone : `55${cleanPhone}`;
+
     const productUrl = window.location.href;
-    const message = `Olá! Tenho interesse no produto:\n\n*${product.name}*\nPreço: ${formatPrice(product.price)}\nQuantidade desejada: ${quantity}\n\nLink do produto: ${productUrl}`;
+    const storeName = product.store?.name || "a loja";
+    const message = `Olá, ${storeName}! Tenho interesse no produto:\n\n*${product.name}*\nPreço: ${formatPrice(product.price)}\nQuantidade desejada: ${quantity}\n\nLink do produto: ${productUrl}`;
     const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
 
-    logger.info("WhatsApp contact initiated:", { productId: product.id, quantity });
+    logger.info("WhatsApp contact initiated:", {
+      productId: product.id,
+      quantity,
+      storePhone: phone,
+      storeName: product.store?.name
+    });
     window.open(whatsappUrl, "_blank");
   };
 

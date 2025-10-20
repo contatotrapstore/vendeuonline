@@ -230,4 +230,66 @@ router.post("/admin", authenticateAdmin, async (req, res) => {
   }
 });
 
+// ROTA ADMIN: Atualizar configuração existente
+router.put("/admin", authenticateAdmin, async (req, res) => {
+  try {
+    const { id, value, isActive = true } = req.body;
+
+    if (!id) {
+      return res.status(400).json({ error: "ID da configuração é obrigatório" });
+    }
+
+    // Buscar configuração existente
+    const { data: existingConfig, error: fetchError } = await supabase
+      .from("system_configs")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !existingConfig) {
+      logger.error("Configuração não encontrada:", fetchError);
+      return res.status(404).json({ error: "Configuração não encontrada" });
+    }
+
+    // Validar valor
+    const config = TRACKING_CONFIGS[existingConfig.key];
+    if (config && !config.validation(value)) {
+      return res.status(400).json({
+        error: `Formato inválido para ${existingConfig.key}`,
+        description: config.description
+      });
+    }
+
+    // Atualizar configuração
+    const { data: updatedConfig, error: updateError } = await supabase
+      .from("system_configs")
+      .update({
+        value,
+        isActive,
+        updatedAt: new Date().toISOString()
+      })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (updateError) {
+      logger.error("Erro ao atualizar configuração:", updateError);
+      return res.status(500).json({ error: "Erro ao atualizar configuração" });
+    }
+
+    logger.info(`✅ Configuração ${existingConfig.key} atualizada`);
+    res.json({
+      success: true,
+      data: {
+        ...updatedConfig,
+        description: config?.description || "",
+        isConfigured: !!updatedConfig.value && updatedConfig.isActive,
+      }
+    });
+  } catch (error) {
+    logger.error("Erro ao atualizar configuração:", error);
+    return res.status(500).json({ error: "Erro interno do servidor" });
+  }
+});
+
 export default router;

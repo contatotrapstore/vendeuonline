@@ -8,12 +8,24 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  phone?: string;
+  city?: string;
+  state?: string;
   userType: "buyer" | "seller" | "admin";
   status: "active" | "inactive" | "pending";
   createdAt: string;
   lastLogin?: string;
   storeCount?: number;
   orderCount?: number;
+  subscription?: {
+    planId: string;
+    status: string;
+    plan?: {
+      id: string;
+      name: string;
+      price: number;
+    };
+  } | null;
 }
 
 interface UserFilters {
@@ -76,12 +88,16 @@ export const useUserStore = create<UserStore>((set, get) => ({
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone || "",
+        city: user.city || "",
+        state: user.state || "",
         userType: user.userType?.toLowerCase() || "buyer", // Já vem em lowercase
         status: user.status || "active",
         createdAt: user.createdAt,
         lastLogin: user.lastLogin || null,
         storeCount: user.storeCount || 0,
         orderCount: user.orderCount || 0,
+        subscription: user.subscription || null,
       }));
 
       set({ users: mappedUsers, loading: false });

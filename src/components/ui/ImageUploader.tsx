@@ -79,19 +79,26 @@ export default function ImageUploader({
 
       let errorMessage = `Erro ao fazer upload de ${file.name}`;
 
-      // Mensagens de erro mais específicas
-      if (error.message) {
+      // Mensagens de erro mais específicas por tipo
+      if (error.name === 'AbortError') {
+        errorMessage = `Upload de ${file.name} cancelado por timeout (60s). Verifique sua conexão ou tente uma imagem menor.`;
+      } else if (error.message) {
         if (error.message.includes('timeout')) {
-          errorMessage = `Upload de ${file.name} demorou muito. Tente uma imagem menor ou verifique sua conexão.`;
-        } else if (error.message.includes('Token')) {
+          errorMessage = `Timeout no upload de ${file.name}. Verifique sua conexão.`;
+        } else if (error.message.includes('JWT') || error.message.includes('Token') || error.message.includes('401')) {
           errorMessage = `Sessão expirada. Faça login novamente.`;
-        } else if (error.message.includes('too large')) {
-          errorMessage = `${file.name} é muito grande. Tamanho máximo: 5MB.`;
+        } else if (error.message.includes('bucket')) {
+          errorMessage = `Erro de configuração do servidor (bucket não encontrado). Contate o suporte.`;
+        } else if (error.message.includes('too large') || error.message.includes('5MB')) {
+          const fileSize = (file.size / 1024 / 1024).toFixed(2);
+          errorMessage = `${file.name} muito grande. Máximo: 5MB. Tamanho atual: ${fileSize}MB`;
+        } else if (error.message.includes('network') || error.message.includes('failed to fetch')) {
+          errorMessage = `Erro de conexão ao fazer upload de ${file.name}. Verifique sua internet.`;
         } else {
-          errorMessage += `: ${error.message}`;
+          errorMessage = `${errorMessage}: ${error.message}`;
         }
       } else if (typeof error === "string") {
-        errorMessage += `: ${error}`;
+        errorMessage = `${errorMessage}: ${error}`;
       }
 
       alert(errorMessage);

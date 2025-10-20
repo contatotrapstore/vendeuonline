@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/store/authStore";
 import PlanSelector from "@/components/PlanSelector";
 import { CreditCard, Smartphone, FileText, Shield, Star, Users, Award, CheckCircle, MessageCircle, ChevronDown } from "lucide-react";
 
@@ -107,6 +109,27 @@ const faqs = [
 
 export default function PricingPage() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+
+  // Redirecionar compradores para a home (planos são apenas para vendedores)
+  useEffect(() => {
+    if (user && user.type === "BUYER") {
+      navigate("/");
+    }
+  }, [user, navigate]);
+
+  // Se for comprador, mostrar mensagem enquanto redireciona
+  if (user && user.type === "BUYER") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">Redirecionando...</h2>
+          <p className="text-gray-600">Os planos são exclusivos para vendedores.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/30">

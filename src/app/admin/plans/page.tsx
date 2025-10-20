@@ -73,9 +73,10 @@ export default function AdminPlansPage() {
       const data = await response.json();
       logger.info("Plans data received:", data);
 
-      // Garantir que features seja sempre array
+      // Garantir que features seja sempre array e billingPeriod tenha valor padrão
       const processedPlans = (data.data || []).map((plan: any) => ({
         ...plan,
+        billingPeriod: plan.billingPeriod || 'monthly', // Default value para evitar null/undefined
         features: Array.isArray(plan.features) ? plan.features : JSON.parse(plan.features || "[]"),
       }));
 
@@ -150,7 +151,7 @@ export default function AdminPlansPage() {
           name: plan.name,
           description: plan.description,
           price: Number(plan.price),
-          billingPeriod: plan.billingPeriod?.toUpperCase() || 'MONTHLY', // Null check adicionado
+          billingPeriod: (plan.billingPeriod || 'monthly').toUpperCase(), // Garantir valor padrão antes de toUpperCase
           maxAds: Number(plan.maxAds),
           maxPhotosPerAd: Number(plan.maxPhotos), // Campo correto esperado pelo backend
           maxProducts: Number(plan.maxProducts),
@@ -312,7 +313,7 @@ export default function AdminPlansPage() {
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Período de Cobrança</label>
                     <select
-                      value={plan.billingPeriod}
+                      value={plan.billingPeriod || 'monthly'}
                       onChange={(e) => updatePlan(plan.id, "billingPeriod", e.target.value)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >

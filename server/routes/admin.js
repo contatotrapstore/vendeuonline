@@ -263,26 +263,48 @@ router.get("/users", async (req, res) => {
     const rawUsers = userData || [];
     const total = totalCount || 0;
 
-    // Transformar para formato esperado pelo frontend
-    const users = rawUsers.map((user) => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      userType: user.type,
-      city: user.city,
-      state: user.state,
-      avatar: user.avatar,
-      isVerified: user.isVerified,
-      status: user.isVerified ? "active" : "pending",
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
-      lastLogin: null,
-      orderCount: 0,
-      storeCount: user.type === "seller" ? 1 : undefined,
-    }));
+    // Buscar subscriptions para sellers (com plan data)
+    const { data: subscriptions } = await supabase
+      .from("Subscription")
+      .select(`
+        userId,
+        planId,
+        status,
+        plan:Plan(id, name, price)
+      `)
+      .eq("status", "ACTIVE");
 
-    logger.info(`✅ ${users.length}/${total} usuários retornados do Supabase`);
+    logger.info(`📋 ${subscriptions?.length || 0} assinaturas ativas encontradas`);
+
+    // Transformar para formato esperado pelo frontend
+    const users = rawUsers.map((user) => {
+      const subscription = subscriptions?.find(s => s.userId === user.id);
+
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        userType: user.type,
+        city: user.city,
+        state: user.state,
+        avatar: user.avatar,
+        isVerified: user.isVerified,
+        status: user.isVerified ? "active" : "pending",
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        lastLogin: null,
+        orderCount: 0,
+        storeCount: user.type === "seller" ? 1 : undefined,
+        subscription: subscription ? {
+          planId: subscription.planId,
+          status: subscription.status,
+          plan: subscription.plan
+        } : null,
+      };
+    });
+
+    logger.info(`✅ ${users.length}/${total} usuários retornados do Supabase (com dados de subscription)`);
 
     res.json({
       users: users,
@@ -1327,7 +1349,7 @@ router.post("/users", async (req, res) => {
 router.put("/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, email, phone, type, city, state, isVerified } = req.body;
+    const { name, email, phone, type, city, state, isVerified, planId } = req.body;
 
     logger.info(`👤 PUT /api/admin/users/${id} - Editando usuário`);
 
@@ -1390,6 +1412,58 @@ router.put("/users/:id", async (req, res) => {
     if (updateError) {
       logger.error("❌ Erro ao atualizar usuário:", updateError);
       throw updateError;
+    }
+
+    // Se o usuário é SELLER e planId foi fornecido, atualizar/criar subscription
+    if ((updateData.type === "SELLER" || user.type === "SELLER") && planId) {
+      logger.info(`📦 Atualizando plano do vendedor para: ${planId}`);
+
+      // Verificar se o plano existe
+      const { data: plan, error: planError } = await supabase
+        .from("plans")
+        .select("id, name, price")
+        .eq("id", planId)
+        .maybeSingle();
+
+      if (planError || !plan) {
+        logger.warn("⚠️ Plano não encontrado, pulando atualização de subscription");
+      } else {
+        // Verificar se já existe subscription ativa
+        const { data: existingSub } = await supabase
+          .from("Subscription")
+          .select("id")
+          .eq("userId", id)
+          .eq("status", "ACTIVE")
+          .maybeSingle();
+
+        if (existingSub) {
+          // Atualizar subscription existente
+          await supabase
+            .from("Subscription")
+            .update({
+              planId: planId,
+              updatedAt: new Date().toISOString(),
+            })
+            .eq("id", existingSub.id);
+          logger.info("✅ Subscription atualizada");
+        } else {
+          // Criar nova subscription
+          const endDate = new Date();
+          endDate.setMonth(endDate.getMonth() + 1);
+
+          await supabase.from("Subscription").insert({
+            userId: id,
+            planId: planId,
+            status: "ACTIVE",
+            startDate: new Date().toISOString(),
+            endDate: endDate.toISOString(),
+            autoRenew: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+          logger.info("✅ Nova subscription criada");
+        }
+      }
     }
 
     logger.info(`✅ Usuário ${updatedUser.name} atualizado com sucesso`);

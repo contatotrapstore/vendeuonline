@@ -14,34 +14,67 @@ router.get("/settings", authenticateUser, async (req, res, next) => {
   try {
     const userId = req.user.userId;
 
-    // Buscar seller pelo userId
+    // Buscar seller pelo userId usando maybeSingle para evitar erro quando não existe
     let { data: seller, error: sellerError } = await supabase
       .from("sellers")
       .select("id")
       .eq("userId", userId)
-      .single();
+      .maybeSingle(); // Use maybeSingle ao invés de single
 
     // Se seller não existir, criar automaticamente
-    if (sellerError || !seller) {
-      logger.info(`Criando registro de seller automaticamente para userId: ${userId}`);
+    if (!seller) {
+      logger.info(`Seller não encontrado para userId: ${userId}. Tentando criar...`);
 
-      const { data: newSeller, error: createError } = await supabase
+      // Verificar se já existe (evitar duplicação)
+      const { data: existingSeller } = await supabase
         .from("sellers")
-        .insert({
-          userId: userId,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        })
         .select("id")
-        .single();
+        .eq("userId", userId)
+        .maybeSingle();
 
-      if (createError || !newSeller) {
-        logger.error("Erro ao criar seller:", createError);
-        throw new NotFoundError("Erro ao criar perfil de vendedor. Por favor, contate o suporte.");
+      if (existingSeller) {
+        seller = existingSeller;
+        logger.info(`Seller já existia: ${seller.id}`);
+      } else {
+        const { data: newSeller, error: createError } = await supabase
+          .from("sellers")
+          .insert({
+            userId: userId,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          })
+          .select("id")
+          .single();
+
+        if (createError) {
+          logger.error("Erro ao criar seller:", createError);
+          logger.error("Detalhes:", {
+            code: createError.code,
+            message: createError.message,
+            details: createError.details,
+            hint: createError.hint
+          });
+
+          // Mensagens específicas
+          let errorMessage = "Erro ao criar perfil de vendedor.";
+          if (createError.code === '23505') {
+            errorMessage = "Perfil de vendedor já existe. Recarregue a página.";
+          } else if (createError.code === '23503') {
+            errorMessage = "Usuário não encontrado no sistema.";
+          } else {
+            errorMessage = `Erro ao criar vendedor: ${createError.message}`;
+          }
+
+          throw new NotFoundError(errorMessage);
+        }
+
+        if (!newSeller) {
+          throw new NotFoundError("Erro ao criar perfil de vendedor. Por favor, contate o suporte.");
+        }
+
+        seller = newSeller;
+        logger.info(`Seller criado com sucesso: ${seller.id}`);
       }
-
-      seller = newSeller;
-      logger.info(`Seller criado com sucesso: ${seller.id}`);
     }
 
     // Buscar configurações do seller
@@ -379,29 +412,64 @@ router.post("/upgrade", authenticateUser, async (req, res, next) => {
       throw new NotFoundError("Plano não encontrado");
     }
 
+    // Verificar se já existe assinatura ativa
+    const { data: existingActive } = await supabase
+      .from("Subscription")
+      .select("id")
+      .eq("userId", userId)
+      .eq("status", "ACTIVE");
+
+    if (existingActive && existingActive.length > 0) {
+      logger.warn(`User ${userId} já possui assinatura ativa. Cancelando...`);
+    }
+
     // Cancelar assinatura atual (se existir)
     await supabase
       .from("Subscription")
-      .update({ status: "CANCELLED" })
-      .eq("sellerId", seller.id)
+      .update({ status: "CANCELLED", updatedAt: new Date().toISOString() })
+      .eq("userId", userId)
       .eq("status", "ACTIVE");
 
     // Criar nova assinatura
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 1); // 1 mês a partir de hoje
+
     const { data: newSubscription, error: subError } = await supabase
       .from("Subscription")
       .insert({
+        userId: userId,
         sellerId: seller.id,
         planId: plan.id,
         status: "ACTIVE",
         startDate: new Date().toISOString(),
+        endDate: endDate.toISOString(),
         autoRenew: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .select()
       .single();
 
     if (subError) {
       logger.error("Erro ao criar assinatura:", subError);
-      throw new Error("Erro ao criar assinatura");
+      logger.error("Detalhes do erro:", {
+        code: subError.code,
+        message: subError.message,
+        details: subError.details,
+        hint: subError.hint
+      });
+
+      // Mensagem mais específica baseada no erro
+      let errorMessage = "Erro ao criar assinatura";
+      if (subError.code === '23505') {
+        errorMessage = "Você já possui uma assinatura ativa. Cancele a anterior primeiro.";
+      } else if (subError.code === '23503') {
+        errorMessage = "Plano selecionado não existe ou está inativo.";
+      } else if (subError.message) {
+        errorMessage = `Erro ao processar: ${subError.message}`;
+      }
+
+      throw new Error(errorMessage);
     }
 
     res.json({

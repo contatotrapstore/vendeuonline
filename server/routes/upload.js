@@ -105,7 +105,7 @@ router.post("/", authenticate, upload.single("file"), async (req, res) => {
       return res.status(400).json({ error: "Nenhum arquivo enviado" });
     }
 
-    const { type = "general", entityId } = req.body;
+    const { bucket: requestBucket, folder: requestFolder, type = "general", entityId } = req.body;
 
     // Gerar nome único para o arquivo
     const timestamp = Date.now();
@@ -113,16 +113,22 @@ router.post("/", authenticate, upload.single("file"), async (req, res) => {
     const extension = req.file.originalname.split(".").pop() || "jpg";
     const fileName = `${timestamp}-${random}.${extension}`;
 
-    // Determinar bucket e pasta baseado no tipo
-    let bucket = "stores";
-    let folder = "images";
+    // Determinar bucket e pasta (priorizar parâmetros do request)
+    let bucket = requestBucket || "stores";
+    let folder = requestFolder || "images";
 
-    if (type === "avatar") {
-      folder = "avatars";
-    } else if (type === "store-logo" || type === "store-banner") {
-      folder = "stores";
-    } else if (type === "product") {
-      folder = "products";
+    // Se não foi passado bucket/folder, determinar baseado no tipo (fallback)
+    if (!requestBucket) {
+      if (type === "avatar") {
+        bucket = "avatars";
+        folder = "avatars";
+      } else if (type === "store-logo" || type === "store-banner") {
+        bucket = "stores";
+        folder = "stores";
+      } else if (type === "product") {
+        bucket = "products";
+        folder = "products";
+      }
     }
 
     logger.info(`📁 Fazendo upload para ${bucket}/${folder}/${fileName}`);

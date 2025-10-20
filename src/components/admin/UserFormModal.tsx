@@ -1,9 +1,11 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Modal from "../ui/Modal";
 import { User } from "../../store/userStore";
+import { getAuthToken } from "@/config/storage-keys";
+import { buildApiUrl } from "@/config/api";
 
 const userFormSchema = z.object({
   name: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
@@ -11,6 +13,7 @@ const userFormSchema = z.object({
   password: z.string().min(6, "Senha deve ter no mínimo 6 caracteres").optional(),
   phone: z.string().optional(),
   type: z.enum(["BUYER", "SELLER", "ADMIN"]),
+  planId: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
 });
@@ -25,6 +28,12 @@ interface UserFormModalProps {
   mode: "create" | "edit";
 }
 
+interface Plan {
+  id: string;
+  name: string;
+  price: number;
+}
+
 const UserFormModal: React.FC<UserFormModalProps> = ({
   isOpen,
   onClose,
@@ -32,11 +41,15 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
   user,
   mode,
 }) => {
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [selectedUserType, setSelectedUserType] = useState<string>(user?.userType || "BUYER");
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     reset,
+    watch,
   } = useForm<UserFormData>({
     resolver: zodResolver(
       mode === "edit"
@@ -49,27 +62,57 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
       name: user?.name || "",
       email: user?.email || "",
       password: "",
-      phone: "",
+      phone: user?.phone || "",
       type: user?.userType?.toUpperCase() as "BUYER" | "SELLER" | "ADMIN" || "BUYER",
-      city: "",
-      state: "",
+      planId: user?.subscription?.planId || "",
+      city: user?.city || "",
+      state: user?.state || "",
     },
   });
 
-  // Reset form when user changes or modal opens
+  // Watch for user type changes
+  const watchedType = watch("type");
+
+  useEffect(() => {
+    setSelectedUserType(watchedType);
+  }, [watchedType]);
+
+  // Fetch plans when modal opens
   useEffect(() => {
     if (isOpen) {
+      fetchPlans();
       reset({
         name: user?.name || "",
         email: user?.email || "",
         password: "",
-        phone: "",
+        phone: user?.phone || "",
         type: (user?.userType?.toUpperCase() as "BUYER" | "SELLER" | "ADMIN") || "BUYER",
-        city: "",
-        state: "",
+        planId: user?.subscription?.planId || "",
+        city: user?.city || "",
+        state: user?.state || "",
       });
     }
   }, [isOpen, user, reset]);
+
+  const fetchPlans = async () => {
+    try {
+      const token = getAuthToken();
+      if (!token) return;
+
+      const response = await fetch(buildApiUrl("/api/admin/plans"), {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setPlans(data.data || []);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar planos:", error);
+    }
+  };
 
   const handleFormSubmit = async (data: UserFormData) => {
     try {
@@ -163,6 +206,33 @@ const UserFormModal: React.FC<UserFormModalProps> = ({
             <p className="mt-1 text-sm text-red-600">{errors.type.message}</p>
           )}
         </div>
+
+        {/* Plano (apenas para sellers) */}
+        {selectedUserType === "SELLER" && (
+          <div>
+            <label htmlFor="planId" className="block text-sm font-medium text-gray-700">
+              Plano de Assinatura
+            </label>
+            <select
+              {...register("planId")}
+              id="planId"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Sem plano</option>
+              {plans.map((plan) => (
+                <option key={plan.id} value={plan.id}>
+                  {plan.name} - R$ {plan.price.toFixed(2)}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-sm text-gray-500">
+              Selecione um plano para o vendedor (opcional)
+            </p>
+            {errors.planId && (
+              <p className="mt-1 text-sm text-red-600">{errors.planId.message}</p>
+            )}
+          </div>
+        )}
 
         {/* Telefone */}
         <div>
