@@ -23,7 +23,6 @@ import {
 import { useStoreStore } from "@/stores/storeStore";
 import { useProductStore } from "@/store/productStore";
 import { useParams } from "react-router-dom";
-import Link from "next/link";
 import ImageGalleryModal from "@/components/ui/ImageGalleryModal";
 
 export default function StorePage() {
