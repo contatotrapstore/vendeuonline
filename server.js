@@ -101,6 +101,10 @@ if (!JWT_SECRET) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy - CRÍTICO para produção (Render, Vercel, etc)
+// Permite que express-rate-limit e outros middlewares leiam corretamente X-Forwarded-For
+app.set('trust proxy', 1);
+
 // ==== BUILD VERSION ====
 const BUILD_VERSION = "2025-10-08-20:45-PRODUCTION-FIXES";
 logger.info(`🚀 Starting server - Build: ${BUILD_VERSION}`);

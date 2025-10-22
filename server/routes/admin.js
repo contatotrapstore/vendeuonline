@@ -758,25 +758,26 @@ router.put("/plans/:id", authenticateAdmin, async (req, res) => {
     logger.info(`💰 PUT /api/admin/plans/${id} - Atualizando plano via MCP:`, planData);
 
     // Atualizar o plano usando helper MCP
+    // IMPORTANTE: Tabela Supabase "plans" usa snake_case, então precisamos converter
     const updateData = {
       name: planData.name,
       description: planData.description,
       price: parseFloat(planData.price),
-      updatedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(), // snake_case para Supabase
     };
 
-    // Apenas adicionar campos opcionais se fornecidos (usando nomes corretos da tabela Plan - camelCase)
+    // Apenas adicionar campos opcionais se fornecidos (convertendo para snake_case)
     if (planData.billingPeriod) {
-      updateData.billingPeriod = planData.billingPeriod.toLowerCase();
+      updateData.billing_period = planData.billingPeriod.toLowerCase();
     } else {
-      updateData.billingPeriod = 'monthly'; // Default value
+      updateData.billing_period = 'monthly'; // Default value
     }
-    if (planData.maxAds !== undefined) updateData.maxAds = parseInt(planData.maxAds) || -1;
-    if (planData.maxPhotos !== undefined) updateData.maxPhotos = parseInt(planData.maxPhotos) || -1;
-    if (planData.maxProducts !== undefined) updateData.maxProducts = parseInt(planData.maxProducts) || -1;
-    if (planData.maxImages !== undefined) updateData.maxImages = parseInt(planData.maxImages) || -1;
-    if (planData.maxCategories !== undefined) updateData.maxCategories = parseInt(planData.maxCategories) || -1;
-    if (planData.prioritySupport !== undefined) updateData.prioritySupport = Boolean(planData.prioritySupport);
+    if (planData.maxAds !== undefined) updateData.max_ads = parseInt(planData.maxAds) || -1;
+    if (planData.maxPhotos !== undefined) updateData.max_photos = parseInt(planData.maxPhotos) || -1;
+    if (planData.maxProducts !== undefined) updateData.max_products = parseInt(planData.maxProducts) || -1;
+    if (planData.maxImages !== undefined) updateData.max_images = parseInt(planData.maxImages) || -1;
+    if (planData.maxCategories !== undefined) updateData.max_categories = parseInt(planData.maxCategories) || -1;
+    if (planData.prioritySupport !== undefined) updateData.priority_support = Boolean(planData.prioritySupport);
     if (planData.support) updateData.support = planData.support;
     if (planData.features) {
       // Converter array para JSON string (schema espera String, não array)
@@ -784,7 +785,7 @@ router.put("/plans/:id", authenticateAdmin, async (req, res) => {
         ? JSON.stringify(planData.features)
         : planData.features;
     }
-    if (planData.isActive !== undefined) updateData.isActive = Boolean(planData.isActive);
+    if (planData.isActive !== undefined) updateData.is_active = Boolean(planData.isActive);
 
     const { data: updatedPlan, error: updateError } = await supabase
       .from("plans")
