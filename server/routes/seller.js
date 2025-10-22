@@ -668,7 +668,7 @@ router.get("/store", authenticateSellerWithExtras, async (req, res) => {
         .from("stores")
         .insert({
           id: randomUUID(),
-          sellerId: seller.id,
+          seller_id: seller.id,
           name: seller.storeName || "",
           slug: seller.storeSlug || seller.storeName?.toLowerCase().replace(/\s+/g, "-") || "store",
           description: seller.storeDescription || "",
@@ -678,16 +678,16 @@ router.get("/store", authenticateSellerWithExtras, async (req, res) => {
           address: seller.address || "",
           city: seller.city || "Não informado",
           state: seller.state || "Não informado",
-          zipCode: seller.zipCode || "",
+          zip_code: seller.zipCode || "",
           phone: seller.phone || "",
           email: seller.email || "",
           website: seller.website || "",
-          isActive: true,
-          isVerified: false,
+          is_active: true,
+          is_verified: false,
           rating: 0,
-          reviewCount: 0,
-          productCount: 0,
-          salesCount: 0,
+          review_count: 0,
+          product_count: 0,
+          sales_count: 0,
           plan: seller.plan || "GRATUITO",
         })
         .select()
