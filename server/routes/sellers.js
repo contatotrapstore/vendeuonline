@@ -403,7 +403,7 @@ router.post("/upgrade", authenticateUser, async (req, res, next) => {
 
     // Buscar detalhes do plano
     const { data: plan, error: planError } = await supabase
-      .from("Plan")
+      .from("plans")
       .select("*")
       .eq("id", planId)
       .single();

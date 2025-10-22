@@ -57,6 +57,10 @@ const authenticateSellerWithExtras = async (req, res, next) => {
           plan: "GRATUITO",
           storeName: `Loja de ${user.name}`,
           storeSlug: `loja-${user.id.slice(0, 8)}`,
+          storeDescription: "Nova loja no Vendeu Online",
+          address: "",
+          zipCode: "",
+          category: "geral",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         })
