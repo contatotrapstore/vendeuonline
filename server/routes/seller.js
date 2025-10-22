@@ -670,25 +670,17 @@ router.get("/store", authenticateSellerWithExtras, async (req, res) => {
           id: randomUUID(),
           seller_id: seller.id,
           name: seller.storeName || "",
-          slug: seller.storeSlug || seller.storeName?.toLowerCase().replace(/\s+/g, "-") || "store",
+          slug: seller.storeSlug || seller.storeName?.toLowerCase().replace(/\s+/g, "-") || `store-${randomUUID().slice(0, 8)}`,
           description: seller.storeDescription || "",
           logo: seller.logo || "",
           banner: seller.banner || "",
-          category: seller.category || "eletronicos",
-          address: seller.address || "",
-          city: seller.city || "Não informado",
-          state: seller.state || "Não informado",
-          zip_code: seller.zipCode || "",
+          city: seller.city || "Erechim",
+          state: seller.state || "RS",
           phone: seller.phone || "",
-          email: seller.email || "",
-          website: seller.website || "",
+          email: seller.email || user.email || "",
           is_active: true,
           is_verified: false,
-          rating: 0,
-          review_count: 0,
-          product_count: 0,
-          sales_count: 0,
-          plan: seller.plan || "GRATUITO",
+          theme: "{}",
         })
         .select()
         .single();
@@ -936,7 +928,7 @@ router.put("/store", authenticateSellerWithExtras, async (req, res) => {
     let { data: store, error: storeError } = await supabase
       .from("stores")
       .select("*")
-      .eq("sellerId", seller.id)
+      .eq("seller_id", seller.id)
       .single();
 
     // Se não existe store, criar uma
@@ -946,21 +938,20 @@ router.put("/store", authenticateSellerWithExtras, async (req, res) => {
       const { data: newStore, error: createError } = await supabase
         .from("stores")
         .insert({
-          sellerId: seller.id,
+          id: randomUUID(),
+          seller_id: seller.id,
           name: name || storeName || seller.storeName || "",
+          slug: (name || storeName || seller.storeName || "").toLowerCase().replace(/\s+/g, "-") || `store-${randomUUID().slice(0, 8)}`,
           description: description || storeDescription || seller.storeDescription || "",
           logo: logo || seller.logo || "",
           banner: banner || seller.banner || "",
-          category: category || seller.category || "eletronicos",
-          address:
-            typeof address === "string"
-              ? address
-              : address
-                ? `${address.street || ""}, ${address.city || ""}, ${address.state || ""}`
-                : "",
+          city: address?.city || seller.city || "Erechim",
+          state: address?.state || seller.state || "RS",
           phone: phone || seller.phone || "",
-          website: website || seller.website || "",
-          status: "ACTIVE",
+          email: email || user.email || "",
+          is_active: true,
+          is_verified: false,
+          theme: "{}",
         })
         .select()
         .single();
@@ -1012,16 +1003,13 @@ router.put("/store", authenticateSellerWithExtras, async (req, res) => {
     const updateData = {
       name: name || storeName || store.name,
       description: description || storeDescription || store.description,
-      category: category || store.category,
-      address: fullAddress,
-      zipCode: addressZipCode,
+      city: address?.city || store.city,
+      state: address?.state || store.state,
       logo: logo || store.logo,
       banner: banner || store.banner,
       phone: contactPhone,
-      whatsapp: contactWhatsapp,
       email: contactEmail,
-      website: contactWebsite,
-      updatedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     const { data: updatedStore, error: updateError } = await supabase
