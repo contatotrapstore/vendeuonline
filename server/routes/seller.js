@@ -1148,7 +1148,7 @@ router.get("/settings", authenticateSellerWithExtras, async (req, res) => {
     const { data: settings, error: settingsError } = await supabase
       .from("seller_settings")
       .select("*")
-      .eq("sellerId", sellerId)
+      .eq("seller_id", sellerId)
       .single();
 
     if (settingsError && settingsError.code !== "PGRST116") {
@@ -1164,24 +1164,24 @@ router.get("/settings", authenticateSellerWithExtras, async (req, res) => {
       logger.info("📝 Criando configurações padrão para seller:", sellerId);
 
       const defaultSettingsData = {
-        sellerId,
-        acceptsCreditCard: true,
-        acceptsDebitCard: true,
-        acceptsPix: true,
-        acceptsBoleto: false,
-        acceptsWhatsapp: true,
-        freeShippingMin: null,
-        shippingFee: 10.0,
-        deliveryDays: 7,
-        pickupAvailable: false,
-        workingDays: JSON.stringify(["monday", "tuesday", "wednesday", "thursday", "friday"]),
-        workingHours: JSON.stringify({ start: "08:00", end: "18:00" }),
-        autoApproveOrders: false,
-        returnPolicy: "7 dias para devolução",
-        privacyPolicy: "Seus dados estão seguros conosco",
+        seller_id: sellerId,
+        accepts_credit_card: true,
+        accepts_debit_card: true,
+        accepts_pix: true,
+        accepts_boleto: false,
+        accepts_whatsapp: true,
+        free_shipping_min: null,
+        shipping_fee: 10.0,
+        delivery_days: 7,
+        pickup_available: false,
+        working_days: JSON.stringify(["monday", "tuesday", "wednesday", "thursday", "friday"]),
+        working_hours: JSON.stringify({ start: "08:00", end: "18:00" }),
+        auto_approve_orders: false,
+        return_policy: "7 dias para devolução",
+        privacy_policy: "Seus dados estão seguros conosco",
         terms: "Termos e condições padrão",
-        emailNotifications: true,
-        smsNotifications: false,
+        email_notifications: true,
+        sms_notifications: false,
       };
 
       // Inserir configurações padrão no banco
@@ -1203,33 +1203,33 @@ router.get("/settings", authenticateSellerWithExtras, async (req, res) => {
 
       // Formatar configurações para o frontend
       const formattedSettings = {
-        sellerId: newSettings.sellerId,
+        sellerId: newSettings.seller_id,
         paymentMethods: {
-          pix: newSettings.acceptsPix,
-          creditCard: newSettings.acceptsCreditCard,
-          debitCard: newSettings.acceptsDebitCard,
-          boleto: newSettings.acceptsBoleto,
-          whatsapp: newSettings.acceptsWhatsapp,
+          pix: newSettings.accepts_pix,
+          creditCard: newSettings.accepts_credit_card,
+          debitCard: newSettings.accepts_debit_card,
+          boleto: newSettings.accepts_boleto,
+          whatsapp: newSettings.accepts_whatsapp,
         },
         shippingOptions: {
-          freeShippingMin: newSettings.freeShippingMin,
-          shippingFee: newSettings.shippingFee,
-          deliveryDays: newSettings.deliveryDays,
-          pickupAvailable: newSettings.pickupAvailable,
+          freeShippingMin: newSettings.free_shipping_min,
+          shippingFee: newSettings.shipping_fee,
+          deliveryDays: newSettings.delivery_days,
+          pickupAvailable: newSettings.pickup_available,
         },
         notifications: {
-          emailNotifications: newSettings.emailNotifications,
-          smsNotifications: newSettings.smsNotifications,
+          emailNotifications: newSettings.email_notifications,
+          smsNotifications: newSettings.sms_notifications,
         },
         storePolicies: {
-          returnPolicy: newSettings.returnPolicy,
-          privacyPolicy: newSettings.privacyPolicy,
+          returnPolicy: newSettings.return_policy,
+          privacyPolicy: newSettings.privacy_policy,
           terms: newSettings.terms,
         },
         storeConfig: {
-          workingDays: JSON.parse(newSettings.workingDays || "[]"),
-          workingHours: JSON.parse(newSettings.workingHours || '{"start": "08:00", "end": "18:00"}'),
-          autoApproveOrders: newSettings.autoApproveOrders,
+          workingDays: JSON.parse(newSettings.working_days || "[]"),
+          workingHours: JSON.parse(newSettings.working_hours || '{"start": "08:00", "end": "18:00"}'),
+          autoApproveOrders: newSettings.auto_approve_orders,
         },
       };
 
@@ -1241,33 +1241,33 @@ router.get("/settings", authenticateSellerWithExtras, async (req, res) => {
 
     // Formatar configurações existentes para o frontend
     const formattedSettings = {
-      sellerId: settings.sellerId,
+      sellerId: settings.seller_id,
       paymentMethods: {
-        pix: settings.acceptsPix,
-        creditCard: settings.acceptsCreditCard,
-        debitCard: settings.acceptsDebitCard,
-        boleto: settings.acceptsBoleto,
-        whatsapp: settings.acceptsWhatsapp,
+        pix: settings.accepts_pix,
+        creditCard: settings.accepts_credit_card,
+        debitCard: settings.accepts_debit_card,
+        boleto: settings.accepts_boleto,
+        whatsapp: settings.accepts_whatsapp,
       },
       shippingOptions: {
-        freeShippingMin: settings.freeShippingMin,
-        shippingFee: settings.shippingFee,
-        deliveryDays: settings.deliveryDays,
-        pickupAvailable: settings.pickupAvailable,
+        freeShippingMin: settings.free_shipping_min,
+        shippingFee: settings.shipping_fee,
+        deliveryDays: settings.delivery_days,
+        pickupAvailable: settings.pickup_available,
       },
       notifications: {
-        emailNotifications: settings.emailNotifications,
-        smsNotifications: settings.smsNotifications,
+        emailNotifications: settings.email_notifications,
+        smsNotifications: settings.sms_notifications,
       },
       storePolicies: {
-        returnPolicy: settings.returnPolicy,
-        privacyPolicy: settings.privacyPolicy,
+        returnPolicy: settings.return_policy,
+        privacyPolicy: settings.privacy_policy,
         terms: settings.terms,
       },
       storeConfig: {
-        workingDays: JSON.parse(settings.workingDays || "[]"),
-        workingHours: JSON.parse(settings.workingHours || '{"start": "08:00", "end": "18:00"}'),
-        autoApproveOrders: settings.autoApproveOrders,
+        workingDays: JSON.parse(settings.working_days || "[]"),
+        workingHours: JSON.parse(settings.working_hours || '{"start": "08:00", "end": "18:00"}'),
+        autoApproveOrders: settings.auto_approve_orders,
       },
     };
 
@@ -1297,44 +1297,44 @@ router.put("/settings", authenticateSellerWithExtras, async (req, res) => {
     // Preparar dados para atualização no formato da tabela seller_settings
     const updateData = {
       // Métodos de pagamento
-      acceptsCreditCard: paymentMethods?.creditCard ?? true,
-      acceptsDebitCard: paymentMethods?.debitCard ?? true,
-      acceptsPix: paymentMethods?.pix ?? true,
-      acceptsBoleto: paymentMethods?.boleto ?? false,
-      acceptsWhatsapp: paymentMethods?.whatsapp ?? true,
+      accepts_credit_card: paymentMethods?.creditCard ?? true,
+      accepts_debit_card: paymentMethods?.debitCard ?? true,
+      accepts_pix: paymentMethods?.pix ?? true,
+      accepts_boleto: paymentMethods?.boleto ?? false,
+      accepts_whatsapp: paymentMethods?.whatsapp ?? true,
 
       // Opções de entrega
-      freeShippingMin: shippingOptions?.freeShippingMin || null,
-      shippingFee: shippingOptions?.shippingFee ?? 10.0,
-      deliveryDays: shippingOptions?.deliveryDays ?? 7,
-      pickupAvailable: shippingOptions?.pickupAvailable ?? false,
+      free_shipping_min: shippingOptions?.freeShippingMin || null,
+      shipping_fee: shippingOptions?.shippingFee ?? 10.0,
+      delivery_days: shippingOptions?.deliveryDays ?? 7,
+      pickup_available: shippingOptions?.pickupAvailable ?? false,
 
       // Notificações
-      emailNotifications: notifications?.emailNotifications ?? true,
-      smsNotifications: notifications?.smsNotifications ?? false,
+      email_notifications: notifications?.emailNotifications ?? true,
+      sms_notifications: notifications?.smsNotifications ?? false,
 
       // Políticas da loja
-      returnPolicy: storePolicies?.returnPolicy || "7 dias para devolução",
-      privacyPolicy: storePolicies?.privacyPolicy || "Seus dados estão seguros conosco",
+      return_policy: storePolicies?.returnPolicy || "7 dias para devolução",
+      privacy_policy: storePolicies?.privacyPolicy || "Seus dados estão seguros conosco",
       terms: storePolicies?.terms || "Termos e condições padrão",
 
       // Configurações da loja
-      workingDays: storeConfig?.workingDays
+      working_days: storeConfig?.workingDays
         ? JSON.stringify(storeConfig.workingDays)
         : JSON.stringify(["monday", "tuesday", "wednesday", "thursday", "friday"]),
-      workingHours: storeConfig?.workingHours
+      working_hours: storeConfig?.workingHours
         ? JSON.stringify(storeConfig.workingHours)
         : JSON.stringify({ start: "08:00", end: "18:00" }),
-      autoApproveOrders: storeConfig?.autoApproveOrders ?? false,
+      auto_approve_orders: storeConfig?.autoApproveOrders ?? false,
 
-      updatedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
 
     // Tentar atualizar as configurações existentes
     const { data: updatedSettings, error: updateError } = await supabase
       .from("seller_settings")
       .update(updateData)
-      .eq("sellerId", sellerId)
+      .eq("seller_id", sellerId)
       .select()
       .single();
 
@@ -1343,7 +1343,7 @@ router.put("/settings", authenticateSellerWithExtras, async (req, res) => {
       logger.info("📝 Configurações não existem, criando novas para seller:", sellerId);
 
       const createData = {
-        sellerId,
+        seller_id: sellerId,
         ...updateData,
       };
 
@@ -1365,35 +1365,35 @@ router.put("/settings", authenticateSellerWithExtras, async (req, res) => {
 
       // Formatar resposta com as configurações criadas
       const formattedResult = {
-        sellerId: newSettings.sellerId,
+        sellerId: newSettings.seller_id,
         paymentMethods: {
-          pix: newSettings.acceptsPix,
-          creditCard: newSettings.acceptsCreditCard,
-          debitCard: newSettings.acceptsDebitCard,
-          boleto: newSettings.acceptsBoleto,
-          whatsapp: newSettings.acceptsWhatsapp,
+          pix: newSettings.accepts_pix,
+          creditCard: newSettings.accepts_credit_card,
+          debitCard: newSettings.accepts_debit_card,
+          boleto: newSettings.accepts_boleto,
+          whatsapp: newSettings.accepts_whatsapp,
         },
         shippingOptions: {
-          freeShippingMin: newSettings.freeShippingMin,
-          shippingFee: newSettings.shippingFee,
-          deliveryDays: newSettings.deliveryDays,
-          pickupAvailable: newSettings.pickupAvailable,
+          freeShippingMin: newSettings.free_shipping_min,
+          shippingFee: newSettings.shipping_fee,
+          deliveryDays: newSettings.delivery_days,
+          pickupAvailable: newSettings.pickup_available,
         },
         notifications: {
-          emailNotifications: newSettings.emailNotifications,
-          smsNotifications: newSettings.smsNotifications,
+          emailNotifications: newSettings.email_notifications,
+          smsNotifications: newSettings.sms_notifications,
         },
         storePolicies: {
-          returnPolicy: newSettings.returnPolicy,
-          privacyPolicy: newSettings.privacyPolicy,
+          returnPolicy: newSettings.return_policy,
+          privacyPolicy: newSettings.privacy_policy,
           terms: newSettings.terms,
         },
         storeConfig: {
-          workingDays: JSON.parse(newSettings.workingDays || "[]"),
-          workingHours: JSON.parse(newSettings.workingHours || '{"start": "08:00", "end": "18:00"}'),
-          autoApproveOrders: newSettings.autoApproveOrders,
+          workingDays: JSON.parse(newSettings.working_days || "[]"),
+          workingHours: JSON.parse(newSettings.working_hours || '{"start": "08:00", "end": "18:00"}'),
+          autoApproveOrders: newSettings.auto_approve_orders,
         },
-        updatedAt: newSettings.updatedAt,
+        updatedAt: newSettings.updated_at,
       };
 
       return res.json({
@@ -1415,35 +1415,35 @@ router.put("/settings", authenticateSellerWithExtras, async (req, res) => {
 
     // Formatar resposta com as configurações atualizadas
     const formattedResult = {
-      sellerId: updatedSettings.sellerId,
+      sellerId: updatedSettings.seller_id,
       paymentMethods: {
-        pix: updatedSettings.acceptsPix,
-        creditCard: updatedSettings.acceptsCreditCard,
-        debitCard: updatedSettings.acceptsDebitCard,
-        boleto: updatedSettings.acceptsBoleto,
-        whatsapp: updatedSettings.acceptsWhatsapp,
+        pix: updatedSettings.accepts_pix,
+        creditCard: updatedSettings.accepts_credit_card,
+        debitCard: updatedSettings.accepts_debit_card,
+        boleto: updatedSettings.accepts_boleto,
+        whatsapp: updatedSettings.accepts_whatsapp,
       },
       shippingOptions: {
-        freeShippingMin: updatedSettings.freeShippingMin,
-        shippingFee: updatedSettings.shippingFee,
-        deliveryDays: updatedSettings.deliveryDays,
-        pickupAvailable: updatedSettings.pickupAvailable,
+        freeShippingMin: updatedSettings.free_shipping_min,
+        shippingFee: updatedSettings.shipping_fee,
+        deliveryDays: updatedSettings.delivery_days,
+        pickupAvailable: updatedSettings.pickup_available,
       },
       notifications: {
-        emailNotifications: updatedSettings.emailNotifications,
-        smsNotifications: updatedSettings.smsNotifications,
+        emailNotifications: updatedSettings.email_notifications,
+        smsNotifications: updatedSettings.sms_notifications,
       },
       storePolicies: {
-        returnPolicy: updatedSettings.returnPolicy,
-        privacyPolicy: updatedSettings.privacyPolicy,
+        returnPolicy: updatedSettings.return_policy,
+        privacyPolicy: updatedSettings.privacy_policy,
         terms: updatedSettings.terms,
       },
       storeConfig: {
-        workingDays: JSON.parse(updatedSettings.workingDays || "[]"),
-        workingHours: JSON.parse(updatedSettings.workingHours || '{"start": "08:00", "end": "18:00"}'),
-        autoApproveOrders: updatedSettings.autoApproveOrders,
+        workingDays: JSON.parse(updatedSettings.working_days || "[]"),
+        workingHours: JSON.parse(updatedSettings.working_hours || '{"start": "08:00", "end": "18:00"}'),
+        autoApproveOrders: updatedSettings.auto_approve_orders,
       },
-      updatedAt: updatedSettings.updatedAt,
+      updatedAt: updatedSettings.updated_at,
     };
 
     res.json({
