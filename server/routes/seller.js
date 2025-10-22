@@ -658,7 +658,7 @@ router.get("/store", authenticateSellerWithExtras, async (req, res) => {
     const { data: store, error: storeError } = await supabase
       .from("stores")
       .select("*")
-      .eq("sellerId", seller.id)
+      .eq("seller_id", seller.id)
       .single();
 
     if (storeError) {
