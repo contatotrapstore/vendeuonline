@@ -1,15 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
 import { createClientComponentClient, createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { getSupabaseUrl, getSupabaseAnonKey, validateSupabaseConfig } from "./supabase-config";
 
-// Configurações do Supabase - APENAS credenciais públicas no frontend
-// Suporte para múltiplas variáveis de ambiente (Vite + Next.js + fallback hardcoded)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ||
-                     import.meta.env.VITE_PUBLIC_SUPABASE_URL ||
-                     'https://dycsfnbqgojhttnjbndp.supabase.co';
+// Configurações do Supabase - SEMPRE usa valores garantidos (resolve problema Vercel)
+const supabaseUrl = getSupabaseUrl();
+const supabaseAnonKey = getSupabaseAnonKey();
 
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ||
-                         import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY ||
-                         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3NDg2NTYsImV4cCI6MjA2OTMyNDY1Nn0.eLO91-DAAWWP-5g3MG19s6lDtFhrfOu3qk-TTlbrtbQ';
+// Validar configuração na inicialização
+validateSupabaseConfig();
 
 // 🚨 IMPORTANTE: Service Role Key NÃO deve ser exposto no frontend!
 // Todos os métodos admin foram movidos para o backend
