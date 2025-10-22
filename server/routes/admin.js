@@ -778,7 +778,12 @@ router.put("/plans/:id", authenticateAdmin, async (req, res) => {
     if (planData.maxCategories !== undefined) updateData.maxCategories = parseInt(planData.maxCategories) || -1;
     if (planData.prioritySupport !== undefined) updateData.prioritySupport = Boolean(planData.prioritySupport);
     if (planData.support) updateData.support = planData.support;
-    if (planData.features) updateData.features = planData.features;
+    if (planData.features) {
+      // Converter array para JSON string (schema espera String, não array)
+      updateData.features = Array.isArray(planData.features)
+        ? JSON.stringify(planData.features)
+        : planData.features;
+    }
     if (planData.isActive !== undefined) updateData.isActive = Boolean(planData.isActive);
 
     const { data: updatedPlan, error: updateError } = await supabase
