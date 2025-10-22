@@ -1,110 +1,50 @@
-# Render.com configuration for Vendeu Online API
 services:
-  # Backend API Service
+  # Backend API Server (Express.js)
   - type: web
     name: vendeuonline-api
     runtime: node
-    region: oregon # ou 'frankfurt' para Europa
-    plan: free # free tier com 750h/mês
+    region: oregon
+    plan: free
     buildCommand: npm install && npx prisma generate
     startCommand: node server.js
-    healthCheckPath: /api/health
+    healthCheckPath: /health
     envVars:
-      # Node Environment
       - key: NODE_ENV
         value: production
-
-      # Port (Render define automaticamente)
       - key: PORT
-        value: 3000
-
-      # Database - Supabase PostgreSQL
+        value: 10000
       - key: DATABASE_URL
-        value: postgresql://postgres.dycsfnbqgojhttnjbndp:Q1XVu4DgLQRsup5E@db.dycsfnbqgojhttnjbndp.supabase.co:6543/postgres
-
-      # Supabase Configuration
-      - key: NEXT_PUBLIC_SUPABASE_URL
-        value: https://dycsfnbqgojhttnjbndp.supabase.co
-
-      - key: SUPABASE_URL
-        value: https://dycsfnbqgojhttnjbndp.supabase.co
-
-      - key: SUPABASE_ANON_KEY
-        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3NDg2NTYsImV4cCI6MjA2OTMyNDY1Nn0.eLO91-DAAWWP-5g3MG19s6lDtFhrfOu3qk-TTlbrtbQ
-
-      - key: SUPABASE_SERVICE_ROLE_KEY
-        value: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1Mzc0ODY1NiwiZXhwIjoyMDY5MzI0NjU2fQ.nHuBaO9mvMY5IYoVk7JX4W2fBcOwWqFYnBU3vLHN3uw
-
-      # JWT Secret
+        sync: false
       - key: JWT_SECRET
-        value: 7824dc4b9456dd55b73eb7236560b0121cfcb5c96d3dc6dc27c9a2841356ac6762bc9b933477313ff1e56cd022d8284e550ceb8e2778c0403e644ddec35bf653
-
-      # App Configuration
-      - key: APP_NAME
-        value: Vendeu Online
-
-      - key: APP_URL
-        value: https://www.vendeu.online
-
-      - key: APP_ENV
-        value: production
-
-      # CORS - Allow Vercel frontend
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ASAAS_API_KEY
+        sync: false
+      - key: ASAAS_BASE_URL
+        value: https://api.asaas.com/v3
       - key: FRONTEND_URL
         value: https://www.vendeu.online
 
-      # ASAAS Payment Gateway (Production)
-      - key: ASAAS_API_KEY
-        value: $aact_prod_000MzkwODA2MWY2OGM3MWRlMDU2NWM3MzJlNzZmNGZhZGY6Ojk3YmFiNGMyLTRjNDItNGNjNi1iNzhkLTYxMjQ3NzBmMmYxMTo6JGFhY2hfYTcxYmZlOGEtZGYwMS00MGNkLWE4NDYtYjk2YWU3MDdkZGI5
-
-      - key: ASAAS_BASE_URL
-        value: https://api.asaas.com/v3
-
-      - key: ASAAS_WEBHOOK_TOKEN
-        value: asaas-webhook-secret-2024
-
-      # Email Configuration
-      - key: SMTP_HOST
-        value: smtp.gmail.com
-
-      - key: SMTP_PORT
-        value: 587
-
-      - key: SMTP_USER
-        value: demo@vendeuonline.com
-
-      - key: SMTP_PASS
-        value: demo-password
-
-      - key: SMTP_FROM
-        value: noreply@vendeuonline.com
-
-      # Upload Configuration
-      - key: UPLOAD_MAX_SIZE
-        value: 10485760
-
-      - key: UPLOAD_ALLOWED_TYPES
-        value: image/jpeg,image/png,image/webp
-
-      # Analytics
-      - key: GOOGLE_ANALYTICS_ID
-        value: G-DEMO123
-
-      # Rate Limiting
-      - key: RATE_LIMIT_MAX
-        value: 100
-
-      - key: RATE_LIMIT_WINDOW
-        value: 900000
-
-    # Auto deploy on push to main
-    autoDeploy: true
-
-    # Health check configuration
-    healthCheck:
-      enabled: true
-      path: /api/health
-      intervalSeconds: 60
-      timeoutSeconds: 10
-      unhealthyThreshold: 3
-      healthyThreshold: 2
+# INSTRUÇÕES DE DEPLOY NO RENDER.COM:
+#
+# 1. Criar conta no Render.com (https://render.com)
+# 2. Conectar repositório GitHub
+# 3. Criar novo "Web Service"
+# 4. Selecionar este repositório
+# 5. Render detectará automaticamente este arquivo render.yaml
+# 6. Adicionar Environment Variables no dashboard:
+#    - DATABASE_URL: URL do PostgreSQL Supabase
+#    - JWT_SECRET: Chave JWT (gerar com: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))")
+#    - SUPABASE_URL: https://dycsfnbqgojhttnjbndp.supabase.co
+#    - SUPABASE_ANON_KEY: Chave pública Supabase
+#    - SUPABASE_SERVICE_ROLE_KEY: Chave service role Supabase
+#    - ASAAS_API_KEY: Chave API ASAAS (se usar pagamentos)
+#
+# 7. Deploy será automático
+# 8. URL gerada será algo como: https://vendeuonline-api.onrender.com
+# 9. Copiar URL e adicionar no Vercel como VITE_API_URL

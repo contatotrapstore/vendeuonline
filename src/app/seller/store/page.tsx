@@ -8,6 +8,7 @@ import { getAuthToken } from "@/config/storage-keys";
 import { Save, Upload, MapPin, Clock, Phone, Mail, Globe, Camera, Star, Shield, Truck } from "lucide-react";
 import { toast } from "sonner";
 import { get, put } from "@/lib/api-client";
+import StoreImageUploader, { UploadedImage } from "@/components/ui/StoreImageUploader";
 
 interface StoreSettings {
   id?: string;
@@ -70,6 +71,8 @@ export default function SellerStorePage() {
   const [activeTab, setActiveTab] = useState("general");
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [logoImages, setLogoImages] = useState<UploadedImage[]>([]);
+  const [bannerImages, setBannerImages] = useState<UploadedImage[]>([]);
 
   // Função para buscar dados da loja
   const fetchStoreData = async () => {
@@ -77,6 +80,29 @@ export default function SellerStorePage() {
       const data = await get("/api/seller/store");
       if (data.success && data.data) {
         setSettings(data.data);
+
+        // Converter logo e banner para formato UploadedImage
+        if (data.data.logo) {
+          setLogoImages([{
+            url: data.data.logo,
+            publicId: data.data.logo,
+            width: 400,
+            height: 400,
+            format: "png",
+            size: 0,
+          }]);
+        }
+
+        if (data.data.banner) {
+          setBannerImages([{
+            url: data.data.banner,
+            publicId: data.data.banner,
+            width: 1200,
+            height: 300,
+            format: "png",
+            size: 0,
+          }]);
+        }
       }
     } catch (error: any) {
       logger.error("Erro ao carregar dados da loja:", error);
@@ -112,45 +138,24 @@ export default function SellerStorePage() {
     }
   };
 
-  // Função para fazer upload de imagem
-  const handleImageUpload = async (file: File, type: "store-logo" | "store-banner") => {
-    try {
-      const token = getAuthToken();
-      if (!token) {
-        toast.error("Token de autenticação não encontrado");
-        return;
-      }
+  // Handlers para mudanças de imagens usando StoreImageUploader
+  const handleLogoChange = (images: UploadedImage[]) => {
+    setLogoImages(images);
+    // Atualizar URL no settings
+    if (images.length > 0) {
+      updateSettings("logo", images[0].url);
+    } else {
+      updateSettings("logo", "");
+    }
+  };
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("type", type);
-
-      const response = await fetch(buildApiUrl("/api/upload"), {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erro no upload");
-      }
-
-      const data = await response.json();
-      if (data.success && data.url) {
-        // Atualizar a URL da imagem no estado
-        if (type === "store-logo") {
-          updateSettings("logo", data.url);
-        } else {
-          updateSettings("banner", data.url);
-        }
-        toast.success("Imagem enviada com sucesso!");
-      }
-    } catch (error: any) {
-      logger.error("Erro no upload:", error);
-      toast.error("Erro no upload: " + error.message);
+  const handleBannerChange = (images: UploadedImage[]) => {
+    setBannerImages(images);
+    // Atualizar URL no settings
+    if (images.length > 0) {
+      updateSettings("banner", images[0].url);
+    } else {
+      updateSettings("banner", "");
     }
   };
 
@@ -327,64 +332,25 @@ export default function SellerStorePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Logo da Loja</label>
-                    <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 rounded-lg border flex items-center justify-center bg-gray-50">
-                        {settings.logo ? (
-                          <img src={settings.logo} alt="Logo" className="w-16 h-16 rounded-lg object-cover" />
-                        ) : (
-                          <Camera className="h-8 w-8 text-gray-400" />
-                        )}
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageUpload(file, "store-logo");
-                        }}
-                        className="hidden"
-                        id="logo-upload"
-                      />
-                      <label
-                        htmlFor="logo-upload"
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
-                      >
-                        <Upload className="h-4 w-4" />
-                        Alterar Logo
-                      </label>
-                    </div>
+                    <StoreImageUploader
+                      images={logoImages}
+                      onImagesChange={handleLogoChange}
+                      imageType="logo"
+                      maxImages={1}
+                    />
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Banner da Loja</label>
-                    <div className="flex items-center gap-4">
-                      <div className="w-24 h-12 rounded border flex items-center justify-center bg-gray-50">
-                        {settings.banner ? (
-                          <img src={settings.banner} alt="Banner" className="w-24 h-12 rounded object-cover" />
-                        ) : (
-                          <Camera className="h-6 w-6 text-gray-400" />
-                        )}
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handleImageUpload(file, "store-banner");
-                        }}
-                        className="hidden"
-                        id="banner-upload"
-                      />
-                      <label
-                        htmlFor="banner-upload"
-                        className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
-                      >
-                        <Camera className="h-4 w-4" />
-                        Alterar Banner
-                      </label>
-                    </div>
+                    <StoreImageUploader
+                      images={bannerImages}
+                      onImagesChange={handleBannerChange}
+                      imageType="banner"
+                      maxImages={1}
+                    />
                   </div>
                 </div>
+
               </div>
             )}
 
