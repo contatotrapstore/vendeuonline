@@ -658,7 +658,7 @@ router.get("/store", authenticateSellerWithExtras, async (req, res) => {
     const { data: store, error: storeError } = await supabase
       .from("stores")
       .select("*")
-      .eq("seller_id", seller.id)
+      .eq("sellerId", seller.id)
       .single();
 
     if (storeError) {
@@ -668,12 +668,12 @@ router.get("/store", authenticateSellerWithExtras, async (req, res) => {
         .from("stores")
         .insert({
           id: randomUUID(),
-          seller_id: seller.id,
+          sellerId: seller.id,
           name: seller.storeName || "",
           slug: seller.storeSlug || seller.storeName?.toLowerCase().replace(/\s+/g, "-") || `store-${randomUUID().slice(0, 8)}`,
           description: seller.storeDescription || "",
           address: seller.address || "",
-          zip_code: seller.zipCode || "",
+          zipCode: seller.zipCode || "",
           category: seller.category || "Eletrônicos",
           logo: seller.logo || "",
           banner: seller.banner || "",
@@ -683,11 +683,11 @@ router.get("/store", authenticateSellerWithExtras, async (req, res) => {
           email: seller.email || user.email || "",
           whatsapp: seller.whatsapp || "",
           website: seller.website || "",
-          is_active: true,
-          is_verified: false,
+          isActive: true,
+          isVerified: false,
           theme: "{}",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         })
         .select()
         .single();
@@ -715,7 +715,7 @@ router.get("/store", authenticateSellerWithExtras, async (req, res) => {
           street: newStore.address || "",
           city: newStore.city,
           state: newStore.state,
-          zipCode: newStore.zip_code || "",
+          zipCode: newStore.zipCode || "",
         },
         contact: {
           phone: newStore.phone,
@@ -723,8 +723,8 @@ router.get("/store", authenticateSellerWithExtras, async (req, res) => {
           email: newStore.email,
           website: newStore.website || "",
         },
-        isVerified: newStore.is_verified,
-        isActive: newStore.is_active,
+        isVerified: newStore.isVerified,
+        isActive: newStore.isActive,
         theme: newStore.theme,
       };
 
@@ -748,7 +748,7 @@ router.get("/store", authenticateSellerWithExtras, async (req, res) => {
         street: store.address || "",
         city: store.city || seller.city || "Erechim",
         state: store.state || seller.state || "RS",
-        zipCode: store.zip_code || seller.zipCode || "",
+        zipCode: store.zipCode || seller.zipCode || "",
       },
       contact: {
         phone: store.phone || seller.phone || "",
@@ -756,8 +756,8 @@ router.get("/store", authenticateSellerWithExtras, async (req, res) => {
         email: store.email || user.email || "",
         website: store.website || seller.website || "",
       },
-      isVerified: store.is_verified || false,
-      isActive: store.is_active || true,
+      isVerified: store.isVerified || false,
+      isActive: store.isActive || true,
       theme: store.theme || "{}",
     };
 
@@ -939,7 +939,7 @@ router.put("/store", authenticateSellerWithExtras, async (req, res) => {
     let { data: store, error: storeError } = await supabase
       .from("stores")
       .select("*")
-      .eq("seller_id", seller.id)
+      .eq("sellerId", seller.id)
       .single();
 
     // Se não existe store, criar uma
@@ -950,19 +950,26 @@ router.put("/store", authenticateSellerWithExtras, async (req, res) => {
         .from("stores")
         .insert({
           id: randomUUID(),
-          seller_id: seller.id,
+          sellerId: seller.id,
           name: name || storeName || seller.storeName || "",
           slug: (name || storeName || seller.storeName || "").toLowerCase().replace(/\s+/g, "-") || `store-${randomUUID().slice(0, 8)}`,
           description: description || storeDescription || seller.storeDescription || "",
+          address: address?.street || seller.address || "",
+          zipCode: address?.zipCode || seller.zipCode || "",
+          category: category || seller.category || "Eletrônicos",
           logo: logo || seller.logo || "",
           banner: banner || seller.banner || "",
           city: address?.city || seller.city || "Erechim",
           state: address?.state || seller.state || "RS",
           phone: phone || seller.phone || "",
           email: email || user.email || "",
-          is_active: true,
-          is_verified: false,
+          whatsapp: whatsapp || seller.whatsapp || "",
+          website: website || seller.website || "",
+          isActive: true,
+          isVerified: false,
           theme: "{}",
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
         })
         .select()
         .single();
@@ -1014,13 +1021,18 @@ router.put("/store", authenticateSellerWithExtras, async (req, res) => {
     const updateData = {
       name: name || storeName || store.name,
       description: description || storeDescription || store.description,
+      address: fullAddress || store.address,
+      zipCode: addressZipCode || store.zipCode,
+      category: category || store.category,
       city: address?.city || store.city,
       state: address?.state || store.state,
       logo: logo || store.logo,
       banner: banner || store.banner,
       phone: contactPhone,
+      whatsapp: contactWhatsapp,
       email: contactEmail,
-      updated_at: new Date().toISOString(),
+      website: contactWebsite,
+      updatedAt: new Date().toISOString(),
     };
 
     const { data: updatedStore, error: updateError } = await supabase
