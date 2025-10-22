@@ -62,8 +62,6 @@ const authenticateSellerWithExtras = async (req, res, next) => {
           address: "",
           zipCode: "",
           category: "geral",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
         })
         .select("id")
         .single();
