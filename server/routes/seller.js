@@ -696,27 +696,20 @@ router.get("/store", authenticateSellerWithExtras, async (req, res) => {
 
       // Estruturar dados usando a store recém-criada
       const storeData = {
-        id: newStore.id, // Use store.id, não seller.id
+        id: newStore.id,
         sellerId: seller.id,
         name: newStore.name,
+        slug: newStore.slug,
         description: newStore.description,
         logo: newStore.logo,
         banner: newStore.banner,
-        category: newStore.category,
-        address: {
-          street: newStore.address ? newStore.address.split(",")[0] || "" : "",
-          number: "",
-          neighborhood: "",
-          city: newStore.address ? newStore.address.split(",")[1] || "" : "",
-          state: newStore.address ? newStore.address.split(",")[2] || "" : "",
-          zipCode: newStore.zipCode || seller.zipCode || "",
-        },
-        contact: {
-          phone: newStore.phone || "",
-          whatsapp: newStore.whatsapp || seller.whatsapp || "",
-          email: newStore.email || user.email || "",
-          website: newStore.website || "",
-        },
+        city: newStore.city,
+        state: newStore.state,
+        phone: newStore.phone,
+        email: newStore.email,
+        isVerified: newStore.is_verified,
+        isActive: newStore.is_active,
+        theme: newStore.theme,
       };
 
       return res.json({
@@ -727,27 +720,20 @@ router.get("/store", authenticateSellerWithExtras, async (req, res) => {
 
     // Estruturar dados para o frontend usando a store existente
     const storeData = {
-      id: store.id, // Use store.id, não seller.id
+      id: store.id,
       sellerId: seller.id,
       name: store.name || seller.storeName || "",
+      slug: store.slug || "",
       description: store.description || seller.storeDescription || "",
       logo: store.logo || seller.logo || "",
       banner: store.banner || seller.banner || "",
-      category: store.category || seller.category || "eletronicos",
-      address: {
-        street: store.address ? store.address.split(",")[0] || "" : "",
-        number: "",
-        neighborhood: "",
-        city: store.address ? store.address.split(",")[1] || "" : "",
-        state: store.address ? store.address.split(",")[2] || "" : "",
-        zipCode: store.zipCode || seller.zipCode || "",
-      },
-      contact: {
-        phone: store.phone || seller.phone || "",
-        whatsapp: store.whatsapp || seller.whatsapp || "",
-        email: store.email || user.email || "",
-        website: store.website || seller.website || "",
-      },
+      city: store.city || seller.city || "Erechim",
+      state: store.state || seller.state || "RS",
+      phone: store.phone || seller.phone || "",
+      email: store.email || user.email || "",
+      isVerified: store.is_verified || false,
+      isActive: store.is_active || true,
+      theme: store.theme || "{}",
     };
 
     logger.info("✅ Dados da loja encontrados - Store ID:", store.id, "Nome:", store.name);
