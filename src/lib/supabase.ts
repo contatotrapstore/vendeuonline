@@ -2,8 +2,14 @@ import { createClient } from "@supabase/supabase-js";
 import { createClientComponentClient, createServerComponentClient } from "@supabase/auth-helpers-nextjs";
 
 // Configurações do Supabase - APENAS credenciais públicas no frontend
-const supabaseUrl = import.meta.env.VITE_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY!;
+// Suporte para múltiplas variáveis de ambiente (Vite + Next.js + fallback hardcoded)
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL ||
+                     import.meta.env.VITE_PUBLIC_SUPABASE_URL ||
+                     'https://dycsfnbqgojhttnjbndp.supabase.co';
+
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY ||
+                         import.meta.env.VITE_PUBLIC_SUPABASE_ANON_KEY ||
+                         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5Y3NmbmJxZ29qaHR0bmpibmRwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTM3NDg2NTYsImV4cCI6MjA2OTMyNDY1Nn0.eLO91-DAAWWP-5g3MG19s6lDtFhrfOu3qk-TTlbrtbQ';
 
 // 🚨 IMPORTANTE: Service Role Key NÃO deve ser exposto no frontend!
 // Todos os métodos admin foram movidos para o backend
@@ -58,9 +64,12 @@ export const supabaseStorage = {
     formData.append('bucket', bucket);
     if (folder) formData.append('folder', folder);
 
-    // Criar timeout de 60 segundos (aumentado de 30s)
+    // Criar timeout de 120 segundos (aumentado para uploads maiores)
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60000);
+    const timeout = setTimeout(() => {
+      console.error('[UPLOAD] Timeout atingido após 120 segundos');
+      controller.abort();
+    }, 120000);
 
     // Retry logic - tentar até 2 vezes
     let lastError: Error | null = null;
@@ -68,11 +77,19 @@ export const supabaseStorage = {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
+        console.log(`[UPLOAD] Tentativa ${attempt}/${maxRetries}`);
+        console.log('[UPLOAD] Bucket:', bucket, 'Folder:', folder);
+        console.log('[UPLOAD] Arquivo:', file.name, 'Tamanho:', (file.size / 1024).toFixed(2), 'KB');
+
         // Obter token de autenticação
         const token = localStorage.getItem('token');
         if (!token) {
+          console.error('[UPLOAD] Token não encontrado no localStorage');
           throw new Error('Token de autenticação não encontrado. Faça login novamente.');
         }
+
+        console.log('[UPLOAD] Token presente:', !!token);
+        console.log('[UPLOAD] Iniciando requisição POST /api/upload...');
 
         const response = await fetch('/api/upload', {
           method: 'POST',
@@ -82,6 +99,8 @@ export const supabaseStorage = {
           body: formData,
           signal: controller.signal,
         });
+
+        console.log('[UPLOAD] Resposta recebida:', response.status, response.statusText);
 
         clearTimeout(timeout);
 
