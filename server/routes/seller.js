@@ -4,6 +4,7 @@ import { z } from "zod";
 import { supabase } from "../lib/supabase-client.js";
 import { protectRoute, validateInput, commonValidations } from "../middleware/security.js";
 import jwt from "jsonwebtoken";
+import { randomUUID } from "crypto";
 import { logger } from "../lib/logger.js";
 
 const router = express.Router();
@@ -666,6 +667,7 @@ router.get("/store", authenticateSellerWithExtras, async (req, res) => {
       const { data: newStore, error: createError } = await supabase
         .from("stores")
         .insert({
+          id: randomUUID(),
           sellerId: seller.id,
           name: seller.storeName || "",
           slug: seller.storeSlug || seller.storeName?.toLowerCase().replace(/\s+/g, "-") || "store",
