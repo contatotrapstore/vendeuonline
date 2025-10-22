@@ -766,10 +766,18 @@ router.put("/plans/:id", authenticateAdmin, async (req, res) => {
     };
 
     // Apenas adicionar campos opcionais se fornecidos (usando nomes corretos da tabela Plan - camelCase)
-    if (planData.billingPeriod) updateData.billingPeriod = planData.billingPeriod;
+    if (planData.billingPeriod) {
+      updateData.billingPeriod = planData.billingPeriod.toLowerCase();
+    } else {
+      updateData.billingPeriod = 'monthly'; // Default value
+    }
     if (planData.maxAds !== undefined) updateData.maxAds = parseInt(planData.maxAds) || -1;
-    if (planData.maxPhotosPerAd !== undefined) updateData.maxPhotosPerAd = parseInt(planData.maxPhotosPerAd) || -1;
-    if (planData.supportLevel) updateData.supportLevel = planData.supportLevel;
+    if (planData.maxPhotos !== undefined) updateData.maxPhotos = parseInt(planData.maxPhotos) || -1;
+    if (planData.maxProducts !== undefined) updateData.maxProducts = parseInt(planData.maxProducts) || -1;
+    if (planData.maxImages !== undefined) updateData.maxImages = parseInt(planData.maxImages) || -1;
+    if (planData.maxCategories !== undefined) updateData.maxCategories = parseInt(planData.maxCategories) || -1;
+    if (planData.prioritySupport !== undefined) updateData.prioritySupport = Boolean(planData.prioritySupport);
+    if (planData.support) updateData.support = planData.support;
     if (planData.features) updateData.features = planData.features;
     if (planData.isActive !== undefined) updateData.isActive = Boolean(planData.isActive);
 
