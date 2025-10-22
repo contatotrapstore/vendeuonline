@@ -79,10 +79,13 @@ export const supabaseStorage = {
         console.log('[UPLOAD] Bucket:', bucket, 'Folder:', folder);
         console.log('[UPLOAD] Arquivo:', file.name, 'Tamanho:', (file.size / 1024).toFixed(2), 'KB');
 
-        // Obter token de autenticação
-        const token = localStorage.getItem('token');
+        // Obter token de autenticação do Zustand persist storage
+        const authStorage = localStorage.getItem('auth-storage');
+        const token = authStorage ? JSON.parse(authStorage).state?.token : null;
+
         if (!token) {
-          console.error('[UPLOAD] Token não encontrado no localStorage');
+          console.error('[UPLOAD] Token não encontrado no Zustand storage');
+          console.error('[UPLOAD] Auth storage:', authStorage ? 'exists' : 'null');
           throw new Error('Token de autenticação não encontrado. Faça login novamente.');
         }
 
