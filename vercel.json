@@ -1,0 +1,142 @@
+{
+  "version": 2,
+  "buildCommand": "HUSKY=0 rm -rf dist node_modules/.vite && npm run vercel-build",
+  "outputDirectory": "dist",
+  "installCommand": "HUSKY=0 npm ci --omit=dev && npx prisma generate",
+  "framework": null,
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization, X-CSRF-Token"
+        },
+        {
+          "key": "Access-Control-Allow-Credentials",
+          "value": "true"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*).css",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/css"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*).js",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' 'inline-speculation-rules' *.vercel.app *.supabase.co *.vendeu.online *.onrender.com https://www.googletagmanager.com https://www.google-analytics.com https://cdn.jsdelivr.net https://connect.facebook.net https://analytics.tiktok.com https://us-assets.i.posthog.com https://app.posthog.com https://us.i.posthog.com; connect-src 'self' *.vercel.app *.supabase.co *.vendeu.online *.onrender.com https://api.asaas.com wss://*.supabase.co https://www.google-analytics.com https://www.googletagmanager.com https://connect.facebook.net https://analytics.tiktok.com https://us-assets.i.posthog.com https://app.posthog.com https://us.i.posthog.com; img-src 'self' data: blob: *.supabase.co *.vercel.app *.vendeu.online *.onrender.com https://www.googletagmanager.com https://www.google-analytics.com https://connect.facebook.net https://images.unsplash.com https://picsum.photos; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; worker-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production"
+  },
+  "rewrites": [
+    {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/produtos",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/lojas",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/planos",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/sobre",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/produto/:id",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/loja/:slug",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/carrinho",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/finalizar",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/entrar",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/cadastrar",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/painel",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/painel/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/conta",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/((?!api|assets|_vercel|_next|_static|favicon.ico|.*\\.).*)",
+      "destination": "/index.html"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/images/LogoVO.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vendeu Online - Marketplace</title>
+    <meta
+      name="description"
+      content="Plataforma de classificados e marketplace para Erechim-RS. Venda e compre produtos localmente."
+    />
+    <meta name="keywords" content="marketplace, classificados, erechim, venda, compra, produtos" />
+    <meta name="author" content="Vendeu Online" />
+
+    <!-- Content Security Policy is now configured via HTTP headers in vercel.json -->
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://vendeuonline.com/" />
+    <meta property="og:title" content="Vendeu Online - Marketplace" />
+    <meta
+      property="og:description"
+      content="Plataforma de classificados e marketplace para Erechim-RS. Venda e compre produtos localmente."
+    />
+    <meta property="og:image" content="/og-image.png" />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://vendeuonline.com/" />
+    <meta property="twitter:title" content="Vendeu Online - Marketplace" />
+    <meta
+      property="twitter:description"
+      content="Plataforma de classificados e marketplace para Erechim-RS. Venda e compre produtos localmente."
+    />
+    <meta property="twitter:image" content="/og-image.png" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Theme -->
+    <meta name="theme-color" content="#3b82f6" />
+    <meta name="msapplication-TileColor" content="#3b82f6" />
+
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- Google Fonts - Async Loading -->
+    <link
+      rel="preload"
+      as="style"
+      onload="this.onload=null;this.rel='stylesheet'"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+
+    <!-- Font Display Fallback -->
+    <style>
+      /* System font fallback para evitar FOUT (Flash of Unstyled Text) */
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+          'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

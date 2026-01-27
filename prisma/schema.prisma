@@ -1,0 +1,551 @@
+// Schema Prisma para PostgreSQL (Supabase) - Produção
+// Configurado para usar conexão direta com Supabase
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo de usuário base
+model User {
+  id               String   @id @default(cuid())
+  name             String
+  email            String   @unique
+  password         String
+  phone            String
+  type             UserType
+  city             String
+  state            String
+  avatar           String?
+  isVerified       Boolean  @default(false)
+  isActive         Boolean  @default(true)
+  asaasCustomerId  String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  lastLogin        DateTime?
+
+  // Relações
+  buyer         Buyer?
+  seller        Seller?
+  admin         Admin?
+  reviews       Review[]
+  // subscriptions movidas para Seller - apenas sellers têm subscriptions no modelo WhatsApp
+  notifications Notification[]
+  addresses     Address[]
+  orders        Order[]     @relation("UserOrders")
+  payments      Payment[]
+
+  @@map("users")
+}
+
+enum UserType {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+// Modelo específico para compradores
+model Buyer {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  wishlists     Wishlist[]
+  orders        Order[]   @relation("BuyerOrders")
+  
+  @@map("buyers")
+}
+
+// Modelo específico para vendedores
+model Seller {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId        String?
+  plan          Plan?    @relation(fields: [planId], references: [id])
+  rating        Float    @default(0.0)
+  totalSales    Int      @default(0)
+  commission    Float    @default(5.0)
+  isVerified    Boolean  @default(false)
+  
+  // Relações
+  store         Store?
+  products      Product[]
+  subscriptions Subscription[]
+  settings      SellerSettings?
+  orders        Order[]        @relation("SellerOrders")
+  orderItems    OrderItem[]    @relation("SellerOrderItems")
+  payments      Payment[]
+
+  @@map("sellers")
+}
+
+// Modelo específico para administradores
+model Admin {
+  id          String    @id @default(cuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissions String    // JSON string com array de permissões
+  lastLogin   DateTime?
+  
+  @@map("admins")
+}
+
+// Modelo de loja
+model Store {
+  id              String         @id @default(cuid())
+  sellerId        String         @unique
+  seller          Seller         @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  name            String
+  slug            String         @unique
+  description     String
+  email           String
+  phone           String
+  whatsapp        String?        // ✅ Bug #1 fix - WhatsApp number
+  website         String?        // ✅ Store website URL
+  city            String
+  state           String
+  address         String?        // ✅ Bug #2 fix - Full street address
+  zipCode         String?        @map("zipCode")  // ✅ Bug #2 fix - CEP/Postal code
+  category        String         @default("geral")  // ✅ Bug #3 fix - Store category
+  logo            String?
+  banner          String?
+  rating          Float          @default(0.0)  // ✅ Store average rating
+  isVerified      Boolean        @default(false)
+  isActive        Boolean        @default(true)
+  approvalStatus  ApprovalStatus @default(PENDING) @map("approval_status")
+  rejectionReason String?        @map("rejection_reason")
+  theme           String         @default("{}") // JSON
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relações
+  products        Product[]
+  reviews         Review[]
+  orders          Order[]
+  orderItems      OrderItem[]  @relation("StoreOrderItems")
+
+  @@map("stores")
+}
+
+// Modelo de categoria
+model Category {
+  id              String    @id @default(cuid())
+  name            String
+  slug            String    @unique
+  description     String?
+  image           String?
+  parentId        String?
+  parent          Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children        Category[] @relation("CategoryHierarchy")
+  isActive        Boolean   @default(true)
+  order           Int       @default(0)
+  productCount    Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relações
+  products        Product[]
+  
+  @@map("categories")
+}
+
+// Modelo de produto
+model Product {
+  id              String   @id @default(cuid())
+  sellerId        String
+  seller          Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  storeId         String
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  categoryId      String
+  category        Category @relation(fields: [categoryId], references: [id])
+  
+  name            String
+  description     String
+  price           Float
+  comparePrice    Float?
+  stock           Int      @default(0)
+  minStock        Int      @default(5)
+  sku             String?
+  weight          Float?
+  tags            String   @default("[]") // JSON array como string
+  seoTitle        String?
+  seoDescription  String?
+  isFeatured      Boolean  @default(false)
+  isActive        Boolean  @default(true)
+  approvalStatus  ApprovalStatus @default(PENDING) @map("approval_status")
+  rejectionReason String? @map("rejection_reason")
+  approvedAt      DateTime? @map("approved_at")
+  approvedBy      String? @map("approved_by")
+  rating          Float    @default(0.0)
+  reviewCount     Int      @default(0)
+  salesCount      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relações
+  images          ProductImage[]
+  specifications  ProductSpecification[]
+  wishlists       Wishlist[]
+  reviews         Review[]
+  orderItems      OrderItem[]
+
+  @@map("Product")
+}
+
+model ProductImage {
+  id          String  @id @default(cuid())
+  productId   String
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url         String
+  alt         String
+  order       Int     @default(0)
+
+  @@map("ProductImage")
+}
+
+model ProductSpecification {
+  id          String  @id @default(cuid())
+  productId   String
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name        String
+  value       String
+  
+  @@map("product_specifications")
+}
+
+// Wishlist
+model Wishlist {
+  id          String   @id @default(cuid())
+  buyerId     String
+  buyer       Buyer    @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([buyerId, productId])
+  @@map("wishlists")
+}
+
+model Address {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label        String
+  street       String
+  number       String
+  complement   String?
+  neighborhood String
+  city         String
+  state        String
+  zipCode      String
+  isDefault    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([userId], map: "idx_addresses_user_id")
+  @@map("addresses")
+}
+
+// Reviews
+model Review {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  storeId     String?
+  store       Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  rating      Int      // 1-5
+  title       String
+  comment     String
+  images      String   @default("[]") // JSON array como string
+  isVerified  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("reviews")
+}
+
+// Planos de assinatura
+model Plan {
+  id              String   @id @default(cuid())
+  name            String
+  slug            String   @unique
+  description     String
+  price           Float
+  billingPeriod   String   // monthly, yearly
+  maxAds          Int      @default(-1) // -1 = ilimitado
+  maxPhotos       Int      @default(-1)
+  maxProducts     Int      @default(-1) // -1 = ilimitado
+  maxImages       Int      @default(-1)
+  maxCategories   Int      @default(-1)
+  prioritySupport Boolean  @default(false)
+  support         String
+  features        String   @default("[]") // JSON array como string
+  isActive        Boolean  @default(true)
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relações
+  subscriptions   Subscription[]
+  sellers         Seller[]
+
+  @@map("Plan")
+}
+
+// Assinaturas
+model Subscription {
+  id              String             @id @default(cuid())
+  // userId removido - subscriptions são apenas por seller no modelo WhatsApp
+  sellerId        String             // Agora obrigatório (relacionamento 1:N Seller → Subscription)
+  seller          Seller             @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  planId          String
+  plan            Plan               @relation(fields: [planId], references: [id])
+
+  status          SubscriptionStatus @default(ACTIVE)
+  paymentId       String?
+  startDate       DateTime           @default(now())
+  endDate         DateTime?
+  lastPayment     DateTime?
+  nextPayment     DateTime?          // Renomeado de nextBilling para match Supabase
+  autoRenew       Boolean            @default(true)
+  cancelledAt     DateTime?
+  cancelReason    String?
+  payments        Payment[]          @relation("SubscriptionPayments")
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  @@map("Subscription")  // Tabela no Supabase é "Subscription" (com S maiúsculo)
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  number        String?
+  userId        String?
+  user          User?    @relation("UserOrders", fields: [userId], references: [id], onDelete: SetNull)
+  buyerId       String?
+  buyer         Buyer?   @relation("BuyerOrders", fields: [buyerId], references: [id], onDelete: SetNull)
+  sellerId      String?
+  seller        Seller?  @relation("SellerOrders", fields: [sellerId], references: [id], onDelete: SetNull)
+  storeId       String?
+  store         Store?   @relation(fields: [storeId], references: [id], onDelete: SetNull)
+  status        String   @default("PENDING")
+  paymentStatus String   @default("PENDING")
+  paymentMethod String?
+  total         Float    @default(0)
+  subtotal      Float?
+  // shippingCost  Float?  // Removido: Sistema WhatsApp-only (frete negociado via WhatsApp)
+  notes         String?
+  trackingCode  String?
+  metadata      Json?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  deliveredAt   DateTime?
+  cancelledAt   DateTime?
+  items         OrderItem[]
+  payments      Payment[] @relation("OrderPayments")
+
+  @@index([userId], map: "idx_order_user")
+  @@index([sellerId], map: "idx_order_seller")
+  @@index([storeId], map: "idx_order_store")
+  @@index([status], map: "idx_order_status")
+  @@map("Order")
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String?
+  product    Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  sellerId   String?
+  seller     Seller?  @relation("SellerOrderItems", fields: [sellerId], references: [id], onDelete: SetNull)
+  storeId    String?
+  store      Store?   @relation("StoreOrderItems", fields: [storeId], references: [id], onDelete: SetNull)
+  quantity   Int      @default(1)
+  price      Float    @default(0)
+  discount   Float    @default(0)
+  total      Float    @default(0)
+  metadata   Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([orderId], map: "idx_order_item_order")
+  @@index([productId], map: "idx_order_item_product")
+  @@map("OrderItem")
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sellerId       String?
+  seller         Seller?       @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  orderId        String?
+  order          Order?        @relation("OrderPayments", fields: [orderId], references: [id], onDelete: SetNull)
+  subscriptionId String?
+  subscription   Subscription? @relation("SubscriptionPayments", fields: [subscriptionId], references: [id], onDelete: SetNull)
+  asaasPaymentId String?       @map("asaasPaymentId")
+  externalRef    String?       @map("externalReference")
+  status         String        @default("PENDING")
+  method         String?
+  amount         Float         @default(0)
+  description    String?
+  paidAt         DateTime?
+  metadata       Json?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([userId], map: "idx_payment_user")
+  @@index([sellerId], map: "idx_payment_seller")
+  @@index([orderId], map: "idx_payment_order")
+  @@index([subscriptionId], map: "idx_payment_subscription")
+  @@map("payments")
+}
+
+// Modelo para banners publicitários
+model Banner {
+  id            String           @id @default(cuid())
+  title         String
+  description   String?
+  imageUrl      String
+  targetUrl     String?
+  position      BannerPosition
+  isActive      Boolean          @default(true)
+  startDate     DateTime?
+  endDate       DateTime?
+  clicks        Int              @default(0)
+  impressions   Int              @default(0)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  
+  @@map("banners")
+}
+
+enum BannerPosition {
+  HEADER
+  SIDEBAR
+  FOOTER
+  CATEGORY
+  HOME_HERO
+  HOME_FEATURED
+}
+
+// Modelo para auditoria de ações administrativas
+model AuditLog {
+  id            String   @id @default(cuid())
+  adminId       String   // ID do admin que executou a ação
+  adminName     String   // Nome do admin para referência rápida
+  action        String   // Tipo da ação (CREATE, UPDATE, DELETE, etc.)
+  resource      String   // Recurso afetado (USER, PRODUCT, STORE, etc.)
+  resourceId    String?  // ID do recurso específico
+  details       String   // JSON com detalhes da ação
+  ipAddress     String?  // IP do admin
+  userAgent     String?  // User Agent do browser
+  success       Boolean  @default(true)
+  errorMessage  String?  // Mensagem de erro se success = false
+  createdAt     DateTime @default(now())
+  
+  @@map("audit_logs")
+}
+
+// Modelo para configurações do sistema (pixels, analytics, etc.)
+model SystemConfig {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  value           String
+  description     String?
+  category        String   @default("general") // tracking, email, payment, etc.
+  isActive        Boolean  @default(true)
+  updatedBy       String?  // ID do admin que atualizou
+  updatedAt       DateTime @updatedAt
+  createdAt       DateTime @default(now())
+  
+  @@map("system_configs")
+}
+
+// Modelo de notificações
+model Notification {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  message     String
+  type        NotificationType  @default(INFO)
+  isRead      Boolean          @default(false)
+  readAt      DateTime?
+  data        String?  // JSON string com dados extras se necessário
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  
+  @@map("notifications")
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  PROMOTION
+  SECURITY
+  SYSTEM
+}
+
+// Configurações específicas do vendedor
+model SellerSettings {
+  id                String   @id @default(cuid())
+  sellerId          String   @unique
+  seller            Seller   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  // Configurações de pagamento
+  acceptsCreditCard Boolean  @default(true)
+  acceptsDebitCard  Boolean  @default(true)
+  acceptsPix        Boolean  @default(true)
+  acceptsBoleto     Boolean  @default(false)
+  acceptsWhatsapp   Boolean  @default(true)
+
+  // Configurações de entrega removidas: Sistema WhatsApp-only (frete negociado via WhatsApp)
+  // freeShippingMin   Float?   // Valor mínimo para frete grátis
+  // shippingFee       Float    @default(10.0)
+  // deliveryDays      Int      @default(7)
+  // pickupAvailable   Boolean  @default(false)
+
+  // Configurações da loja
+  workingDays       String   @default("[]")  // JSON array: ["monday", "tuesday", ...]
+  workingHours      String   @default("{\"start\": \"08:00\", \"end\": \"18:00\"}")  // JSON
+  autoApproveOrders Boolean  @default(false)
+
+  // Políticas
+  returnPolicy      String?
+  privacyPolicy     String?
+  terms             String?
+
+  // Notificações
+  emailNotifications Boolean  @default(true)
+  smsNotifications   Boolean  @default(false)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("seller_settings")
+}
+

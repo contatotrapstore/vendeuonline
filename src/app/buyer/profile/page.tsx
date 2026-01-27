@@ -1,0 +1,697 @@
+ "use client";
+
+import { logger } from "@/lib/logger";
+import { useState, useEffect, useCallback } from "react";
+import { buildApiUrl } from "@/config/api";
+import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "@/store/authStore";
+import { User, Mail, Phone, MapPin, Calendar, Camera, Save, Edit3, Package, Heart, ShoppingCart } from "lucide-react";
+import { toast } from "sonner";
+
+interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  city: string;
+  state: string;
+  avatar?: string;
+  createdAt: string;
+  addresses: Address[];
+  stats: {
+    totalOrders: number;
+    favoriteProducts: number;
+    totalSpent: number;
+  };
+}
+
+interface Address {
+  id: string;
+  label: string;
+  street: string;
+  number: string;
+  complement?: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  isDefault: boolean;
+}
+
+export default function BuyerProfile() {
+  const navigate = useNavigate();
+  const { user, token } = useAuthStore();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const initialAddressState = {
+    label: "",
+    street: "",
+    number: "",
+    complement: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    isDefault: false,
+  };
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [addressForm, setAddressForm] = useState(initialAddressState);
+  const [addressSaving, setAddressSaving] = useState(false);
+
+  const loadUserProfile = useCallback(async () => {
+    try {
+      setIsLoading(true);
+
+      // Buscar perfil e estatísticas em paralelo
+      const [profileResponse, statsResponse] = await Promise.all([
+        fetch(buildApiUrl("/api/users/profile"), {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }),
+        fetch(buildApiUrl("/api/users/stats"), {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }),
+      ]);
+
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json();
+
+        // Adicionar estatísticas reais se disponíveis
+        if (statsResponse.ok) {
+          const statsData = await statsResponse.json();
+          profileData.profile.stats = {
+            totalOrders: statsData.stats.totalOrders,
+            favoriteProducts: statsData.stats.favoriteProducts,
+            totalSpent: statsData.stats.totalSpent,
+          };
+        }
+
+        setProfile(profileData.profile);
+      } else {
+        logger.error("Error loading profile");
+      }
+    } catch (error) {
+      logger.error("Error loading profile:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    // Verificar autenticação
+    if (!user) {
+      logger.info('Usuário não autenticado, redirecionando para home');
+      navigate("/");
+      return;
+    }
+
+    // Redirecionamento inteligente por tipo de usuário
+    if (user.userType === "seller") {
+      logger.info('Vendedor tentando acessar perfil de buyer, redirecionando para perfil de seller');
+      navigate("/seller/profile");
+      return;
+    }
+
+    if (user.userType === "admin") {
+      logger.info('Admin tentando acessar perfil de buyer, redirecionando para admin dashboard');
+      navigate("/admin");
+      return;
+    }
+
+    if (user.userType !== "buyer") {
+      logger.info('Tipo de usuário não reconhecido, redirecionando para home');
+      navigate("/");
+      return;
+    }
+
+    loadUserProfile();
+  }, [user, navigate, loadUserProfile]);
+
+  const handleSaveProfile = async () => {
+    if (!profile) return;
+
+    try {
+      setIsSaving(true);
+      const response = await fetch(buildApiUrl("/api/users/profile"), {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: profile.name,
+          phone: profile.phone,
+          city: profile.city,
+          state: profile.state,
+        }),
+      });
+
+      if (response.ok) {
+        setIsEditing(false);
+        // Atualizar dados do usuário no store
+        // useAuthStore.getState().updateUser({
+        //   name: profile.name,
+        //   phone: profile.phone,
+        //   city: profile.city,
+        //   state: profile.state
+        // });
+      }
+    } catch (error) {
+      logger.error("Error saving profile:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const response = await fetch(buildApiUrl("/api/users/avatar"), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setProfile((prev) => (prev ? { ...prev, avatar: data.avatarUrl } : null));
+      } else {
+        const errorData = await response.json();
+        logger.error("Erro no upload:", errorData.error);
+      }
+    } catch (error) {
+      logger.error("Error uploading avatar:", error);
+    }
+  };
+
+  const handleAddressFieldChange = (field: keyof typeof initialAddressState, value: string | boolean) => {
+    setAddressForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleAddAddress = async () => {
+    if (!token) {
+      toast.error("Faça login para adicionar endereços");
+      return;
+    }
+
+    // 🔒 FIX (Bug #13): Validação frontend antes de enviar
+    const errors: string[] = [];
+    if (!addressForm.label || addressForm.label.trim().length < 2) errors.push("Etiqueta é obrigatória (mínimo 2 caracteres)");
+    if (!addressForm.street || addressForm.street.trim().length < 3) errors.push("Rua é obrigatória (mínimo 3 caracteres)");
+    if (!addressForm.number || addressForm.number.trim().length < 1) errors.push("Número é obrigatório");
+    if (!addressForm.neighborhood || addressForm.neighborhood.trim().length < 2) errors.push("Bairro é obrigatório (mínimo 2 caracteres)");
+    if (!addressForm.city || addressForm.city.trim().length < 2) errors.push("Cidade é obrigatória (mínimo 2 caracteres)");
+    if (!addressForm.state || addressForm.state.trim().length < 2) errors.push("Estado é obrigatório (mínimo 2 caracteres)");
+    if (!addressForm.zipCode || addressForm.zipCode.replace(/\D/g, "").length < 8) errors.push("CEP é obrigatório (formato: 00000-000)");
+
+    if (errors.length > 0) {
+      toast.error(
+        <div>
+          <strong>Preencha os campos obrigatórios:</strong>
+          <ul className="mt-2 list-disc list-inside">
+            {errors.map((err, idx) => (
+              <li key={idx}>{err}</li>
+            ))}
+          </ul>
+        </div>,
+        { duration: 6000 }
+      );
+      return;
+    }
+
+    try {
+      setAddressSaving(true);
+      const response = await fetch(buildApiUrl("/api/users/addresses"), {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(addressForm),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        // 🔒 FIX (Bug #13): Mostrar detalhes do erro de validação do backend
+        if (errorData.details && Array.isArray(errorData.details)) {
+          const backendErrors = errorData.details.map((d: any) => d.message).join(", ");
+          throw new Error(`Erro de validação: ${backendErrors}`);
+        }
+        throw new Error(errorData.error || "Erro ao salvar endereço");
+      }
+
+      toast.success("✅ Endereço salvo com sucesso!");
+      setShowAddressForm(false);
+      setAddressForm(initialAddressState);
+      await loadUserProfile();
+    } catch (error) {
+      logger.error("Erro ao adicionar endereço:", error);
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar endereço");
+    } finally {
+      setAddressSaving(false);
+    }
+  };
+
+  // Não precisa mais dessa verificação duplicada - já feita no useEffect
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Meu Perfil</h1>
+              <p className="text-gray-600">Gerencie suas informações pessoais</p>
+            </div>
+            <div className="flex items-center space-x-4">
+              {!isEditing ? (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Edit3 className="h-4 w-4" />
+                  <span>Editar</span>
+                </button>
+              ) : (
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setIsEditing(false)}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSaveProfile}
+                    disabled={isSaving}
+                    className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span>{isSaving ? "Salvando..." : "Salvar"}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Profile Info */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-6">Informações Pessoais</h3>
+
+              <div className="space-y-6">
+                {/* Avatar */}
+                <div className="flex items-center space-x-6">
+                  <div className="relative">
+                    <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center overflow-hidden">
+                      {profile?.avatar ? (
+                        <img src={profile.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="h-10 w-10 text-gray-400" />
+                      )}
+                    </div>
+                    {isEditing && (
+                      <label className="absolute -bottom-1 -right-1 bg-blue-600 text-white rounded-full p-1 cursor-pointer hover:bg-blue-700">
+                        <Camera className="h-3 w-3" />
+                        <input type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+                      </label>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Foto do perfil</p>
+                    <p className="text-xs text-gray-500">JPG, PNG até 5MB</p>
+                  </div>
+                </div>
+
+                {/* Form Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <User className="h-4 w-4 inline mr-2" />
+                      Nome completo
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={profile?.name || ""}
+                        onChange={(e) => setProfile((prev) => (prev ? { ...prev, name: e.target.value } : null))}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    ) : (
+                      <p className="p-3 bg-gray-50 rounded-lg">{profile?.name}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Mail className="h-4 w-4 inline mr-2" />
+                      E-mail
+                    </label>
+                    <p className="p-3 bg-gray-50 rounded-lg text-gray-600">{profile?.email}</p>
+                    <p className="text-xs text-gray-500 mt-1">E-mail não pode ser alterado</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Phone className="h-4 w-4 inline mr-2" />
+                      Telefone
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="tel"
+                        value={profile?.phone || ""}
+                        onChange={(e) => setProfile((prev) => (prev ? { ...prev, phone: e.target.value } : null))}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="(00) 00000-0000"
+                      />
+                    ) : (
+                      <p className="p-3 bg-gray-50 rounded-lg">{profile?.phone}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <MapPin className="h-4 w-4 inline mr-2" />
+                      Cidade
+                    </label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={profile?.city || ""}
+                        onChange={(e) => setProfile((prev) => (prev ? { ...prev, city: e.target.value } : null))}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    ) : (
+                      <p className="p-3 bg-gray-50 rounded-lg">{profile?.city}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        value={profile?.state || ""}
+                        onChange={(e) => setProfile((prev) => (prev ? { ...prev, state: e.target.value } : null))}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    ) : (
+                      <p className="p-3 bg-gray-50 rounded-lg">{profile?.state}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <Calendar className="h-4 w-4 inline mr-2" />
+                      Membro desde
+                    </label>
+                    <p className="p-3 bg-gray-50 rounded-lg">
+                      {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString("pt-BR") : "-"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Addresses Section */}
+            <div className="bg-white rounded-lg shadow p-6 mt-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-medium text-gray-900">Endereços Salvos</h3>
+                {/* 🔒 FIX (Bug #13): Botão mais visível */}
+                <button
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    showAddressForm
+                      ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      : "bg-blue-600 text-white hover:bg-blue-700"
+                  }`}
+                  onClick={() => setShowAddressForm((prev) => !prev)}
+                >
+                  {showAddressForm ? "✕ Cancelar" : "+ Adicionar endereço"}
+                </button>
+              </div>
+
+              {showAddressForm && (
+                <div className="border border-dashed border-blue-200 rounded-lg p-4 mb-6">
+                  {/* 🔒 FIX (Bug #13): Indicação visual de campos obrigatórios com asterisco vermelho */}
+                  <p className="text-sm text-gray-600 mb-4">
+                    <span className="text-red-500">*</span> Campos obrigatórios
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">
+                        Etiqueta <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.label}
+                        onChange={(e) => handleAddressFieldChange("label", e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Casa, Trabalho..."
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">
+                        CEP <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.zipCode}
+                        onChange={(e) => handleAddressFieldChange("zipCode", e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="00000-000"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">
+                        Rua <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.street}
+                        onChange={(e) => handleAddressFieldChange("street", e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">
+                        Número <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.number}
+                        onChange={(e) => handleAddressFieldChange("number", e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">Complemento</label>
+                      <input
+                        type="text"
+                        value={addressForm.complement}
+                        onChange={(e) => handleAddressFieldChange("complement", e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Apartamento, bloco..."
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">
+                        Bairro <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.neighborhood}
+                        onChange={(e) => handleAddressFieldChange("neighborhood", e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">
+                        Cidade <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.city}
+                        onChange={(e) => handleAddressFieldChange("city", e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block">
+                        Estado <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={addressForm.state}
+                        onChange={(e) => handleAddressFieldChange("state", e.target.value)}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="UF"
+                      />
+                    </div>
+                    <div className="md:col-span-2 flex items-center gap-2">
+                      <input
+                        id="address-default"
+                        type="checkbox"
+                        checked={addressForm.isDefault}
+                        onChange={(e) => handleAddressFieldChange("isDefault", e.target.checked)}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded"
+                      />
+                      <label htmlFor="address-default" className="text-sm text-gray-700">
+                        Definir como endereço padrão
+                      </label>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-3 mt-4">
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+                      onClick={() => {
+                        setShowAddressForm(false);
+                        setAddressForm(initialAddressState);
+                      }}
+                      disabled={addressSaving}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                      onClick={handleAddAddress}
+                      disabled={addressSaving}
+                    >
+                      {addressSaving ? "Salvando..." : "Salvar endereço"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {profile?.addresses && profile.addresses.length > 0 ? (
+                <div className="space-y-4">
+                  {profile.addresses.map((address) => (
+                    <div key={address.id} className="border border-gray-200 rounded-lg p-4">
+                      <div className="flex justify-between items-start mb-2">
+                        <h4 className="font-medium text-gray-900">{address.label}</h4>
+                        {address.isDefault && (
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">Padrão</span>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600">
+                        {address.street}, {address.number}
+                        {address.complement && `, ${address.complement}`}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {address.neighborhood}, {address.city} - {address.state}
+                      </p>
+                      <p className="text-sm text-gray-600">CEP: {address.zipCode}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <MapPin className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">Nenhum endereço cadastrado</p>
+                  <button
+                    className="mt-4 text-blue-600 hover:text-blue-700 font-medium"
+                    onClick={() => setShowAddressForm(true)}
+                  >
+                    Adicionar primeiro endereço
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Stats Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-6">Estatísticas</h3>
+
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Package className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Total de Pedidos</p>
+                    <p className="font-medium">{profile?.stats.totalOrders || 0}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <Heart className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Produtos Favoritos</p>
+                    <p className="font-medium">{profile?.stats.favoriteProducts || 0}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <ShoppingCart className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Total Gasto</p>
+                    <p className="font-medium">
+                      R$ {(profile?.stats.totalSpent || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <h4 className="font-medium text-gray-900 mb-4">Ações Rápidas</h4>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => (window.location.href = "/buyer/orders")}
+                    className="w-full text-left p-2 text-sm text-gray-600 hover:bg-gray-50 rounded"
+                  >
+                    Ver meus pedidos
+                  </button>
+                  <button
+                    onClick={() => (window.location.href = "/buyer/wishlist")}
+                    className="w-full text-left p-2 text-sm text-gray-600 hover:bg-gray-50 rounded"
+                  >
+                    Lista de desejos
+                  </button>
+                  <button
+                    onClick={() => (window.location.href = "/buyer/settings")}
+                    className="w-full text-left p-2 text-sm text-gray-600 hover:bg-gray-50 rounded"
+                  >
+                    Configurações
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

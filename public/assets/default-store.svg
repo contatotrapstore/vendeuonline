@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none">
+  <rect width="400" height="400" fill="#F9FAFB"/>
+  <rect x="100" y="180" width="200" height="140" fill="#E5E7EB" stroke="#9CA3AF" stroke-width="2"/>
+  <polygon points="80,180 200,120 320,180" fill="#D1D5DB" stroke="#9CA3AF" stroke-width="2"/>
+  <rect x="150" y="220" width="40" height="60" fill="#9CA3AF"/>
+  <rect x="210" y="220" width="40" height="60" fill="#9CA3AF"/>
+  <rect x="100" y="160" width="200" height="20" fill="#6B7280"/>
+  <text x="200" y="350" text-anchor="middle" font-family="system-ui" font-size="14" fill="#6B7280">Loja</text>
+</svg>

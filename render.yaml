@@ -1,0 +1,50 @@
+services:
+  # Backend API Server (Express.js)
+  - type: web
+    name: vendeuonline-api
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && npx prisma generate
+    startCommand: node server.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ASAAS_API_KEY
+        sync: false
+      - key: ASAAS_BASE_URL
+        value: https://api.asaas.com/v3
+      - key: FRONTEND_URL
+        value: https://www.vendeu.online
+
+# INSTRUÇÕES DE DEPLOY NO RENDER.COM:
+#
+# 1. Criar conta no Render.com (https://render.com)
+# 2. Conectar repositório GitHub
+# 3. Criar novo "Web Service"
+# 4. Selecionar este repositório
+# 5. Render detectará automaticamente este arquivo render.yaml
+# 6. Adicionar Environment Variables no dashboard:
+#    - DATABASE_URL: URL do PostgreSQL Supabase
+#    - JWT_SECRET: Chave JWT (gerar com: node -e "console.log(require('crypto').randomBytes(64).toString('hex'))")
+#    - SUPABASE_URL: https://dycsfnbqgojhttnjbndp.supabase.co
+#    - SUPABASE_ANON_KEY: Chave pública Supabase
+#    - SUPABASE_SERVICE_ROLE_KEY: Chave service role Supabase
+#    - ASAAS_API_KEY: Chave API ASAAS (se usar pagamentos)
+#
+# 7. Deploy será automático
+# 8. URL gerada será algo como: https://vendeuonline-api.onrender.com
+# 9. Copiar URL e adicionar no Vercel como VITE_API_URL
